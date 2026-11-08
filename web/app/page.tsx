@@ -5,7 +5,7 @@ import { LandingLamps } from '@/components/landing-lamps';
 import { LandingLoop } from '@/components/landing-loop';
 import { RecipeCard } from '@/components/recipe-card';
 import { landingRecipe } from '@/lib/recipes';
-import { SITE, meetAway } from '@/lib/site';
+import { SITE, keepWhole, meetAway } from '@/lib/site';
 
 // "<N> weeks away" moves with the clock: rebuild the page every hour.
 export const revalidate = 3600;
@@ -81,7 +81,7 @@ export default function Landing() {
         <section className="block card next-meet" aria-labelledby="next-meet">
           <p className="eyebrow" id="next-meet">Next meet</p>
           <p className="weight-m">{SITE.meet.name}</p>
-          <p className="body">{SITE.meet.datesLong} · Soo is live Saturday at 8 pm Eastern</p>
+          <p className="body">{keepWhole(`${SITE.meet.datesLong} · Soo is live Saturday at 8 pm Eastern`)}</p>
           <p className="small">{meetAway()}</p>
         </section>
 
