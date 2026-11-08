@@ -1,0 +1,45 @@
+{
+  "$comment": "Every judging number (plan 3.4). Read by the one judge in web/lib/judge/, on the phone and on the server. First guesses, tuned in phase 2 on tests/clips/.",
+  "version": 1,
+  "visibilityMin": 0.5,
+  "frameCheck": {
+    "holdMs": 1000,
+    "edgeMargin": 0.03,
+    "sideOnMaxShoulderOverTorso": 0.35
+  },
+  "visibilityCloseCallShare": 0.2,
+  "squat": {
+    "standKneeMinDeg": 160,
+    "stillHipMaxTorso": 0.015,
+    "stillMs": 600,
+    "downKneeMaxDeg": 140,
+    "rackStillMs": 500,
+    "noRepMs": 20000,
+    "whiteDepthMin": 0.05,
+    "redDepthMax": -0.1
+  },
+  "deadlift": {
+    "lockoutMinDeg": 165,
+    "lockoutHoldMs": 400,
+    "windowStartHipRiseTorso": 0.02,
+    "noLockoutMs": 12000,
+    "hitchDropDeg": 8,
+    "rearmBelowDeg": 150
+  },
+  "bench": {
+    "startElbowMinDeg": 155,
+    "startStillMs": 500,
+    "bottomElbowMaxDeg": 110,
+    "pauseStillMaxArm": 0.02,
+    "pauseStillMs": 400,
+    "lockoutElbowMinDeg": 155,
+    "lockoutHoldMs": 400,
+    "noPauseRiseArm": 0.03,
+    "serverPauseMinMs": 300,
+    "noRepMs": 20000
+  },
+  "tryALift": {
+    "goodSpotToStandTallMs": 1500,
+    "judgeLookingMinMs": 1200
+  }
+}

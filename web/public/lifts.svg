@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute">
+  <!--
+    First Meet lift icons. LookieBot, Nov 7, 2026. See look.md section 7.
+    24 x 24 grid, 2 px stroke, square caps, miter joins: the same weight as Phosphor Bold.
+    Side-on, faceless, at the bottom of the lift. Weights are filled. Use with
+    <svg width="24" height="24"><use href="lifts.svg#lift-squat"/></svg>, colour from currentColor.
+    These are drawings of real things, so a plate seen side-on is a disc: "only lights are round"
+    is a rule for interface shapes, not for drawings.
+  -->
+  <defs>
+    <symbol id="lift-squat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="14.2" cy="4.4" r="1.9"/>
+      <path d="M10.4 8.6 6.6 14.6 13.8 15.2 11.8 20.6 M10.4 20.6H16"/>
+      <circle cx="10.4" cy="8.6" r="3.1" fill="currentColor" stroke="none"/>
+    </symbol>
+
+    <symbol id="lift-bench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="4.4" cy="12.6" r="1.9"/>
+      <path d="M7 13.4H14.4L18.6 14.4V20.6 M8.6 13.4V7.4 M3 16.4H15.6 M5 16.4V20.6 M13.6 16.4V20.6"/>
+      <circle cx="8.6" cy="5.4" r="3.1" fill="currentColor" stroke="none"/>
+    </symbol>
+
+    <symbol id="lift-deadlift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="17.2" cy="6.6" r="1.9"/>
+      <path d="M14.6 9.4 7.6 12.4 13 15.8 11.8 20.6 M9.8 20.6H15.4 M14.6 9.4V14.6"/>
+      <circle cx="14.2" cy="17.6" r="3.1" fill="currentColor" stroke="none"/>
+    </symbol>
+
+    <symbol id="lift-goblet-squat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="11.4" cy="4.2" r="1.9"/>
+      <path d="M10.4 7.6 8 14.6 14.8 15.2 12.8 20.6 M11.4 20.6H17"/>
+      <rect x="11.8" y="8.4" width="3.2" height="5" fill="currentColor" stroke="none"/>
+    </symbol>
+
+    <symbol id="lift-floor-press" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="4.2" cy="16.6" r="1.9"/>
+      <path d="M6.8 17.6H13.4L17.2 12.4 20 17.6 M9 17.6V11.6 M2 20.6H22"/>
+      <rect x="6.8" y="7.6" width="4.4" height="3.4" fill="currentColor" stroke="none"/>
+    </symbol>
+
+    <symbol id="lift-kettlebell-deadlift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="16.8" cy="6.6" r="1.9"/>
+      <path d="M14.2 9.4 7.4 12.6 10.8 15.6 10.4 20.6 M8.4 20.6H11 M14.2 9.4V13 M12.6 16.4V13.4H15.8V16.4"/>
+      <rect x="11.6" y="16.4" width="5.2" height="5.2" fill="currentColor" stroke="none"/>
+    </symbol>
+  </defs>
+</svg>

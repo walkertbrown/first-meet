@@ -1,0 +1,24 @@
+{
+  "$comment": "Plan 5.20: the weekly recipe cards, written by The Playner in playner/recipes.md and pasted here as given. Weeks 2-12 come before phase 8.",
+  "weeks": [
+    {
+      "week": 1,
+      "dish": "Kimchi jjigae",
+      "hangul": "김치찌개",
+      "video_id": "MhksN_jTEMo",
+      "video_title": "Kimchi Jjigae with only 5 ingredients!",
+      "video_shape": "short",
+      "protein_g": 20,
+      "serves": 2,
+      "ingredients": [
+        "1 block firm tofu (14 oz / 396 g)",
+        "2 cups extra-sour vegan kimchi (about 300 g)",
+        "3 tbsp olive oil",
+        "1 tbsp Yondu",
+        "3 cups water",
+        "2 scallions"
+      ],
+      "vegetarian": "It's already vegan, the way Soo makes it: she uses vegan kimchi, and olive oil in place of pork belly."
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+# First Meet on Render (plan 2). Phase 1 has the web service and its staging copy, both on the
+# free plan until #render-paid's credit is claimed; Postgres, the Workflow and the uptime cron
+# job join in phase 2. Settings with secrets live in Render, never here.
+services:
+  - type: web
+    name: first-meet-web
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    autoDeployTrigger: checksPass
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+  - type: web
+    name: first-meet-web-staging
+    runtime: node
+    plan: free
+    region: oregon
+    branch: staging
+    autoDeployTrigger: commit
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

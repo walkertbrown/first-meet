@@ -1,0 +1,70 @@
+/* Landing (plan 5.1; look 4 grid). */
+.landing main { display: flex; flex-direction: column; }
+.hero { display: grid; gap: 24px; padding: 12px 0 8px; }
+.hero-text { display: flex; flex-direction: column; gap: 16px; }
+.hero-title { font-size: 48px; line-height: 50px; }
+.landing-lamps { display: flex; gap: 16px; padding: 10px 6px 6px; }
+.landing-lamps .lamp { box-shadow: 0 0 0 4px var(--lamp-bezel), 0 0 0 5px rgb(255 255 255 / .06), inset 0 2px 5px rgb(0 0 0 / .6); }
+.landing-lamps .lamp.white { box-shadow: 0 0 0 4px var(--lamp-bezel), 0 0 0 5px rgb(255 255 255 / .1), 0 0 18px 4px rgb(var(--lamp-white-glow) / .55), 0 0 60px 14px rgb(var(--lamp-white-glow) / .24); }
+.landing-lamps .lamp::after { inset: -22px; }
+.hero-actions { display: flex; flex-direction: column; gap: 12px; }
+.hero-under { margin-top: 8px; text-align: left; }
+.hero-stage { display: none; }
+
+.block { margin-top: 40px; }
+.block > .eyebrow:first-child { margin-bottom: 12px; }
+.next-meet { display: flex; flex-direction: column; gap: 6px; }
+
+.recipe-card { position: relative; overflow: hidden; padding-top: 26px; display: flex; flex-direction: column; gap: 6px; }
+.recipe-card .hangul { font-size: 24px; }
+.obangsaek { position: absolute; left: 0; right: 0; top: 0; height: 6px; display: flex; }
+.obangsaek i { flex: 1; }
+.obangsaek i:nth-child(1) { background: var(--plate-red); }
+.obangsaek i:nth-child(2) { background: var(--plate-blue); }
+.obangsaek i:nth-child(3) { background: var(--plate-yellow); }
+/* White and black are fixed colours, not theme tokens, so they never look alike in Lights
+   down (look 7, Nov 7). Each gets a hairline only where it meets a background like its own. */
+.obangsaek { --band-white-ring: #16181F; --band-black-ring: transparent; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .obangsaek { --band-white-ring: transparent; --band-black-ring: #4A4E5A; }
+}
+:root[data-theme="dark"] .obangsaek { --band-white-ring: transparent; --band-black-ring: #4A4E5A; }
+.obangsaek i:nth-child(4) { background: #F6F5F0; box-shadow: inset 0 0 0 1px var(--band-white-ring); }
+.obangsaek i:nth-child(5) { background: #16181F; box-shadow: inset 0 0 0 1px var(--band-black-ring); }
+
+.how { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 20px; }
+.how li { display: grid; grid-template-columns: 32px 1fr; gap: 16px; align-items: start; }
+.how .icon { width: 32px; height: 32px; color: var(--ink); }
+
+.divisions { display: grid; gap: 12px; }
+.divisions .card { display: flex; flex-direction: column; gap: 8px; }
+
+.quote { margin-left: 0; margin-right: 0; }
+.quote blockquote { margin: 0; font-style: italic; font-size: 28px; line-height: 36px; }
+.quote figcaption { margin-top: 10px; color: var(--ink-2); }
+
+.price { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.block .small { margin-top: 6px; }
+
+.questions { border-top: 1px solid var(--rule); }
+.questions details { border-bottom: 1px solid var(--rule); }
+.questions summary { list-style: none; cursor: pointer; min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; font-weight: 700; padding: 12px 0; }
+.questions summary::-webkit-details-marker { display: none; }
+.questions summary::after { content: ""; width: 10px; height: 10px; flex: none; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg) translate(-3px, -3px); transition: transform 200ms var(--ease-out); }
+.questions details[open] summary::after { transform: rotate(-135deg) translate(-3px, -3px); }
+.questions details p { padding: 0 0 16px; }
+
+@media (min-width: 640px) {
+  .divisions { grid-template-columns: 1fr 1fr; }
+  .hero-actions { flex-direction: row; align-items: flex-start; }
+  .hero-actions > * { flex: 1; }
+}
+@media (min-width: 1024px) {
+  .hero { grid-template-columns: repeat(12, 1fr); gap: 24px; padding-top: 32px; align-items: center; }
+  .hero-text { grid-column: 1 / 7; }
+  .hero-title { font-size: 64px; line-height: 66px; }
+  .hero-stage { display: block; grid-column: 7 / 13; justify-self: center; width: 100%; max-width: 420px; }
+  .landing-loop { aspect-ratio: 9 / 16; width: 100%; border-radius: 4px; }
+  .landing-loop .lamps { top: 12%; }
+  main > .block { max-width: 760px; }
+}

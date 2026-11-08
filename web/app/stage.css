@@ -1,0 +1,64 @@
+/* The stage (look 9), ported from LookieBot's sample.html. Used by Try a lift and the
+   landing page's desktop loop. The stage is dark in both themes. */
+.stage { position: relative; overflow: hidden; background: var(--stage); color: var(--stage-ink); container-type: inline-size; }
+.stage svg.scene, .stage video.feed, .stage canvas.feed { position: absolute; inset: 0; width: 100%; height: 100%; display: block; max-width: none; object-fit: cover; }
+.stage .vignette { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 300ms var(--ease-out); background: radial-gradient(120% 80% at 50% 60%, transparent 55%, rgb(0 0 0 / .55) 100%); }
+.stage.frozen .vignette { opacity: 1; }
+.stage .dim { position: absolute; inset: 0; background: #05060A; opacity: 0; pointer-events: none; transition: opacity 2600ms linear; }
+.stage.judging .dim { opacity: .38; }
+.stage.lit .dim { opacity: .18; transition: opacity 500ms var(--ease-out); }
+
+.hud { position: absolute; left: 0; right: 0; top: 0; padding: 54px 20px 28px; display: flex; justify-content: space-between; align-items: flex-start; z-index: 3;
+  background: linear-gradient(rgb(13 14 19 / .72), rgb(13 14 19 / 0)); }
+.hud .eyebrow { color: var(--stage-ink); }
+.hud .close { width: 44px; height: 44px; margin: -10px 0 0 -10px; display: grid; place-items: center; border: 0; background: none; color: var(--stage-ink); cursor: pointer; border-radius: 4px; }
+.hud .close svg { width: 24px; height: 24px; }
+
+.rec { position: absolute; left: 20px; bottom: 18px; z-index: 3; display: flex; gap: 8px; align-items: center; font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: .08em; color: var(--stage-ink); opacity: 0; transition: opacity 200ms; }
+.rec b { width: 10px; height: 10px; border-radius: 50%; background: var(--stage-ink); }
+.stage.recording .rec { opacity: 1; }
+.stage.recording .rec b { animation: blink 1s steps(2, jump-none) infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+
+.spotparts { position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 3; display: flex; gap: 6px; opacity: 0; transform: translateY(8px); transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out); }
+.stage.spotting .spotparts { opacity: 1; transform: none; }
+.spotparts span { flex: 1; height: 40px; border-radius: 3px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-stretch: 96%; font-size: 14px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--stage-ink-2); box-shadow: inset 0 0 0 1.5px rgb(241 239 232 / .28); transition: background-color 180ms, color 180ms, box-shadow 180ms; }
+.spotparts span.seen { background: var(--lamp-white); color: #16181F; box-shadow: none; }
+
+.spotline { position: absolute; left: 20px; right: 20px; bottom: 76px; z-index: 3; text-align: center; font-size: 18px; line-height: 26px; color: var(--stage-ink);
+  text-shadow: 0 1px 0 rgb(0 0 0 / .5), 0 0 24px rgb(0 0 0 / .7); min-height: 52px; }
+
+.command { position: absolute; left: 0; right: 0; top: 41%; transform: translateY(-50%); z-index: 4; text-align: center; pointer-events: none; padding: 0 16px; }
+.command .c { display: inline-block; font-family: var(--font-display); font-weight: 900; font-stretch: 122%; font-size: clamp(56px, calc((100cqw - 40px) / 4.6), 112px); line-height: .95; letter-spacing: -.02em; color: var(--stage-ink);
+  text-shadow: 0 2px 0 rgb(0 0 0 / .35), 0 0 40px rgb(0 0 0 / .6); opacity: 0; transform: scale(.96); }
+.command .c.soft { font-weight: 800; font-stretch: 108%; font-size: clamp(40px, 13.5cqw, 64px); line-height: 1; }
+.command .c.on { animation: cmd 900ms var(--ease-out) forwards; }
+.command .c.hold { opacity: 1; transform: none; }
+@keyframes cmd { 0% { opacity: 0; transform: scale(1.08); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
+
+.stage .lamps { position: absolute; left: 0; right: 0; top: 108px; z-index: 3; display: flex; justify-content: center; gap: 24px; opacity: 0; transition: opacity 320ms var(--ease-out); }
+/* A no rep keeps the three lamps on the stage, unlit and still (plan 5.2 step 3). */
+.stage.judging .lamps, .stage.lit .lamps, .stage.norep .lamps { opacity: 1; }
+.spill { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; mix-blend-mode: screen; transition: opacity 700ms var(--ease-out); }
+.spill.white { background: radial-gradient(70% 45% at 50% 18%, rgb(var(--lamp-white-glow) / .24), transparent 70%); }
+.spill.red { background: radial-gradient(70% 45% at 50% 18%, rgb(var(--lamp-red-glow) / .22), transparent 70%); }
+.spill.on { opacity: 1; }
+
+.waitline { position: absolute; left: 0; right: 0; top: 198px; z-index: 3; text-align: center; font-size: 17px; line-height: 24px; color: var(--stage-ink-2); opacity: 0; transition: opacity 400ms var(--ease-out); }
+.waitline.on { opacity: 1; }
+.cliptag { position: absolute; right: 20px; bottom: 18px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--stage-ink-2); opacity: 0; transition: opacity 300ms; }
+.cliptag.on { opacity: 1; }
+.credit { position: absolute; left: 20px; bottom: 18px; z-index: 3; font-size: 14px; line-height: 18px; color: rgb(241 239 232 / .7); }
+
+@media (max-width: 760px) {
+  .hud { padding-top: calc(18px + env(safe-area-inset-top)); }
+  .stage .lamps { top: calc(76px + env(safe-area-inset-top)); }
+  .waitline { top: calc(166px + env(safe-area-inset-top)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stage.recording .rec b { animation: none; }
+  /* Commands still last 900 ms with motion off: they appear and go, with no scale or fade (look 6). */
+  .command .c.on { animation-name: cmd-still !important; animation-duration: 900ms !important; animation-timing-function: steps(1, end) !important; transform: none; }
+}
+@keyframes cmd-still { from { opacity: 1; } to { opacity: 0; } }

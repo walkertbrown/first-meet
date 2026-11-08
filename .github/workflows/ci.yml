@@ -1,0 +1,81 @@
+# Each commit and pull request (plan 2.1): typecheck and lint, unit tests, and the judge tests
+# (the one judge in headless Chromium on tests/clips/ and the sample lifts).
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    name: Typecheck, lint and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+  judge:
+    name: Judge tests (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:judge -- tests/judge/judge.spec.ts
+  e2e:
+    # On a pull request: CI moves `staging` to the PR's commit, waits until Render reports that
+    # commit live on staging, then runs the end-to-end tests against the staging link (plan 2.1).
+    # One PR is on staging at a time. On main: the same tests against the built site.
+    name: End-to-end tests (Chromium)
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && 'staging' || format('e2e-{0}', github.ref) }}
+      cancel-in-progress: false
+    env:
+      STAGING_URL: ${{ vars.STAGING_URL || 'https://first-meet-web-staging.onrender.com' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Move staging to this commit
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: git push --force origin HEAD:refs/heads/staging
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Wait for staging to run this commit
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: node scripts/wait-for-staging.mjs "$STAGING_URL/healthz" "${{ github.event.pull_request.head.sha }}" 20
+      - name: End-to-end tests on staging
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: npm run test:e2e
+        env:
+          E2E_BASE_URL: ${{ env.STAGING_URL }}
+      - name: End-to-end tests on the built site
+        if: github.event_name != 'pull_request'
+        run: npm run build && npm run test:e2e

@@ -1,0 +1,21 @@
+# The outside uptime check (plan 2.4): every 15 minutes from GitHub, in case Render itself is
+# down. Two failed checks in a row open "First Meet is down: <part>"; health coming back closes
+# it. GitHub's schedule runs late, so this promises only "within 30 minutes".
+name: Uptime (outside)
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  issues: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: node scripts/uptime.mjs
+        env:
+          HEALTH_URL: ${{ vars.HEALTH_URL || 'https://first-meet-web.onrender.com/healthz' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
