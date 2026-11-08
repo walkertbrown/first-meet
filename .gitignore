@@ -1,0 +1,13 @@
+node_modules/
+.next/
+web/.next/
+*.tsbuildinfo
+.env
+.env.*
+# copied at install from node_modules (scripts/copy-mediapipe.mjs)
+web/public/models/wasm/
+web/public/models/vision_bundle.mjs
+# copied at install, dev and build from content/samples (scripts/copy-content.mjs)
+web/public/samples/
+test-results/
+playwright-report/
