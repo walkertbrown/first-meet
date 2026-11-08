@@ -10,7 +10,7 @@ export function RecipeCard({ r }: { r: Recipe }) {
       <h2 className="sheet-title">
         {r.dish} <span className="hangul" lang="ko">{r.hangul}</span>
       </h2>
-      <p className="body">{r.proteinG} g protein a serving</p>
+      <p className="body">{r.protein_g} g protein a serving</p>
       <Link className="link" href={`/recipes/${r.week}`}>Open recipe</Link>
     </article>
   );

@@ -2,7 +2,8 @@ import type { Recipe } from '@/lib/recipes';
 
 /** One week's recipe (plan 5.20). Protein is the one number; no calories anywhere. */
 export function RecipeBody({ r }: { r: Recipe }) {
-  const watch = `https://www.youtube.com/watch?v=${encodeURIComponent(r.video.id)}`;
+  const id = encodeURIComponent(r.video_id);
+  const watch = `https://www.youtube.com/watch?v=${id}`;
   return (
     <article className="recipe">
       <p className="eyebrow">This week&apos;s recipe · Week {r.week}</p>
@@ -10,21 +11,21 @@ export function RecipeBody({ r }: { r: Recipe }) {
         {r.dish} <span className="hangul" lang="ko">{r.hangul}</span>
       </h1>
       <div className="obangsaek recipe-band" aria-hidden="true"><i /><i /><i /><i /><i /></div>
-      <figure className="recipe-video">
+      <figure className={`recipe-video ${r.video_shape === 'short' ? 'short' : 'wide'}`}>
         <div className="frame">
           <iframe
-            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(r.video.id)}`}
-            title={r.video.title}
+            src={`https://www.youtube-nocookie.com/embed/${id}`}
+            title={r.video_title}
             loading="lazy"
             allow="encrypted-media; picture-in-picture; fullscreen"
             referrerPolicy="strict-origin-when-cross-origin"
             allowFullScreen
           />
         </div>
-        <figcaption className="caption">Love Soo on YouTube · {r.video.title}</figcaption>
+        <figcaption className="caption">Love Soo on YouTube · {r.video_title}</figcaption>
       </figure>
       <p className="recipe-numbers">
-        <span className="weight-m">{r.proteinG} g</span>
+        <span className="weight-m">{r.protein_g} g</span>
         <span className="small">protein a serving · serves {r.serves}</span>
       </p>
       <h2>Ingredients</h2>
