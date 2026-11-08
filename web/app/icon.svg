@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><!-- The tab icon: LookieBot's lift-squat (public/lifts.svg), ink on chalk. -->
+  <rect width="24" height="24" rx="4" fill="#F3F4F1"/>
+  <g fill="none" stroke="#16181F" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+    <circle cx="14.2" cy="4.4" r="1.9"/>
+    <path d="M10.4 8.6 6.6 14.6 13.8 15.2 11.8 20.6 M10.4 20.6H16"/>
+  </g>
+  <circle cx="10.4" cy="8.6" r="3.1" fill="#16181F"/>
+</svg>

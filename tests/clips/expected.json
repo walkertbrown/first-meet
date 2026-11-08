@@ -1,0 +1,76 @@
+{
+  "$comment": "Plan piece 1 (judge-web), as approved Nov 7 with items 47 and 48: the calls each Commons test clip gets from the one judge. 'skipped' is what the judge gives with the frame check skipped. 'failing' names the frame-check parts that fail on most of the clip. Seconds and trims are in SOURCES.md.",
+  "racked-squats-side": {
+    "lift": "squat",
+    "frameCheck": "pass",
+    "reps": [
+      "white",
+      "white",
+      "white",
+      "white",
+      "white"
+    ]
+  },
+  "goblet-squat": {
+    "lift": "squat",
+    "frameCheck": "fail",
+    "line": "Turn so your side faces the phone.",
+    "skipped": [
+      "white",
+      "white"
+    ]
+  },
+  "half-squat": {
+    "lift": "squat",
+    "frameCheck": "fail",
+    "line": "Turn so your side faces the phone.",
+    "skipped": [
+      "red:depth",
+      "red:depth"
+    ]
+  },
+  "deadlift-demo": {
+    "lift": "deadlift",
+    "frameCheck": "fail",
+    "line": "Turn so your side faces the phone.",
+    "lineFrom": [
+      0.07,
+      1.87
+    ],
+    "lineNote": "Read while she sets up at the bar, where the plan has her during the frame check (\"Bar is loaded.\" follows it, and the window's baseline is taken then). Standing tall with the bar, her feet drop out of sight and the feet line shows instead.",
+    "skipped": [
+      "white",
+      "white"
+    ]
+  },
+  "squats-wikipedia-knee": {
+    "lift": "squat",
+    "frameCheck": "fail"
+  },
+  "squat-from-behind": {
+    "lift": "squat",
+    "frameCheck": "fail",
+    "line": "Step back until we can see your feet.",
+    "failing": [
+      "feet",
+      "sideOn"
+    ]
+  },
+  "half-squat-whole": {
+    "lift": "squat",
+    "note": "The whole half squat video. No white: 11.4, 62.9 and 70.1 s are close calls 'visibility'. 6.0 s (standing) and 78.4 s (too dark) are pinned so a change shows up; they don't prove the judge right.",
+    "skipped": [
+      "red:depth",
+      "close:visibility",
+      "red:depth",
+      "red:depth",
+      "red:depth",
+      "red:depth",
+      "red:depth",
+      "close:visibility",
+      "close:visibility",
+      "red:depth",
+      "red:depth"
+    ]
+  }
+}

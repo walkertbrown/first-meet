@@ -1,0 +1,20 @@
+{
+  "$comment": "Facts the pages show. The meet is #meet-date; the prices are #price (answered: the team's pick).",
+  "meet": {
+    "name": "Winter 2027",
+    "short": "Winter meet",
+    "dates": "Feb 26–27",
+    "datesLong": "Fri Feb 26 – Sat Feb 27",
+    "opensAt": "2027-02-26T06:00:00-05:00",
+    "closesAt": "2027-02-27T18:00:00-05:00",
+    "liveAt": "2027-02-27T20:00:00-05:00"
+  },
+  "price": {
+    "block": "$59",
+    "season": "$149"
+  },
+  "host": {
+    "name": "Love Soo",
+    "handle": "@lovesoostrong"
+  }
+}
