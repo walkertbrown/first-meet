@@ -426,7 +426,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
           <div className="try-actions">
             <button className="btn" type="button" onClick={() => setStep('setup')}>Use my camera</button>
             <button className="btn ghost" type="button" onClick={() => watchSample('good')} disabled={!SAMPLES.length}>Watch a sample lift</button>
-            <p className="small try-lock"><Lock weight="bold" className="icon" aria-hidden="true" />Your video stays on this phone. Nothing is uploaded.</p>
+            <p className="small try-lock"><Lock weight="bold" className="icon" aria-hidden="true" />{"Your video stays on this phone. It's never uploaded."}</p>
           </div>
         </main>
       </div>
