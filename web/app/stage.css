@@ -30,7 +30,7 @@
   text-shadow: 0 1px 0 rgb(0 0 0 / .5), 0 0 24px rgb(0 0 0 / .7); min-height: 52px; }
 
 .command { position: absolute; left: 0; right: 0; top: 41%; transform: translateY(-50%); z-index: 4; text-align: center; pointer-events: none; padding: 0 16px; }
-.command .c { display: inline-block; font-family: var(--font-display); font-weight: 900; font-stretch: 122%; font-size: clamp(64px, 25cqw, 112px); line-height: .95; letter-spacing: -.02em; color: var(--stage-ink);
+.command .c { display: inline-block; font-family: var(--font-display); font-weight: 900; font-stretch: 122%; font-size: clamp(56px, calc((100cqw - 40px) / 4.6), 112px); line-height: .95; letter-spacing: -.02em; color: var(--stage-ink);
   text-shadow: 0 2px 0 rgb(0 0 0 / .35), 0 0 40px rgb(0 0 0 / .6); opacity: 0; transform: scale(.96); }
 .command .c.soft { font-weight: 800; font-stretch: 108%; font-size: clamp(40px, 13.5cqw, 64px); line-height: 1; }
 .command .c.on { animation: cmd 900ms var(--ease-out) forwards; }
@@ -38,7 +38,8 @@
 @keyframes cmd { 0% { opacity: 0; transform: scale(1.08); } 12% { opacity: 1; transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
 
 .stage .lamps { position: absolute; left: 0; right: 0; top: 108px; z-index: 3; display: flex; justify-content: center; gap: 24px; opacity: 0; transition: opacity 320ms var(--ease-out); }
-.stage.judging .lamps, .stage.lit .lamps { opacity: 1; }
+/* A no rep keeps the three lamps on the stage, unlit and still (plan 5.2 step 3). */
+.stage.judging .lamps, .stage.lit .lamps, .stage.norep .lamps { opacity: 1; }
 .spill { position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0; mix-blend-mode: screen; transition: opacity 700ms var(--ease-out); }
 .spill.white { background: radial-gradient(70% 45% at 50% 18%, rgb(var(--lamp-white-glow) / .24), transparent 70%); }
 .spill.red { background: radial-gradient(70% 45% at 50% 18%, rgb(var(--lamp-red-glow) / .22), transparent 70%); }
@@ -57,5 +58,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .stage.recording .rec b { animation: none; }
-  .command .c.on { animation: none; opacity: 1; transform: none; }
+  /* Commands still last 900 ms with motion off: they appear and go, with no scale or fade (look 6). */
+  .command .c.on { animation-name: cmd-still !important; animation-duration: 900ms !important; animation-timing-function: steps(1, end) !important; transform: none; }
 }
+@keyframes cmd-still { from { opacity: 1; } to { opacity: 0; } }

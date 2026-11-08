@@ -8,7 +8,7 @@
 .landing-lamps .lamp.white { box-shadow: 0 0 0 4px var(--lamp-bezel), 0 0 0 5px rgb(255 255 255 / .1), 0 0 18px 4px rgb(var(--lamp-white-glow) / .55), 0 0 60px 14px rgb(var(--lamp-white-glow) / .24); }
 .landing-lamps .lamp::after { inset: -22px; }
 .hero-actions { display: flex; flex-direction: column; gap: 12px; }
-.hero-under { margin-top: 8px; text-align: center; }
+.hero-under { margin-top: 8px; text-align: left; }
 .hero-stage { display: none; }
 
 .block { margin-top: 40px; }
@@ -16,7 +16,7 @@
 .next-meet { display: flex; flex-direction: column; gap: 6px; }
 
 .recipe-card { position: relative; overflow: hidden; padding-top: 26px; display: flex; flex-direction: column; gap: 6px; }
-.recipe-card .hangul { font-size: 24px; margin-left: 6px; }
+.recipe-card .hangul { font-size: 24px; }
 .obangsaek { position: absolute; left: 0; right: 0; top: 0; height: 6px; display: flex; }
 .obangsaek i { flex: 1; }
 .obangsaek i:nth-child(1) { background: var(--plate-red); }

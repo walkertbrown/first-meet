@@ -10,7 +10,8 @@
 .try-col .body { color: var(--ink); }
 .try-actions { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; gap: 12px; }
 .try-actions .link { align-self: center; min-height: 48px; }
-.try-lock { display: flex; gap: 8px; align-items: center; justify-content: center; text-align: center; }
+/* The lock line (look 7, Icons): left-aligned, the 24 px lock 8 px before the words, on the first line. */
+.try-lock { display: flex; gap: 8px; align-items: flex-start; justify-content: flex-start; text-align: left; color: var(--ink-2); }
 
 .try-steps { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 16px; counter-reset: step; }
 .try-steps li { display: grid; grid-template-columns: 120px 1fr; gap: 16px; align-items: center; counter-increment: step; }
@@ -29,7 +30,11 @@
 /* ---------- The stage over the panel ---------- */
 .try-app { height: 100dvh; background: var(--chalk); }
 .try-stagecol { height: 100%; display: flex; flex-direction: column; }
-.try-stagecol .stage { flex: 1; min-height: 0; }
+.try-stagecol .stage { flex: 1; min-height: 0; container-type: size; }
+/* A stage wider than tall (a phone on its side, look 4a): the command also fits the height. */
+@container (orientation: landscape) {
+  .command .c:not(.soft) { font-size: clamp(56px, min(calc((100cqw - 40px) / 4.6), 30cqh), 112px); }
+}
 
 .footage { position: absolute; overflow: hidden; }
 .footage.mirror { transform: scaleX(-1); }
@@ -51,9 +56,10 @@
 .try-stagecol .credit { left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); right: 12px; font-size: 14px; line-height: 18px; }
 .try-stagecol .stage:has(.credit) .spotparts { bottom: 44px; }
 .try-stagecol .stage:has(.credit) .spotline { bottom: 100px; }
+.try-stagecol .stage:has(.credit) .rec { bottom: 44px; }
 
 /* The panel (look 4): chalk, 20 px in, at most 400 px; it folds away while she lifts. */
-.try-stagecol .panel { flex: none; background: var(--chalk); color: var(--ink); max-height: 400px; overflow-y: auto; overscroll-behavior: contain; transition: max-height 480ms var(--ease-sheet); }
+.try-stagecol .panel { flex: none; background: var(--chalk); color: var(--ink); max-height: 400px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent; transition: max-height 480ms var(--ease-sheet); }
 .try-stagecol.full .panel { max-height: 0; overflow: hidden; }
 .panel-in { padding: 20px 20px calc(30px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 16px; }
 .panel-in .try-actions { margin-top: 0; padding-top: 0; }
@@ -67,6 +73,11 @@
   opacity: 0; transform: translateY(6px); transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out); }
 .result p, .result .why { margin: 8px 0 0; font-size: 18px; line-height: 26px; opacity: 0; transition: opacity 260ms 80ms var(--ease-out); }
 .result.on h2, .result.on p, .result.on .why { opacity: 1; transform: none; }
+/* Look 9 step 9: the result (260 ms), the sentence 80 ms behind it, then everything under the
+   sentence together, 120 ms after the sentence starts, over 260 ms. */
+.result p + .why { transition-delay: 200ms; }
+.after { display: flex; flex-direction: column; gap: 16px; animation: after-in 260ms 200ms var(--ease-out) both; }
+@keyframes after-in { from { opacity: 0; } to { opacity: 1; } }
 .result .why { margin-top: 12px; border-radius: 4px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), inset 5px 0 0 var(--lamp-red); padding: 12px 14px 12px 20px; }
 .result .why b { display: block; font-family: var(--font-display); font-weight: 800; font-stretch: 110%; font-size: 14px; line-height: 18px; letter-spacing: .1em; text-transform: uppercase; color: var(--no-text); margin-bottom: 2px; }
 .result .why span { font-size: 17px; line-height: 25px; }
@@ -81,7 +92,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .result h2, .result p, .result .why { transition: none; }
+  .result h2, .result p, .result .why, .result p + .why { transition: none; }
+  .after { animation: none; }
   .try-stagecol .panel { transition: none; }
 }
 

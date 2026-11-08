@@ -55,3 +55,39 @@ for (const scheme of ['light', 'dark'] as const) {
     }
   });
 }
+
+for (const width of [390, 360]) {
+  test(`the landing card's Hangul never breaks inside the word (${width} px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto('/');
+    const h = page.locator('.recipe-card .hangul');
+    await expect(h).toHaveCSS('word-break', 'keep-all');
+    // One line: its height is a single line box.
+    const rects = await h.evaluate(el => el.getClientRects().length);
+    expect(rects).toBe(1);
+  });
+}
+
+test('the recipe page\'s eyebrow and Small line keep their sizes inside the page (13/16, 15/22)', async ({ page }) => {
+  await page.goto('/recipes/1');
+  const eyebrow = page.locator('.recipe .eyebrow');
+  await expect(eyebrow).toHaveCSS('font-size', '13px');
+  await expect(eyebrow).toHaveCSS('line-height', '16px');
+  const small = page.getByText('Ingredients are from Soo', { exact: false });
+  await expect(small).toHaveCSS('font-size', '15px');
+  await expect(small).toHaveCSS('line-height', '22px');
+  await expect(page.getByRole('listitem').first()).toHaveCSS('font-size', '17px');
+});
+
+for (const path of ['/does-not-exist', '/recipes/2', '/privacy']) {
+  test(`a page that doesn't exist is 3.11's "Not here", in the site's frame (${path})`, async ({ page }) => {
+    const res = await page.goto(path);
+    expect(res?.status()).toBe(404);
+    await expect(page.getByRole('heading', { level: 1, name: 'Not here' })).toBeVisible();
+    await expect(page.getByText("This page doesn't exist, or it moved.")).toBeVisible();
+    await expect(page.getByRole('link', { name: 'First Meet, home' })).toBeVisible();
+    await expect(page.locator('footer')).toBeVisible();
+    await page.getByRole('link', { name: 'Go to First Meet' }).click();
+    await expect(page).toHaveURL(/\/$/);
+  });
+}

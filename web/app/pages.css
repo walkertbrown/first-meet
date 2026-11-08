@@ -4,9 +4,8 @@
 .prose h1 { margin-bottom: 4px; }
 .prose h2 { font-family: var(--font-display); font-weight: 800; font-stretch: 108%; font-size: 22px; line-height: 28px; margin-top: 20px; }
 .prose ul, .prose ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
-.prose li { font-size: 17px; line-height: 25px; }
-.prose p { font-size: 17px; line-height: 25px; }
-.prose p.body-l { font-size: 18px; line-height: 26px; }
+/* Body by default, at the lowest weight, so a role class (.eyebrow, .small, .caption, .body-l) always wins. */
+:where(.prose) :where(li, p) { font-size: 17px; line-height: 25px; }
 .prose .btn { align-self: flex-start; }
 @media (min-width: 1024px) { .prose { padding-top: 40px; } }
 
@@ -14,7 +13,7 @@
 .recipe { display: flex; flex-direction: column; gap: 16px; }
 .recipe .eyebrow { margin: 0; }
 .recipe-title { margin: 0; }
-.recipe-title .hangul { font-size: 28px; margin-left: 8px; }
+.recipe-title .hangul { font-size: 28px; }
 .recipe-band { position: static; height: 6px; border-radius: 1px; overflow: hidden; }
 .recipe-video { margin: 0; display: flex; flex-direction: column; gap: 8px; }
 .recipe-video .frame { position: relative; aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; background: var(--stage); box-shadow: 0 0 0 1px var(--rule); }

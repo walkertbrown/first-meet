@@ -13,7 +13,7 @@ export const STAGE_WORDS = {
   looking: 'The judge is looking',
   // The panel during the held breath (look 9 step 8; plan 5.2 step 4 follows it).
   breathe: 'Breathe.',
-  breatheBody: 'Your lights are on their way.',
+  breatheBody: "Your lights are on their way. You don't need to do anything.",
   slowModel: 'Getting the judge ready. This takes a few seconds the first time.',
 } as const;
 

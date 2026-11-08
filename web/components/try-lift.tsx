@@ -4,6 +4,7 @@
 // clip tests run. Her video never leaves the phone.
 import Link from 'next/link';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Lock, SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
 import { RULES, TryALift, type AttemptResult, type Dims, type Part } from '@/lib/judge';
 import { Lamps, type LampState } from '@/components/lamps';
@@ -24,6 +25,8 @@ type Command = { text: string; kind: 'soft' | 'on' } | null;
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
 const NO_PARTS: Record<Part, boolean> = { head: false, hips: false, knees: false, feet: false };
+/** On the sample, the spot segments light one by one, this far apart (look 9 step 3). */
+const PART_STEP_MS = 180;
 /** Shown when a phone films the squat on its side (plan 3.10: a sideways phone never passes the frame check). */
 const PORTRAIT_LINE = 'Stand your phone up tall on the floor, against a mug or a shoe.';
 /** How long "Rack!" is on the stage before the frame freezes: its command keyframe. */
@@ -216,6 +219,26 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
     let lastMedia = -1, lastPaused = 0, recTimer: ReturnType<typeof setInterval> | null = null;
     let squatAt = 0, rackShownAt = 0, rackMedia = 0, poseAtSquat = 0, framesAtSquat = 0, endedAt: number | null = null;
     let result: AttemptResult | null = null, noRep = false;
+    // The sample's segments light one by one, PART_STEP_MS apart, head to feet, even though
+    // its paused first frame shows all four at once (look 9 step 3). "Good spot." waits for
+    // the last one, and the judge's clock waits with it (heldMs), so it still gets its 1.5 s.
+    let want: Record<Part, boolean> = NO_PARTS, lit: Record<Part, boolean> = NO_PARTS, litAt = -Infinity;
+    let goodSpotWaitFrom: number | null = null, heldMs = 0;
+    // A paused frame is the same picture each time: it is read once (keeps a slow phone free to draw).
+    let still: { at: number; p: ReturnType<LivePose['detect']> } | null = null;
+    const showGoodSpot = () => {
+      setPhase('good-spot'); setLine(null); setParts({ head: true, hips: true, knees: true, feet: true });
+      setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');
+    };
+    // It reads the clock itself: a frame's `now` is stale once that frame's pose has been detected.
+    const stepLights = () => {
+      const now = performance.now();
+      const off = PARTS.filter(k => lit[k] && !want[k]);
+      // flushSync: a busy main thread would otherwise let React commit two steps in one go.
+      if (off.length) { lit = { ...lit }; for (const k of off) lit[k] = false; const l = lit; flushSync(() => setParts(l)); }
+      const next = PARTS.find(k => want[k] && !lit[k]);
+      if (next && now - litAt >= PART_STEP_MS) { lit = { ...lit, [next]: true }; litAt = now; const l = lit; flushSync(() => setParts(l)); }
+    };
     const sideways = () => !isSample && coarse() && video.videoWidth > video.videoHeight;
 
     // 3. The frame check, the commands and the lift, frame by frame.
@@ -224,36 +247,49 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
       const tick = () => {
         if (!alive()) return done();
         const now = performance.now();
+        if (isSample) {
+          stepLights();
+          if (goodSpotWaitFrom !== null) {
+            if (PARTS.some(k => !lit[k])) return void requestAnimationFrame(tick);
+            heldMs += now - goodSpotWaitFrom; goodSpotWaitFrom = null;
+            showGoodSpot();
+          }
+        }
         if (video.paused) {
           if (now - lastPaused < 66) return void requestAnimationFrame(tick);
           lastPaused = now;
         } else if (video.currentTime === lastMedia) return void requestAnimationFrame(tick);
         lastMedia = video.currentTime;
-        const t = now - t0;
+        const t = now - t0 - heldMs;
         const turned = sideways();
-        const p = turned ? null : pose.detect(video);
+        let p: ReturnType<LivePose['detect']> = null;
+        if (!turned) {
+          if (video.paused && still?.at === video.currentTime) p = still.p;
+          else { p = pose.detect(video); still = video.paused ? { at: video.currentTime, p } : null; }
+        }
         const f = { t, p };
         if (tal.phase !== 'spot' && tal.phase !== 'done') deepest.offer(f, video);
         for (const ev of tal.feed(f)) {
           if (ev.type === 'spot') {
-            setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts));
+            if (isSample) { want = ev.spot.parts; stepLights(); }
+            else setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts));
             setLine(turned ? PORTRAIT_LINE : ev.spot.line);
           } else if (ev.type === 'good-spot') {
-            setPhase('good-spot'); setLine(null); setParts({ head: true, hips: true, knees: true, feet: true });
-            setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');
+            if (isSample && PARTS.some(k => !lit[k])) { want = { head: true, hips: true, knees: true, feet: true }; goodSpotWaitFrom = now; }
+            else showGoodSpot();
           } else if (ev.type === 'stand-tall') {
             setPhase('stand-tall'); setCommand({ text: STAGE_WORDS.standTall, kind: 'soft' });
           } else if (ev.type === 'squat') {
             squatAt = now; poseAtSquat = pose.poseMs; framesAtSquat = pose.frames;
-            setPhase('lifting'); setCommand({ text: STAGE_WORDS.squat, kind: 'on' }); voice.say('squat');
+            // "Squat!", REC, the voice and (on a sample) the clip all start on the same frame
+            // (look 9 step 5): the word and REC are in the page before anything else starts.
+            flushSync(() => { setPhase('lifting'); setCommand({ text: STAGE_WORDS.squat, kind: 'on' }); setRecSec(0); });
+            voice.say('squat');
             // A sample holds its first frame (she stands still) until "Squat!", then plays: the
             // lifter in the clip squats on the command, as she will.
             if (isSample) void video.play();
-            if (streamRef.current && !isSample) {
-              recording.start(streamRef.current);
-              setRecSec(0);
-              recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - squatAt) / 1000)), 250);
-            }
+            else if (streamRef.current) recording.start(streamRef.current);
+            recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - squatAt) / 1000)), 250);
           } else if (ev.type === 'rack') {
             rackMedia = video.currentTime; rackShownAt = now;
             setCommand({ text: STAGE_WORDS.rack, kind: 'on' }); voice.say('rack');
@@ -327,7 +363,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
         setLamps(L.map((s, j) => (j <= k ? s : 'off')));
         if (sound) thock(L[k] === 'red');
         if (k === 0) setPhase('lit');
-        await wait(330);
+        if (k < 2) await wait(330);
         if (!alive()) return;
       }
       setSpill(o === 'good' ? 'white' : 'red');
@@ -497,9 +533,10 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'stand-tall' || phase === 'lifting';
   const panelOpen = !(lifting && !(isSample && phase !== 'lifting')) && !(phase === 'loading' && !slow);
   const stageClass = ['stage',
-    phase === 'spot' ? 'spotting' : '',
+    phase === 'spot' || (isSample && (phase === 'loading' || phase === 'intro')) ? 'spotting' : '',
     recSec !== null ? 'recording' : '',
     phase === 'judging' ? 'judging' : '',
+    phase === 'norep' ? 'norep' : '',
     phase === 'lit' || phase === 'replay' || phase === 'hold' ? 'lit' : '',
     frozen ? 'frozen' : '',
     isSample && (phase === 'intro' || phase === 'spot' || phase === 'good-spot' || phase === 'stand-tall') ? 'held' : '',
@@ -583,7 +620,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
               )}
             </div>
             {resultOn && (
-              <>
+              <div className="after">
                 <hr className="rule" />
                 <p className="body">That&apos;s how every lift is judged at First Meet. <strong>{meetLine}</strong> Love Soo reads the totals live.</p>
                 <div className="try-actions">
@@ -603,7 +640,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
                     </>
                   )}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
