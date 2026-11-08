@@ -22,8 +22,15 @@
 .obangsaek i:nth-child(1) { background: var(--plate-red); }
 .obangsaek i:nth-child(2) { background: var(--plate-blue); }
 .obangsaek i:nth-child(3) { background: var(--plate-yellow); }
-.obangsaek i:nth-child(4) { background: var(--plate-white); box-shadow: inset 0 0 0 1px var(--ink); }
-.obangsaek i:nth-child(5) { background: var(--ink); }
+/* White and black are fixed colours, not theme tokens, so they never look alike in Lights
+   down (look 7, Nov 7). Each gets a hairline only where it meets a background like its own. */
+.obangsaek { --band-white-ring: #16181F; --band-black-ring: transparent; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .obangsaek { --band-white-ring: transparent; --band-black-ring: #4A4E5A; }
+}
+:root[data-theme="dark"] .obangsaek { --band-white-ring: transparent; --band-black-ring: #4A4E5A; }
+.obangsaek i:nth-child(4) { background: #F6F5F0; box-shadow: inset 0 0 0 1px var(--band-white-ring); }
+.obangsaek i:nth-child(5) { background: #16181F; box-shadow: inset 0 0 0 1px var(--band-black-ring); }
 
 .how { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 20px; }
 .how li { display: grid; grid-template-columns: 32px 1fr; gap: 16px; align-items: start; }
