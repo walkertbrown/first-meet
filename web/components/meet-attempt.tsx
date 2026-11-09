@@ -56,7 +56,7 @@ const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-
 /** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
 const wait = (ms: number) => sleep(ms);
 const LIFT_NAMES: Record<string, { barbell: string; home: string }> = {
-  squat: { barbell: 'SQUAT', home: 'GOBLET SQUAT' }, bench: { barbell: 'BENCH', home: 'FLOOR PRESS' }, deadlift: { barbell: 'DEADLIFT', home: 'DEADLIFT' },
+  squat: { barbell: 'SQUAT', home: 'GOBLET SQUAT' }, bench: { barbell: 'BENCH', home: 'OVERHEAD PRESS' }, deadlift: { barbell: 'DEADLIFT', home: 'DEADLIFT' },
 };
 
 function containBox(stage: { w: number; h: number }, d: Dims | null) {

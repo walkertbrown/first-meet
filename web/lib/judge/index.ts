@@ -9,3 +9,5 @@ export * from './try-a-lift';
 export * from './clip';
 export * from './zoom';
 export * from './attempt';
+export * from './press';
+export * from './overhead';

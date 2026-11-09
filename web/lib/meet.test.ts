@@ -224,7 +224,7 @@ describe('3.8a Home: her meet weight', () => {
     expect(r.choices.map(c => [c.weight, c.score])).toEqual([[15, 180], [20, 120]]);
     expect(r.best?.weight).toBe(15);
   });
-  it('the floor press counts the pair in its score', () => {
+  it('the overhead press counts the pair in its score', () => {
     const r = homeWeightChoices('bench', [js({ movement: 'bench', weight: 15, reps: 10, lights: white(10) })], [], owned);
     expect(r.best).toMatchObject({ weight: 15, kind: 'pair', score: 300 });
   });
@@ -295,7 +295,7 @@ describe('3.8a Home: openers, declaring, scores', () => {
     expect(c[0]).toMatchObject({ key: 'again', value: 11, selected: true });
     expect(declareAllowed(c, 10)).toBe(false);
   });
-  it('a score is weight × reps, the floor press counting the pair (2 × 15 lb for 10 reps is 300)', () => {
+  it('a score is weight × reps, the overhead press counting the pair (2 × 15 lb for 10 reps is 300)', () => {
     expect(homeLoad('bench', 15, 'pair') * 10).toBe(300);
     expect(homeLoad('squat', 25, 'bell') * 8).toBe(200);
     expect(homeLoad('deadlift', 20, 'pair')).toBe(40);

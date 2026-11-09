@@ -68,7 +68,7 @@ export function homeCap(lift: Lift, weight: number, judged: JudgedSet[], logged:
 }
 
 /**
- * 3.3: the load a Home weight counts as. The goblet squat is one weight; the floor press is a
+ * 3.3: the load a Home weight counts as. The goblet squat is one weight; the overhead press is a
  * pair (both together); the deadlift is a pair or one bell.
  */
 export function homeLoad(lift: Lift, w: number, kind: HomeWeight['kind'] | undefined): number {
@@ -76,7 +76,7 @@ export function homeLoad(lift: Lift, w: number, kind: HomeWeight['kind'] | undef
   if (lift === 'bench') return 2 * w;
   return kind === 'pair' ? 2 * w : w;
 }
-/** The kind of a Home weight she owns (the floor press is always a pair). */
+/** The kind of a Home weight she owns (the overhead press is always a pair). */
 export const homeKind = (lift: Lift, w: number, owned: HomeWeight[]): HomeWeight['kind'] =>
   lift === 'squat' ? 'bell' : lift === 'bench' ? 'pair' : (owned.find(o => o.weight === w)?.kind ?? 'pair');
 

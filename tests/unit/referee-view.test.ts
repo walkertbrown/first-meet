@@ -8,11 +8,11 @@ describe('referee words', () => {
   it('lift names by division (3.7)', () => {
     expect(liftName('squat', 'barbell')).toBe('Squat');
     expect(liftName('squat', 'home')).toBe('Goblet squat');
-    expect(liftName('bench', 'home')).toBe('Floor press');
+    expect(liftName('bench', 'home')).toBe('Overhead press');
   });
   it('the page title: lift, attempt, weight, division; Home shows the reps', () => {
     expect(closeCallTitle({ lift: 'squat', number: 2, weight: 100, repsDeclared: null }, 'barbell', 'lb')).toBe('Squat 2 · 100 lb · Barbell');
-    expect(closeCallTitle({ lift: 'bench', number: 1, weight: 12.5, repsDeclared: 10 }, 'home', 'kg')).toBe('Floor press 1 · 12.5 kg × 10 · Home');
+    expect(closeCallTitle({ lift: 'bench', number: 1, weight: 12.5, repsDeclared: 10 }, 'home', 'kg')).toBe('Overhead press 1 · 12.5 kg × 10 · Home');
     expect(weightText(102.25, 'lb', null)).toBe('102.3 lb');
   });
   it('why it was sent, falling back to "the judge couldn\'t run"', () => {
@@ -75,11 +75,13 @@ describe('the reasons a referee can give', () => {
     expect(refereeReasons('bench')).not.toContain('depth');
     expect(refereeReasons('deadlift')).toContain('downward');
     for (const lift of ['squat', 'bench', 'deadlift']) expect(refereeReasons(lift)).toHaveLength(5);
+    // Home's press is the overhead press (5.34): no "Press!", so no pause to miss
+    expect(refereeReasons('bench', 'home')).toEqual(['no_lockout', 'moved_feet', 'weight_not_shown', 'not_whole_lift']);
   });
   it('the sentence fits the lift and division', () => {
     expect(reasonSentence('no_lockout', 'bench', 'barbell')).toMatch(/elbows lock/);
     expect(reasonSentence('no_lockout', 'squat', 'barbell')).toMatch(/stand all the way up/);
-    expect(reasonSentence('no_pause', 'bench', 'home')).toMatch(/elbows rest on the floor/);
+    expect(reasonSentence('no_lockout', 'bench', 'home')).toBe("Your arms didn't straighten all the way overhead. Next time, press until your elbows lock and hold for the command.");
     expect(reasonSentence('no_pause', 'bench', 'barbell')).toMatch(/rest on your chest/);
   });
   it('a Home red names the rep', () => {

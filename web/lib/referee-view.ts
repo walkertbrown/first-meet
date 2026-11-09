@@ -9,7 +9,7 @@ import { closeCall, COMMAND_PROBLEM, WHY } from '@/lib/referee';
 /** 3.7: lift names by division. */
 const LIFT_NAMES: Record<string, { barbell: string; home: string }> = {
   squat: { barbell: 'Squat', home: 'Goblet squat' },
-  bench: { barbell: 'Bench press', home: 'Floor press' },
+  bench: { barbell: 'Bench press', home: 'Overhead press' },
   deadlift: { barbell: 'Deadlift', home: 'Deadlift (dumbbells or bell)' },
 };
 

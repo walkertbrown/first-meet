@@ -332,7 +332,7 @@ export function RefereeCall(p: RefereeCallProps) {
               {lights[i] === 'red' && (
                 <fieldset className="ref-reasons">
                   <legend className="sr">{`The reason for the ${name.toLowerCase()} red light`}</legend>
-                  {refereeReasons(p.lift).map(code => (
+                  {refereeReasons(p.lift, p.division).map(code => (
                     <label key={code} className="choice">
                       <input type="radio" name={`reason-${i}`} value={code} checked={reasons[i] === code}
                         onChange={() => setReasons(rs => rs.map((x, j) => (j === i ? code : x)))} />

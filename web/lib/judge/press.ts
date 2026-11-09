@@ -1,5 +1,6 @@
-// The bench press and the floor press (plan 3.4): the commands the phone calls live,
-// and the call the server makes from the recording and the phone's command times.
+// The bench press (Barbell, plan 3.4): the commands the phone calls live, and the call the server
+// makes from the recording and the phone's command times. Home's press is the overhead press
+// (overhead.ts); nothing judges a floor press.
 import { type Dims, type Frame, type Pt, type Side, type XY, angle, dist, nearSide, px, SIDES } from './pose';
 import { RULES, type Rules } from './rules';
 import { judgedFrameSeen, JUDGED_POINTS, lowVisibilityShare, type AttemptResult, type Call, type RepResult, type Window } from './call';
@@ -27,19 +28,19 @@ export function pressMeasure(p: Pt[], d: Dims, side: Side, rules: Rules = RULES)
 }
 export type PressMeasures = ReturnType<typeof pressMeasure>;
 
-type Sample = { t: number; m: PressMeasures };
+export type Sample = { t: number; m: PressMeasures };
 
 /** The middle of three: steadies one value against a single jumpy frame. */
-const median3 = (a: number, b: number, c: number) => Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));
-const steady = (v: number[]) => v.map((x, i) => median3(v[Math.max(0, i - 1)], x, v[Math.min(v.length - 1, i + 1)]));
-const median = (v: number[]) => { const s = [...v].sort((a, b) => a - b); return s.length ? s[s.length >> 1] : 0; };
+export const median3 = (a: number, b: number, c: number) => Math.max(Math.min(a, b), Math.min(Math.max(a, b), c));
+export const steady = (v: number[]) => v.map((x, i) => median3(v[Math.max(0, i - 1)], x, v[Math.min(v.length - 1, i + 1)]));
+export const median = (v: number[]) => { const s = [...v].sort((a, b) => a - b); return s.length ? s[s.length >> 1] : 0; };
 
 /**
  * How far a point moved over the frames given, in arm lengths: the size of the box it moved in,
  * each coordinate steadied over three frames so one jumpy landmark doesn't read as movement.
  * `arm` is the straight arm's length in pixels; without it, the frames' own (foreshortened) arm.
  */
-function moved(list: Sample[], pick: (m: PressMeasures) => XY, arm?: number): number {
+export function moved(list: Sample[], pick: (m: PressMeasures) => XY, arm?: number): number {
   const xs = steady(list.map(s => pick(s.m).x)), ys = steady(list.map(s => pick(s.m).y));
   const unit = arm ?? list.reduce((a, s) => a + s.m.arm, 0) / list.length;
   return Math.hypot(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)) / unit;
@@ -60,18 +61,16 @@ export type PressCommand =
   | { cmd: 'rep'; t: number; k: number }
   | { cmd: 'rack'; t: number; noRep?: boolean };
 
-/** The `command_times` key for rep k's "Press!": `press`, then `press_2`, `press_3`, … (Home, 3.8a). */
+/** The `command_times` key for rep k's "Press!": `press`, then `press_2`, `press_3`, …. */
 export const pressKey = (k: number) => (k === 1 ? 'press' : `press_${k}`);
 
 /**
- * Bench (Barbell) and floor press (Home), 3.4:
- * - "Start!" when the elbows are over 155° and the wrists still for 0.5 s;
- * - "Press!" when, after the elbows bend below 110°, the wrists stay still (under 2% of arm
- *   length) for 0.4 s. Floor press: when the elbow comes to rest at its lowest point (the floor,
- *   the lowest elbow seen since "Weights ready."), still for 0.4 s;
- * - each rep ends when the elbows pass 155° again and hold for 0.4 s, "Rack!" after the last
- *   (Barbell: one; Home: the declared reps);
- * - "Rack!" anyway 20 s after "Start!" with no rep (Home: 8 s after a rep with no new one).
+ * The bench (Barbell), 3.4:
+ * - "Start!" when the elbows are over 155° and the wrists still (under 7% of the arm, each
+ *   coordinate steadied over three frames) for 0.5 s;
+ * - "Press!" when, after the elbows bend below 110°, the wrists stay still for 0.4 s;
+ * - the rep ends when the elbows pass 155° again and hold for 0.4 s, then "Rack!";
+ * - "Rack!" anyway 20 s after "Start!" with no rep.
  */
 export class BenchCaller {
   state: 'waiting' | 'lifting' | 'done' = 'waiting';
@@ -82,30 +81,20 @@ export class BenchCaller {
   repsDone = 0;
   /** "Press!" times, one per rep that had one. */
   presses: Record<number, number> = {};
-  /** The floor (Home): the lowest elbow, the largest y (steadied over three frames). */
-  floorY = -Infinity;
   /** The straight arm's length in pixels, taken over the "Start!" hold: the unit for "still". */
   armRef: number | null = null;
   private lockSince: number | null = null;
-  private lastRepAt: number | null = null;
   private queue: PressCommand[] = [];
   private hist: Sample[] = [];
   private side: Side | null = null;
-  private floor: boolean;
-  private reps: number;
-  constructor(private d: Dims, private rules: Rules = RULES, opts: { floor?: boolean; reps?: number } = {}) {
-    this.floor = !!opts.floor;
-    this.reps = opts.reps ?? 1;
-  }
+  constructor(private d: Dims, private rules: Rules = RULES) {}
 
   feed(f: Frame): PressCommand | null {
     if (this.queue.length) return this.queue.shift()!;
     const r = this.rules.bench;
     if (this.state === 'done') return null;
     if (this.state === 'lifting') {
-      const home = this.reps > 1 && this.lastRepAt !== null;
-      const since = home ? this.lastRepAt! : this.startAt!;
-      if (f.t - since >= (home ? r.homeNoRepMs : r.noRepMs)) {
+      if (f.t - this.startAt! >= r.noRepMs) {
         this.state = 'done'; this.rackAt = f.t;
         return { cmd: 'rack', t: f.t, noRep: this.repsDone === 0 && this.phase === 'up' };
       }
@@ -115,10 +104,6 @@ export class BenchCaller {
     const m = pressMeasure(f.p, this.d, side, this.rules);
     this.hist.push({ t: f.t, m });
     while (this.hist.length && f.t - this.hist[0].t > 2000) this.hist.shift();
-    // the floor: the lowest elbow seen before "Start!" ("Bar is loaded."); an elbow seen lower later means the guess was high
-    const h = this.hist.slice(-3);
-    if (h.length === 3 && h[1].m.el.v >= this.rules.visibilityMin && (this.state === 'waiting' || this.phase === 'down'))
-      this.floorY = Math.max(this.floorY, median3(h[0].m.el.y, h[1].m.el.y, h[2].m.el.y));
 
     if (this.state === 'waiting') {
       const still = pointRange(this.hist, f.t, r.startStillMs, x => x.wr);
@@ -132,28 +117,18 @@ export class BenchCaller {
 
     if (this.phase === 'up' && m.elbowDeg < r.bottomElbowMaxDeg) this.phase = 'down';
     if (this.phase === 'down') {
-      const k = this.repsDone + 1;
-      if (this.floor) {
-        const still = pointRange(this.hist, f.t, r.pauseStillMs, x => x.el, this.armRef!);
-        const onFloor = this.floorY - m.el.y <= r.floorTolArm * this.armRef!;
-        if (still !== null && still < r.pauseStillMaxArm && onFloor) return this.press(f.t, k);
-      } else {
-        const still = pointRange(this.hist, f.t, r.pauseStillMs, x => x.wr, this.armRef!);
-        if (still !== null && still < r.pauseStillMaxArm) return this.press(f.t, k);
-      }
+      const still = pointRange(this.hist, f.t, r.pauseStillMs, x => x.wr, this.armRef!);
+      if (still !== null && still < r.pauseStillMaxArm) return this.press(f.t, this.repsDone + 1);
     }
     // a rep ends at lockout, pressed on the call or not (pressing early is the judge's red, not the phone's)
     if (this.phase !== 'up' && m.bothDeg > r.lockoutElbowMinDeg) {
       if (this.lockSince === null) this.lockSince = f.t;
       if (f.t - this.lockSince >= r.lockoutHoldMs) {
         this.lockSince = null; this.phase = 'up';
-        this.repsDone++; this.lastRepAt = f.t;
-        const rep: PressCommand = { cmd: 'rep', t: f.t, k: this.repsDone };
-        if (this.repsDone >= this.reps) {
-          this.state = 'done'; this.rackAt = f.t;
-          this.queue.push({ cmd: 'rack', t: f.t });
-        }
-        return rep;
+        this.repsDone++;
+        this.state = 'done'; this.rackAt = f.t;
+        this.queue.push({ cmd: 'rack', t: f.t });
+        return { cmd: 'rep', t: f.t, k: this.repsDone };
       }
     } else this.lockSince = null;
     return null;
@@ -168,7 +143,7 @@ export class BenchCaller {
 export type PressTimes = {
   /** "Press!" per rep, by rep number (rep 1 is `press`). */
   presses: Record<number, number>;
-  /** Home: each rep's end (`rep_1`, `rep_2`, …), in order. Barbell: none. */
+  /** Each rep's end (`rep_1`, …), in order, when the phone wrote them. */
   repEnds: number[];
 };
 
@@ -211,15 +186,14 @@ export type PressRep = RepResult & {
 
 /**
  * The press call (3.4), per rep:
- * - white if, after "Press!", both elbows pass 155° before the rep's end ("Rack!", or Home's rep end);
+ * - white if, after "Press!", both elbows pass 155° before the rep's end ("Rack!");
  * - red `no_lockout` if they don't;
  * - red `no_pause` if the wrist rose more than 3% of arm length from its lowest point before
  *   "Press!", or the rep was pressed with no "Press!" at all;
- * - close `short_pause` if the still the server measures before "Press!" is under 0.3 s
- *   (bench: the wrist; floor press: the elbow, as the phone called it);
+ * - close `short_pause` if the wrist's still that the server measures before "Press!" is under 0.3 s;
  * - close `visibility` if the near shoulder, elbow or wrist isn't seen on the "Press!" frame.
  */
-export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, floor: boolean, rules: Rules = RULES): AttemptResult & { reps: PressRep[] } {
+export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, rules: Rules = RULES): AttemptResult & { reps: PressRep[] } {
   const r = rules.bench;
   const frames = all.filter(f => f.t >= w.start && f.t <= w.end);
   const side = nearSide(frames);
@@ -228,7 +202,7 @@ export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, 
   const pressNums = Object.keys(times.presses).map(Number);
   const count = Math.max(times.repEnds.length, pressNums.length ? Math.max(...pressNums) : 0);
   const reps: PressRep[] = [];
-  const stillOf = floor ? (m: PressMeasures) => m.el : (m: PressMeasures) => m.wr;
+  const stillOf = (m: PressMeasures) => m.wr;
   // the unit for "still" and "rise" is the phone's: the straight arm over the "Start!" hold (the bent arm
   // reads short when it points at the camera); failing that, the attempt's straight arm
   const hold = all.filter(f => f.p && f.t >= w.start - r.startStillMs && f.t <= w.start).map(f => pressMeasure(f.p!, d, side, rules).arm);
