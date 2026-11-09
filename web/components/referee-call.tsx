@@ -235,7 +235,13 @@ export function RefereeCall(p: RefereeCallProps) {
     return (
       <div className="ref-done" role="status">
         <p className="sheet-title">{line}</p>
-        <Link ref={doneRef} className="btn" href={nextHref}>{p.demoDoneHref ? 'Back to the platform' : 'Next'}</Link>
+        {p.demoDoneHref ? (
+          // A full page load, never the client router: its copy of the platform is from before
+          // the lift, so it would show the old attempt's card instead of these lights.
+          <a ref={doneRef} className="btn" href={nextHref}>Back to the platform</a>
+        ) : (
+          <Link ref={doneRef} className="btn" href={nextHref}>Next</Link>
+        )}
       </div>
     );
   }

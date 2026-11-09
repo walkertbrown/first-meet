@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Footer, Wordmark } from '@/components/chrome';
 import { DemoStrip } from '@/components/demo-strip';
@@ -51,7 +50,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           ) : (
             <div className="ref-done" role="status">
               <p className="sheet-title">Saved. Your lights are on the platform.</p>
-              <Link className="btn" href={DEMO_PLATFORM}>Back to the platform</Link>
+              {/* a full page load: the client router's platform can be from before the lift */}
+              <a className="btn" href={DEMO_PLATFORM}>Back to the platform</a>
             </div>
           )}
         </main>

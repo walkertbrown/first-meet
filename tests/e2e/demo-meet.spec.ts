@@ -202,3 +202,41 @@ test('a reload during the held breath holds the lift\'s frame, dimmed', async ({
   const mean = (channels[0].mean + channels[1].mean + channels[2].mean) / 3;
   expect(mean).toBeGreaterThan(12);
 });
+
+// NerdCider on 20d916a (fail 5): after the demo referee's "Save the lights", "Back to the
+// platform" showed the old Squat 3 card ("I'm ready"), the client router's copy of the platform
+// from before the lift. It must show squat 3's lights, then Bench press 1 (5.36, 5.25 step 11).
+async function liftOneSample(page: Page) {
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: LIGHTS })).toBeVisible({ timeout: 5 * 60_000 });
+}
+test('after the demo referee saves, "Back to the platform" shows squat 3\'s lights, then Bench press 1', async ({ page }) => {
+  test.setTimeout(20 * 60_000);
+  await joinDemo(page);
+  // the squat's samples cycle good, no lift, close call, so squat 3 is the close call
+  for (const next of [2, 3]) {
+    await liftOneSample(page);
+    await page.getByRole('button', { name: 'Declare your next attempt' }).click();
+    const sheet = page.getByRole('dialog');
+    await sheet.locator('.try-actions .btn').click();
+    await sheet.getByRole('button', { name: 'OK' }).click();
+    await expect(page.getByRole('article', { name: new RegExp(`^Squat, Attempt ${next} of 3`, 'i') })).toBeVisible({ timeout: 30_000 });
+  }
+  await liftOneSample(page);
+  await expect(page.getByRole('heading', { name: 'Close call' })).toBeVisible();
+  await page.getByRole('link', { name: "See the referee's side of this close call" }).click();
+  await expect(page.getByRole('heading', { name: 'Close call', level: 1 })).toBeVisible({ timeout: 30_000 });
+  const whites = page.getByRole('button', { name: 'White light' });
+  for (let i = 0; i < 3; i++) await whites.nth(i).click();
+  await page.getByRole('button', { name: 'Save the lights' }).click();
+  await page.getByRole('link', { name: 'Back to the platform' }).click();
+  await expect(page).toHaveURL(/\/platform$/);
+  await expect(page.getByRole('heading', { name: 'Good lift' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: "I'm ready" })).toHaveCount(0);
+  await page.getByRole('button', { name: /^(Declare your next attempt|Next: Bench press)$/ }).click();
+  await expect(page.getByRole('article', { name: /^Bench press, Attempt 1 of 3/i })).toBeVisible({ timeout: 30_000 });
+});
