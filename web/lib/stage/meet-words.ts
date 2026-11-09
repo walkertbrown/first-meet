@@ -145,6 +145,9 @@ export const WELCOME_WORDS = {
   body: 'You have three attempts at each lift. Your openers are already chosen from a made-up training history, so you can lift right away. No camera, or no weights? Use a sample lift on any attempt.',
   corner: 'Friends can follow along and cheer on your corner page.',
   openCorner: 'Open my corner page in a new tab',
+  /** item 78 */
+  openCornerShort: 'Open my corner page',
+  openCornerSaid: 'Open my corner page, opens in a new tab',
   go: 'Go to the platform',
 } as const;
 

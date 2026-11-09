@@ -23,4 +23,10 @@ export const PLAN_SWITCHES = {
    * NINE ATTEMPTS" eyebrow after the nine, is what's built in both copies.)
    */
   item77: process.env.NEXT_PUBLIC_PLAN_ITEM77 === '1',
+  /**
+   * Item 78: the welcome sheet's Ghost is "Open my corner page" (it still opens a new tab, shown by
+   * a mark LookieBot picks in look 5.14a), and screen readers hear "Open my corner page, opens in a
+   * new tab". Off: the 1:12 AM copy's "Open my corner page in a new tab".
+   */
+  item78: process.env.NEXT_PUBLIC_PLAN_ITEM78 === '1',
 } as const;

@@ -4,6 +4,7 @@
 // What she declares is checked on the server against the same choices (web/lib/meet-flow.ts).
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowUpRight } from '@phosphor-icons/react';
 import { MeetAttempt } from '@/components/meet-attempt';
 import { BarDiagram } from '@/components/bar-diagram';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
@@ -192,7 +193,7 @@ function untilLine(iso: string) {
 }
 
 /** The demo's welcome sheet (5.36, look 5.10): her corner page opens in a new tab; "Go to the platform" closes it. */
-export function WelcomeSheet({ corner, onClose }: { corner: string; onClose: () => void }) {
+export function WelcomeSheet({ corner, onClose, item78 = PLAN_SWITCHES.item78 }: { corner: string; onClose: () => void; item78?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -209,7 +210,10 @@ export function WelcomeSheet({ corner, onClose }: { corner: string; onClose: () 
         <p className="body">{WELCOME_WORDS.corner}</p>
         <div className="try-actions">
           <button className="btn" type="button" onClick={onClose}>{WELCOME_WORDS.go}</button>
-          <a className="btn ghost" href={corner} target="_blank" rel="noopener">{WELCOME_WORDS.openCorner}</a>
+          {item78
+            // item 78: the short label, and the new-tab mark 8 px after it (look 5.14a)
+            ? <a className="btn ghost new-tab" href={corner} target="_blank" rel="noopener" aria-label={WELCOME_WORDS.openCornerSaid}>{WELCOME_WORDS.openCornerShort}<ArrowUpRight weight="bold" size={24} aria-hidden="true" /></a>
+            : <a className="btn ghost" href={corner} target="_blank" rel="noopener">{WELCOME_WORDS.openCorner}</a>}
         </div>
       </div>
     </div>

@@ -115,6 +115,9 @@ h1, h2, h3, p, ul, ol { margin: 0; }
 .btn.ghost:hover { background: var(--surface-2); }
 .btn.ghost:active { background: var(--surface-2); }
 .btn.small { min-height: 48px; font-size: 17px; }
+/* look 5.14a: the new-tab mark sits 8 px after the words, centred with them; it never moves */
+.btn.new-tab { gap: 8px; }
+.btn.new-tab > svg { flex: none; color: currentColor; }
 .btn[disabled], .btn[aria-disabled="true"] { background: var(--surface-2); color: var(--ink-3); cursor: not-allowed; transform: none; }
 .btn.ghost[disabled] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule); }
 .btn[aria-busy="true"] { opacity: .85; }
