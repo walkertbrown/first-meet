@@ -8,7 +8,7 @@ import type React from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
-import { TryALift, type Dims, type Part } from '@/lib/judge';
+import { RULES, TryALift, type Dims, type Part } from '@/lib/judge';
 import { Lamps, type LampState } from '@/components/lamps';
 import { BarDiagram, BellDiagram } from '@/components/bar-diagram';
 import { loadPoseModel, LivePose } from '@/lib/stage/pose-live';
@@ -154,6 +154,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     await sleep(Math.max(0, SENDING_MIN_MS - (performance.now() - t0)));
     if (!alive()) return;
     setWaitLine(MEET_WORDS.looking);
+    const lookingAt = performance.now();
 
     let state: State | null = null;
     let wake: (() => void) | null = null;
@@ -182,6 +183,8 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
         const s = state as State | null;
         if (s?.call === 'close' && !pulsing) {
           pulsing = true;
+          await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
+          if (!alive()) return;
           clearTimeout(t45); clearTimeout(t90);
           setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
           setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
@@ -190,6 +193,9 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
         await next();
       }
       stop();
+      // a fast judge still lets "The judges are looking" finish its crossfade and be read (look 8)
+      await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
+      if (!alive()) return;
       const s = state as unknown as State;
       const res = meetResult({ ...s, lift: attempt.lift })!;
       setResult(res); setResultOn(false); setWaitLine(''); setBusy(false);
