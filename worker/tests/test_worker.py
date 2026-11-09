@@ -9,6 +9,33 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import poses  # noqa: E402
 
 
+class VendorGl(unittest.TestCase):
+    def test_reads_a_deb(self):
+        import io
+        import tarfile
+        import vendor_gl
+        tar = io.BytesIO()
+        with tarfile.open(fileobj=tar, mode='w:xz') as t:
+            for name, data in [('./usr/lib/x86_64-linux-gnu/libX.so.1.0.0', b'lib')]:
+                info = tarfile.TarInfo(name)
+                info.size = len(data)
+                t.addfile(info, io.BytesIO(data))
+            link = tarfile.TarInfo('./usr/lib/x86_64-linux-gnu/libX.so.1')
+            link.type, link.linkname = tarfile.SYMTYPE, 'libX.so.1.0.0'
+            t.addfile(link)
+
+        def member(name: str, data: bytes) -> bytes:
+            head = f'{name + "/":<16}{0:<12}{0:<6}{0:<6}{100644:<8}{len(data):<10}`\n'.encode()
+            return head + data + (b'\n' if len(data) & 1 else b'')
+
+        deb = b'!<arch>\n' + member('debian-binary', b'2.0\n') + member('data.tar.xz', tar.getvalue())
+        self.assertEqual(vendor_gl.extract(deb, {'libX.so.1'}), {'libX.so.1': b'lib'})
+
+    def test_pins_every_package(self):
+        import vendor_gl
+        self.assertTrue(all(len(h) == 64 for h in vendor_gl.DEBS.values()))
+
+
 class Grid(unittest.TestCase):
     def test_five_a_second(self):
         self.assertEqual(poses.grid(1.0, 5), [0, 200, 400, 600, 800])

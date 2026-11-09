@@ -4,9 +4,9 @@
 // Needs Python with worker/requirements.txt installed.
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { CLIPS_DIR, EXPECTED, checkClip } from '../clips/check';
+import { CLIPS_DIR, EXPECTED, checkClip, verdictOf } from '../clips/check';
 import { zoomWindows, type Frame } from '../../web/lib/judge';
 
 const PY = process.env.WORKER_PYTHON;
@@ -35,6 +35,28 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const frames = [...first.frames, ...second.frames].sort((a, b) => a.t - b.t);
       timings[name] = { duration: +first.duration.toFixed(1), frames: frames.length, pass1: first.secs, pass2: second.secs };
       checkClip(expect, { ...first, frames }, e);
+    }, 600_000);
+  }
+  // What the two passes add to any difference: one unbroken 15 fps pass, set against the
+  // Chromium points saved in tests/clips/poses/ (logged, not checked).
+  for (const [name, e] of EXPECTED) {
+    it(`${name}: one 15 fps pass against Chromium's points`, () => {
+      const one = run(name, ['--fps', '15']);
+      const saved = JSON.parse(readFileSync(join(CLIPS_DIR, 'poses', `${name}.json`), 'utf8')) as Raw;
+      const byT = new Map(saved.frames.map(f => [f.t, f.p]));
+      let n = 0, sum = 0, max = 0, onlyPy = 0, onlyWeb = 0;
+      for (const f of one.frames) {
+        const s = byT.get(f.t);
+        if (!f.p !== !s) { if (f.p) onlyPy++; else onlyWeb++; continue; }
+        if (!f.p || !s) continue;
+        for (let i = 11; i < 33; i++) { const d = Math.hypot(f.p[i][0] - s[i][0], f.p[i][1] - s[i][1]); sum += d; n++; if (d > max) max = d; }
+      }
+      const v = verdictOf(one, e), w = verdictOf(saved, e);
+      timings[`${name} (one pass)`] = {
+        frames: one.frames.length, savedFrames: saved.frames.length, meanPointGap: +(sum / Math.max(n, 1)).toFixed(4), maxPointGap: +max.toFixed(4),
+        onlyPython: onlyPy, onlyChromium: onlyWeb, sameCalls: JSON.stringify(e.skipped ? v.skipped : v.reps) === JSON.stringify(e.skipped ? w.skipped : w.reps),
+        calls: e.skipped ? v.skipped : v.reps,
+      };
     }, 600_000);
   }
   it('writes the timings', () => {

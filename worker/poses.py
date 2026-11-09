@@ -18,6 +18,21 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 MODEL = Path(os.environ.get('POSE_MODEL', HERE.parent / 'web/public/models/pose_landmarker_full.task'))
+GL = HERE / '.gl'
+
+
+def _load_gl() -> None:
+    """Loads the GL dispatch libraries vendor_gl.py put in worker/.gl/, so MediaPipe's
+    library links on a machine without them (Render's native runtime)."""
+    if not GL.is_dir():
+        return
+    import ctypes
+    from vendor_gl import LIBS
+    for lib in LIBS:
+        ctypes.CDLL(str(GL / lib), mode=ctypes.RTLD_GLOBAL)
+
+
+_load_gl()
 
 # Seconds before a wanted time that a seek aims for (a seek lands on the keyframe before it).
 SEEK_BACK_S = 0.5

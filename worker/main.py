@@ -9,7 +9,8 @@ where the second pass looks.
 times given. It proves the pose finder on Render (piece 6) and measures it; its points
 come back gzipped in the result, well under Render's 4 MB cap.
 
-Build: pip install -r worker/requirements.txt    Start: python worker/main.py
+Build: pip install -r worker/requirements.txt && python worker/vendor_gl.py
+Start: python worker/main.py
 """
 from __future__ import annotations
 
