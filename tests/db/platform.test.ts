@@ -37,7 +37,8 @@ describe.skipIf(!URL_)('the platform', () => {
     if (v.kind !== 'open') throw new Error(v.kind);
     expect(v.current).toMatchObject({ lift: 'squat', number: 1, status: 'declared' });
     expect(v.notJudged).toBe(true);
-    expect(v.because).toBe('Lighter than your best logged triple. Not judged in training yet.');
+    // no training logged: her cap and opener are both the bar, so the card says "the same" (item 76)
+    expect(v.because).toBe('The same weight as your best logged triple, for just one. Not judged in training yet.');
     expect(v.row.map(c => c.state)).toEqual(['now', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty']);
   });
 

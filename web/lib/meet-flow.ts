@@ -10,7 +10,6 @@ import {
   type DeclareChoice, type JudgedSet, type LoggedSet, type MeetAttempt, type Slot, type Units,
 } from '@/lib/meet';
 import { DEMO_CAPS, demoCapAt } from '@/lib/demo';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { meetClosed, runClipDeadline } from '@/lib/meet-window';
 
 export type LifterRow = typeof lifters.$inferSelect;
@@ -161,16 +160,16 @@ export function asMeetAttempt(a: AttemptRow, l: Pick<LifterRow, 'homeWeights'>):
 }
 
 /**
- * Her total (5.28). Bombing out sets `free_entry_credit` (#bombout-free: yes), once. Item 77: a
- * demo lifter's bomb out sets nothing.
+ * Her total (5.28). Bombing out sets `free_entry_credit` (#bombout-free: yes), once. A demo
+ * lifter's bomb out sets nothing: she has no account to add a meet to.
  */
-export async function totalFor(db: Db, l: LifterRow, list?: AttemptRow[], item77 = PLAN_SWITCHES.item77, now = new Date()) {
+export async function totalFor(db: Db, l: LifterRow, list?: AttemptRow[], now = new Date()) {
   const [m] = l.meetId ? await db.select().from(meets).where(eq(meets.id, l.meetId)) : [];
   const closed = !!m && meetClosed(m, now);
   // the clip deadline's job, on read (3.8): a clip still sending past it is sent too late
   if (closed && await runClipDeadline(db, now, m.id)) list = undefined;
   const rows = list ?? await meetAttempts(db, l);
   const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), l.division, closed);
-  if (t.kind === 'bombed' && !l.freeEntryCredit && !(item77 && l.isDemo)) await db.update(lifters).set({ freeEntryCredit: true }).where(eq(lifters.id, l.id));
+  if (t.kind === 'bombed' && !l.freeEntryCredit && !l.isDemo) await db.update(lifters).set({ freeEntryCredit: true }).where(eq(lifters.id, l.id));
   return t;
 }

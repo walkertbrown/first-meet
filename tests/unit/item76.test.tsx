@@ -1,5 +1,4 @@
-// Item 76 (plan changes after the 1:12 AM yes), built switched off: each part switched off is the
-// 1:12 AM copy, and switched on is The Playner's 4:55 AM Nov 9 answers and look 4's "Waiting on a referee".
+// Item 76: The Playner's 4:55 AM Nov 9 answers and look 4's "Waiting on a referee".
 import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -14,32 +13,24 @@ describe('item 76: the card at exactly her cap (5.25 step 1)', async () => {
   const sq = { cap: 225, judged: true, at, weight: 225, kind: null } as const;
   const home = { cap: 12, judged: true, at, weight: 35, kind: 'pair' } as const;
 
-  it('switched on, at her cap: "the same weight for just one" / "the same number"', () => {
-    expect(becauseLine('barbell', 'squat', sq, 'lb', 225, true)).toBe("You squatted 225 for 3 with white lights on Nov 3. This one is the same weight for just one, so it's already yours.");
-    expect(becauseLine('barbell', 'bench', { ...sq, cap: 100, weight: 100 }, 'lb', 100, true)).toBe("You benched 100 for 3 with white lights on Nov 3. This one is the same weight for just one, so it's already yours.");
-    expect(becauseLine('home', 'deadlift', home, 'lb', 12, true)).toBe("You did 12 at 35 lb with white lights on Nov 3. This one is the same number, so it's already yours.");
-    expect(becauseLine('barbell', 'squat', { ...sq, judged: false, at: null }, 'lb', 225, true)).toBe('The same weight as your best logged triple, for just one. Not judged in training yet.');
-    expect(becauseLine('home', 'squat', { ...home, judged: false, at: null }, 'lb', 12, true)).toBe('The same as your best logged set. Not judged in training yet.');
+  it('at her cap: "the same weight for just one" / "the same number"', () => {
+    expect(becauseLine('barbell', 'squat', sq, 'lb', 225)).toBe("You squatted 225 for 3 with white lights on Nov 3. This one is the same weight for just one, so it's already yours.");
+    expect(becauseLine('barbell', 'bench', { ...sq, cap: 100, weight: 100 }, 'lb', 100)).toBe("You benched 100 for 3 with white lights on Nov 3. This one is the same weight for just one, so it's already yours.");
+    expect(becauseLine('home', 'deadlift', home, 'lb', 12)).toBe("You did 12 at 35 lb with white lights on Nov 3. This one is the same number, so it's already yours.");
+    expect(becauseLine('barbell', 'squat', { ...sq, judged: false, at: null }, 'lb', 225)).toBe('The same weight as your best logged triple, for just one. Not judged in training yet.');
+    expect(becauseLine('home', 'squat', { ...home, judged: false, at: null }, 'lb', 12)).toBe('The same as your best logged set. Not judged in training yet.');
   });
 
-  it('switched on, under her cap: still "lighter" / "fewer"', () => {
-    expect(becauseLine('barbell', 'squat', sq, 'lb', 205, true)).toMatch(/This one is lighter, so it's already yours\.$/);
-    expect(becauseLine('home', 'deadlift', home, 'lb', 10, true)).toMatch(/This one is fewer, so it's already yours\.$/);
-    expect(becauseLine('barbell', 'squat', { ...sq, judged: false, at: null }, 'lb', 205, true)).toBe('Lighter than your best logged triple. Not judged in training yet.');
-  });
-
-  it('switched off, at her cap: the 1:12 AM words', () => {
-    expect(becauseLine('barbell', 'squat', sq, 'lb', 225, false)).toMatch(/This one is lighter, so it's already yours\.$/);
-    expect(becauseLine('home', 'deadlift', home, 'lb', 12, false)).toMatch(/This one is fewer, so it's already yours\.$/);
-    expect(becauseLine('home', 'squat', { ...home, judged: false, at: null }, 'lb', 12, false)).toBe('Fewer than your best logged set. Not judged in training yet.');
+  it('under her cap: still "lighter" / "fewer"', () => {
+    expect(becauseLine('barbell', 'squat', sq, 'lb', 205)).toMatch(/This one is lighter, so it's already yours\.$/);
+    expect(becauseLine('home', 'deadlift', home, 'lb', 10)).toMatch(/This one is fewer, so it's already yours\.$/);
+    expect(becauseLine('barbell', 'squat', { ...sq, judged: false, at: null }, 'lb', 205)).toBe('Lighter than your best logged triple. Not judged in training yet.');
   });
 
   it("the demo's card says the same at its made-up cap (115 squat; 12 reps)", () => {
-    expect(demoBecause('barbell', 'squat', 'lb', now, 115, true)).toBe("You squatted 115 for 3 with white lights on Nov 3. This one is the same weight for just one, so it's already yours.");
-    expect(demoBecause('home', 'squat', 'lb', now, 12, true)).toBe("You did 12 at 25 lb with white lights on Nov 3. This one is the same number, so it's already yours.");
-    expect(demoBecause('barbell', 'squat', 'lb', now, 100, true)).toMatch(/lighter/);
-    expect(demoBecause('barbell', 'squat', 'lb', now, 115, false)).toMatch(/lighter/);
-    expect(demoBecause('home', 'squat', 'lb', now, 12, false)).toMatch(/fewer/);
+    expect(demoBecause('barbell', 'squat', 'lb', now, 115)).toBe("You squatted 115 for 3 with white lights on Nov 3. This one is the same weight for just one, so it's already yours.");
+    expect(demoBecause('home', 'squat', 'lb', now, 12)).toBe("You did 12 at 25 lb with white lights on Nov 3. This one is the same number, so it's already yours.");
+    expect(demoBecause('barbell', 'squat', 'lb', now, 100)).toMatch(/lighter/);
   });
 });
 
@@ -78,8 +69,8 @@ describe('item 76: "Waiting" on the 9-attempt row (5.27, look 4)', async () => {
     { lift: 'squat', number: 3, status: 'close_call', call: 'close' },
   ], null);
 
-  it('switched on: the slot holds only the pulsing lamp, "Waiting" sits once under its group, and the slot is read as waiting for a referee', () => {
-    const html = renderToStaticMarkup(<NineRow row={row} division="barbell" item76 />);
+  it('the slot holds only the pulsing lamp, "Waiting" sits once under its group, and the slot is read as waiting for a referee', () => {
+    const html = renderToStaticMarkup(<NineRow row={row} division="barbell" />);
     expect(html).not.toContain('slot-wait');
     expect(html).toContain('nine wait-below');
     expect(html.match(/grp-wait eyebrow on/g)).toHaveLength(1);
@@ -89,14 +80,7 @@ describe('item 76: "Waiting" on the 9-attempt row (5.27, look 4)', async () => {
     expect(html.match(/mini-lamp pulse/g)).toHaveLength(2);
   });
 
-  it('switched off: the 1:12 AM row, "Waiting" in the cell', () => {
-    const html = renderToStaticMarkup(<NineRow row={row} division="barbell" item76={false} />);
-    expect(html.match(/<span class="slot-wait">Waiting<\/span>/g)).toHaveLength(2);
-    expect(html).not.toContain('grp-wait');
-    expect(html).toContain('aria-label="Squat 2, Waiting"');
-  });
-
-  it('the CSS keeps every slot 34 px with item 76 on and closes the room after the fade', async () => {
+  it('the CSS keeps every slot 34 px and closes the room after the fade', async () => {
     const { readFileSync } = await import('node:fs');
     const css = readFileSync(new URL('../../web/app/platform.css', import.meta.url), 'utf8');
     expect(css).toMatch(/\.nine\.wait-below \.slot\.waiting \{ flex: 1; \}/);

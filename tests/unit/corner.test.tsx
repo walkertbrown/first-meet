@@ -1,5 +1,5 @@
 // Her corner page (plan 5.4) and June Okafor's (5.36): June's clock, the page's words, the cheer
-// sheet with item 79 off and on, and cheers on June's page (taken, never kept).
+// sheet and its Eyebrow (item 79), and cheers on June's page (taken, never kept).
 import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
@@ -92,17 +92,16 @@ describe('the corner page words (5.4)', () => {
 
 describe('the cheer sheet (5.4, look 5.8)', () => {
   const row = { name: 'Squat 2' };
-  it('the four, in order, as Ghosts; the 1:12 AM copy has no Eyebrow', async () => {
+  it('the four, in order, as Ghosts', async () => {
     const { CheerSheet } = await import('../../web/components/corner');
-    const html = renderToStaticMarkup(<CheerSheet lifter="June Okafor" row={row} name={null} onClose={() => {}} onSend={() => {}} item79={false} />);
+    const html = renderToStaticMarkup(<CheerSheet lifter="June Okafor" row={row} name={null} onClose={() => {}} onSend={() => {}} />);
     expect([...html.matchAll(/class="btn ghost cheer-choice">([^<]+)</g)].map(m => m[1]))
       .toEqual(['White lights!', 'Strong!', 'You&#x27;ve got this', 'See you on the platform']);
-    expect(html).not.toContain('eyebrow');
   });
 
-  it('item 79 on: "Cheer <card_name> · <Lift> <n>" (the type sets the capitals), and a session\'s words', async () => {
+  it('item 79: the Eyebrow "Cheer <card_name> · <Lift> <n>" (the type sets the capitals), and a session\'s words', async () => {
     const { CheerSheet } = await import('../../web/components/corner');
-    const html = renderToStaticMarkup(<CheerSheet lifter="June Okafor" row={row} name={null} onClose={() => {}} onSend={() => {}} item79 />);
+    const html = renderToStaticMarkup(<CheerSheet lifter="June Okafor" row={row} name={null} onClose={() => {}} onSend={() => {}} />);
     expect(html).toContain('<span class="eyebrow cheer-eyebrow">Cheer June Okafor · Squat 2</span>');
     expect(cheerEyebrow('Dana', 'session')).toBe('Cheer Dana · today\'s session');
   });
@@ -125,10 +124,10 @@ describe("cheers on June's page", () => {
   });
 });
 
-describe('item 80 off: the 1:12 AM copy shows her no cheers', () => {
-  it('/api/meet/cheers is not there', async () => {
+describe('item 80: her cheers on meet weekend', () => {
+  it('/api/meet/cheers asks her to sign in first', async () => {
     const { GET, POST } = await import('../../web/app/api/meet/cheers/route');
-    expect((await GET(new Request('http://x/api/meet/cheers'))).status).toBe(404);
-    expect((await POST(new Request('http://x/api/meet/cheers', { method: 'POST', body: '{"ids":[]}' }))).status).toBe(404);
+    expect((await GET(new Request('http://x/api/meet/cheers'))).status).toBe(401);
+    expect((await POST(new Request('http://x/api/meet/cheers', { method: 'POST', body: '{"ids":[]}' }))).status).toBe(401);
   });
 });

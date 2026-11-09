@@ -23,7 +23,7 @@
 .attempt-card .small { margin: 0; }
 .ac-because { margin: 0; padding-top: 12px; border-top: 1px solid var(--rule); }
 
-/* ---------- Item 81, look 5.6: short screens, and "I'm ready" docks when it can't fit ---------- */
+/* ---------- Look 5.6 (item 81): short screens, and "I'm ready" docks when it can't fit ---------- */
 /* The Primary's wrapper is a direct child of the column. Its place: 40 px under the card (24 on
    short screens), as when it led the actions group; the links follow it 12 px apart. */
 .look-56 { overflow-x: clip; }
@@ -98,9 +98,8 @@
 .slot.now { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
 .slot.declared, .slot.sent { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
 .slot.white, .slot.red { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
-/* a close call (5.27): unlit pulsing lamp and "Waiting"; the slot takes the room the word needs */
+/* a close call (5.27): the unlit pulsing lamp (its width is set by .nine.wait-below, below) */
 .slot.waiting { flex: 2.4; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
-.slot-wait { font-family: var(--font-text); font-weight: 600; font-size: 11px; line-height: 12px; }
 /* Item 76 (look 4, "Waiting on a referee"): every slot stays 34 px; "WAITING" sits 4 px under its group,
    once, in Eyebrow --ink-2, and takes no room when nothing in the group waits. When the lights land the
    word fades in 200 ms, then the room closes in 260 ms; it appears at once. Motion off: both at once. */
@@ -111,7 +110,6 @@
 .nine .grp > .grp-wait.on { height: 16px; margin-top: -2px; opacity: 1; transition: none; }
 @media (prefers-reduced-motion: reduce) { .nine .grp > .grp-wait { transition: none; } }
 /* item 85 (look 4 "Not judged"): the empty look with an en dash; NOT JUDGED in --ink-3 where WAITING goes */
-.nine.nj-below { align-items: flex-start; }
 .nine .grp > .grp-wait.nj { color: var(--ink-3); }
 .nine-list .nj-weight { color: var(--ink-3); }
 .nine-list .nj-line { color: var(--ink-2); flex: none; }
@@ -206,10 +204,9 @@
 .your-corner.opening .your-corner-in > * { animation: fade-in 200ms var(--ease-out) 260ms both; }
 @keyframes corner-open { from { grid-template-rows: 0fr; margin-top: 0; border-top-color: transparent; } to { grid-template-rows: 1fr; } }
 
-/* "Your flight is lifting" (5.24, look 5.8): under her attempt card, newest first */
-.flight-strip { margin-top: 24px; }
-/* item 81: 32 px under "Test your spot first", with the column's 16 px gap */
-.flight-strip.under { margin-top: 16px; }
+/* "Your flight is lifting" (5.24, look 5.8): newest first, 32 px under "Test your spot first" with the
+   column's 16 px gap (item 81) */
+.flight-strip { margin-top: 16px; }
 .flight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .flight-head .caption { color: var(--ink-3); }
 .flight-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--rule); }

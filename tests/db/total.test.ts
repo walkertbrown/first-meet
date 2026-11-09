@@ -1,5 +1,5 @@
 // "You totaled" on the server (5.28): bombing out sets her free next meet once (#bombout-free), and
-// with item 77 on a demo lifter's bomb out sets nothing.
+// a demo lifter's bomb out sets nothing (item 77).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
@@ -25,20 +25,15 @@ describe.skipIf(!URL_)('the total', () => {
   }
   const credit = async (id: string) => (await db.select().from(lifters).where(eq(lifters.id, id)))[0].freeEntryCredit;
 
-  it('a real lifter who bombs out gets her free next meet, switched off or on', async () => {
-    for (const item77 of [false, true]) {
-      const l = await bombed(false);
-      expect((await totalFor(db, l, undefined, item77)).kind).toBe('bombed');
-      expect(await credit(l.id)).toBe(true);
-    }
+  it('a real lifter who bombs out gets her free next meet', async () => {
+    const l = await bombed(false);
+    expect((await totalFor(db, l)).kind).toBe('bombed');
+    expect(await credit(l.id)).toBe(true);
   });
 
-  it('a demo lifter: set in the 1:12 AM copy, never with item 77 on', async () => {
-    const off = await bombed(true);
-    await totalFor(db, off, undefined, false);
-    expect(await credit(off.id)).toBe(true);
-    const on = await bombed(true);
-    expect((await totalFor(db, on, undefined, true)).kind).toBe('bombed');
-    expect(await credit(on.id)).toBe(false);
+  it('a demo lifter who bombs out: nothing is set', async () => {
+    const l = await bombed(true);
+    expect((await totalFor(db, l)).kind).toBe('bombed');
+    expect(await credit(l.id)).toBe(false);
   });
 });

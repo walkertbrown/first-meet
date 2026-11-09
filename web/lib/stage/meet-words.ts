@@ -2,7 +2,6 @@
 // state gets. The stage (meet-attempt.tsx) only draws these.
 import type { LampState } from '@/components/lamps';
 import { REASON_EYEBROW, reasonEyebrow, reasonSentence, type ReasonCode } from '@/lib/reason-words';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 
 export const MEET_WORDS = {
   soft: { barbell: 'Bar is loaded.', home: 'Weights ready.' },
@@ -130,14 +129,14 @@ export function nextButton(lift: string, number: number, division: 'barbell' | '
 // ---------- declaring (5.26) ----------
 
 const ORDINAL = ['first', 'second', 'third'];
-/** 5.26's "Take it again" fix, by reason (3 words at most). */
-const FIX_1_12: Record<string, string> = { depth: 'deeper', no_lockout: 'lock out', no_pause: "wait for 'Press!'" };
-/** Item 75 adds a fix for every other reason. */
-const FIX_75: Record<string, string> = { moved_feet: 'feet planted', downward: 'one smooth line', weight_not_shown: 'show the weight', not_whole_lift: 'check your spot' };
-export const reasonFix = (reason: string | null, item75 = PLAN_SWITCHES.item75): string | null =>
-  (reason && (FIX_1_12[reason] ?? (item75 ? FIX_75[reason] : undefined))) ?? null;
+/** 5.26's "Take it again" fix, by reason (3 words at most): every red reason has one. */
+const FIX: Record<string, string> = {
+  depth: 'deeper', no_lockout: 'lock out', no_pause: "wait for 'Press!'",
+  moved_feet: 'feet planted', downward: 'one smooth line', weight_not_shown: 'show the weight', not_whole_lift: 'check your spot',
+};
+export const reasonFix = (reason: string | null): string | null => (reason && FIX[reason]) ?? null;
 
-/** Item 75: under "SAMPLE LIFT" and the result's sentence, when a squat clip stands in for another lift. */
+/** Under "SAMPLE LIFT" and the result's sentence, when a squat clip stands in for another lift. */
 export const standInLine = (shownLift: string, lift: string, division: 'barbell' | 'home') =>
   `This sample is a ${liftLower(shownLift, division)}, standing in for your ${liftLower(lift, division)}.`;
 
@@ -146,9 +145,8 @@ export const WELCOME_WORDS = {
   title: 'Welcome to the demo meet',
   body: 'You have three attempts at each lift. Your openers are already chosen from a made-up training history, so you can lift right away. No camera, or no weights? Use a sample lift on any attempt.',
   corner: 'Friends can follow along and cheer on your corner page.',
-  openCorner: 'Open my corner page in a new tab',
-  /** item 78 */
-  openCornerShort: 'Open my corner page',
+  /** item 78: the short label; the new-tab mark and openCornerSaid say it opens a new tab */
+  openCorner: 'Open my corner page',
   openCornerSaid: 'Open my corner page, opens in a new tab',
   go: 'Go to the platform',
 } as const;
@@ -178,7 +176,7 @@ export function choiceWords(c: { key: string; value: number; disabled: boolean }
   };
   const step = Math.round((c.value - o.last) * 1000) / 1000;
   switch (c.key) {
-    // the 1:12 AM copy names no fix for four reasons; then the line is the plain "Same weight"
+    // with no reason to fix (or one not in FIX), the line is the plain "Same weight"
     case 'again': return { label: 'Take it again', line: `${home ? 'Same reps' : 'Same weight'}${fix ? `, ${fix}` : ''}` };
     case 'same': return home ? { label: 'Same reps', line: `${c.value} reps again` } : { label: 'Same weight', line: `${c.value} again` };
     case 'small': return home ? { label: 'A small step', line: `${c.value} reps` } : { label: 'A small step', line: `+${step} ${o.units}` };

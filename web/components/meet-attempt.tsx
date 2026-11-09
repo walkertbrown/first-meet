@@ -27,7 +27,6 @@ import {
   standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
 } from '@/lib/stage/meet-words';
 import { WindowText } from '@/components/window-words';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
 import { apiFetch, phoneNow } from '@/lib/stage/server-clock';
 import samples from '../../content/samples/samples.json';
@@ -46,7 +45,7 @@ export type MeetAttemptProps = {
   onNext?: () => void;
   /** The panel button's words, when the platform knows better (the banner's attempt: "Back to the platform"). */
   nextLabel?: string;
-  /** The panel button as a Ghost (item 76: "Back to the platform", 5.27). */
+  /** The panel button as a Ghost ("Back to the platform", 5.27, item 76). */
   nextGhost?: boolean;
   /** Above the attempt card: the platform's eyebrow and the 9-attempt row (5.24). */
   top?: React.ReactNode;
@@ -54,10 +53,8 @@ export type MeetAttemptProps = {
   notJudged?: boolean;
   /** The demo meet (5.36): "Use a sample lift instead", and the close call's "Be the referee". A real meet's lifts are filmed and its close calls wait for a real referee. */
   demoReferee?: boolean;
-  /** Under the attempt card, during flight time: "Your flight is lifting" (5.24, look 5.8). */
+  /** Under the links ("Test your spot first"), during flight time: "Your flight is lifting" (5.24, look 5.8, item 81). */
   strip?: React.ReactNode;
-  /** item 81: the flight strip goes under the links, not above "I'm ready" */
-  item81?: boolean;
   /**
    * Item 80 (look 5.10, "Never while she lifts"): true from "I'm ready" until her result panel has
    * settled (its 480 ms slide-in has ended), so the platform holds every banner while she may be under a bar.
@@ -115,7 +112,7 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = false, strip, onBusy, closesAt = null, anyJudged = false, item81 = PLAN_SWITCHES.item81 }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = false, strip, onBusy, closesAt = null, anyJudged = false }: MeetAttemptProps) {
   const [win, setWin] = useState<WindowStop | null>(null);
   // "Use a sample lift instead" is the demo meet's only (5.36): a real meet's lifts are filmed
   const demo = demoReferee;
@@ -697,7 +694,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const liftName = liftCaps(attempt.lift, lifter.division);
   const ofLine = `Attempt ${attempt.number} of 3`;
   const loading = loadingLine(lifter.division, attempt.weight, lifter.units, attempt.lift, attempt.kind ?? undefined);
-  const standIn = PLAN_SWITCHES.item75 && shownLift !== attempt.lift ? standInLine(shownLift, attempt.lift, lifter.division) : null;
+  const standIn = shownLift !== attempt.lift ? standInLine(shownLift, attempt.lift, lifter.division) : null;
 
   if (view === 'limit') {
     return (
@@ -747,7 +744,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
 
   if (view === 'card') {
     return (
-      <div className={`try-page meet-page${item81 ? ' look-56' : ''}`}><main className="try-col meet-col">
+      <div className="try-page meet-page look-56"><main className="try-col meet-col">
         {top}
         <article className="attempt-card" aria-label={`${liftName}, ${ofLine}`}>
           <div className="ac-row1">
@@ -762,26 +759,13 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <p className="small">{loading}</p>
           <p className="body ac-because">{because}</p>
         </article>
-        {item81 ? (
-          <>
-            {/* look 5.6: the Primary on its own, a direct child of the column, so it can dock */}
-            <ReadyDock><button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
-            <div className="try-actions ready-links">
-              {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
-              <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
-            </div>
-            {strip}
-          </>
-        ) : (
-          <>
-            {strip}
-            <div className="try-actions">
-              <button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button>
-              {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
-              <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
-            </div>
-          </>
-        )}
+        {/* look 5.6: the Primary on its own, a direct child of the column, so it can dock */}
+        <ReadyDock><button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
+        <div className="try-actions ready-links">
+          {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
+          <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
+        </div>
+        {strip}
       </main></div>
     );
   }

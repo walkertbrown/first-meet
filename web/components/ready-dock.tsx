@@ -1,5 +1,5 @@
 'use client';
-// "I'm ready" docks when it can't fit (look 5.6, behind item 81). The Primary's own wrapper is a
+// "I'm ready" docks when it can't fit (look 5.6, item 81). The Primary's own wrapper is a
 // direct child of the page column, `position: sticky` at the bottom. A 1 px sentinel straight after
 // it, taking no space, marks the button's own bottom edge in its place. One IntersectionObserver,
 // its root's bottom pulled up by the dock's offset B, says when that edge is below the line where

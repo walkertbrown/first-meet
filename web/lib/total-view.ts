@@ -3,7 +3,6 @@
 import type { Lift } from '@/db/schema';
 import { LIFTS, attemptScore, type MeetAttempt, type Units } from '@/lib/meet';
 import { liftCaps, liftLower, liftWord } from '@/lib/stage/meet-words';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 
 type Division = 'barbell' | 'home';
 type Link = { label: string; href: string };
@@ -42,29 +41,24 @@ export const SOO_LINE = 'That\'s your first total. Soo is live at 8 pm Eastern t
 export const DEMO_LINE = 'That\'s your first total. On a real meet night, every woman who totaled is on the host\'s screen.';
 
 /**
- * The words that differ between the 1:12 AM plan and item 75 (5.28): a demo lifter isn't in a real
- * meet, so with item 75 on she isn't told Soo will read her name, and the meet card (phase 4) is
- * "See my lifts" until it exists.
+ * The total's words (5.28): a demo lifter isn't in a real meet, so she isn't told Soo will read her
+ * name, and the Primary is "See my lifts" until the meet card (phase 4) exists.
  */
-export function totalWords(demo: boolean, item75 = PLAN_SWITCHES.item75): { body: string; primary: Link; ghost: Link } {
-  const ghost = demo && item75 ? { label: 'Watch a meet night', href: '/sample' } : { label: 'Watch meet night', href: '/live' };
+export function totalWords(demo: boolean): { body: string; primary: Link; ghost: Link } {
   return {
-    body: demo && item75 ? DEMO_LINE : SOO_LINE,
-    primary: item75 ? { label: 'See my lifts', href: '/platform' } : { label: 'See my meet card', href: '/me/card' },
-    ghost,
+    body: demo ? DEMO_LINE : SOO_LINE,
+    primary: { label: 'See my lifts', href: '/platform' },
+    ghost: demo ? { label: 'Watch a meet night', href: '/sample' } : { label: 'Watch meet night', href: '/live' },
   };
 }
 
-/**
- * Bombed out (5.28). Its Primary is "See my lifts" in both copies of the plan. Item 77: a demo
- * lifter has no account to add a meet to, so she reads what a real meet would do.
- */
-export function bombedWords(lift: Lift, division: Division, demo: boolean, item75 = PLAN_SWITCHES.item75, item77 = PLAN_SWITCHES.item77) {
+/** Bombed out (5.28). A demo lifter has no account to add a meet to, so she reads what a real meet would do. */
+export function bombedWords(lift: Lift, division: Division, demo: boolean) {
   return {
     body: `Bombed out happens to champions. You didn't get a good ${liftLower(lift, division)} this time, so there's no total, but every lift still counts in your training log.`,
-    free: demo && item77 ? 'In a real meet, your next meet would be free.' : 'Your next meet is free. We\'ve added it to your account.',
+    free: demo ? 'In a real meet, your next meet would be free.' : 'Your next meet is free. We\'ve added it to your account.',
     primary: { label: 'See my lifts', href: '/platform' },
-    ghost: totalWords(demo, item75).ghost,
+    ghost: totalWords(demo).ghost,
   };
 }
 

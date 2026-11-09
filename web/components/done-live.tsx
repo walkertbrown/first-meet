@@ -5,7 +5,6 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheerBanner, useBanners } from '@/components/cheer-banner';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { apiFetch } from '@/lib/stage/server-clock';
 import { liftWord, meetResult } from '@/lib/stage/meet-words';
 
@@ -17,7 +16,7 @@ export function DoneLive({ waiting, division, units, pollMs = 30_000 }: {
   waiting: string[]; division: 'barbell' | 'home'; units: 'lb' | 'kg'; pollMs?: number;
 }) {
   const router = useRouter();
-  const { shown, pushLights, dismiss } = useBanners<Banner>(PLAN_SWITCHES.item80, false);
+  const { shown, pushLights, dismiss } = useBanners<Banner>(false);
   const waitingRef = useRef(waiting);
   waitingRef.current = waiting;
 

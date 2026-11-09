@@ -7,7 +7,6 @@ import { attempts, events, lifters, meets, type Division, type HomeWeight, type 
 import { barbellOpener, homeOpener, type Units } from '@/lib/meet';
 import { keys, type R2 } from '@/lib/r2';
 import { logEvent, markUploaded } from '@/lib/queue';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { capSentence } from '@/lib/stage/meet-words';
 import samples from '../../content/samples/samples.json';
 
@@ -144,12 +143,12 @@ export const demoCapDate = (now = new Date()) =>
 const PAST: Record<Lift, string> = { squat: 'squatted', bench: 'benched', deadlift: 'deadlifted' };
 
 /** The attempt card's because line (5.25 step 1, judged), from the demo's made-up caps. */
-export function demoBecause(division: Division, lift: Lift, units: Units = 'lb', now = new Date(), declared?: number | null, item76 = PLAN_SWITCHES.item76) {
+export function demoBecause(division: Division, lift: Lift, units: Units = 'lb', now = new Date(), declared?: number | null) {
   const date = demoCapDate(now);
   if (division === 'home') {
-    const same = item76 && declared === DEMO_CAPS.home.reps;
+    const same = declared === DEMO_CAPS.home.reps;
     return `You did ${DEMO_CAPS.home.reps} at ${DEMO_CAPS.home.weights[lift]} ${units} with white lights on ${date}. ${capSentence('home', same)}`;
   }
-  const same = item76 && declared === DEMO_CAPS.barbell[lift];
+  const same = declared === DEMO_CAPS.barbell[lift];
   return `You ${PAST[lift]} ${DEMO_CAPS.barbell[lift]} for 3 with white lights on ${date}. ${capSentence('barbell', same)}`;
 }

@@ -7,7 +7,6 @@ import { lifters, meets } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
 import { TotalCheers } from '@/components/cheer-banner';
 import { cornerBlock, herCheers } from '@/lib/cheers';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { LiveRefresh } from '@/components/live-refresh';
 import { currentViewer } from '@/lib/roles';
 import { totalFor } from '@/lib/meet-flow';
@@ -34,7 +33,7 @@ export default async function TotalPage() {
   if (!l?.meetId) redirect(v.isDemo ? '/demo' : '/');
   const [m] = await db().select().from(meets).where(eq(meets.id, l.meetId));
   const now = new Date();
-  const t = await totalFor(db(), l, undefined, undefined, now);
+  const t = await totalFor(db(), l, undefined, now);
   // still lifting, or the platform closed with nothing lifted (5.24's closed page)
   if (t.kind === 'lifting' || t.kind === 'none') redirect('/platform');
   // after the close, until the clip deadline, a late clip can still land (3.8): keep listening
@@ -44,8 +43,8 @@ export default async function TotalPage() {
   const division = l.division;
   const units = l.units as Units;
   const strip = l.isDemo ? <DemoStrip /> : null;
-  // item 80: "YOUR CORNER", the last block before the buttons in every state (5.28, look 5.10)
-  const corner = PLAN_SWITCHES.item80 ? <TotalCheers initial={cornerBlock(await herCheers(db(), l.id, l.meetId))} /> : null;
+  // "YOUR CORNER", the last block before the buttons in every state (5.28, look 5.10)
+  const corner = <TotalCheers initial={cornerBlock(await herCheers(db(), l.id, l.meetId))} />;
   // a clip still on this phone keeps sending from here (item 85); no attempt screen is sending it
   const page = (body: React.ReactNode) => <>{strip}<ResumeSending /><div className="try-page meet-page"><main className="try-col meet-col total-page">{body}</main></div></>;
 

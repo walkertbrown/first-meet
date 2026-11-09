@@ -6,7 +6,6 @@ import type { Lift, VoidReason } from '@/db/schema';
 import { ORDER, homeKind, platformState, type Units } from '@/lib/meet';
 import { declareNext, lifterCaps, meetAttempts, platformOpen, type AttemptRow, type LiftCap, type LifterRow } from '@/lib/meet-flow';
 import { demoBecause } from '@/lib/demo';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { capSentence } from '@/lib/stage/meet-words';
 import { meetClosed, runClipDeadline } from '@/lib/meet-window';
 
@@ -53,11 +52,11 @@ const shortDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', d
  * than your best logged triple. Not judged in training yet." (Home: "Fewer than your best logged
  * set. …")
  *
- * Item 76: at exactly her cap (`declared`: the weight on Barbell, the reps on Home), "lighter" and
+ * At exactly her cap (`declared`: the weight on Barbell, the reps on Home), "lighter" and
  * "fewer" aren't true, so the second sentence says "the same".
  */
-export function becauseLine(division: 'barbell' | 'home', lift: Lift, cap: LiftCap, units: Units, declared?: number | null, item76 = PLAN_SWITCHES.item76): string {
-  const same = item76 && declared != null && declared === cap.cap;
+export function becauseLine(division: 'barbell' | 'home', lift: Lift, cap: LiftCap, units: Units, declared?: number | null): string {
+  const same = declared != null && declared === cap.cap;
   if (!cap.judged || !cap.at) {
     if (same) return division === 'home' ? 'The same as your best logged set. Not judged in training yet.' : 'The same weight as your best logged triple, for just one. Not judged in training yet.';
     return division === 'home' ? 'Fewer than your best logged set. Not judged in training yet.' : 'Lighter than your best logged triple. Not judged in training yet.';

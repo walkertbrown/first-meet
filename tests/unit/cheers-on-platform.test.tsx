@@ -125,19 +125,15 @@ describe('the strip\'s place (item 81, look 5.8 "Place and height on /platform")
     because: 'Your opener.', voicePack: 'a', onNext: () => {},
     strip: <section className="flight-strip">STRIP</section>,
   };
-  const order = async (item81: boolean) => {
+  const order = async () => {
     const { MeetAttempt } = await import('../../web/components/meet-attempt');
-    const html = renderToStaticMarkup(<MeetAttempt {...(props as never)} item81={item81} />);
+    const html = renderToStaticMarkup(<MeetAttempt {...(props as never)} />);
     return ['attempt-card', 'I&#x27;m ready', 'Test your spot first', 'STRIP'].map(t => html.indexOf(t));
   };
-  it('on: the card, "I\'m ready", the links, then the strip', async () => {
-    const at = await order(true);
+  it('the card, "I\'m ready", the links, then the strip', async () => {
+    const at = await order();
     expect(at.every(i => i >= 0)).toBe(true);
     expect([...at].sort((x, y) => x - y)).toEqual(at);
-  });
-  it('off: the 1:12 AM copy, the strip between the card and "I\'m ready"', async () => {
-    const [card, ready, , strip] = await order(false);
-    expect(card < strip && strip < ready).toBe(true);
   });
   it('three rows at most, newest first, nothing measured', () => {
     for (let s = 0; s < DEMO_FLIGHT_CYCLE_S; s += 7) expect(demoFlightAt(new Date(Date.UTC(2026, 10, 9, 12) + s * 1000), 'barbell', 'lb', 3).rows.length).toBeLessThanOrEqual(3);

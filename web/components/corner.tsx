@@ -9,7 +9,6 @@ import { X } from '@phosphor-icons/react';
 import { NineRow } from '@/components/platform';
 import type { CornerRow, CornerView } from '@/lib/corner-view';
 import { CHEERS, CHEER_KINDS, cheerEyebrow, cleanCornerName, type CheerKind } from '@/lib/cheer-words';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { notJudgedLine } from '@/lib/stage/meet-words';
 
 export const NAME_COOKIE = 'fm_corner_name';
@@ -160,15 +159,13 @@ export function CornerLive({ view, token, savedName, children }: { view: Live; t
 }
 
 /**
- * The four cheers (look 5.8, 5.10): Ghost buttons, focus on the first. Picking one sends it, and
+ * The four cheers (look 5.8, 5.10) under the sheet's Eyebrow (5.4): Ghost buttons, focus on the first. Picking one sends it, and
  * the sheet goes out in 320 ms. With no saved name, the sheet crossfades (200 ms) to "Who's
  * cheering?" and grows to its height in 260 ms.
  */
-export function CheerSheet({ lifter, row, name, onClose, onSend, item79 = PLAN_SWITCHES.item79 }: {
+export function CheerSheet({ lifter, row, name, onClose, onSend }: {
   lifter: string; row: Pick<CornerRow, 'name'>; name: string | null;
   onClose: () => void; onSend: (kind: CheerKind, from: string | null) => void;
-  /** item 79: the Eyebrow over the four (off: none, as the 1:12 AM copy) */
-  item79?: boolean;
 }) {
   const [step, setStep] = useState<{ kind: 'pick' } | { kind: 'name'; cheer: CheerKind }>({ kind: 'pick' });
   const [leaving, setLeaving] = useState(false);
@@ -225,7 +222,7 @@ export function CheerSheet({ lifter, row, name, onClose, onSend, item79 = PLAN_S
         <div className="cheer-inner" ref={inner}>
           {step.kind === 'pick' ? (
             <div className="cheer-step" key="pick">
-              {item79 && <span className="eyebrow cheer-eyebrow">{cheerEyebrow(lifter, row.name)}</span>}
+              <span className="eyebrow cheer-eyebrow">{cheerEyebrow(lifter, row.name)}</span>
               <div className="cheer-choices">
                 {CHEER_KINDS.map(k => <button key={k} type="button" className="btn ghost cheer-choice" onClick={() => pick(k)}>{CHEERS[k]}</button>)}
               </div>

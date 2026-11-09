@@ -25,7 +25,7 @@ export function step<L>(s: { busy: boolean; shown: Shown<L> | null; lights: L[];
 }
 
 /** Her cheers this meet: those no banner has shown yet, and her corner's line; re-read as each lands. */
-export function useCheerFeed(on: boolean, initialCorner: Corner | null = null) {
+export function useCheerFeed(initialCorner: Corner | null = null) {
   const [unseen, setUnseen] = useState<HerCheer[]>([]);
   const [corner, setCorner] = useState<Corner | null>(initialCorner);
   const shownIds = useRef(new Set<string>());
@@ -38,13 +38,12 @@ export function useCheerFeed(on: boolean, initialCorner: Corner | null = null) {
     setCorner(body.corner);
   }, []);
   useEffect(() => {
-    if (!on) return;
     void load();
     if (typeof EventSource === 'undefined') return;
     const es = new EventSource('/api/live');
     es.addEventListener('cheer', () => void load());
     return () => es.close();
-  }, [on, load]);
+  }, [load]);
   const seen = useCallback((ids: string[]) => {
     ids.forEach(id => shownIds.current.add(id));
     setUnseen(u => u.filter(c => !ids.includes(c.id)));
@@ -53,28 +52,25 @@ export function useCheerFeed(on: boolean, initialCorner: Corner | null = null) {
   return { unseen, corner, seen };
 }
 
-/** The platform's one banner at a time: referee lights (L) and, with item 80, cheers; 8 s each. */
-export function useBanners<L>(item80: boolean, busy: boolean, initialCorner: Corner | null = null) {
-  const feed = useCheerFeed(item80, initialCorner);
+/** The platform's one banner at a time: referee lights (L) and cheers; 8 s each. */
+export function useBanners<L>(busy: boolean, initialCorner: Corner | null = null) {
+  const feed = useCheerFeed(initialCorner);
   const [shown, setShown] = useState<Shown<L> | null>(null);
   const [lights, setLights] = useState<L[]>([]);
   const { unseen, seen } = feed;
   useEffect(() => {
-    if (!item80) return;
     const r = step({ busy, shown, lights, unseen });
     if (!r) return;
     setShown(r.shown); setLights(r.lights);
     if (r.seen.length) seen(r.seen);
-  }, [item80, busy, shown, lights, unseen, seen]);
+  }, [busy, shown, lights, unseen, seen]);
   useEffect(() => {
     if (!shown) return;
     const t = setTimeout(() => setShown(null), 8000);
     return () => clearTimeout(t);
   }, [shown?.k]); // eslint-disable-line react-hooks/exhaustive-deps
-  // the 1:12 AM copy: a lights banner drops in at once, the newest in place of the last
-  const pushLights = useCallback((b: L) => {
-    if (item80) setLights(q => [...q, b]); else setShown({ kind: 'lights', b, k: ++K });
-  }, [item80]);
+  // a lights banner waits its turn (step, above)
+  const pushLights = useCallback((b: L) => setLights(q => [...q, b]), []);
   const dismiss = useCallback(() => setShown(null), []);
   return { shown, pushLights, dismiss, corner: feed.corner };
 }
@@ -135,7 +131,7 @@ export function TotalCheers({ initial }: { initial: Corner | null }) {
     const t = setTimeout(() => setRevealed(true), off ? 0 : 520);
     return () => clearTimeout(t);
   }, []);
-  const { shown, dismiss, corner } = useBanners<never>(true, !revealed, initial);
+  const { shown, dismiss, corner } = useBanners<never>(!revealed, initial);
   return (
     <>
       <YourCorner corner={corner} />

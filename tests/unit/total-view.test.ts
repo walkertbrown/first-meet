@@ -1,5 +1,4 @@
-// "You totaled" (5.28): the words and numbers of its three states, with item 75 off (the 1:12 AM
-// copy) and on.
+// "You totaled" (5.28): the words and numbers of its three states.
 import { describe, expect, it } from 'vitest';
 import type { MeetAttempt } from '../../web/lib/meet';
 import { bombedWords, homeScoreText, homeSum, totalLifts, totalWords, unitLine, waitingBody } from '../../web/lib/total-view';
@@ -30,41 +29,29 @@ describe('You totaled (5.28)', () => {
     expect(unitLine('lb', 'home')).toBe('LB LIFTED');
   });
 
-  it('switched off (1:12 AM): Soo reads her name, "See my meet card", "Watch meet night", demo or not', () => {
-    for (const demo of [true, false]) {
-      const w = totalWords(demo, false);
-      expect(w.body).toBe("That's your first total. Soo is live at 8 pm Eastern tonight. Every woman who totaled is on her screen. Watch for your name.");
-      expect(w.primary).toEqual({ label: 'See my meet card', href: '/me/card' });
-      expect(w.ghost).toEqual({ label: 'Watch meet night', href: '/live' });
-    }
-  });
-
-  it('item 75 on: a demo lifter is told about a real meet night; "See my lifts" until phase 4', () => {
-    expect(totalWords(true, true)).toEqual({
+  it('item 75: a demo lifter is told about a real meet night; "See my lifts" until phase 4', () => {
+    expect(totalWords(true)).toEqual({
       body: "That's your first total. On a real meet night, every woman who totaled is on the host's screen.",
       primary: { label: 'See my lifts', href: '/platform' },
       ghost: { label: 'Watch a meet night', href: '/sample' },
     });
-    const real = totalWords(false, true);
-    expect(real.body).toMatch(/Soo is live at 8 pm Eastern tonight/);
+    const real = totalWords(false);
+    expect(real.body).toBe("That's your first total. Soo is live at 8 pm Eastern tonight. Every woman who totaled is on her screen. Watch for your name.");
     expect(real.primary).toEqual({ label: 'See my lifts', href: '/platform' });
     expect(real.ghost).toEqual({ label: 'Watch meet night', href: '/live' });
   });
 
-  it('bombed out: the lift she missed, the free meet, "See my lifts" in both copies', () => {
-    for (const item75 of [false, true]) {
-      const b = bombedWords('bench', 'home', false, item75, false);
-      expect(b.body).toBe("Bombed out happens to champions. You didn't get a good overhead press this time, so there's no total, but every lift still counts in your training log.");
-      expect(b.free).toBe("Your next meet is free. We've added it to your account.");
-      expect(b.primary).toEqual({ label: 'See my lifts', href: '/platform' });
-    }
-    expect(bombedWords('squat', 'barbell', true, true).ghost.href).toBe('/sample');
+  it('bombed out: the lift she missed, the free meet, "See my lifts"', () => {
+    const b = bombedWords('bench', 'home', false);
+    expect(b.body).toBe("Bombed out happens to champions. You didn't get a good overhead press this time, so there's no total, but every lift still counts in your training log.");
+    expect(b.free).toBe("Your next meet is free. We've added it to your account.");
+    expect(b.primary).toEqual({ label: 'See my lifts', href: '/platform' });
+    expect(bombedWords('bench', 'home', true).primary).toEqual({ label: 'See my lifts', href: '/platform' });
+    expect(bombedWords('squat', 'barbell', true).ghost.href).toBe('/sample');
+    expect(bombedWords('squat', 'barbell', false).ghost.href).toBe('/live');
     // item 77: a demo lifter reads what a real meet would do; a real lifter's line doesn't change
-    expect(bombedWords('squat', 'barbell', true, false, true).free).toBe('In a real meet, your next meet would be free.');
-    expect(bombedWords('squat', 'barbell', true, true, true).free).toBe('In a real meet, your next meet would be free.');
-    expect(bombedWords('squat', 'barbell', true, false, false).free).toBe("Your next meet is free. We've added it to your account.");
-    expect(bombedWords('squat', 'barbell', false, false, true).free).toBe("Your next meet is free. We've added it to your account.");
-    expect(bombedWords('squat', 'barbell', true, false).ghost.href).toBe('/live');
+    expect(bombedWords('squat', 'barbell', true).free).toBe('In a real meet, your next meet would be free.');
+    expect(bombedWords('squat', 'barbell', false).free).toBe("Your next meet is free. We've added it to your account.");
   });
 
   it('waiting on a referee names the attempt', () => {

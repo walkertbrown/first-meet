@@ -12,7 +12,6 @@ import { DoneLive } from '@/components/done-live';
 import { OpensIn } from '@/components/opens-in';
 import { currentViewer } from '@/lib/roles';
 import { platformView } from '@/lib/platform-view';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { ensureRealMeets, nextBlockStarts } from '@/lib/next-block';
 import '../try.css';
 import '../platform.css';
@@ -98,9 +97,8 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
   );
 }
 
-/** The next block's start (5.24). The 1:12 AM plan gives no date ("soon"); item 76 reads it from the next real meet. */
+/** The next block's start (5.24), read from the next real meet. */
 async function nextBlockDate() {
-  if (!PLAN_SWITCHES.item76) return 'soon';
   await ensureRealMeets(db());
   return nextBlockStarts(db());
 }

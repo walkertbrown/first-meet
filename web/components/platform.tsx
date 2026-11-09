@@ -9,7 +9,6 @@ import { MeetAttempt } from '@/components/meet-attempt';
 import { BarDiagram } from '@/components/bar-diagram';
 import { CheerBanner, useBanners } from '@/components/cheer-banner';
 import { DemoFlightStrip } from '@/components/flight-strip';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { apiFetch } from '@/lib/stage/server-clock';
 import { notJudgedLabel } from '@/lib/stage/meet-words';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
@@ -26,13 +25,13 @@ const GROUPS: Record<'barbell' | 'home', string[]> = { barbell: ['Squat', 'Bench
 
 /**
  * The 9-attempt row (look 4): three groups of three 34 px slots; a judged slot shows its mini lamp.
- * A close call (5.27): the 1:12 AM copy puts "Waiting" in the slot; item 76 keeps the slot 34 px with
- * only its pulsing unlit lamp and puts "WAITING" under the group, once (look 4, "Waiting on a referee").
+ * A close call (5.27, item 76): the slot stays 34 px with only its pulsing unlit lamp, and "WAITING"
+ * sits under the group, once (look 4, "Waiting on a referee").
  */
-export function NineRow({ row, division, label = 'Your nine attempts', item76 = PLAN_SWITCHES.item76 }: { row: RowCell[]; division: 'barbell' | 'home'; label?: string; item76?: boolean }) {
+export function NineRow({ row, division, label = 'Your nine attempts' }: { row: RowCell[]; division: 'barbell' | 'home'; label?: string }) {
   return (
     // item 85 (look 4 "Not judged"): a void slot's NOT JUDGED sits under its group where WAITING goes
-    <div className={item76 ? 'nine wait-below' : row.some(c => c.state === 'void') ? 'nine nj-below' : 'nine'} aria-label={label}>
+    <div className="nine wait-below" aria-label={label}>
       {[0, 1, 2].map(g => {
         const cells = row.slice(g * 3, g * 3 + 3);
         return (
@@ -42,22 +41,21 @@ export function NineRow({ row, division, label = 'Your nine attempts', item76 = 
               {cells.map(c => {
                 const name = `${liftWord(c.lift, division)} ${c.number}`;
                 const said = c.state === 'white' ? 'good lift' : c.state === 'red' ? 'no lift'
-                  : c.state === 'waiting' ? (item76 ? 'waiting for a referee' : 'Waiting') : c.state === 'now' ? 'now' : '';
+                  : c.state === 'waiting' ? 'waiting for a referee' : c.state === 'now' ? 'now' : '';
                 const aria = c.state === 'void' ? notJudgedLabel(liftWord(c.lift, division), c.number, c.voidReason) : said ? `${name}, ${said}` : name;
                 return (
                   <div key={c.number} className={`slot ${c.state}`} aria-label={aria} role="img">
                     {c.state === 'void' ? <span aria-hidden="true">{'\u2013'}</span>
                       : c.state === 'white' || c.state === 'red' ? <i className={`mini-lamp ${c.state}`} />
-                      : c.state === 'waiting' ? <><i className="mini-lamp pulse" />{!item76 && <span className="slot-wait">Waiting</span>}</>
+                      : c.state === 'waiting' ? <i className="mini-lamp pulse" />
                         : <span aria-hidden="true">{c.number}</span>}
                   </div>
                 );
               })}
             </div>
             {(() => {
-              const waits = item76 && cells.some(c => c.state === 'waiting');
+              const waits = cells.some(c => c.state === 'waiting');
               const nj = cells.some(c => c.state === 'void');
-              if (!item76 && !nj) return null;
               return <span className={`grp-wait eyebrow${waits || nj ? ' on' : ''}${!waits && nj ? ' nj' : ''}`} aria-hidden="true">{waits || !nj ? 'Waiting' : 'Not judged'}</span>;
             })()}
           </div>
@@ -84,7 +82,7 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
   const [error, setError] = useState('');
   // item 80: every banner waits while she may be under a bar, and her cheers show here
   const [busy, setBusy] = useState(false);
-  const { shown, pushLights, dismiss } = useBanners<Banner>(PLAN_SWITCHES.item80, busy);
+  const { shown, pushLights, dismiss } = useBanners<Banner>(busy);
   const [welcome, setWelcome] = useState(!!welcomeCorner);
   // closing it drops ?welcome=1, so a reload doesn't bring it back
   const closeWelcome = useCallback(() => { setWelcome(false); router.replace('/platform', { scroll: false }); }, [router]);
@@ -172,7 +170,7 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
         demoReferee={demo}
         closesAt={closesAt}
         anyJudged={row.some(c => c.state === 'white' || c.state === 'red')}
-        onBusy={PLAN_SWITCHES.item80 ? setBusy : undefined}
+        onBusy={setBusy}
         strip={demo ? <DemoFlightStrip division={lifter.division} units={lifter.units} cardName={lifter.cardName} /> : null}
       />
       {error && !sheet && <p className="platform-error small" role="alert">{error}</p>}
@@ -206,7 +204,7 @@ function untilLine(iso: string) {
 }
 
 /** The demo's welcome sheet (5.36, look 5.10): her corner page opens in a new tab; "Go to the platform" closes it. */
-export function WelcomeSheet({ corner, onClose, item78 = PLAN_SWITCHES.item78 }: { corner: string; onClose: () => void; item78?: boolean }) {
+export function WelcomeSheet({ corner, onClose }: { corner: string; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -223,10 +221,8 @@ export function WelcomeSheet({ corner, onClose, item78 = PLAN_SWITCHES.item78 }:
         <p className="body">{WELCOME_WORDS.corner}</p>
         <div className="try-actions">
           <button className="btn" type="button" onClick={onClose}>{WELCOME_WORDS.go}</button>
-          {item78
-            // item 78: the short label, and the new-tab mark 8 px after it (look 5.14a)
-            ? <a className="btn ghost new-tab" href={corner} target="_blank" rel="noopener" aria-label={WELCOME_WORDS.openCornerSaid}>{WELCOME_WORDS.openCornerShort}<ArrowUpRight weight="bold" size={24} aria-hidden="true" /></a>
-            : <a className="btn ghost" href={corner} target="_blank" rel="noopener">{WELCOME_WORDS.openCorner}</a>}
+          {/* item 78: the short label, and the new-tab mark 8 px after it (look 5.14a) */}
+          <a className="btn ghost new-tab" href={corner} target="_blank" rel="noopener" aria-label={WELCOME_WORDS.openCornerSaid}>{WELCOME_WORDS.openCorner}<ArrowUpRight weight="bold" size={24} aria-hidden="true" /></a>
         </div>
       </div>
     </div>

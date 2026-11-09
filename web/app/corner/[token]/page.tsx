@@ -9,7 +9,6 @@ import { cornerView, juneView, type CornerView } from '@/lib/corner-view';
 import { cleanCornerName } from '@/lib/cheer-words';
 import { hasR2, r2 } from '@/lib/r2';
 import { DEMO_LINE } from '@/lib/total-view';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import '../../try.css';
 import '../../platform.css';
 import '../../corner.css';
@@ -60,7 +59,6 @@ export default async function CornerPage({ params }: { params: Promise<{ token: 
   const title = view.kind === 'totaled' ? `${view.name} totaled ${view.total} ${view.unit}.`
     : view.kind === 'bombed' ? `${view.name} finished her first meet.`
       : `${view.name}'s meet`;
-  const demoWords = view.demo && PLAN_SWITCHES.item75;
 
   return (
     <div className="try-page meet-page"><main className="try-col corner-col">
@@ -72,8 +70,8 @@ export default async function CornerPage({ params }: { params: Promise<{ token: 
       <CornerLive view={view} token={token} savedName={saved}>
         {view.kind === 'totaled' && (
           <div className="corner-after">
-            {demoWords && <p className="body-l">{DEMO_LINE}</p>}
-            <Link className="link" href={demoWords ? '/sample' : '/live'}>{demoWords ? 'Watch a meet night' : 'Soo is live tonight at 8 pm Eastern'}</Link>
+            {view.demo && <p className="body-l">{DEMO_LINE}</p>}
+            <Link className="link" href={view.demo ? '/sample' : '/live'}>{view.demo ? 'Watch a meet night' : 'Soo is live tonight at 8 pm Eastern'}</Link>
           </div>
         )}
       </CornerLive>

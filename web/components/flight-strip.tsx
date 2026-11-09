@@ -5,7 +5,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheerSheet } from '@/components/corner';
 import { CHEERS, type CheerKind } from '@/lib/cheer-words';
-import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { demoFlightAt, type FlightRow } from '@/lib/demo-flight';
 
 const SENT_KEY = 'fm-cheers-flight';
@@ -18,7 +17,7 @@ function writeSent(v: Record<string, CheerKind>) {
   try { localStorage.setItem(SENT_KEY, JSON.stringify(Object.fromEntries(Object.entries(v).slice(-60)))); } catch { /* no storage */ }
 }
 
-export function DemoFlightStrip({ division, units, cardName, item81 = PLAN_SWITCHES.item81 }: { division: 'barbell' | 'home'; units: 'lb' | 'kg'; cardName: string; item81?: boolean }) {
+export function DemoFlightStrip({ division, units, cardName }: { division: 'barbell' | 'home'; units: 'lb' | 'kg'; cardName: string }) {
   const [now, setNow] = useState<Date | null>(null);
   const [sent, setSent] = useState<Record<string, CheerKind>>({});
   const [sheet, setSheet] = useState<FlightRow | null>(null);
@@ -45,7 +44,7 @@ export function DemoFlightStrip({ division, units, cardName, item81 = PLAN_SWITC
   };
 
   return (
-    <section className={item81 ? 'flight-strip under' : 'flight-strip'} aria-label="Your flight is lifting">
+    <section className="flight-strip" aria-label="Your flight is lifting">
       <header className="flight-head">
         <span className="eyebrow">Your flight is lifting</span>
         <span className="caption">Demo flight</span>
