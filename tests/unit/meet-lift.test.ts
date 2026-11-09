@@ -7,7 +7,7 @@ import { MeetLift, type MeetEvent, type MeetLiftName } from '@/lib/judge/meet-li
 import { checkCommandTimes, RULES, type Frame } from '@/lib/judge';
 import { liftCommands } from '@/lib/stage/meet-words';
 import { CLIPS_DIR } from '../clips/check';
-import { d, hold, arm, move, UP, DOWN, RACKED, LOCKED } from './press-poses';
+import { d, hold, arm, move, UP, DOWN, front, moveFront, F_RACKED, F_LOCKED } from './press-poses';
 
 const poses = (name: string) => JSON.parse(readFileSync(join(CLIPS_DIR, 'poses', `${name}.json`), 'utf8')) as { w: number; h: number; frames: Frame[] };
 
@@ -84,9 +84,11 @@ describe('a meet attempt on the phone', () => {
   });
 
   it('Home overhead press: "Start!", each rep counted, "Rack!" at the declared reps, no "Press!"', () => {
-    const rep = (t0: number) => [...move(t0, 700, RACKED, LOCKED), ...still(t0 + 700, 800, LOCKED), ...move(t0 + 1500, 700, LOCKED, RACKED), ...still(t0 + 2200, 300, RACKED)];
-    const frames = [...still(0, 1000, RACKED), ...rep(1000), ...rep(3500)];
-    const { said, ct, evs } = run(lead(RACKED, frames), d, 'bench', 2);
+    // filmed front-on (3.4c)
+    const fstill = (t0: number, ms: number, a: [number, number]) => hold(t0, ms, t => front(a[0], a[1], { jitter: 2, t }));
+    const rep = (t0: number) => [...moveFront(t0, 700, F_RACKED, F_LOCKED), ...fstill(t0 + 700, 800, F_LOCKED), ...moveFront(t0 + 1500, 700, F_LOCKED, F_RACKED), ...fstill(t0 + 2200, 300, F_RACKED)];
+    const frames = [...fstill(0, LEAD, F_RACKED), ...[...fstill(0, 1000, F_RACKED), ...rep(1000), ...rep(3500)].map(f => ({ ...f, t: f.t + LEAD }))];
+    const { said, ct, evs } = run(frames, d, 'bench', 2);
     expect(said).toEqual(['start', 'rack']);
     expect(evs.filter(e => e.type === 'rep')).toHaveLength(2);
     expect(ok(ct, 'bench')).toBeNull();

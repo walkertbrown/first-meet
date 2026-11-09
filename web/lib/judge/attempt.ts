@@ -95,9 +95,9 @@ export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, li
     }
   } else {
     window = { start: ct.start, end: ct.rack ?? durationMs };
-    // Barbell: the bench press. Home: the overhead press (3.7), judged per declared rep up to the phone's rep ends.
+    // Barbell: the bench press. Home: the overhead press (3.7), filmed front-on, every rep judged (3.4c).
     result = repsDeclared
-      ? judgeOverhead(frames, d, window, pressTimes(ct).repEnds, repsDeclared, rules)
+      ? judgeOverhead(frames, d, window, rules)
       : judgePress(frames, d, window, pressTimes(ct), rules);
   }
   const rep = result.reps[0];

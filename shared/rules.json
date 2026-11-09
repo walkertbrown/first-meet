@@ -5,7 +5,9 @@
   "frameCheck": {
     "holdMs": 1000,
     "edgeMargin": 0.03,
-    "sideOnMaxShoulderOverTorso": 0.35
+    "sideOnMaxShoulderOverTorso": 0.35,
+    "frontOnMinShoulderOverTorso": 0.5,
+    "roomAboveArm": 1.1
   },
   "visibilityCloseCallShare": 0.2,
   "squat": {
@@ -47,11 +49,14 @@
   },
   "overhead": {
     "startElbowMaxDeg": 100,
-    "startStillMs": 500,
-    "lockoutElbowMinDeg": 165,
-    "borderlineElbowMinDeg": 155,
-    "lockoutStillMs": 400,
+    "startWristOverNoseArm": 0.2,
+    "startStillMs": 300,
     "stillMaxArm": 0.07,
+    "repUpArm": 0.3,
+    "repBackArm": 0.15,
+    "lockoutElbowMinDeg": 145,
+    "borderlineElbowMinDeg": 135,
+    "lockoutStillMs": 400,
     "lockoutStillMaxArm": 0.12,
     "noRepMs": 20000,
     "homeNoRepMs": 8000

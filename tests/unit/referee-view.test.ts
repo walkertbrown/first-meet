@@ -81,7 +81,7 @@ describe('the reasons a referee can give', () => {
   it('the sentence fits the lift and division', () => {
     expect(reasonSentence('no_lockout', 'bench', 'barbell')).toMatch(/elbows lock/);
     expect(reasonSentence('no_lockout', 'squat', 'barbell')).toMatch(/stand all the way up/);
-    expect(reasonSentence('no_lockout', 'bench', 'home')).toBe("Your arms didn't straighten all the way overhead. Next time, press until your elbows lock and hold for the command.");
+    expect(reasonSentence('no_lockout', 'bench', 'home')).toBe("Your arms didn't straighten enough overhead, or didn't stay still at the top. Next time, press until your elbows are straight and hold it for a moment.");
     expect(reasonSentence('no_pause', 'bench', 'barbell')).toMatch(/rest on your chest/);
   });
   it('a Home red names the rep', () => {

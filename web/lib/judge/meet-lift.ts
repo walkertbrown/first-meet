@@ -48,8 +48,9 @@ export class MeetLift {
   constructor(d: Dims, readonly lift: MeetLiftName, private opts: { reps?: number | null; rules?: Rules; skipFrameCheck?: boolean } = {}) {
     this.rules = opts.rules ?? RULES;
     this.reps = opts.reps ?? 1;
-    this.check = new FrameCheck(d, this.rules);
     const home = !!opts.reps;
+    // Home's overhead press is filmed front-on, with room above her head (3.4c)
+    this.check = new FrameCheck(d, this.rules, home && lift === 'bench' ? 'front' : 'side');
     this.caller = lift === 'squat' ? { kind: 'squat', c: new SquatCaller(d, this.rules, !!opts.skipFrameCheck, this.reps) }
       : lift === 'deadlift' ? { kind: 'deadlift', c: new DeadliftCaller(d, this.rules, home ? this.reps : 1) }
       : home ? { kind: 'overhead', c: new OverheadCaller(d, this.rules, { reps: this.reps }) }

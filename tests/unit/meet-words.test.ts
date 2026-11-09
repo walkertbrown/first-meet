@@ -23,6 +23,7 @@ describe('meet words', () => {
 
   it('Home: the set as declared, and the red rep named', () => {
     expect(meetResult(a({ call: 'white', reps_declared: 10 }))!.body).toBe('All 10 reps counted. A referee would pass that.');
+    expect(meetResult(a({ call: 'white', reps_declared: 8, lift: 'bench' }))!.body).toBe("Your arms pressed up overhead, nearly straight, and you held them there. That's a good lift at First Meet.");
     expect(meetResult(a({ call: 'red', reason: 'depth', reps_declared: 10, red_rep: 6 }))!.reason!.eyebrow).toBe('REP 6 · DEPTH');
   });
 

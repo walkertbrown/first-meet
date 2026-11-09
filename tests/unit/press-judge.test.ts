@@ -4,7 +4,7 @@ import { BenchCaller, judgePress, pressKey, pressTimes, type PressCommand } from
 import { OverheadCaller, judgeOverhead, type OverheadCommand } from '@/lib/judge/overhead';
 import { judgeAttempt } from '@/lib/judge/attempt';
 import type { Frame } from '@/lib/judge/pose';
-import { BENT_TOP, d, DOWN, hold, LOCKED, move, RACKED, UP, arm } from './press-poses';
+import { d, DOWN, hold, move, UP, arm, front, moveFront, F_BENT, F_LOCKED, F_NEAR, F_RACKED } from './press-poses';
 
 function runBench(frames: Frame[]) {
   const c = new BenchCaller(d);
@@ -144,90 +144,131 @@ function runOverhead(frames: Frame[], reps: number) {
   return { ct, cmds };
 }
 
-describe('overhead press (Home)', () => {
-  const still = (t0: number, ms: number, a: [number, number]) => hold(t0, ms, t => arm(a[0], a[1], { jitter: 2, t }));
-  const rep = (t0: number, top: [number, number] = LOCKED, holdMs = 800) => [
-    ...move(t0, 700, RACKED, top), ...still(t0 + 700, holdMs, top), ...move(t0 + 700 + holdMs, 700, top, RACKED), ...still(t0 + 1400 + holdMs, 300, RACKED),
+describe('overhead press (Home), filmed front-on (3.4c, A)', () => {
+  const still = (t0: number, ms: number, a: [number, number], vis?: Record<number, number>) =>
+    hold(t0, ms, t => front(a[0], a[1], { jitter: 2, t, vis }));
+  /** A rep: up over 700 ms, `holdMs` at the top, down over 700 ms, then 300 ms at the shoulders (2.5 s with the default hold). */
+  const rep = (t0: number, top: [number, number] = F_LOCKED, holdMs = 800) => [
+    ...moveFront(t0, 700, F_RACKED, top), ...still(t0 + 700, holdMs, top), ...moveFront(t0 + 700 + holdMs, 700, top, F_RACKED), ...still(t0 + 1400 + holdMs, 300, F_RACKED),
   ];
+  const judge = (frames: Frame[], ct: Record<string, number>) => judgeOverhead(frames, d, { start: ct.start, end: ct.rack });
 
-  it('calls Start! at the shoulders, a rep at each held lockout, then Rack!', () => {
-    const frames = [...still(0, 1000, RACKED), ...rep(1000), ...rep(3200)];
+  it('calls Start! at the shoulders after 0.3 s still, counts each rep as it comes down, then Rack!', () => {
+    const frames = [...still(0, 1000, F_RACKED), ...rep(1000), ...rep(3500)];
     const { cmds } = runOverhead(frames, 2);
     expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rep', 'rack']);
+    expect(cmds[0].t).toBeLessThan(400);
+    // each rep is counted on the way down, not at the top
+    expect(cmds[1].t).toBeGreaterThan(1000 + 700 + 800);
   });
 
   it('never calls "Press!"', () => {
-    const frames = [...still(0, 1000, RACKED), ...rep(1000)];
+    const frames = [...still(0, 1000, F_RACKED), ...rep(1000)];
     expect(runOverhead(frames, 1).cmds.some(c => (c.cmd as string) === 'press')).toBe(false);
   });
 
-  it('gives a white to every locked, held rep', () => {
-    const frames = [...still(0, 1000, RACKED), ...rep(1000), ...rep(3200)];
+  it('gives a white to every rep held 0.4 s at 145° or more', () => {
+    const frames = [...still(0, 1000, F_RACKED), ...rep(1000), ...rep(3500)];
     const { ct } = runOverhead(frames, 2);
-    const r = judgeOverhead(frames, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 2);
+    const r = judge(frames, ct);
     expect(r.reps.map(x => x.call.light)).toEqual(['white', 'white']);
+    expect(r.reps[0].lockoutElbowDeg).toBeGreaterThanOrEqual(145);
     expect(r.call).toEqual({ light: 'white' });
   });
 
-  it('gives red no_lockout to a rep that stops short of a lockout, and Home\'s 8 s rule racks the set', () => {
-    const frames = [...still(0, 1000, RACKED), ...rep(1000), ...rep(3200, BENT_TOP, 1000), ...still(6100, 9000, RACKED)];
-    const { ct, cmds } = runOverhead(frames, 2);
-    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
-    const r = judgeOverhead(frames, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 2);
-    expect(r.reps.map(x => x.call)).toEqual([{ light: 'white' }, { light: 'red', reason: 'no_lockout' }]);
+  it('counts a bent rep like any other, gives it red no_lockout, and judges every rep after it', () => {
+    const frames = [...still(0, 1000, F_RACKED), ...rep(1000), ...rep(3500, F_BENT), ...rep(6000)];
+    const { ct, cmds } = runOverhead(frames, 3);
+    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rep', 'rep', 'rack']);
+    const r = judge(frames, ct);
+    expect(r.reps.map(x => x.call)).toEqual([{ light: 'white' }, { light: 'red', reason: 'no_lockout' }, { light: 'white' }]);
+    expect(r.reps[1].lockoutElbowDeg).toBeLessThan(135);
     expect(r.call).toEqual({ light: 'red', reason: 'no_lockout' });
   });
 
-  it('gives a close call borderline_lockout to a rep held between 155° and 165°', () => {
-    const NEAR: [number, number] = [-80, -100]; // elbows ~160°, wrists above the nose
-    const frames = [...still(0, 1000, RACKED), ...rep(1000, NEAR, 1000), ...still(3700, 18000, RACKED)];
-    const { ct, cmds } = runOverhead(frames, 1);
-    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rack']);
-    const r = judgeOverhead(frames, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 1);
+  it('gives a close call borderline_lockout to a rep held at 135–145°', () => {
+    const frames = [...still(0, 1000, F_RACKED), ...rep(1000, F_NEAR, 1000)];
+    const { ct } = runOverhead(frames, 1);
+    const r = judge(frames, ct);
     expect(r.reps[0].call).toEqual({ light: 'close', reason: 'borderline_lockout' });
-    expect(r.reps[0].lockoutElbowDeg).toBeGreaterThan(155);
-    expect(r.reps[0].lockoutElbowDeg).toBeLessThanOrEqual(165);
+    expect(r.reps[0].lockoutElbowDeg).toBeGreaterThanOrEqual(135);
+    expect(r.reps[0].lockoutElbowDeg).toBeLessThan(145);
   });
 
-  it('counts a lockout whose dumbbells settle a little (under 12% of the arm in 0.4 s), not one that keeps moving', () => {
-    // the wrists sink `px` pixels over the 800 ms hold at the top (the arm is 240 px)
+  it('gives red no_lockout to a straight-armed rep that never holds still at the top', () => {
+    const frames = [...still(0, 1000, F_RACKED), ...moveFront(1000, 700, F_RACKED, F_LOCKED), ...moveFront(1700, 700, F_LOCKED, F_RACKED), ...still(2400, 300, F_RACKED)];
+    const { ct, cmds } = runOverhead(frames, 1);
+    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
+    const r = judge(frames, ct);
+    expect(r.reps[0].call).toEqual({ light: 'red', reason: 'no_lockout' });
+    expect(r.reps[0].held).toBe(false);
+  });
+
+  it('a hold is dumbbells settling under 12% of her arm in 0.4 s, not ones that keep moving', () => {
+    // the wrists sink `px` pixels over the 800 ms at the top (the arm is 240 px)
     const settle = (px: number) => (t0: number) => hold(t0, 800, t => {
-      const p = arm(LOCKED[0], LOCKED[1]);
+      const p = front(F_LOCKED[0], F_LOCKED[1]);
       const dy = (px * (t - t0)) / 800 / d.h;
       p[15] = [p[15][0], p[15][1] + dy, p[15][2]]; p[16] = [p[16][0], p[16][1] + dy, p[16][2]];
       return p;
     });
     const set = (px: number) => [
-      ...still(0, 1000, RACKED), ...move(1000, 700, RACKED, LOCKED), ...settle(px)(1700),
-      ...move(2500, 700, LOCKED, RACKED), ...still(3200, 300, RACKED),
+      ...still(0, 1000, F_RACKED), ...moveFront(1000, 700, F_RACKED, F_LOCKED), ...settle(px)(1700),
+      ...moveFront(2500, 700, F_LOCKED, F_RACKED), ...still(3200, 300, F_RACKED),
     ];
     const ok = set(40); // 20 px in 0.4 s: 8% of the arm
-    const { ct, cmds } = runOverhead(ok, 1);
-    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
-    expect(judgeOverhead(ok, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 1).call).toEqual({ light: 'white' });
-    expect(runOverhead(set(120), 1).cmds.map(c => c.cmd)).toEqual(['start']); // 60 px in 0.4 s: 25%
+    const a = runOverhead(ok, 1);
+    expect(judge(ok, a.ct).call).toEqual({ light: 'white' });
+    const moving = set(120); // 60 px in 0.4 s: 25%
+    const b = runOverhead(moving, 1);
+    expect(b.cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
+    expect(judge(moving, b.ct).call).toEqual({ light: 'red', reason: 'no_lockout' });
   });
 
-  it('waits for "Start!" while the elbows are over 100° or the wrists are above the nose', () => {
-    const HIGH: [number, number] = [-20, -100]; // wrists above the nose
-    const OPEN: [number, number] = [70, 20]; // elbows ~130°, wrists below the nose
-    expect(runOverhead([...still(0, 2000, HIGH)], 1).cmds).toEqual([]);
+  it('a hold needs both wrists above the nose', () => {
+    // elbows straight out to the sides at shoulder height: 180°, but the wrists are below the nose
+    const OUT: [number, number] = [180, 180];
+    const frames = [...still(0, 1000, F_RACKED), ...moveFront(1000, 700, F_RACKED, F_LOCKED), ...moveFront(1700, 300, F_LOCKED, OUT), ...still(2000, 800, OUT), ...moveFront(2800, 500, OUT, F_RACKED), ...still(3300, 300, F_RACKED)];
+    const { ct } = runOverhead(frames, 1);
+    expect(judge(frames, ct).reps[0].call).toEqual({ light: 'red', reason: 'no_lockout' });
+  });
+
+  it('waits for "Start!" while an elbow is at 100° or more, or a wrist is more than 0.2 arm above the nose', () => {
+    const OPEN: [number, number] = [135, -165]; // elbows 120°, wrists low
+    const HIGH: [number, number] = [-170, -60]; // elbows 70°, wrists 55 px (0.23 arm) above the nose
     expect(runOverhead([...still(0, 2000, OPEN)], 1).cmds).toEqual([]);
+    expect(runOverhead([...still(0, 2000, HIGH)], 1).cmds).toEqual([]);
+    // a wrist up to 0.2 arm above the nose still counts as racked
+    const JUST: [number, number] = [170, -75]; // elbows 65°, wrists 25 px (0.1 arm) above the nose
+    expect(runOverhead([...still(0, 2000, JUST)], 1).cmds.map(c => c.cmd)).toEqual(['start']);
   });
 
-  it('a failed rep before a good one is the red: the first time the wrists go above the nose', () => {
-    const frames = [...still(0, 1000, RACKED), ...rep(1000, BENT_TOP, 600), ...rep(3000)];
-    const { ct, cmds } = runOverhead(frames, 1);
-    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
-    const r = judgeOverhead(frames, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 1);
-    expect(r.reps[0].call).toEqual({ light: 'red', reason: 'no_lockout' });
+  it('"Rack!" 8 s after a rep with no new one, and 20 s after "Start!" with no rep at all', () => {
+    const one = [...still(0, 1000, F_RACKED), ...rep(1000), ...still(3500, 9000, F_RACKED)];
+    const a = runOverhead(one, 3);
+    expect(a.cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
+    expect(a.ct.rack - a.ct.rep_1).toBeGreaterThanOrEqual(8000);
+    const none = runOverhead([...still(0, 21000, F_RACKED)], 3);
+    expect(none.cmds.map(c => c.cmd)).toEqual(['start', 'rack']);
+    expect(none.cmds[1]).toMatchObject({ noRep: true });
   });
 
-  it('a Home bench attempt is the overhead press, judged per declared rep', () => {
-    const frames = [...still(0, 1000, RACKED), ...rep(1000), ...rep(3200)];
+  it('a close call for visibility when the nose or an arm point isn\'t seen on the judged frame', () => {
+    const up = [...still(0, 1000, F_RACKED), ...moveFront(1000, 700, F_RACKED, F_LOCKED), ...still(1700, 800, F_LOCKED), ...moveFront(2500, 700, F_LOCKED, F_RACKED), ...still(3200, 300, F_RACKED)];
+    // the left wrist goes dark while the arms are up
+    const frames = up.map(f => (f.t > 1300 && f.t < 2700 ? { ...f, p: f.p!.map((q, i) => (i === 15 ? [q[0], q[1], 0.3] : q)) as Frame['p'] } : f));
+    const { ct } = runOverhead(frames, 1);
+    expect(judge(frames, ct).reps[0].call).toEqual({ light: 'close', reason: 'visibility' });
+  });
+
+  it('a Home bench attempt is the overhead press: every rep judged, the set\'s light from 3.8a', () => {
+    const frames = [...still(0, 1000, F_RACKED), ...rep(1000), ...rep(3500)];
     const { ct } = runOverhead(frames, 2);
-    const v = judgeAttempt(frames, { ...d, duration: 6 }, 'bench', ct, undefined, 2);
+    const v = judgeAttempt(frames, { ...d, duration: 7 }, 'bench', ct, undefined, 2);
     expect(v.call).toEqual({ light: 'white' });
     expect(v.repLights?.map(x => x.call)).toEqual(['white', 'white']);
+    const bent = [...still(0, 1000, F_RACKED), ...rep(1000), ...rep(3500, F_NEAR, 1000)];
+    const b = runOverhead(bent, 2);
+    expect(judgeAttempt(bent, { ...d, duration: 7 }, 'bench', b.ct, undefined, 2).call).toEqual({ light: 'close', reason: 'borderline_lockout' });
   });
 });

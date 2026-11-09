@@ -41,6 +41,8 @@ export const WHITE_SENTENCE: Record<string, string> = {
   bench: 'It touched, you waited for the call, and you locked out. A referee would pass that.',
   deadlift: 'You stood tall with your hips and knees locked. A referee would pass that.',
 };
+/** 5.34, on #home-press A (3.4c). */
+export const HOME_PRESS_WHITE = "Your arms pressed up overhead, nearly straight, and you held them there. That's a good lift at First Meet.";
 const RED_BODY = 'Red lights happen to everyone, even world champions. Most women take it again.';
 const CLOSE_BODY = 'A referee is looking at this one, usually within 15 minutes. You can take your next attempt while you wait.';
 
@@ -55,7 +57,8 @@ export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: 
   const lamps = lights as LampState[];
   const split = whites === 2 ? 'Two white lights and one red. Two whites is a good lift.' : whites === 1 ? 'One white light and two red.' : undefined;
   if (a.call === 'white') {
-    const body = a.reps_declared ? `All ${a.reps_declared} reps counted. A referee would pass that.` : (WHITE_SENTENCE[lift] ?? WHITE_SENTENCE.squat);
+    // 5.34 (#home-press A): the Home overhead press has its own good-lift sentence
+    const body = a.reps_declared ? (lift === 'bench' ? HOME_PRESS_WHITE : `All ${a.reps_declared} reps counted. A referee would pass that.`) : (WHITE_SENTENCE[lift] ?? WHITE_SENTENCE.squat);
     return { title: 'Good lift', body, small: split, lamps };
   }
   const code = (a.reason && a.reason in REASON_EYEBROW ? a.reason : 'depth') as ReasonCode;

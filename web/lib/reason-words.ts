@@ -21,9 +21,9 @@ export function reasonSentence(code: ReasonCode, lift: string, division: string)
       return 'Almost. Your hips stopped just above your knees. Sit back a little further and take it again.';
     case 'no_lockout':
       if (lift !== 'bench') return "You didn't finish standing tall. Next time, stand all the way up and hold still for the command.";
-      // 5.34: Home's press is the overhead press
+      // 5.34: Home's press is the overhead press (choice A, #home-press)
       return division === 'home'
-        ? "Your arms didn't straighten all the way overhead. Next time, press until your elbows lock and hold for the command."
+        ? "Your arms didn't straighten enough overhead, or didn't stay still at the top. Next time, press until your elbows are straight and hold it for a moment."
         : "Your arms didn't straighten all the way. Next time, press until your elbows lock and hold for the command.";
     case 'no_pause':
       // the Barbell bench only: the overhead press has no "Press!"

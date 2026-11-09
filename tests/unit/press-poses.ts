@@ -43,3 +43,38 @@ export const RACKED: [number, number] = [60, -100]; // elbow ~20°, wrist near s
 export const LOCKED: [number, number] = [-90, -90];
 export const BENT_TOP: [number, number] = [-60, -100]; // wrists above the nose, elbows ~140°
 
+
+/**
+ * Home's overhead press, filmed front-on (3.4c): shoulders at (440, 400) and (560, 400), hips 200 px
+ * below (the shoulders 0.6 × the torso apart), the nose at (500, 330). `upper` and `fore` are the
+ * left arm's directions (degrees, 0 = right, 90 = down), 120 px each; the right arm mirrors it.
+ * `vis` overrides points' visibility.
+ */
+export function front(upper: number, fore: number, opts: { jitter?: number; t?: number; vis?: Record<number, number>; dy?: number } = {}): Pt[] {
+  const p: Pt[] = Array.from({ length: 33 }, () => [0.5, 0.5, 0.95] as Pt);
+  const j = (k: number) => (opts.jitter ? opts.jitter * Math.sin((opts.t ?? 0) * 0.013 + k) : 0);
+  const rad = (a: number) => (a * Math.PI) / 180;
+  const dy = opts.dy ?? 0;
+  const set = (i: number, x: number, y: number) => { p[i] = [x / d.w, (y + dy) / d.h, opts.vis?.[i] ?? 0.95]; };
+  set(0, 500, 330); set(7, 480, 335); set(8, 520, 335);
+  for (const [s, e, w, sx, flip] of [[11, 13, 15, 440, 1], [12, 14, 16, 560, -1]] as const) {
+    const u = flip === 1 ? upper : 180 - upper, f = flip === 1 ? fore : 180 - fore;
+    const el = { x: sx + 120 * Math.cos(rad(u)), y: 400 + 120 * Math.sin(rad(u)) };
+    set(s, sx, 400); set(e, el.x, el.y);
+    set(w, el.x + 120 * Math.cos(rad(f)) + j(s), el.y + 120 * Math.sin(rad(f)) + j(s + 1));
+  }
+  set(23, 450, 600); set(24, 550, 600); set(25, 455, 780); set(26, 545, 780);
+  set(27, 460, 950); set(28, 540, 950); set(29, 455, 960); set(30, 545, 960); set(31, 450, 965); set(32, 550, 965);
+  return p;
+}
+
+/** Moves the front-on arms from one pose to another over `ms`. */
+export const moveFront = (t0: number, ms: number, a: [number, number], b: [number, number]): Frame[] =>
+  hold(t0, ms, t => { const k = (t - t0) / ms; return front(a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k); });
+
+// Front-on: dumbbells at the shoulders (upper arm down and out, forearm up; elbow 45°, the wrists
+// 35 px below the nose); locked (180°); and three tops with the wrists above the nose.
+export const F_RACKED: [number, number] = [135, -90];
+export const F_LOCKED: [number, number] = [-90, -90];
+export const F_NEAR: [number, number] = [-110, -70]; // elbows 140°
+export const F_BENT: [number, number] = [-120, -60]; // elbows 120°
