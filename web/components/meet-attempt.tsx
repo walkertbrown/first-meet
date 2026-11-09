@@ -423,7 +423,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       return;
     }
     // Saved on the phone before anything is sent (3.10), so a reload or a lost signal keeps it.
-    await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes: ct, uploadId: null, savedAt: Date.now() });
+    const savedAt = Date.now();
+    await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes: ct, uploadId: null, savedAt, recordedAt: Math.round(savedAt - (performance.now() - recording.startedAt)) });
     freeze((lift === 'squat' && deeperOf(deepest)) || last);
     const clipUrl = URL.createObjectURL(blob);
     const replay = async () => {

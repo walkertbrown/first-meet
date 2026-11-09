@@ -63,7 +63,7 @@ export async function markUploaded(db: Db, store: Store, attemptId: string, comm
   if (!head || head.bytes === 0) return { status: 409 as const, error: 'video not in storage' };
   if (head.bytes > MAX_CLIP_BYTES) {
     // 3.11 "Your clip didn't send": nothing judged, and the attempt is hers again
-    await db.update(attempts).set({ status: 'declared', videoKey: null })
+    await db.update(attempts).set({ status: 'declared', videoKey: null, recordedAt: null })
       .where(and(eq(attempts.id, attemptId), sql`${attempts.status} in ('declared','recording','uploading')`));
     await logEvent(db, 'upload_refused', { bytes: head.bytes, why: 'too big' }, attemptId);
     return { status: 413 as const, error: 'clip too big' };

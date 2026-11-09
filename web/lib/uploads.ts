@@ -25,8 +25,19 @@ async function own(db: Db, attemptId: string, lifterId: string) {
 
 const isFail = (x: unknown): x is Fail => !!x && typeof x === 'object' && 'error' in x;
 
+/**
+ * recorded_at is the phone's (3.4): when it started recording. A time it can't have recorded at is
+ * held to what it can: no later than now, no earlier than the attempt was declared. None, or not a
+ * time: now, as before.
+ */
+export function phoneRecordedAt(sent: unknown, declaredAt: Date, now = new Date()): Date {
+  const t = typeof sent === 'string' || typeof sent === 'number' ? new Date(sent).getTime() : NaN;
+  if (!Number.isFinite(t)) return now;
+  return new Date(Math.min(now.getTime(), Math.max(declaredAt.getTime(), t)));
+}
+
 /** Starts (or, for the same attempt, starts again) the upload. */
-export async function startAttemptUpload(db: Db, store: UploadStore, attemptId: string, lifterId: string, type: string, device = 'unknown') {
+export async function startAttemptUpload(db: Db, store: UploadStore, attemptId: string, lifterId: string, type: string, device = 'unknown', recordedAt?: unknown, now = new Date()) {
   const a = await own(db, attemptId, lifterId);
   if (isFail(a)) return a;
   if (!['declared', 'recording', 'uploading'].includes(a.status)) return { status: 409, error: `attempt is ${a.status}` } as Fail;
@@ -39,7 +50,7 @@ export async function startAttemptUpload(db: Db, store: UploadStore, attemptId: 
   }
   const key = keys.meetVideo(a.meetId, a.lifterId, a.id, ext);
   const uploadId = await store.startUpload(key, `video/${ext}`);
-  await db.update(attempts).set({ videoKey: key, status: 'uploading', recordedAt: a.recordedAt ?? new Date() }).where(eq(attempts.id, a.id));
+  await db.update(attempts).set({ videoKey: key, status: 'uploading', recordedAt: a.recordedAt ?? phoneRecordedAt(recordedAt, a.createdAt, now) }).where(eq(attempts.id, a.id));
   // one upload tried, for /ops "failed or refused uploads, by device" (2.4)
   await logEvent(db, 'upload_started', { device }, a.id);
   return { status: 200 as const, key, uploadId };
@@ -96,7 +107,7 @@ export async function attemptUploaded(db: Db, store: UploadStore, attemptId: str
     if (!body.upload_id || !body.parts?.length) return { status: 400, error: 'upload_id and parts are needed' } as Fail;
     const listed = await store.listParts(a.videoKey, body.upload_id);
     if (listed && listed.reduce((n, x) => n + x.bytes, 0) > MAX_CLIP_BYTES) {
-      await db.update(attempts).set({ status: 'declared', videoKey: null }).where(eq(attempts.id, a.id));
+      await db.update(attempts).set({ status: 'declared', videoKey: null, recordedAt: null }).where(eq(attempts.id, a.id));
       await logEvent(db, 'upload_refused', { bytes: listed.reduce((n, x) => n + x.bytes, 0), why: 'too big' }, a.id);
       return { status: 413, error: 'clip too big' } as Fail;
     }

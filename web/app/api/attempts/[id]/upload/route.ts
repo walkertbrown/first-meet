@@ -16,11 +16,11 @@ export async function POST(req: Request, { params }: Ctx) {
   const s = sessionFrom(req);
   if (!s) return Response.json({ error: 'sign in' }, { status: 401 });
   const { id } = await params;
-  const body = await req.json().catch(() => null) as { type?: string; upload_id?: string; parts?: number[] } | null;
+  const body = await req.json().catch(() => null) as { type?: string; recorded_at?: unknown; upload_id?: string; parts?: number[] } | null;
   if (!body) return Response.json({ error: 'bad body' }, { status: 400 });
   if (body.upload_id && Array.isArray(body.parts)) return json(await signParts(db(), r2(), id, s.lifterId, body.upload_id, body.parts));
   if (typeof body.type !== 'string') return Response.json({ error: 'type is needed' }, { status: 400 });
-  const r = await startAttemptUpload(db(), r2(), id, s.lifterId, body.type, deviceFromHeaders(req.headers));
+  const r = await startAttemptUpload(db(), r2(), id, s.lifterId, body.type, deviceFromHeaders(req.headers), body.recorded_at);
   return 'uploadId' in r ? Response.json({ key: r.key, upload_id: r.uploadId }) : json(r);
 }
 

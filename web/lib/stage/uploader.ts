@@ -15,6 +15,8 @@ export type Pending = {
   commandTimes: Record<string, number>;
   uploadId: string | null;
   savedAt: number;
+  /** When the phone started recording (ms since 1970): the attempt's recorded_at (3.4, 3.8). */
+  recordedAt?: number;
 };
 
 export type UploadStatus =
@@ -98,7 +100,8 @@ export async function sendOnce(p: Pending, net: Net, onStatus: (s: UploadStatus)
     else p.uploadId = null; // the upload is gone (finished elsewhere, or expired): start it again
   }
   if (!p.uploadId) {
-    const r = await api(`${base}/upload`, { method: 'POST', body: { type: p.type } });
+    // recorded_at comes from the phone (3.4): a clip filmed before the close counts if it sends later (3.8)
+    const r = await api(`${base}/upload`, { method: 'POST', body: { type: p.type, recorded_at: new Date(p.recordedAt ?? p.savedAt).toISOString() } });
     if (r.status === 429) throw new Stop({ kind: 'limit', limit: r.body.limit as 'lifter' | 'everyone' });
     if (r.status === 409) {
       // already queued or judged (another tab, or a confirm we never heard): the server has it

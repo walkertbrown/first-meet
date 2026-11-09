@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue } from '../../web/db/schema';
 import { countDemoRun, startDemo } from '../../web/lib/demo';
-import { attemptUploaded, partsDone, signParts, startAttemptUpload, uploadFailed } from '../../web/lib/uploads';
+import { attemptUploaded, partsDone, phoneRecordedAt, signParts, startAttemptUpload, uploadFailed } from '../../web/lib/uploads';
 import { freshDb, MemStore, URL_ } from './setup';
 
 describe.skipIf(!URL_)('the meet video upload', () => {
@@ -65,8 +65,30 @@ describe.skipIf(!URL_)('the meet video upload', () => {
       expect(r).toMatchObject({ status: 413 });
     } finally { store.partBytes = 5; }
     const [a] = await db.select().from(attempts).where(eq(attempts.id, attempt.id));
-    expect(a).toMatchObject({ status: 'declared', videoKey: null });
+    expect(a).toMatchObject({ status: 'declared', videoKey: null, recordedAt: null });
     expect(store.objects.has(s.key)).toBe(false);
+  });
+
+  it('recorded_at is the phone\'s (3.4, 3.8): a clip filmed before the close and sent after keeps its time', async () => {
+    const { lifter, attempt } = await startDemo(db, {});
+    const filmed = new Date(attempt.createdAt.getTime() + 60_000), now = new Date(filmed.getTime() + 3 * 3_600_000);
+    const s = await startAttemptUpload(db, store, attempt.id, lifter.id, 'video/webm', 'unknown', filmed.toISOString(), now);
+    if (!('uploadId' in s)) throw new Error(JSON.stringify(s));
+    let [a] = await db.select().from(attempts).where(eq(attempts.id, attempt.id));
+    expect(a.recordedAt).toEqual(filmed);
+    // started again for the same attempt (a reload): the first time stays
+    await startAttemptUpload(db, store, attempt.id, lifter.id, 'video/webm', 'unknown', now.toISOString(), now);
+    [a] = await db.select().from(attempts).where(eq(attempts.id, attempt.id));
+    expect(a.recordedAt).toEqual(filmed);
+  });
+
+  it('a phone time it can\'t have recorded at is held to the attempt\'s declare time and now', () => {
+    const declared = new Date('2026-11-14T15:00:00Z'), now = new Date('2026-11-14T16:00:00Z');
+    expect(phoneRecordedAt('2026-11-14T15:30:00Z', declared, now)).toEqual(new Date('2026-11-14T15:30:00Z'));
+    expect(phoneRecordedAt('2026-11-14T14:00:00Z', declared, now)).toEqual(declared);
+    expect(phoneRecordedAt('2026-11-15T09:00:00Z', declared, now)).toEqual(now);
+    expect(phoneRecordedAt(Date.parse('2026-11-14T15:10:00Z'), declared, now)).toEqual(new Date('2026-11-14T15:10:00Z'));
+    for (const bad of [undefined, null, 'soon', {}, NaN]) expect(phoneRecordedAt(bad, declared, now)).toEqual(now);
   });
 
   it('a demo lifter over the day\'s limit is turned away before anything uploads', async () => {
