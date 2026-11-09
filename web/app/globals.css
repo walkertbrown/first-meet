@@ -161,6 +161,13 @@ h1, h2, h3, p, ul, ol { margin: 0; }
 .lamp.settled::after { animation: none; opacity: .75; transform: none; }
 @keyframes bloom { 0% { opacity: 0; transform: scale(.6); } 35% { opacity: 1; transform: scale(1.12); } 100% { opacity: .75; transform: scale(1); } }
 .lamp.pulse { animation: pulse 2400ms var(--ease-in-out) infinite; }
+/* The 12 px mini lamps (look 4, 5.8, 5.10, 5.13): the 9-attempt row, the banner, the referee's strip. */
+.mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
+.mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
+.mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
+.mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
+@keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
+@media (prefers-reduced-motion: reduce) { .mini-lamp.pulse { animation: none; } }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 5px var(--lamp-bezel), 0 0 0 6px rgb(255 255 255 / .06), inset 0 2px 6px rgb(0 0 0 / .6); }
   50% { box-shadow: 0 0 0 5px #4A4E5A, 0 0 0 6px rgb(255 255 255 / .16), inset 0 2px 6px rgb(0 0 0 / .6); }

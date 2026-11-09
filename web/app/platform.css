@@ -57,3 +57,64 @@
 .segments label:has(input:checked) { background: var(--ink); color: var(--on-ink); }
 .segments label:has(input:focus-visible) { box-shadow: inset 0 0 0 3px var(--focus); }
 .segments label:has(input:checked):has(input:focus-visible) { box-shadow: inset 0 0 0 3px var(--on-ink); }
+
+/* ---------- The platform (plan 5.24–5.27) ---------- */
+.platform-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+.platform-msg { gap: 16px; }
+.platform-error { margin: 12px 20px; }
+.weight-xl .tag { align-self: center; margin-left: 12px; padding: 3px 6px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); font-size: 12px; line-height: 14px; white-space: nowrap; }
+
+/* The 9-attempt row (look 4): three groups, three 34 px slots each, 4 px between slots, 6 px between groups. */
+.nine { display: flex; gap: 6px; margin-top: 18px; align-items: flex-end; }
+.nine .grp { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.nine .grp > .eyebrow { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nine .slots { display: flex; gap: 4px; }
+.slot { flex: 1; min-width: 0; height: 34px; border-radius: 3px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--ink-3); }
+.slot.now { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+.slot.declared, .slot.sent { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
+.slot.white, .slot.red { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
+/* a close call (5.27): unlit pulsing lamp and "Waiting"; the slot takes the room the word needs */
+.slot.waiting { flex: 2.4; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
+.slot-wait { font-family: var(--font-text); font-weight: 600; font-size: 11px; line-height: 12px; }
+
+/* Item 75's stand-in line (look 5.14a): under SAMPLE LIFT on the stage, under the sentence on the result. */
+.meet-stand-in { margin: 6px 0 0; max-width: 260px; color: var(--stage-ink-2); text-align: left; }
+.small.stand-in { margin-top: 8px; color: var(--ink-2); }
+
+/* Bottom sheet (look 5.10) */
+.sheet-scrim { position: fixed; inset: 0; z-index: 50; background: rgb(5 6 10 / .5); display: flex; align-items: flex-end; justify-content: center; animation: scrim-in 320ms var(--ease-out); }
+.bottom-sheet { width: 100%; max-width: 560px; max-height: calc(100dvh - 24px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent;
+  background: var(--chalk); color: var(--ink); border-radius: 12px 12px 0 0; box-shadow: var(--sheet-shadow);
+  padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; animation: sheet-up 480ms var(--ease-sheet); }
+.bottom-sheet .grab { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--rule); margin-bottom: 8px; }
+.bottom-sheet .try-actions { margin-top: 8px; padding-top: 0; }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sheet-scrim, .bottom-sheet { animation: none; } }
+
+/* Choices (look 5.9): whole cards that are radios; the ring is the selection. */
+.choices { border: 0; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.choice { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: var(--surface); border-radius: 4px; box-shadow: 0 0 0 1px var(--rule); cursor: pointer; }
+.choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choice:hover { box-shadow: 0 0 0 1.5px var(--ink-3); }
+.choice:has(input:checked) { box-shadow: 0 0 0 2.5px var(--ink); }
+.choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.choice.off { cursor: not-allowed; color: var(--ink-3); }
+.choice.off:hover { box-shadow: 0 0 0 1px var(--rule); }
+.choice.off .small, .choice.off .weight-m, .choice.off .unit { color: var(--ink-3); }
+.choice.off .bar-diagram { opacity: .4; }
+.choice-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.choice-label { font-weight: 700; font-size: 17px; line-height: 22px; }
+.choice-text .bar-diagram { margin-top: 6px; }
+.choice .weight-m { flex: none; display: flex; align-items: baseline; white-space: nowrap; }
+.choice .weight-m .unit { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 16px; letter-spacing: 0; margin-left: 4px; color: var(--ink-2); }
+
+/* Banner (look 5.10): referee lights in */
+.banner { position: fixed; z-index: 40; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; max-width: 536px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; border-radius: 4px; text-align: left; cursor: pointer;
+  background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--rule), 0 18px 40px -18px rgb(0 0 0 / .5); font: inherit; animation: banner-in 420ms var(--ease-sheet); }
+.banner-lamps { display: flex; gap: 6px; flex: none; }
+.banner-more { display: block; color: var(--ink-2); }
+@keyframes banner-in { from { transform: translateY(-140%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .banner { animation: none; } }

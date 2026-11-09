@@ -4,6 +4,8 @@ import { eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts } from '@/db/schema';
 import { judgedLift } from '@/lib/queue';
+import { nearSide, type Frame, type Pt, type Side } from '@/lib/judge/pose';
+import type { R2 } from '@/lib/r2';
 
 export type AttemptState = {
   id: string;
@@ -68,4 +70,27 @@ export function estimateMinutes(aheadS: number, done5S: number, medianPoseS: num
   const perMin = done5S / 5;
   const queueMin = perMin > 0 ? aheadS / perMin : aheadS / 60;
   return Math.max(1, Math.ceil(queueMin + (medianPoseS ?? 30) / 60));
+}
+
+/** What her clip needs to hold the judged frame with its marks (5.25 step 10) after a reload or from the banner. */
+export type JudgedFrame = { clip_url: string; ms: number; p: Pt[]; side: Side };
+
+/**
+ * Her own judged attempt's frame: a short link to her clip, and the pose the judge saw at the
+ * judged moment (points are fractions of the frame), so the phone needs no pose model to mark it.
+ */
+export async function judgedFrame(db: Db, store: Pick<R2, 'signedGet' | 'getJson'>, id: string, lifterId: string):
+  Promise<{ status: 200; frame: JudgedFrame } | { status: 403 | 404; error: string }> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { status: 404, error: 'no such attempt' };
+  const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+  if (!a) return { status: 404, error: 'no such attempt' };
+  if (a.lifterId !== lifterId) return { status: 403, error: 'not your attempt' };
+  if (!a.videoKey || !a.posesKey || a.judgedFrameMs === null || !a.call) return { status: 404, error: 'not judged yet' };
+  const poses = await store.getJson<{ frames: Frame[] }>(a.posesKey);
+  const ms = a.judgedFrameMs;
+  let best: Frame | null = null;
+  for (const f of poses?.frames ?? []) if (f.p && (!best || Math.abs(f.t - ms) < Math.abs(best.t - ms))) best = f;
+  if (!best?.p) return { status: 404, error: 'no pose at the judged frame' };
+  const m = (a.measures ?? {}) as { side?: Side };
+  return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms, p: best.p, side: m.side ?? nearSide(best) } };
 }

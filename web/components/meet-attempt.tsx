@@ -11,7 +11,7 @@ import { flushSync } from 'react-dom';
 import { SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
 import { RULES, type Dims, type Part } from '@/lib/judge';
 import { MeetLift, type MeetLiftName } from '@/lib/judge/meet-lift';
-import { nearSide } from '@/lib/judge/pose';
+import { nearSide, type Pt } from '@/lib/judge/pose';
 import { Lamps, type LampState } from '@/components/lamps';
 import { BarDiagram, BellDiagram } from '@/components/bar-diagram';
 import { loadPoseModel, LivePose } from '@/lib/stage/pose-live';
@@ -40,6 +40,14 @@ export type MeetAttemptProps = {
    * total". It shows once the lights are in, and from 90 s or on a close call (step 8), while she waits.
    */
   onNext?: () => void;
+  /** The panel button's words, when the platform knows better (the banner's attempt: "Back to the platform"). */
+  nextLabel?: string;
+  /** Above the attempt card: the platform's eyebrow and the 9-attempt row (5.24). */
+  top?: React.ReactNode;
+  /** No judged set behind the cap yet: the `NOT JUDGED YET` tag beside the weight (look 5.6). */
+  notJudged?: boolean;
+  /** The demo meet's close call has "Be the referee" (5.36); a real meet's waits for a real referee. */
+  demoReferee?: boolean;
 };
 
 type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit';
@@ -81,7 +89,7 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, top, notJudged, demoReferee = true }: MeetAttemptProps) {
   const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
@@ -549,7 +557,21 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: Mee
     const saved = await getPending(attempt.id).catch(() => undefined);
     if (!alive()) return;
     const sent = saved ? send(alive, attempt.id) : Promise.resolve(true);
-    await awaitLights(alive, attempt.id, sent, null, async () => {});
+    // after a reload, her clip comes back from R2 with the pose the judge saw: the frame and its marks
+    const snapAt = async (): Promise<SideSnap | null> => {
+      const r = await getJson(`/api/attempts/${attempt.id}/frame`);
+      const rv = replayRef.current;
+      if (r.status !== 200 || !rv) return null;
+      const f = r.body as unknown as { clip_url: string; ms: number; p: Pt[]; side: 'left' | 'right' };
+      rv.src = f.clip_url;
+      await within(readyToSeek(rv), 6000);
+      await within(seekTo(rv, f.ms / 1000), 4000);
+      const d = { w: rv.videoWidth, h: rv.videoHeight };
+      if (!d.w || !d.h) return null;
+      setDims(d);
+      return { ...grab(rv, d), p: f.p, side: f.side };
+    };
+    await awaitLights(alive, attempt.id, sent, null, async () => {}, snapAt);
   }, [attempt.id, send, awaitLights]);
 
   const start = (m: Mode) => {
@@ -609,6 +631,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: Mee
   if (view === 'card') {
     return (
       <div className="try-page meet-page"><main className="try-col meet-col">
+        {top}
         <article className="attempt-card" aria-label={`${liftName}, ${ofLine}`}>
           <div className="ac-row1">
             <h1 className="lift-name">{home ? `${liftName} · ${ofLine}` : liftName}</h1>
@@ -616,6 +639,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: Mee
           </div>
           <p className="weight-xl num" style={{ '--digits': weightDigits(home ? attempt.reps_declared ?? 0 : attempt.weight) } as React.CSSProperties}>
             {home ? attempt.reps_declared : attempt.weight}<span className="unit">{home ? 'reps' : lifter.units}</span>
+            {notJudged && <span className="eyebrow tag">Not judged yet</span>}
           </p>
           {home ? <BellDiagram label={loading} /> : <BarDiagram weight={attempt.weight} units={lifter.units} label={loading} />}
           <p className="small">{loading}</p>
@@ -648,7 +672,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: Mee
   const recLabel = `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}`;
   const waiting = phase === 'held' || phase === 'offline';
   const judged = phase === 'lit' || phase === 'replay' || phase === 'hold';
-  const nextLabel = nextButton(attempt.lift, attempt.number, lifter.division);
+  const nextLabel = nextLabelProp ?? nextButton(attempt.lift, attempt.number, lifter.division);
 
   return (
     <div className="try-app meet-app">
@@ -762,7 +786,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: Mee
                 <hr className="rule" />
                 <div className="try-actions">
                   {onNext && <button className="btn" type="button" onClick={onNext}>{nextLabel}</button>}
-                  {phase === 'close' && <Link className="link" href={`/referee/demo/${attempt.id}`}>{MEET_WORDS.refereeLink}</Link>}
+                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{MEET_WORDS.refereeLink}</Link>}
                 </div>
               </div>
             )}

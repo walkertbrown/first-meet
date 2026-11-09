@@ -85,15 +85,10 @@
 }
 .ref-rep .num { font-weight: 800; font-stretch: 105%; font-size: 24px; line-height: 28px; }
 .ref-rep[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--ink); }
-.mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
-.mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
-.mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
 .mini-lamp.lg { width: 24px; height: 24px; flex: none; box-shadow: 0 0 0 2px var(--lamp-bezel); }
 .mini-lamp.lg.white { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-white-glow) / .6); animation: mini-bloom 180ms var(--ease-lamp); }
 .mini-lamp.lg.red { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-red-glow) / .5); animation: mini-bloom 180ms var(--ease-lamp); }
 @keyframes mini-bloom { from { transform: scale(.55); opacity: .5; } to { transform: scale(1); opacity: 1; } }
-.mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
-@keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
 
 /* The side: what the judge measured, the lamps, the reasons, save. */
 .ref-side { display: flex; flex-direction: column; gap: 20px; }

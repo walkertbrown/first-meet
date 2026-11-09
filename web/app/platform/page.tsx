@@ -1,40 +1,67 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { and, desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db, hasDb } from '@/db';
-import { attempts, lifters } from '@/db/schema';
+import { lifters, meets } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
-import { MeetAttempt } from '@/components/meet-attempt';
+import { Platform } from '@/components/platform';
+import { OpensIn } from '@/components/opens-in';
 import { currentViewer } from '@/lib/roles';
-import { demoBecause } from '@/lib/demo';
+import { platformView } from '@/lib/platform-view';
 import '../try.css';
 import '../platform.css';
 
-// The demo meet's platform (plan 5.24–5.25 as phase 2 builds them, 5.36): the demo strip, then
-// the demo lifter's attempt. No demo session goes to /demo.
+// The platform (plan 5.24–5.27): before the window, during it (the nine, one attempt at a time,
+// each declared on the sheet), after all nine (5.28), and closed. The demo meet is always open.
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'The platform', robots: { index: false } };
 
 export default async function PlatformPage() {
   if (!hasDb()) redirect('/demo');
   const v = await currentViewer(db());
-  if (!v || !v.isDemo || v.session.kind !== 'demo') redirect('/demo');
+  if (!v) redirect('/demo');
   const [l] = await db().select().from(lifters).where(eq(lifters.id, v.id));
-  if (!l?.meetId) redirect('/demo');
-  const [a] = await db().select().from(attempts)
-    .where(and(eq(attempts.lifterId, l.id), eq(attempts.meetId, l.meetId))).orderBy(desc(attempts.createdAt)).limit(1);
-  if (!a) redirect('/demo');
+  if (!l?.meetId) redirect(v.isDemo ? '/demo' : '/');
+  const [m] = await db().select().from(meets).where(eq(meets.id, l.meetId));
+  if (!m) redirect('/');
+  const view = await platformView(db(), l, m);
+  if (view.kind === 'done') redirect('/platform/total');
+  const strip = l.isDemo ? <DemoStrip /> : null;
 
+  if (view.kind === 'before') {
+    return (
+      <>{strip}
+        <div className="try-page meet-page"><main className="try-col meet-col platform-msg">
+          <OpensIn at={view.opensAt} />
+        </main></div>
+      </>
+    );
+  }
+  if (view.kind === 'closed') {
+    return (
+      <>{strip}
+        <div className="try-page meet-page"><main className="try-col meet-col platform-msg">
+          <h1 className="page-title">The platform has closed</h1>
+          <p className="body-l">{`You didn't lift this time. Your training still counts, and the next block starts ${nextBlockDate()}.`}</p>
+          <div className="try-actions"><Link className="btn" href="/join">See the next block</Link></div>
+        </main></div>
+      </>
+    );
+  }
   return (
-    <>
-      <DemoStrip />
-      <MeetAttempt
-        key={a.id}
-        attempt={{ id: a.id, lift: a.lift, number: a.number, weight: a.weight, reps_declared: a.repsDeclared, status: a.status }}
+    <>{strip}
+      <Platform
+        meetName={view.meetName} closesAt={view.closesAt} row={view.row} current={view.current} because={view.because}
+        notJudged={view.notJudged} demo={view.demo} voicePack={process.env.VOICE_PACK || 'team'}
         lifter={{ cardName: l.cardName, ageGroup: l.ageGroup, division: l.division, units: l.units }}
-        because={demoBecause(l.division, a.lift, l.units)}
-        voicePack={process.env.VOICE_PACK || 'team'}
       />
     </>
   );
+}
+
+/** The next block's start (5.24, 5.32), from NEXT_BLOCK_STARTS (an ISO date); the plan doesn't give it yet. */
+function nextBlockDate() {
+  const d = process.env.NEXT_BLOCK_STARTS ? new Date(process.env.NEXT_BLOCK_STARTS) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', timeZone: 'America/New_York' }) : 'soon';
 }
