@@ -20,6 +20,7 @@ import { STAGE_WORDS } from '@/lib/stage/try-words';
 import { MEET_WORDS, REFUSED_WORDS, barLoading, hudLine, meetResult, sampleRepsLine, weightDigits, type MeetResult } from '@/lib/stage/meet-words';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
 import samples from '../../content/samples/samples.json';
+import { WaitLine } from '@/components/wait-line';
 
 export type MeetAttemptProps = {
   attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string };
@@ -49,6 +50,7 @@ const HOME_CAP_MS = 90_000;
 const SENDING_MIN_MS = 1300;
 const SLOW_UPLOAD_MS = 20_000;
 const POLL_MS = 5000;
+const BUSY_REFRESH_MS = 30_000;
 
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const wait = (ms: number) => sleep(reduced() ? Math.min(ms, 600) : ms);
@@ -108,6 +110,8 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
   const streamRef = useRef<MediaStream | null>(null);
   const voiceRef = useRef<Voice | null>(null);
   const runRef = useRef(0);
+  /** She tapped "OK" on the offline sheet: it stays closed while the clip keeps trying (3.11). */
+  const offlineOkRef = useRef(false);
   const soundRef = useRef(sound);
 
   voiceRef.current ??= new Voice(voicePack);
@@ -169,12 +173,20 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     es?.addEventListener('attempt', () => void check());
     const poll = setInterval(() => void check(), POLL_MS);
     const t45 = setTimeout(() => alive() && setWaitLine(MEET_WORDS.still45), Math.max(0, 45_000 - (performance.now() - t0)));
-    const t90 = setTimeout(async () => {
+    // from 90 s, the estimate (3.9 step 8) is asked again every 30 s, and once she has waited
+    // past what it said, it goes up a minute: it never says "about 1 minute" for 3
+    let shown = 0, dueAt = 0, every: ReturnType<typeof setInterval> | undefined;
+    const estimate = async () => {
       await check(true);
-      const n = (state as State | null)?.wait_minutes;
-      if (alive() && n) { setWaitLine(MEET_WORDS.busy90(n)); setBusy(true); }
-    }, Math.max(0, 90_000 - (performance.now() - t0)));
-    const stop = () => { es?.close(); clearInterval(poll); clearTimeout(t45); clearTimeout(t90); };
+      const n0 = (state as State | null)?.wait_minutes;
+      if (!alive() || !n0) return;
+      const n = shown && performance.now() > dueAt ? Math.max(n0, shown + 1) : n0;
+      if (n !== shown) { shown = n; dueAt = performance.now() + n * 60_000; }
+      setWaitLine(MEET_WORDS.busy90(shown)); setBusy(true);
+    };
+    const t90 = setTimeout(() => { void estimate(); every = setInterval(() => void estimate(), BUSY_REFRESH_MS); },
+      Math.max(0, 90_000 - (performance.now() - t0)));
+    const stop = () => { es?.close(); clearInterval(poll); clearTimeout(t45); clearTimeout(t90); clearInterval(every); };
     const next = () => new Promise<void>(res => { wake = res; });
 
     try {
@@ -187,7 +199,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
           pulsing = true;
           await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
           if (!alive()) return;
-          clearTimeout(t45); clearTimeout(t90);
+          clearTimeout(t45); clearTimeout(t90); clearInterval(every);
           setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
           setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
         }
@@ -231,11 +243,12 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
   /** Sends the saved recording, telling the stage how it goes; resolves once the server has it. */
   const send = useCallback((alive: () => boolean, attemptId: string) => {
     const started = performance.now();
+    offlineOkRef.current = false;
     const slowT = setTimeout(() => alive() && setSlowUpload(true), SLOW_UPLOAD_MS);
     return new Promise<boolean>(resolve => {
       const onStatus = (s: UploadStatus) => {
         if (!alive()) return;
-        if (s.kind === 'offline') setPhase('offline');
+        if (s.kind === 'offline') { if (!offlineOkRef.current) setPhase('offline'); }
         else if (s.kind === 'sending' || s.kind === 'retrying') setPhase(p => (p === 'offline' ? 'held' : p));
       };
       void keepSending(attemptId, onStatus).done.then(s => {
@@ -633,7 +646,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             </button>
           </div>
           <Lamps states={lamps} />
-          <div className={`waitline${waitLine ? ' on' : ''}`} aria-live="polite">{waitLine}</div>
+          <WaitLine text={waitLine} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
           </div>
@@ -665,6 +678,9 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
               <div role="status">
                 <p className="sheet-title">{MEET_WORDS.offlineTitle}</p>
                 <p className="body">{MEET_WORDS.offlineBody}</p>
+                <div className="try-actions">
+                  <button className="btn" type="button" onClick={() => { offlineOkRef.current = true; setPhase('held'); setWaitLine(MEET_WORDS.sending); }}>OK</button>
+                </div>
               </div>
             )}
             {phase === 'refused' && (

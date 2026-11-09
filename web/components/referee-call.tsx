@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MarkFrame, Track } from '@/lib/referee-view';
 import { reasonEyebrow, reasonSentence, refereeReasons, type ReasonCode } from '@/lib/reason-words';
 import { saveLine, type Light } from '@/lib/lights';
+import { readyToSeek } from '@/lib/stage/recorder';
 type RepLight = { call: 'white' | 'red' | 'close'; reason: string | null; frame_ms?: number };
 
 export type RefereeCallProps = {
@@ -104,7 +105,7 @@ export function RefereeCall(p: RefereeCallProps) {
   const seek = useCallback((s: number) => {
     const v = videoRef.current;
     if (!v) return;
-    const t = Math.max(0, Math.min(s, (v.duration || duration || s)));
+    const t = Math.max(0, Math.min(s, duration || s));
     v.currentTime = t;
     setNow(t);
   }, [duration]);
@@ -135,11 +136,28 @@ export function RefereeCall(p: RefereeCallProps) {
 
   useEffect(() => { if (videoRef.current) videoRef.current.playbackRate = speed; }, [speed]);
 
+  // The clip's length. A phone's own WebM has none in its header (its duration is Infinity),
+  // so it's found the way the stage finds it, by seeking to the end once (readyToSeek); then
+  // the playhead goes to the judged frame. Asked once, from whichever comes first.
+  const lengthAsked = useRef(false);
+  const learnLength = useCallback((v: HTMLVideoElement) => {
+    if (lengthAsked.current) return;
+    lengthAsked.current = true;
+    readyToSeek(v).then(() => {
+      if (!Number.isFinite(v.duration) || v.duration <= 0) return;
+      setDuration(v.duration);
+      v.currentTime = (p.judgedFrameMs ?? 0) / 1000;
+    }).catch(() => { lengthAsked.current = false; });
+  }, [p.judgedFrameMs]);
   // A cached clip can load before the page is ready, so its loadedmetadata is never heard.
   useEffect(() => {
     const v = videoRef.current;
-    if (v && v.readyState >= 1 && v.duration) { setDuration(v.duration); v.currentTime = (p.judgedFrameMs ?? 0) / 1000; }
-  }, [p.judgedFrameMs]);
+    if (v && v.readyState >= 1) learnLength(v);
+  }, [learnLength]);
+
+  // After a save, focus goes to where she goes next ("Back to the platform", or "Next").
+  const doneRef = useRef<HTMLAnchorElement>(null);
+  useEffect(() => { if (done) doneRef.current?.focus(); }, [done]);
 
   // The marks keep their size in screen pixels whatever size the clip is drawn at.
   useEffect(() => {
@@ -217,7 +235,7 @@ export function RefereeCall(p: RefereeCallProps) {
     return (
       <div className="ref-done" role="status">
         <p className="sheet-title">{line}</p>
-        <Link className="btn" href={nextHref}>{p.demoDoneHref ? 'Back to the platform' : 'Next'}</Link>
+        <Link ref={doneRef} className="btn" href={nextHref}>{p.demoDoneHref ? 'Back to the platform' : 'Next'}</Link>
       </div>
     );
   }
@@ -233,7 +251,7 @@ export function RefereeCall(p: RefereeCallProps) {
               playsInline
               muted
               preload="auto"
-              onLoadedMetadata={e => { setDuration(e.currentTarget.duration || 0); e.currentTarget.currentTime = now; }}
+              onLoadedMetadata={e => learnLength(e.currentTarget)}
               onPlay={() => setPlaying(true)}
               onPause={() => { setPlaying(false); setNow(videoRef.current?.currentTime ?? now); }}
               onSeeked={e => setNow(e.currentTarget.currentTime)}

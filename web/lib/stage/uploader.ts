@@ -4,6 +4,8 @@
 // parts R2 already has). It leaves IndexedDB only after the server confirms the upload.
 
 export const PART_BYTES = 5 * 1024 * 1024;
+/** web/lib/queue.ts MAX_CLIP_BYTES: 90 s at 2.5 Mbps. */
+export const MAX_CLIP_BYTES = 28 * 1024 * 1024;
 export const RETRY_MS = 15_000;
 
 export type Pending = {
@@ -78,6 +80,8 @@ export class Stop extends Error { constructor(public status: UploadStatus) { sup
  * or R2 failed (try again later), Stop when the server won't take it (don't).
  */
 export async function sendOnce(p: Pending, net: Net, onStatus: (s: UploadStatus) => void, save: (p: Pending) => Promise<unknown> = savePending): Promise<string> {
+  // 3.11: a clip past the bound is refused before anything is sent
+  if (p.blob.size > MAX_CLIP_BYTES) throw new Stop({ kind: 'refused', error: 'clip too big' });
   const parts = Math.max(1, Math.ceil(p.blob.size / PART_BYTES));
   const api = async (path: string, init?: { method?: string; body?: unknown }) => {
     let r;

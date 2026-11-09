@@ -31,9 +31,21 @@ export async function logEvent(db: Db, kind: string, detail: Record<string, unkn
   await db.insert(events).values({ kind, attemptId, detail });
 }
 
-/** A clip's length from its command times: the last command, then 1.5 s more (piece 5). */
+/** The longest a recording runs (3.10: a Home attempt is up to 90 s). */
+export const MAX_CLIP_MS = 90_000;
+/** The most a clip may weigh: 90 s at 2.5 Mbps (The Playner, Nov 8). */
+export const MAX_CLIP_BYTES = 28 * 1024 * 1024;
+
+/**
+ * A clip's length from its command times: the last command, then 1.5 s more (piece 5).
+ * Never past the longest clip, so a lease or a signed link can't run for days.
+ */
 export const clipSecondsOf = (ct: Record<string, number> | null | undefined) =>
-  ct ? Math.max(1, Math.max(0, ...Object.values(ct).filter(Number.isFinite)) / 1000 + 1.5) : 30;
+  ct ? Math.min(MAX_CLIP_MS / 1000 + 1.5, Math.max(1, Math.max(0, ...Object.values(ct).filter(Number.isFinite)) / 1000 + 1.5)) : 30;
+
+/** A command time past the longest clip can't be in it: a close call with no judge run. */
+const pastLongestClip = (ct: Record<string, number> | null | undefined) =>
+  !!ct && typeof ct === 'object' && Object.values(ct).some(v => typeof v === 'number' && v > MAX_CLIP_MS);
 
 /**
  * Step 1: the phone says the upload is done (or the demo copied a sample lift into place).
@@ -47,18 +59,30 @@ export async function markUploaded(db: Db, store: Store, attemptId: string, comm
   if (!a.videoKey) return { status: 409 as const, error: 'no upload started' };
   const head = await store.head(a.videoKey);
   if (!head || head.bytes === 0) return { status: 409 as const, error: 'video not in storage' };
+  if (head.bytes > MAX_CLIP_BYTES) {
+    // 3.11 "Your clip didn't send": nothing judged, and the attempt is hers again
+    await db.update(attempts).set({ status: 'declared', videoKey: null })
+      .where(and(eq(attempts.id, attemptId), sql`${attempts.status} in ('declared','recording','uploading')`));
+    await logEvent(db, 'upload_refused', { bytes: head.bytes, why: 'too big' }, attemptId);
+    return { status: 413 as const, error: 'clip too big' };
+  }
   const ct = commandTimes ?? a.commandTimes;
+  const outside = pastLongestClip(ct);
+  const status = outside ? 'close_call' : 'queued';
   const updated = await db.transaction(async tx => {
     const [u] = await tx.update(attempts)
-      .set({ status: 'queued', uploadedAt: sql`now()`, commandTimes: ct })
+      .set(outside
+        ? { status, uploadedAt: sql`now()`, commandTimes: ct, call: 'close', reason: 'command_times', lights: null, judgedAt: sql`now()`, measures: { command_times: 'outside_clip' } }
+        : { status, uploadedAt: sql`now()`, commandTimes: ct })
       .where(and(eq(attempts.id, attemptId), sql`${attempts.status} in ('declared','recording','uploading')`))
       .returning();
-    if (u) await tx.insert(judgeQueue).values({ attemptId, kind: 'poses', clipSeconds: clipSecondsOf(ct) }).onConflictDoNothing();
+    if (u && !outside) await tx.insert(judgeQueue).values({ attemptId, kind: 'poses', clipSeconds: clipSecondsOf(ct) }).onConflictDoNothing();
     return u;
   });
   if (updated) {
     await logEvent(db, 'uploaded', { bytes: head.bytes, type: head.type }, attemptId);
-    await publish(db, { kind: 'attempt', attempt_id: attemptId, lifter_id: a.lifterId, status: 'queued' });
+    if (outside) await logEvent(db, 'close_call', { reason: 'command_times', command_times: 'outside_clip' }, attemptId);
+    await publish(db, { kind: 'attempt', attempt_id: attemptId, lifter_id: a.lifterId, status });
   }
   return { status: 200 as const, attempt: updated ?? a };
 }
@@ -164,6 +188,27 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
   console.log(JSON.stringify({ msg: 'judged', attempt_id: a.id, call: v.call.light, upload_to_lights_s: uploadToLights, pose_secs: p.secs }));
   await publish(db, { kind: 'attempt', attempt_id: a.id, lifter_id: a.lifterId, status });
   return { status: 200, call: v.call.light };
+}
+
+/**
+ * A worker couldn't judge one attempt (a clip it can't read, a post refused): that attempt
+ * alone becomes a close call, `judge_unavailable` (3.11), and the worker goes on. Only the
+ * worker holding the attempt can say so.
+ */
+export async function workerFailed(db: Db, attemptId: string, workerId: string, why: string): Promise<boolean> {
+  const a = await db.transaction(async tx => {
+    const gone = await tx.delete(judgeQueue)
+      .where(and(eq(judgeQueue.attemptId, attemptId), eq(judgeQueue.kind, 'poses'), eq(judgeQueue.workerId, workerId)))
+      .returning({ id: judgeQueue.attemptId });
+    if (!gone.length) return null;
+    const [u] = await tx.update(attempts).set({ status: 'close_call', call: 'close', reason: 'judge_unavailable', lights: null, judgedAt: sql`now()` })
+      .where(eq(attempts.id, attemptId)).returning();
+    await tx.insert(events).values({ kind: 'close_call', attemptId, detail: { reason: 'judge_unavailable', why: why.slice(0, 300), worker_id: workerId } });
+    return u;
+  });
+  if (!a) return false;
+  await publish(db, { kind: 'attempt', attempt_id: a.id, lifter_id: a.lifterId, status: 'close_call' });
+  return true;
 }
 
 export async function workerDone(db: Db, workerId: string, commit: string | null) {

@@ -66,6 +66,8 @@ def post(path: str, payload: dict, timeout: float = 30) -> tuple[int, dict | Non
             return r.status, (json.loads(raw) if raw else None)
     except urllib.error.HTTPError as e:
         return e.code, None
+    except Exception:  # noqa: BLE001 - a network error is a failed post, never the end of the worker
+        return 0, None
 
 
 def zoom_times(duration: float, windows: list[list[int]]) -> list[int]:
@@ -106,7 +108,21 @@ def one_attempt(job: dict) -> dict:
             'w': info.w, 'h': info.h, 'duration': info.duration, 'frames': f2,
             'commit': COMMIT, 'secs': round(secs, 2), 'download_secs': round(got - t0, 2),
         })
+        if status != 200:
+            return {'attempt_id': job['attempt_id'], 'error': f'pass 2 post: {status}'}
     return {'attempt_id': job['attempt_id'], 'frames': len(f1) + len(f2), 'secs': round(secs, 2), 'posted': status}
+
+
+def attempt_or_report(job: dict, run=None) -> dict:
+    """One attempt; if anything about it fails, that attempt alone becomes a close call
+    (`judge_unavailable`, plan 3.11) and the worker goes on to the next one."""
+    try:
+        out = (run or one_attempt)(job)
+    except Exception as e:  # noqa: BLE001 - one bad clip never stops the worker
+        out = {'attempt_id': job['attempt_id'], 'error': f'{type(e).__name__}: {e}'[:300]}
+    if out.get('error'):
+        post('/api/internal/failed', {'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'), 'why': out['error']})
+    return out
 
 
 @app.task(timeout_seconds=int(WORKER_MAX_S) + 300)
@@ -121,7 +137,7 @@ def find_poses(ctx: TaskContext, worker_id: str) -> dict:
             status, job = post('/api/internal/next', {'worker_id': worker_id})
             if status == 200 and job and job.get('attempt_id'):
                 job['worker_id'] = worker_id
-                done.append(one_attempt(job))
+                done.append(attempt_or_report(job))
                 idle_since = time.monotonic()
                 continue
             if time.monotonic() - idle_since >= WORKER_IDLE_S:

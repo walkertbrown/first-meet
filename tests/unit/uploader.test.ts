@@ -2,7 +2,7 @@
 // part is retried later, a second try (a reload) sends only what R2 is missing, and a demo
 // lifter over the limit stops it for good.
 import { describe, expect, it } from 'vitest';
-import { PART_BYTES, Retry, Stop, sendOnce, type Net, type Pending } from '../../web/lib/stage/uploader';
+import { MAX_CLIP_BYTES, PART_BYTES, Retry, Stop, sendOnce, type Net, type Pending } from '../../web/lib/stage/uploader';
 
 function fakeServer(opts: { failPart?: number; limit?: boolean } = {}) {
   const r2 = new Map<number, string>();
@@ -63,6 +63,20 @@ describe('the meet video uploader', () => {
     expect(err).toBeInstanceOf(Stop);
     expect((err as Stop).status).toEqual({ kind: 'limit', limit: 'lifter' });
     expect(s.r2.size).toBe(0);
+  });
+
+  it('a clip past the size bound is refused before anything is sent (3.11 "Your clip didn\'t send")', async () => {
+    const s = fakeServer();
+    const p = { ...pending(), blob: new Blob([new Uint8Array(MAX_CLIP_BYTES + 1)], { type: 'video/webm' }) };
+    const err = await sendOnce(p, s.net, () => {}, noSave).catch(e => e);
+    expect(err).toBeInstanceOf(Stop);
+    expect((err as Stop).status).toEqual({ kind: 'refused', error: 'clip too big' });
+    expect(s.calls).toHaveLength(0);
+  });
+
+  it('the phone\'s bound is the server\'s', async () => {
+    const { MAX_CLIP_BYTES: server } = await import('../../web/lib/queue');
+    expect(MAX_CLIP_BYTES).toBe(server);
   });
 
   it('no network is a retry, not a stop', async () => {

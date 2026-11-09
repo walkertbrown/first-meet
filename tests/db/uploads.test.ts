@@ -51,6 +51,24 @@ describe.skipIf(!URL_)('the meet video upload', () => {
     expect((await signParts(db, store, one.attempt.id, one.lifter.id, 'x', [0])).status).toBe(400);
   });
 
+  it('a clip past the size bound is refused before it is finished, and the attempt goes back to ready', async () => {
+    const { lifter, attempt } = await startDemo(db, {});
+    const s = await startAttemptUpload(db, store, attempt.id, lifter.id, 'video/webm-x;codecs=vp9');
+    if (!('uploadId' in s)) throw new Error(JSON.stringify(s));
+    // the content type R2 keeps is ours, never the phone's string
+    expect(store.uploads.get(s.uploadId)?.type).toBe('video/webm');
+    expect((await signParts(db, store, attempt.id, lifter.id, s.uploadId, [7])).status).toBe(400);
+    store.putPart(s.uploadId, 1);
+    store.partBytes = 29 * 1024 * 1024;
+    try {
+      const r = await attemptUploaded(db, store, attempt.id, lifter.id, { upload_id: s.uploadId, parts: [{ part: 1, etag: '"etag-1"' }], command_times: ct });
+      expect(r).toMatchObject({ status: 413 });
+    } finally { store.partBytes = 5; }
+    const [a] = await db.select().from(attempts).where(eq(attempts.id, attempt.id));
+    expect(a).toMatchObject({ status: 'declared', videoKey: null });
+    expect(store.objects.has(s.key)).toBe(false);
+  });
+
   it('a demo lifter over the day\'s limit is turned away before anything uploads', async () => {
     const { lifter, attempt } = await startDemo(db, {});
     for (let i = 0; i < 30; i++) await countDemoRun(db, lifter.id, attempt.id, false);

@@ -17,6 +17,7 @@ import { DeepestFrames, marksOf, type Marks } from '@/lib/stage/snap';
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { makeClip, shareOrDownload } from '@/lib/stage/clip-maker';
 import { RESULT_WORDS, STAGE_WORDS, lampsOf, markColour, outcomeOf, type Outcome } from '@/lib/stage/try-words';
+import { WaitLine } from '@/components/wait-line';
 
 type Step = 'choose' | 'setup' | 'stage' | 'denied' | 'nocamera';
 type Source = { kind: 'camera' } | { kind: 'sample'; sample: Sample };
@@ -584,7 +585,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
             </button>
           </div>
           <Lamps states={lamps} />
-          <div className={`waitline${waitLine ? ' on' : ''}`} aria-live="polite">{waitLine}</div>
+          <WaitLine text={waitLine} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
           </div>

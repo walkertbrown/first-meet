@@ -26,7 +26,10 @@ export async function freshDb(max = 20): Promise<{ db: Db; schema: string; drop:
 /** R2 in memory. */
 export class MemStore implements Store {
   objects = new Map<string, unknown>();
-  async head(key: string) { return this.objects.has(key) ? { bytes: 1000, type: 'video/webm' } : null; }
+  /** Sizes for tests of the size bound; anything else weighs 1000 bytes. */
+  bytes = new Map<string, number>();
+  partBytes = 5;
+  async head(key: string) { return this.objects.has(key) ? { bytes: this.bytes.get(key) ?? 1000, type: 'video/webm' } : null; }
   async putJson(key: string, v: unknown) { this.objects.set(key, JSON.parse(JSON.stringify(v))); }
   async getJson<T>(key: string) { return (this.objects.get(key) as T) ?? null; }
   async signedGet(key: string) { return `https://r2.test/${key}?signed`; }
@@ -35,10 +38,10 @@ export class MemStore implements Store {
     this.objects.set(to, this.objects.get(from));
   }
   // multipart uploads, as R2 does them: parts kept per upload id until finished
-  uploads = new Map<string, { key: string; parts: Map<number, string> }>();
-  async startUpload(key: string) {
+  uploads = new Map<string, { key: string; type?: string; parts: Map<number, string> }>();
+  async startUpload(key: string, type?: string) {
     const id = `up-${this.uploads.size + 1}`;
-    this.uploads.set(id, { key, parts: new Map() });
+    this.uploads.set(id, { key, type, parts: new Map() });
     return id;
   }
   async signPart(key: string, uploadId: string, part: number) { return `https://r2.test/${key}?uploadId=${uploadId}&partNumber=${part}`; }
@@ -50,7 +53,7 @@ export class MemStore implements Store {
   }
   async listParts(_key: string, uploadId: string) {
     const u = this.uploads.get(uploadId);
-    return u ? [...u.parts].map(([part, etag]) => ({ part, etag, bytes: 5 })) : null;
+    return u ? [...u.parts].map(([part, etag]) => ({ part, etag, bytes: this.partBytes })) : null;
   }
   async finishUpload(key: string, uploadId: string, parts: { part: number; etag: string }[]) {
     const u = this.uploads.get(uploadId);

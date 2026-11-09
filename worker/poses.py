@@ -62,7 +62,21 @@ def clip_info(path: str) -> ClipInfo:
         w, h = first.width, first.height
     if rot in (90, 270):
         w, h = h, w
+    if duration <= 0:
+        duration = measured_duration(path)
     return ClipInfo(w=w, h=h, duration=duration, rotation=rot)
+
+
+def measured_duration(path: str) -> float:
+    """A clip's length read from its packets. The browser's MediaRecorder writes a WebM with no
+    length in its header (it doesn't know it while recording), so this is the only way to know."""
+    import av
+    with av.open(path) as c:
+        s = c.streams.video[0]
+        pts = sorted(pk.pts for pk in c.demux(s) if pk.pts is not None)
+        # packets with no duration of their own: the last frame shows for one average frame
+        last = pts[-1] + ((pts[-1] - pts[0]) / (len(pts) - 1) if len(pts) > 1 else 0) if pts else 0
+        return float((last - pts[0]) * s.time_base) if pts else 0.0
 
 
 def grid(duration: float, fps: int, start_ms: int = 0, end_ms: int | None = None) -> list[int]:

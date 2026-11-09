@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { eq, sql } from 'drizzle-orm';
 import { connect, type Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '../../web/db/schema';
-import { claimNext, expireLeases, markUploaded, takePoses, workerDone } from '../../web/lib/queue';
+import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
 import { judgeClip, type Frame } from '../../web/lib/judge';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
@@ -67,6 +67,48 @@ describe.skipIf(!URL_)('the judge queue', () => {
     await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 2, ...dims, frames: racked.frames });
     const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
     expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'command_times', lights: null });
+  });
+
+  it('a command time past the longest clip: a close call at once, with no judge run and no long lease', async () => {
+    const { attempts: [id] } = await seed(db, store, 1);
+    const up = await markUploaded(db, store, id, { loaded: 0, squat: 1800, rack: 1e12 });
+    expect(up.status).toBe(200);
+    const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+    expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'command_times', lights: null, measures: { command_times: 'outside_clip' } });
+    expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+    // and the lease never runs past the longest clip, whatever the times say
+    expect(clipSecondsOf({ loaded: 0, squat: 1e12 })).toBe(91.5);
+    expect(clipSecondsOf({ loaded: 0, squat: 1800, rack: 5200 })).toBeCloseTo(6.7);
+  });
+
+  it('a clip past the size bound is refused, and the attempt is hers again', async () => {
+    const { attempts: [id] } = await seed(db, store, 1);
+    const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+    store.bytes.set(a.videoKey!, MAX_CLIP_BYTES + 1);
+    expect(await markUploaded(db, store, id, CT)).toMatchObject({ status: 413 });
+    const [back] = await db.select().from(attempts).where(eq(attempts.id, id));
+    expect(back).toMatchObject({ status: 'declared', videoKey: null });
+    expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+  });
+
+  it('one bad clip: only that attempt becomes judge_unavailable, and only its worker can say so', async () => {
+    await db.delete(judgeQueue);
+    const { attempts: [bad, good] } = await seed(db, store, 2);
+    await markUploaded(db, store, bad, CT);
+    await markUploaded(db, store, good, CT);
+    const w = await worker('w-bad-clip');
+    expect((await claimNext(db, store, w))!.attempt_id).toBe(bad);
+    expect(await workerFailed(db, bad, 'w-someone-else', 'no')).toBe(false);
+    expect(await workerFailed(db, bad, w, 'InvalidDataError: no frames')).toBe(true);
+    const [cc] = await db.select().from(attempts).where(eq(attempts.id, bad));
+    expect(cc).toMatchObject({ status: 'close_call', call: 'close', reason: 'judge_unavailable', lights: null });
+    const [ev] = await db.select().from(events).where(sql`${events.kind} = 'close_call' and ${events.attemptId} = ${bad}`);
+    expect(ev.detail).toMatchObject({ reason: 'judge_unavailable', why: 'InvalidDataError: no frames', worker_id: w });
+    // saying it twice changes nothing, and the same worker goes on to the next
+    expect(await workerFailed(db, bad, w, 'again')).toBe(false);
+    expect((await claimNext(db, store, w))!.attempt_id).toBe(good);
+    const [wk] = await db.select().from(judgeWorkers).where(eq(judgeWorkers.workerId, w));
+    expect(wk.endedAt).toBeNull();
   });
 
   it('an upload not in R2 is refused, and nothing is queued', async () => {

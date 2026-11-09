@@ -6,14 +6,15 @@ import type { Db } from '@/db';
 import { attempts, lifters } from '@/db/schema';
 import { countDemoRun, demoLimitHit, type LimitHit } from '@/lib/demo';
 import { extOf, keys, type R2 } from '@/lib/r2';
-import { markUploaded } from '@/lib/queue';
+import { MAX_CLIP_BYTES, markUploaded } from '@/lib/queue';
 
 export type UploadStore = Pick<R2, 'startUpload' | 'signPart' | 'listParts' | 'finishUpload' | 'head' | 'putJson' | 'getJson' | 'signedGet'>;
-type Fail = { status: 400 | 403 | 404 | 409 | 429; error: string; limit?: LimitHit };
+type Fail = { status: 400 | 403 | 404 | 409 | 413 | 429; error: string; limit?: LimitHit };
 
 const isDemoLifter = async (db: Db, id: string) =>
   !!(await db.select({ d: lifters.isDemo }).from(lifters).where(eq(lifters.id, id)))[0]?.d;
-const MAX_PARTS = 40; // 200 MB: a 90 s Home attempt at 1.5 Mbps is about 17 MB
+const PART_BYTES = 5 * 1024 * 1024;
+const MAX_PARTS = Math.ceil(MAX_CLIP_BYTES / PART_BYTES); // a 90 s Home attempt at 1.5 Mbps is about 17 MB
 
 async function own(db: Db, attemptId: string, lifterId: string) {
   const [a] = await db.select().from(attempts).where(and(eq(attempts.id, attemptId)));
@@ -37,7 +38,7 @@ export async function startAttemptUpload(db: Db, store: UploadStore, attemptId: 
     if (hit) return { status: 429, error: 'limit', limit: hit } as Fail;
   }
   const key = keys.meetVideo(a.meetId, a.lifterId, a.id, ext);
-  const uploadId = await store.startUpload(key, type.split(';')[0]);
+  const uploadId = await store.startUpload(key, `video/${ext}`);
   await db.update(attempts).set({ videoKey: key, status: 'uploading', recordedAt: a.recordedAt ?? new Date() }).where(eq(attempts.id, a.id));
   return { status: 200 as const, key, uploadId };
 }
@@ -72,6 +73,11 @@ export async function attemptUploaded(db: Db, store: UploadStore, attemptId: str
   if (isFail(a)) return a;
   if (a.status === 'uploading' && a.videoKey && !(await store.head(a.videoKey))) {
     if (!body.upload_id || !body.parts?.length) return { status: 400, error: 'upload_id and parts are needed' } as Fail;
+    const listed = await store.listParts(a.videoKey, body.upload_id);
+    if (listed && listed.reduce((n, x) => n + x.bytes, 0) > MAX_CLIP_BYTES) {
+      await db.update(attempts).set({ status: 'declared', videoKey: null }).where(eq(attempts.id, a.id));
+      return { status: 413, error: 'clip too big' } as Fail;
+    }
     await store.finishUpload(a.videoKey, body.upload_id, body.parts);
   }
   const ct = body.command_times && typeof body.command_times === 'object' ? body.command_times : null;

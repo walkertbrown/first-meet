@@ -99,5 +99,65 @@ class Signing(unittest.TestCase):
         self.assertEqual(main.NO_RETRY.max_retries, 0)
 
 
+CAMERA = Path(__file__).resolve().parents[2] / 'tests' / 'camera' / 'camera-recording.webm'
+
+
+class CameraWebm(unittest.TestCase):
+    """A browser MediaRecorder WebM (NerdCider's ab059242 on staging) has no length in its
+    header. The judge read that as 0 s, looked at no frames, and the attempt waited out two
+    leases into a judge_unavailable close call."""
+
+    def test_the_header_has_no_length(self):
+        import av
+        with av.open(str(CAMERA)) as c:
+            self.assertFalse(c.streams.video[0].duration)
+            self.assertFalse(c.duration)
+
+    def test_its_length_is_read_from_the_packets(self):
+        info = poses.clip_info(str(CAMERA))
+        self.assertTrue(10.09 < info.duration < 10.4, info.duration)  # last frame at 10.099 s, plus one frame
+        self.assertGreater(len(poses.grid(info.duration, 5)), 45)
+
+
+class OneBadClip(unittest.TestCase):
+    def setUp(self):
+        try:
+            import main
+        except ImportError as e:  # the Render SDK isn't installed
+            self.skipTest(str(e))
+        self.main = main
+        self.sent = []
+        self._post = main.post
+        main.post = lambda path, payload, timeout=30: (self.sent.append((path, payload)), (200, None))[1]
+
+    def tearDown(self):
+        self.main.post = self._post
+
+    def test_an_exception_reports_that_attempt_and_returns(self):
+        def boom(job):
+            raise RuntimeError('cannot decode')
+        out = self.main.attempt_or_report({'attempt_id': 'a1', 'worker_id': 'w1'}, run=boom)
+        self.assertIn('cannot decode', out['error'])
+        self.assertEqual(self.sent, [('/api/internal/failed', {'attempt_id': 'a1', 'worker_id': 'w1', 'why': out['error']})])
+
+    def test_a_refused_post_reports_too(self):
+        self.main.attempt_or_report({'attempt_id': 'a2', 'worker_id': 'w1'}, run=lambda job: {'attempt_id': 'a2', 'error': 'pass 1 post: 400'})
+        self.assertEqual(self.sent[0][0], '/api/internal/failed')
+
+    def test_a_good_attempt_reports_nothing(self):
+        self.main.attempt_or_report({'attempt_id': 'a3', 'worker_id': 'w1'}, run=lambda job: {'attempt_id': 'a3', 'frames': 9})
+        self.assertEqual(self.sent, [])
+
+    def test_a_network_error_is_a_failed_post(self):
+        import os
+        os.environ.setdefault('JUDGE_CALLBACK_SECRET', 'x')
+        old = self.main.APP_URL
+        self.main.APP_URL = 'http://127.0.0.1:9'
+        try:
+            self.assertEqual(self._post('/api/internal/next', {}, timeout=2), (0, None))
+        finally:
+            self.main.APP_URL = old
+
+
 if __name__ == '__main__':
     unittest.main()
