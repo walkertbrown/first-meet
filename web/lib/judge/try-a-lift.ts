@@ -13,6 +13,7 @@ export type TryEvent =
   | { type: 'good-spot'; t: number }
   | { type: 'stand-tall'; t: number }
   | { type: 'squat'; t: number }
+  | { type: 'rep'; t: number; k: number }
   | { type: 'rack'; t: number; noRep: boolean }
   | { type: 'result'; t: number; result: AttemptResult };
 
@@ -33,11 +34,12 @@ export class TryALift {
    * `multiRep` keeps judging after the first rep until the clip ends (the tests' many-rep clips).
    * `skipFrameCheck` treats the spot as right from the first frame (plan 3.4, piece 1: the
    * 3/4 test clips are judged with the check skipped). The check still runs, for the record.
+   * `reps`: a Home attempt's declared reps; "Rack!" waits for them (3.8a).
    */
-  constructor(private d: Dims, private opts: { multiRep?: boolean; skipFrameCheck?: boolean; rules?: Rules } = {}) {
+  constructor(private d: Dims, private opts: { multiRep?: boolean; skipFrameCheck?: boolean; rules?: Rules; reps?: number } = {}) {
     const rules = opts.rules ?? RULES;
     this.check = new FrameCheck(d, rules);
-    this.caller = new SquatCaller(d, rules, !!opts.skipFrameCheck);
+    this.caller = new SquatCaller(d, rules, !!opts.skipFrameCheck, opts.reps ?? 1);
   }
 
   private get rules() { return this.opts.rules ?? RULES; }
@@ -62,6 +64,7 @@ export class TryALift {
       } else return out;
     }
     const c = this.caller.feed(f);
+    if (c?.cmd === 'rep') out.push({ type: 'rep', t: c.t, k: c.k });
     if (c?.cmd === 'squat') { this.phase = 'lifting'; this.squatAt = c.t; out.push({ type: 'squat', t: c.t }); }
     if (c?.cmd === 'rack') {
       this.rackAt = c.t;
