@@ -7,7 +7,7 @@ import { attempts, lifters, meets } from '../../web/db/schema';
 import { startDemo } from '../../web/lib/demo';
 import { declareNext, declareSheet } from '../../web/lib/meet-flow';
 import { platformView } from '../../web/lib/platform-view';
-import { judgedFrame } from '../../web/lib/attempt-state';
+import { heldFrame, judgedFrame } from '../../web/lib/attempt-state';
 import type { Pt } from '../../web/lib/judge/pose';
 import { freshDb, MemStore, URL_ } from './setup';
 
@@ -103,5 +103,16 @@ describe.skipIf(!URL_)('the platform', () => {
     if (r.status !== 200) throw new Error(r.error);
     expect(r.frame).toMatchObject({ clip_url: 'https://r2.test/meet/a.webm?signed', ms: 2400, side: 'left' });
     expect(r.frame.p[0][0]).toBe(0.3);
+  });
+
+  it('the held frame after a reload: her clip before the call, at the lift\'s middle, then the judged moment', async () => {
+    const d = await startDemo(db, {});
+    const other = await startDemo(db, {});
+    expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toMatchObject({ status: 404 });
+    await db.update(attempts).set({ status: 'uploaded', videoKey: 'meet/h.webm', commandTimes: { loaded: 0, squat: 1000, rack: 5000 } }).where(eq(attempts.id, d.attempt.id));
+    expect(await heldFrame(db, store, d.attempt.id, other.lifter.id)).toMatchObject({ status: 403 });
+    expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toEqual({ status: 200, frame: { clip_url: 'https://r2.test/meet/h.webm?signed', ms: 3000 } });
+    await db.update(attempts).set({ status: 'judged', call: 'white', judgedFrameMs: 2600 }).where(eq(attempts.id, d.attempt.id));
+    expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toMatchObject({ frame: { ms: 2600 } });
   });
 });

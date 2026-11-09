@@ -73,15 +73,15 @@ describe('the meet window', () => {
     expect(notJudgedLine('after_close')).toBe('Not judged · after the close');
     expect(notJudgedLine('upload_late')).toBe('Not judged · sent too late');
     expect(notJudgedLabel('Squat', 3, 'upload_late')).toBe('Squat 3, not judged, sent too late');
-    expect(waitingClipBody({ lift: 'squat', number: 3 }, 'barbell', '2027-02-28T05:00:00Z', null)).toMatch(/^Your squat 3 is still sending from your phone\./);
-    expect(lateLine({ lift: 'squat', number: 3 }, 'barbell')).toBe('Your squat 3 landed after the close, so your total changed.');
+    expect(waitingClipBody({ lift: 'squat', number: 3 }, 'barbell', '2027-02-28T05:00:00Z', null)).toMatch(/^Your Squat 3 is still sending from your phone\./);
+    expect(lateLine({ lift: 'squat', number: 3 }, 'barbell')).toBe('Your Squat 3 landed after the close, so your total changed.');
   });
   it('"Waiting on the judges": within a minute, about N minutes from 2, and paused with no minutes (items 85, 87)', () => {
     const on = { lift: 'squat', number: 3 };
-    expect(judgingClipBody(on, 'barbell')).toBe("Your squat 3 reached us, and the judges are looking. Your total lands once it's judged, usually within a minute. You don't need to keep First Meet open.");
+    expect(judgingClipBody(on, 'barbell')).toBe("Your Squat 3 reached us, and the judges are looking. Your total lands once it's judged, usually within a minute. You don't need to keep First Meet open.");
     expect(judgingClipBody(on, 'barbell', 1)).toMatch(/usually within a minute/);
     expect(judgingClipBody(on, 'barbell', 4)).toMatch(/Your total lands once it's judged, in about 4 minutes\. You don't/);
-    expect(judgingClipBody(on, 'barbell', null, true)).toBe("Your squat 3 reached us and is saved. Judging is paused for a moment, and your total lands once it's back. You don't need to keep First Meet open.");
+    expect(judgingClipBody(on, 'barbell', null, true)).toBe("Your Squat 3 reached us and is saved. Judging is paused for a moment, and your total lands once it's back. You don't need to keep First Meet open.");
     expect(MEET_WORDS.paused90).toBe("Judging is paused for a moment. Your lift is saved and will be judged when it's back.");
   });
 });
@@ -100,7 +100,7 @@ describe('the phone\'s clock (item 86)', () => {
 });
 
 describe('"You totaled"\'s opening (look 4, item 85)', () => {
-  const late = 'Your squat 3 landed after the close, so your total changed.';
+  const late = 'Your Squat 3 landed after the close, so your total changed.';
   it('the first time: the reveal, from 0, with no line', () => {
     expect(openingShow(undefined, 300, late)).toEqual({ from: 0, line: null });
   });

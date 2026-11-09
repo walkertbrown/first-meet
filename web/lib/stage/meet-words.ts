@@ -285,7 +285,7 @@ export const WINDOW_WORDS = {
 
 /** 5.28 "Waiting on your clip": her clip still sending after the close. */
 export const waitingClipBody = (on: { lift: string; number: number }, division: 'barbell' | 'home', deadline: string, local?: string | null) =>
-  `Your ${liftLower(on.lift, division)} ${on.number} is still sending from your phone. Keep First Meet open with a connection, and your total lands once it's judged. Clips count until ${windowTime(deadline, { weekday: true, local })}.`;
+  `Your ${liftWord(on.lift, division)} ${on.number} is still sending from your phone. Keep First Meet open with a connection, and your total lands once it's judged. Clips count until ${windowTime(deadline, { weekday: true, local })}.`;
 
 /**
  * 5.28 "Waiting on the judges": after the close, her clip has reached us (`queued` or `judging`)
@@ -295,14 +295,14 @@ export const waitingClipBody = (on: { lift: string; number: number }, division: 
 export const judgingClipBody = (on: { lift: string; number: number }, division: 'barbell' | 'home', waitMin: number | null = null, paused = false) =>
   paused
     // 3.9 step 9 (item 87): no minutes while judging is paused
-    ? `Your ${liftLower(on.lift, division)} ${on.number} reached us and is saved. Judging is paused for a moment, and your total lands once it's back. You don't need to keep First Meet open.`
-    : `Your ${liftLower(on.lift, division)} ${on.number} reached us, and the judges are looking. ` +
+    ? `Your ${liftWord(on.lift, division)} ${on.number} reached us and is saved. Judging is paused for a moment, and your total lands once it's back. You don't need to keep First Meet open.`
+    : `Your ${liftWord(on.lift, division)} ${on.number} reached us, and the judges are looking. ` +
   (waitMin !== null && waitMin >= 2 ? `Your total lands once it's judged, in about ${waitMin} minutes.` : `Your total lands once it's judged, usually within a minute.`) +
   ` You don't need to keep First Meet open.`;
 
-/** 3.8: a late clip raised her total. "Your squat 3 landed after the close, so your total changed." */
+/** 3.8: a late clip raised her total. "Your Squat 3 landed after the close, so your total changed." */
 export const lateLine = (on: { lift: string; number: number }, division: 'barbell' | 'home') =>
-  `Your ${liftLower(on.lift, division)} ${on.number} landed after the close, so your total changed.`;
+  `Your ${liftWord(on.lift, division)} ${on.number} landed after the close, so your total changed.`;
 
 /** Her lifts lists' Small line for a `void` attempt (3.8): "Not judged · after the close" / "… sent too late". */
 export function notJudgedLine(reason: string | null | undefined): string {

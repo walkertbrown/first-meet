@@ -6,6 +6,7 @@ import { attempts } from '@/db/schema';
 import { judgedLift } from '@/lib/queue';
 import { nearSide, type Frame, type Pt, type Side } from '@/lib/judge/pose';
 import type { R2 } from '@/lib/r2';
+import { heldFrameMs } from '@/lib/stage/held-frame';
 
 export type AttemptState = {
   id: string;
@@ -155,4 +156,22 @@ export async function judgedFrame(db: Db, store: Pick<R2, 'signedGet' | 'getJson
   if (!best?.p) return { status: 404, error: 'no pose at the judged frame' };
   const m = (a.measures ?? {}) as { side?: Side };
   return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms, p: best.p, side: m.side ?? nearSide(best) } };
+}
+
+/** The held breath's frame after a reload: her clip and the moment to hold, before or after the call. */
+export type HeldFrame = { clip_url: string; ms: number | null };
+
+/**
+ * Her own uploaded attempt's clip, with the frame to hold dimmed while she waits for the lights:
+ * the judged moment if it's judged, else the middle of the lift by its command times (null: the
+ * phone takes the middle of the clip). A sample's copied clip answers the same way.
+ */
+export async function heldFrame(db: Db, store: Pick<R2, 'signedGet'>, id: string, lifterId: string):
+  Promise<{ status: 200; frame: HeldFrame } | { status: 403 | 404; error: string }> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { status: 404, error: 'no such attempt' };
+  const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+  if (!a) return { status: 404, error: 'no such attempt' };
+  if (a.lifterId !== lifterId) return { status: 403, error: 'not your attempt' };
+  if (!a.videoKey) return { status: 404, error: 'no clip yet' };
+  return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms: heldFrameMs(a.commandTimes, a.judgedFrameMs) } };
 }

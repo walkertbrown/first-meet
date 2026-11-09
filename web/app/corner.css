@@ -22,11 +22,11 @@
 
 /* "Cheer": a tap opens the four, and a held press is a slow tap (look 5.8: no selection, no menu) */
 .cheer-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 76px; height: 36px; padding: 0 14px;
-  border: 0; border-radius: 18px; box-shadow: inset 0 0 0 1.5px var(--ink); background: transparent; color: var(--ink);
+  border: 0; border-radius: 4px; box-shadow: inset 0 0 0 1.5px var(--ink); background: transparent; color: var(--ink);
   font-family: inherit; font-weight: 700; font-size: 15px; line-height: 1; cursor: pointer;
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
-.cheer-btn:active { background: var(--surface-2); }
-.cheer-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.cheer-btn:active, button.cheer-btn:hover { background: var(--surface-2); }
+.cheer-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .cheer-btn.sent { box-shadow: none; background: var(--surface-2); color: var(--ink-2); cursor: default; max-width: 50%; white-space: normal; text-align: center; line-height: 18px; height: auto; min-height: 36px; padding: 4px 12px; }
 
 /* The cheer sheet: the Eyebrow 16 px under the grab, the first cheer 12 px under it; a long name wraps */

@@ -20,6 +20,7 @@ import { Voice, type VoiceKey } from '@/lib/stage/voice';
 import { thock, audio } from '@/lib/stage/thock';
 import { DeepestFrames, liftMarks, type LiftMarks, type Snap } from '@/lib/stage/snap';
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
+import { heldFrameMs } from '@/lib/stage/held-frame';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
 import {
   COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
@@ -604,7 +605,32 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       setDims(d);
       return { ...grab(rv, d), p: f.p, side: f.side };
     };
-    await awaitLights(alive, attempt.id, sent, null, async () => {}, snapAt);
+    // the held breath holds her lift's frame, dimmed (look 7), not a black stage: from the clip
+    // still on the phone, else from the copy the server has (her upload, or a sample's)
+    const held = async (): Promise<SideSnap | null> => {
+      const rv = replayRef.current;
+      if (!rv) return null;
+      let url: string, ms: number | null;
+      if (saved) { url = URL.createObjectURL(saved.blob); ms = heldFrameMs(saved.commandTimes); }
+      else {
+        const r = await getJson(`/api/attempts/${attempt.id}/frame?held=1`);
+        if (r.status !== 200) return null;
+        const f = r.body as unknown as { clip_url: string; ms: number | null };
+        url = f.clip_url; ms = f.ms;
+      }
+      rv.src = url;
+      await within(readyToSeek(rv), 6000);
+      const d = { w: rv.videoWidth, h: rv.videoHeight };
+      if (!d.w || !d.h) return null;
+      const at = ms ?? (Number.isFinite(rv.duration) ? rv.duration * 500 : 0);
+      await within(seekTo(rv, at / 1000), 4000);
+      setDims(d);
+      return grab(rv, d);
+    };
+    const snap = await held().catch(() => null);
+    if (!alive()) return;
+    freeze(snap);
+    await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt);
   }, [attempt.id, send, awaitLights]);
 
   const start = (m: Mode) => {

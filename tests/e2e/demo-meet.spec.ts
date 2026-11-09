@@ -170,3 +170,35 @@ test('offline after the lift, the tab closed: back later, her saved clip sends a
   await expect(back.getByRole('button', { name: "I'm ready" })).toBeHidden();
   await expect(back.getByRole('heading', { name: LIGHTS })).toBeVisible({ timeout: 5 * 60_000 });
 });
+
+// LookieBot on 20d916a: a reload during the held breath left the stage black. It holds her lift's
+// frame under the 38% dim (look 7), from the server's copy of the clip, until the lights land.
+test('a reload during the held breath holds the lift\'s frame, dimmed', async ({ page }) => {
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.getByText('Sending to the judges')).toBeVisible({ timeout: 90_000 });
+  await page.reload();
+  const frozen = page.locator('.stage canvas.feed');
+  await expect(frozen).toBeVisible({ timeout: 20_000 });
+  const held = await page.evaluate(() => {
+    const st = document.querySelector('.stage')!;
+    const c = document.querySelector<HTMLCanvasElement>('.stage canvas.feed')!;
+    return { judging: st.classList.contains('judging'), w: c.width, h: c.height, dim: getComputedStyle(document.querySelector('.stage .dim')!).opacity };
+  });
+  // the lights may already be in if the judge was quick: then the held breath is over, and passes
+  if (!held.judging) { await expect(page.getByRole('heading', { name: LIGHTS })).toBeVisible(); return; }
+  expect(held.w).toBeGreaterThan(0);
+  expect(held.h).toBeGreaterThan(0);
+  expect(Number(held.dim)).toBeCloseTo(0.38, 2);
+  // not black: the footage, with the words and buttons over it hidden, has light in it
+  await page.addStyleTag({ content: '.stage .hud, .stage .lamps, .stage .vignette { visibility: hidden !important; }' });
+  const { default: sharp } = await import('sharp');
+  const png = await page.locator('.stage .footage').screenshot();
+  const { channels } = await sharp(png).stats();
+  const mean = (channels[0].mean + channels[1].mean + channels[2].mean) / 3;
+  expect(mean).toBeGreaterThan(12);
+});
