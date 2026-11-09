@@ -35,50 +35,58 @@
  },
  "lines": {
   "line1": {
-   "pass": true,
-   "text": "1. No Press! while the bar is still going down (more than 1% of the frame lower after Press!, 3-frame median), 18 reps: 0 (none)"
+   "status": "NOT SHOWN",
+   "text": "1. No Press! while the bar is still going down (more than 1% of the frame lower after Press!, 3-frame median), on the reps where Press! came in the clip: 4 of 18 (cE2t, KrDo, Nazt, uGCh). Sinking, on the phone's trace or the reference: 0 (none). Largest: phone 0.1%, reference 0.0%. Press! before the stop: 0. In the replay (14 reps, not scored): sinking on the phone's trace 1 (IKuX). Shown on clips only if at least 50% of reps get Press! in the clip"
   },
   "line2": {
-   "pass": true,
-   "text": "2. Press! within 1 s of the stop on at least 90%: 18 of 18; past 1.5 s and not late: 0 (none). Within 1.5 s: 18 of 18"
+   "status": "PASS",
+   "text": "2. Press! within 1 s of the stop on at least 90%: 18 of 18; past 1.5 s and not late: 0 (none). Within 1.5 s: 18 of 18. Latest: 1.00 s"
   },
   "line3": {
-   "pass": true,
-   "text": "3. No Start! before the bar settled, all 22 reps: 0 early (none). No Start!: m-k8, Nv9h, VM_y; of those, not voided within 5 s of leaving the hooks or of the loss: 0 (none)"
+   "status": "PASS",
+   "text": "3. No Start! before the bar settled, all 22 reps: 0 early (none). No Start!: m-k8, Nv9h, VM_y; each must be voided within 5 s of leaving the hooks, or at the loss: m-k8 void 0.43 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 2.40 s after leaving the hooks (at the loss)"
   },
   "line4": {
-   "pass": true,
+   "status": "PASS",
    "text": "4. No Rack! before the bar is back up, all 22 reps: 0 early (none). A rep with no Start! passes only by the void's Rack!: 3 of 3"
   },
   "line5": {
-   "pass": true,
+   "status": "PASS",
    "text": "5. \"Back up\" agrees with the eye, 18 reps: 18 of 18 (disagree: none)"
   },
   "line6": {
-   "pass": true,
+   "status": "PASS",
    "text": "6. No scored rep voided, 18 reps: 0 (none)"
   }
+ },
+ "notes": {
+  "holds": "Pauses with no still stretch of 0.4 s in the reference (the last 0.4 s of the pause, or all of it, was replayed instead): 6K8v, 8qzW, IKuX, NFjK, xXFj"
  },
  "rows": [
   {
    "id": "6K8vpaHae6M",
    "group": "paused",
    "inHand": false,
-   "start": 3.4333333333333336,
-   "press": 5.866666666666667,
+   "start": 3.433333333333333,
+   "press": 5.833333333333333,
    "late": false,
-   "rack": 7.1,
+   "rack": 7.033333333333334,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 0.667,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 4.7,
    "settled": 1.5,
-   "descent": 3.867,
-   "stop": 4.997,
-   "pauseEnd": 6.199999999999999,
-   "backUpEye": 6.7330000000000005,
-   "delay": 0.8696666666666673,
+   "descent": 3.8329999999999997,
+   "stop": 4.963,
+   "pauseEnd": 5.333,
+   "backUpEye": 6.666,
+   "delay": 0.870333333333333,
    "early": false,
    "within1": true,
    "within15": true,
@@ -88,26 +96,34 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0,
+   "sink": 0.00016776742490204333,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
-     "at": 3.2,
-     "s": 0.567,
-     "got": true
+     "at": 3.1999999999999997,
+     "s": 0.533,
+     "got": true,
+     "from": 2.7999999999999994,
+     "to": 3.1999999999999997,
+     "still": false
     },
     {
      "what": "press",
      "at": 4.8,
-     "s": 0.833,
-     "got": true
+     "s": 0.8,
+     "got": true,
+     "from": 4.43,
+     "to": 4.8,
+     "still": false
     }
    ],
    "log": [
     "start 3.43",
-    "press 5.87",
-    "rack 7.10"
+    "press 5.83",
+    "rack 7.03"
    ]
   },
   {
@@ -117,17 +133,22 @@
    "start": 1.102,
    "press": 5.576786096256685,
    "late": false,
-   "rack": 7.0127165775401075,
+   "rack": 6.979323529411765,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 0.601,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 5.176,
    "settled": 0.5,
    "descent": 3.941,
    "stop": 4.81,
-   "pauseEnd": 5.911,
-   "backUpEye": 6.579,
+   "pauseEnd": 5.51,
+   "backUpEye": 6.545,
    "delay": 0.766786096256685,
    "early": false,
    "within1": true,
@@ -140,18 +161,23 @@
    "backAgree": true,
    "sink": 0,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "press",
      "at": 5.51,
-     "s": 0.401,
-     "got": true
+     "s": 0.367,
+     "got": true,
+     "from": 5.11,
+     "to": 5.51,
+     "still": true
     }
    ],
    "log": [
     "start 1.10",
     "press 5.58",
-    "rack 7.01"
+    "rack 6.98"
    ]
   },
   {
@@ -159,20 +185,25 @@
    "group": "paused",
    "inHand": false,
    "start": 7.041,
-   "press": 10.411097276264591,
+   "press": 10.413463035019454,
    "late": false,
    "rack": 13.64775486381323,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 5.606,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 10.01,
    "settled": 6,
    "descent": 8.375,
    "stop": 9.61,
-   "pauseEnd": 10.713999999999999,
+   "pauseEnd": 10.28,
    "backUpEye": 12.646999999999998,
-   "delay": 0.801097276264592,
+   "delay": 0.8034630350194547,
    "early": false,
    "within1": true,
    "within15": true,
@@ -184,12 +215,17 @@
    "backAgree": true,
    "sink": 0.007402097953013054,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "press",
-     "at": 10.311,
+     "at": 10.28,
      "s": 0.434,
-     "got": true
+     "got": true,
+     "from": 9.88,
+     "to": 10.28,
+     "still": false
     }
    ],
    "log": [
@@ -203,20 +239,25 @@
    "group": "meet",
    "inHand": false,
    "start": 28.394939929328622,
-   "press": 31.36402473498233,
+   "press": 31.331024734982332,
    "late": false,
-   "rack": 33.03269964664311,
+   "rack": 32.99933215547703,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 27.894,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 30.33,
    "settled": 27.6,
-   "descent": 28.829,
-   "stop": 30.531,
-   "pauseEnd": 31.695,
-   "backUpEye": 32.599,
-   "delay": 0.833024734982331,
+   "descent": 28.795,
+   "stop": 30.497,
+   "pauseEnd": 31.660999999999998,
+   "backUpEye": 32.565,
+   "delay": 0.8340247349823322,
    "early": false,
    "within1": true,
    "within15": true,
@@ -228,24 +269,32 @@
    "backAgree": true,
    "sink": 0.0017198234273274604,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 28.128,
-     "s": 0.601,
-     "got": true
+     "s": 0.567,
+     "got": true,
+     "from": 27.728,
+     "to": 28.128,
+     "still": true
     },
     {
      "what": "press",
-     "at": 30.363,
+     "at": 30.33,
      "s": 0.734,
-     "got": true
+     "got": true,
+     "from": 29.93,
+     "to": 30.33,
+     "still": true
     }
    ],
    "log": [
     "start 28.39",
-    "press 31.36",
-    "rack 33.03"
+    "press 31.33",
+    "rack 33.00"
    ]
   },
   {
@@ -253,20 +302,25 @@
    "group": "meet",
    "inHand": false,
    "start": 44.510822742474915,
-   "press": 47.480842809364546,
+   "press": 47.44747826086956,
    "late": false,
-   "rack": 49.18248829431438,
+   "rack": 49.115759197324415,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 44.01,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 46.58,
    "settled": 44,
-   "descent": 44.944,
-   "stop": 46.58,
-   "pauseEnd": 47.814,
-   "backUpEye": 48.781,
-   "delay": 0.9008428093645477,
+   "descent": 44.911,
+   "stop": 46.547,
+   "pauseEnd": 47.047,
+   "backUpEye": 48.714999999999996,
+   "delay": 0.9004782608695621,
    "early": false,
    "within1": true,
    "within15": true,
@@ -276,26 +330,34 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0.0007871227163812056,
+   "sink": 0.005559602940209518,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 44.344,
-     "s": 0.5,
-     "got": true
+     "s": 0.467,
+     "got": true,
+     "from": 44,
+     "to": 44.344,
+     "still": true
     },
     {
      "what": "press",
      "at": 46.58,
-     "s": 0.734,
-     "got": true
+     "s": 0.701,
+     "got": true,
+     "from": 46.18,
+     "to": 46.58,
+     "still": true
     }
    ],
    "log": [
     "start 44.51",
-    "press 47.48",
-    "rack 49.18"
+    "press 47.45",
+    "rack 49.12"
    ]
   },
   {
@@ -303,20 +365,25 @@
    "group": "meet",
    "inHand": false,
    "start": 20.5,
-   "press": 26.066666666666666,
+   "press": 26.09933333333333,
    "late": false,
-   "rack": 29.434,
+   "rack": 29.467333333333332,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 19.567,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 25.666,
    "settled": 20.367,
    "descent": 21.833,
    "stop": 25.1,
-   "pauseEnd": 26.37,
-   "backUpEye": 29,
-   "delay": 0.966666666666665,
+   "pauseEnd": 26.403000000000002,
+   "backUpEye": 29.033,
+   "delay": 0.999333333333329,
    "early": false,
    "within1": true,
    "within15": true,
@@ -328,18 +395,23 @@
    "backAgree": true,
    "sink": 0.005809418699398938,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "press",
-     "at": 25.7,
-     "s": 0.7,
-     "got": true
+     "at": 25.666,
+     "s": 0.733,
+     "got": true,
+     "from": 25.266,
+     "to": 25.666,
+     "still": true
     }
    ],
    "log": [
     "start 20.50",
-    "press 26.07",
-    "rack 29.43"
+    "press 26.10",
+    "rack 29.47"
    ]
   },
   {
@@ -354,7 +426,12 @@
    "lostBeforeStart": null,
    "leftHooks": 19.728,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "clip",
+   "pressClip": 25.276,
    "settled": 19.8,
    "descent": 23.107,
    "stop": 24.48,
@@ -372,6 +449,8 @@
    "backAgree": true,
    "sink": 0,
    "sinking": false,
+   "refSink": 0,
+   "refSinking": false,
    "waits": [],
    "log": [
     "start 20.94",
@@ -386,17 +465,22 @@
    "start": 24.533,
    "press": 27.3,
    "late": false,
-   "rack": 30.86733333333333,
+   "rack": 30.834,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 22.566,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 26.867,
    "settled": 22.566,
    "descent": 25.6,
    "stop": 26.53,
-   "pauseEnd": 27.633,
-   "backUpEye": 29.367,
+   "pauseEnd": 27.2,
+   "backUpEye": 29.334,
    "delay": 0.7699999999999996,
    "early": false,
    "within1": true,
@@ -407,20 +491,25 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0.003650140124370871,
+   "sink": 0.007616912037318291,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "press",
      "at": 27.2,
-     "s": 0.433,
-     "got": true
+     "s": 0.4,
+     "got": true,
+     "from": 26.8,
+     "to": 27.2,
+     "still": true
     }
    ],
    "log": [
     "start 24.53",
     "press 27.30",
-    "rack 30.87"
+    "rack 30.83"
    ]
   },
   {
@@ -428,20 +517,25 @@
    "group": "meet",
    "inHand": false,
    "start": 44.634,
-   "press": 47.66733333333334,
+   "press": 47.66666666666667,
    "late": false,
    "rack": 50.93366666666667,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 43.267,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 47.234,
    "settled": 43.634,
    "descent": 45.967,
    "stop": 46.87,
    "pauseEnd": 47.997,
    "backUpEye": 50.534,
-   "delay": 0.7973333333333414,
+   "delay": 0.796666666666674,
    "early": false,
    "within1": true,
    "within15": true,
@@ -451,14 +545,19 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0.0064782878746992845,
+   "sink": 0.006541341819800928,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "press",
-     "at": 47.534,
+     "at": 47.5,
      "s": 0.467,
-     "got": true
+     "got": true,
+     "from": 47.1,
+     "to": 47.5,
+     "still": true
     }
    ],
    "log": [
@@ -471,21 +570,26 @@
    "id": "hIuj1H1WOxM",
    "group": "paused",
    "inHand": true,
-   "start": 1.6018367346938776,
-   "press": 4.03734693877551,
+   "start": 1.601836734693877,
+   "press": 4.004346938775511,
    "late": false,
-   "rack": 5.405020408163265,
+   "rack": 5.37165306122449,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 1.101,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 3.136,
    "settled": 1.001,
-   "descent": 2.036,
-   "stop": 3.0709999999999997,
-   "pauseEnd": 4.372,
-   "backUpEye": 5.005999999999999,
-   "delay": 0.9663469387755104,
+   "descent": 2.002,
+   "stop": 3.037,
+   "pauseEnd": 4.338,
+   "backUpEye": 4.9719999999999995,
+   "delay": 0.9673469387755107,
    "early": false,
    "within1": true,
    "within15": true,
@@ -497,45 +601,58 @@
    "backAgree": true,
    "sink": 0,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
-     "at": 1.435,
-     "s": 0.501,
-     "got": true
+     "at": 1.4349999999999998,
+     "s": 0.467,
+     "got": true,
+     "from": 1.0349999999999997,
+     "to": 1.4349999999999998,
+     "still": true
     },
     {
      "what": "press",
-     "at": 3.37,
+     "at": 3.337,
      "s": 0.501,
-     "got": true
+     "got": true,
+     "from": 2.937,
+     "to": 3.337,
+     "still": true
     }
    ],
    "log": [
     "start 1.60",
-    "press 4.04",
-    "rack 5.41"
+    "press 4.00",
+    "rack 5.37"
    ]
   },
   {
    "id": "IA0PhDBzsz0",
    "group": "paused",
    "inHand": false,
-   "start": 7.907469115191987,
-   "press": 10.477447412353921,
+   "start": 7.907836393989984,
+   "press": 10.610283806343904,
    "late": true,
-   "rack": 11.84512020033389,
+   "rack": 11.978589315525877,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 6.206,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 9.643,
    "settled": 6.8,
    "descent": 8.308,
    "stop": 9.707,
-   "pauseEnd": 10.780999999999999,
-   "backUpEye": 11.611,
-   "delay": 0.7704474123539207,
+   "pauseEnd": 10.914,
+   "backUpEye": 11.744,
+   "delay": 0.9032838063439037,
    "early": false,
    "within1": true,
    "within15": true,
@@ -545,47 +662,60 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0,
+   "sink": 0.000001003311861536016,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
-     "at": 7.774,
+     "at": 7.7410000000000005,
      "s": 0.467,
-     "got": true
+     "got": true,
+     "from": 7.341000000000001,
+     "to": 7.7410000000000005,
+     "still": true
     },
     {
      "what": "press",
-     "at": 9.71,
-     "s": 0.634,
-     "got": true
+     "at": 9.676,
+     "s": 0.767,
+     "got": true,
+     "from": 9.276,
+     "to": 9.676,
+     "still": true
     }
    ],
    "log": [
     "start 7.91",
-    "press(late) 10.48",
-    "rack 11.85"
+    "press(late) 10.61",
+    "rack 11.98"
    ]
   },
   {
    "id": "IKuXsXyFqUQ",
    "group": "paused",
    "inHand": true,
-   "start": 2.133,
-   "press": 4.466333333333334,
+   "start": 2.1663333333333337,
+   "press": 4.463333333333334,
    "late": false,
-   "rack": 11.833666666666666,
+   "rack": 11.800333333333334,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 1.1,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 2.767,
    "settled": 1,
    "descent": 2.566,
    "stop": 3.5629999999999997,
-   "pauseEnd": 4.795999999999999,
-   "backUpEye": 5.266,
-   "delay": 0.9033333333333342,
+   "pauseEnd": 3.8629999999999995,
+   "backUpEye": 5.2330000000000005,
+   "delay": 0.9003333333333341,
    "early": false,
    "within1": true,
    "within15": true,
@@ -595,26 +725,34 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0.008178248053099968,
-   "sinking": false,
+   "sink": 0.012232383002838465,
+   "sinking": true,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 1.633,
      "s": 0.833,
-     "got": true
+     "got": true,
+     "from": 1.233,
+     "to": 1.633,
+     "still": false
     },
     {
      "what": "press",
-     "at": 3.033,
-     "s": 0.933,
-     "got": true
+     "at": 3.03,
+     "s": 0.9,
+     "got": true,
+     "from": 2.73,
+     "to": 3.03,
+     "still": false
     }
    ],
    "log": [
-    "start 2.13",
-    "press 4.47",
-    "rack 11.83"
+    "start 2.17",
+    "press 4.46",
+    "rack 11.80"
    ]
   },
   {
@@ -629,7 +767,12 @@
    "lostBeforeStart": null,
    "leftHooks": 50.6,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "clip",
+   "pressClip": 57.466699999999996,
    "settled": 50.5,
    "descent": 54.167,
    "stop": 56.8,
@@ -647,6 +790,8 @@
    "backAgree": true,
    "sink": 0,
    "sinking": false,
+   "refSink": 0.000347222222222221,
+   "refSinking": false,
    "waits": [],
    "log": [
     "start 51.10",
@@ -658,21 +803,26 @@
    "id": "Lj0X",
    "group": "meet",
    "inHand": true,
-   "start": 2.6031009174311928,
-   "press": 5.20497247706422,
+   "start": 2.603100917431193,
+   "press": 5.1719724770642195,
    "late": false,
-   "rack": 7.974642201834862,
+   "rack": 7.941275229357798,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 2.102,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "replay",
+   "pressClip": 4.371,
    "settled": 2.002,
-   "descent": 3.0370000000000004,
-   "stop": 4.374,
-   "pauseEnd": 5.538,
-   "backUpEye": 7.542,
-   "delay": 0.8309724770642202,
+   "descent": 3.003,
+   "stop": 4.34,
+   "pauseEnd": 5.5040000000000004,
+   "backUpEye": 7.508,
+   "delay": 0.8319724770642196,
    "early": false,
    "within1": true,
    "within15": true,
@@ -684,24 +834,32 @@
    "backAgree": true,
    "sink": 0.0002957397539260498,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 2.503,
-     "s": 0.434,
-     "got": true
+     "s": 0.4,
+     "got": true,
+     "from": 2.103,
+     "to": 2.503,
+     "still": true
     },
     {
      "what": "press",
-     "at": 4.571,
+     "at": 4.538,
      "s": 0.534,
-     "got": true
+     "got": true,
+     "from": 4.138,
+     "to": 4.538,
+     "still": true
     }
    ],
    "log": [
     "start 2.60",
-    "press 5.20",
-    "rack 7.97"
+    "press 5.17",
+    "rack 7.94"
    ]
   },
   {
@@ -716,7 +874,12 @@
    "lostBeforeStart": 1.5,
    "leftHooks": 1.067,
    "voided": 1.5,
+   "voidAfterHooks": 0.433,
+   "voidAtLoss": true,
    "voidOk": true,
+   "startIn": null,
+   "pressIn": null,
+   "pressClip": null,
    "settled": 9.8,
    "descent": 11.434,
    "stop": 12.27,
@@ -734,6 +897,8 @@
    "backAgree": true,
    "sink": null,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [],
    "log": [
     "Rack!(void) 1.50"
@@ -743,7 +908,7 @@
    "id": "Nazt",
    "group": "meet",
    "inHand": true,
-   "start": 12.433333333333334,
+   "start": 12.433666666666667,
    "press": 15.733366666666667,
    "late": false,
    "rack": 20.166666666666668,
@@ -751,7 +916,12 @@
    "lostBeforeStart": null,
    "leftHooks": 11.1,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "clip",
+   "pressClip": 15.1667,
    "settled": 11,
    "descent": 12.834,
    "stop": 14.867,
@@ -769,12 +939,17 @@
    "backAgree": true,
    "sink": 0,
    "sinking": false,
+   "refSink": 0,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
-     "at": 12.2,
+     "at": 12.167,
      "s": 0.567,
-     "got": true
+     "got": true,
+     "from": 11.767,
+     "to": 12.167,
+     "still": true
     }
    ],
    "log": [
@@ -788,20 +963,25 @@
    "group": "paused",
    "inHand": true,
    "start": 4.104,
-   "press": 7.140413073713491,
+   "press": 7.137413073713492,
    "late": false,
-   "rack": 8.575070931849792,
+   "rack": 8.474705146036161,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 3.604,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 6.273,
    "settled": 3.504,
-   "descent": 4.537999999999999,
-   "stop": 6.244,
-   "pauseEnd": 7.471,
-   "backUpEye": 8.141,
-   "delay": 0.8964130737134912,
+   "descent": 4.504,
+   "stop": 6.21,
+   "pauseEnd": 6.67,
+   "backUpEye": 8.107,
+   "delay": 0.9274130737134918,
    "early": false,
    "within1": true,
    "within15": true,
@@ -813,24 +993,32 @@
    "backAgree": true,
    "sink": 0.00220915846350922,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 4.104,
-     "s": 0.334,
-     "got": true
+     "s": 0.3,
+     "got": true,
+     "from": 3.704,
+     "to": 4.104,
+     "still": false
     },
     {
      "what": "press",
-     "at": 6.373,
+     "at": 6.37,
      "s": 0.767,
-     "got": true
+     "got": true,
+     "from": 5.97,
+     "to": 6.37,
+     "still": false
     }
    ],
    "log": [
     "start 4.10",
     "press 7.14",
-    "rack 8.58"
+    "rack 8.47"
    ]
   },
   {
@@ -845,12 +1033,17 @@
    "lostBeforeStart": null,
    "leftHooks": 9.566,
    "voided": 14.567,
+   "voidAfterHooks": 5.001,
+   "voidAtLoss": false,
    "voidOk": true,
+   "startIn": null,
+   "pressIn": null,
+   "pressClip": null,
    "settled": 10,
-   "descent": 14.7,
-   "stop": 15.603000000000002,
-   "pauseEnd": 15.832999999999998,
-   "backUpEye": 16.4,
+   "descent": 14.667,
+   "stop": 15.57,
+   "pauseEnd": 15.799999999999999,
+   "backUpEye": 16.367,
    "delay": null,
    "early": false,
    "within1": false,
@@ -863,12 +1056,17 @@
    "backAgree": false,
    "sink": null,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 10.967,
-     "s": 3.633,
-     "got": false
+     "s": 3.6,
+     "got": false,
+     "from": 10.567,
+     "to": 10.967,
+     "still": true
     }
    ],
    "log": [
@@ -880,20 +1078,25 @@
    "group": "meet",
    "inHand": true,
    "start": 28.60033333333333,
-   "press": 30.83366666666667,
+   "press": 30.80033333333333,
    "late": false,
-   "rack": 33.699666666666666,
+   "rack": 33.666333333333334,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 28.1,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "replay",
+   "pressIn": "clip",
+   "pressClip": 30.167,
    "settled": 28,
-   "descent": 29.034000000000002,
-   "stop": 30.297,
-   "pauseEnd": 31.367,
-   "backUpEye": 33.467,
-   "delay": 0.5366666666666688,
+   "descent": 29,
+   "stop": 30.262999999999998,
+   "pauseEnd": 31.333,
+   "backUpEye": 33.433,
+   "delay": 0.5373333333333328,
    "early": false,
    "within1": true,
    "within15": true,
@@ -905,18 +1108,23 @@
    "backAgree": true,
    "sink": 0.0005756570496201485,
    "sinking": false,
+   "refSink": 0,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 28.267,
-     "s": 0.667,
-     "got": true
+     "s": 0.633,
+     "got": true,
+     "from": 28,
+     "to": 28.267,
+     "still": true
     }
    ],
    "log": [
     "start 28.60",
-    "press 30.83",
-    "rack 33.70"
+    "press 30.80",
+    "rack 33.67"
    ]
   },
   {
@@ -928,10 +1136,15 @@
    "late": false,
    "rack": null,
    "noRep": false,
-   "lostBeforeStart": 5.300333333333333,
+   "lostBeforeStart": 5.299666666666667,
    "leftHooks": 2.9,
-   "voided": 5.300333333333333,
+   "voided": 5.299666666666667,
+   "voidAfterHooks": 2.4,
+   "voidAtLoss": true,
    "voidOk": true,
+   "startIn": null,
+   "pressIn": null,
+   "pressClip": null,
    "settled": 3.267,
    "descent": 5.4,
    "stop": 6.1370000000000005,
@@ -949,12 +1162,17 @@
    "backAgree": false,
    "sink": null,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
-     "at": 4.767,
+     "at": 4.7330000000000005,
      "s": 0.567,
-     "got": false
+     "got": false,
+     "from": 4.333000000000001,
+     "to": 4.7330000000000005,
+     "still": true
     }
    ],
    "log": [
@@ -966,20 +1184,25 @@
    "group": "bounced",
    "inHand": false,
    "start": 15.166,
-   "press": 17.299630864197532,
+   "press": 17.263298765432097,
    "late": false,
-   "rack": 18.700283950617283,
+   "rack": 18.59961975308642,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 13.533,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 16.233,
    "settled": 13.8,
-   "descent": 15.633,
-   "stop": 16.497,
-   "pauseEnd": 17.663999999999998,
-   "backUpEye": 18.267,
-   "delay": 0.8026308641975319,
+   "descent": 15.599,
+   "stop": 16.462999999999997,
+   "pauseEnd": 16.662999999999997,
+   "backUpEye": 18.198999999999998,
+   "delay": 0.8002987654320997,
    "early": false,
    "within1": true,
    "within15": true,
@@ -991,24 +1214,32 @@
    "backAgree": true,
    "sink": 0,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "start",
      "at": 15.166,
-     "s": 0.367,
-     "got": true
+     "s": 0.333,
+     "got": true,
+     "from": 14.766,
+     "to": 15.166,
+     "still": true
     },
     {
      "what": "press",
-     "at": 16.333,
-     "s": 0.967,
-     "got": true
+     "at": 16.33,
+     "s": 0.933,
+     "got": true,
+     "from": 16.13,
+     "to": 16.33,
+     "still": false
     }
    ],
    "log": [
     "start 15.17",
-    "press 17.30",
-    "rack 18.70"
+    "press 17.26",
+    "rack 18.60"
    ]
   },
   {
@@ -1016,20 +1247,25 @@
    "group": "paused",
    "inHand": true,
    "start": 1.1,
-   "press": 3.0333333333333337,
+   "press": 3.0003333333333333,
    "late": false,
-   "rack": 4.199666666666667,
+   "rack": 4.200333333333333,
    "noRep": false,
    "lostBeforeStart": null,
    "leftHooks": 0.6,
    "voided": null,
+   "voidAfterHooks": null,
+   "voidAtLoss": false,
    "voidOk": false,
+   "startIn": "clip",
+   "pressIn": "replay",
+   "pressClip": 2.567,
    "settled": 0.5,
    "descent": 1.3,
    "stop": 2.43,
-   "pauseEnd": 3.337,
-   "backUpEye": 3.767,
-   "delay": 0.6033333333333335,
+   "pauseEnd": 3.3030000000000004,
+   "backUpEye": 3.733,
+   "delay": 0.5703333333333331,
    "early": false,
    "within1": true,
    "within15": true,
@@ -1039,19 +1275,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0.006189035830645673,
+   "sink": 0.00747916003799598,
    "sinking": false,
+   "refSink": null,
+   "refSinking": false,
    "waits": [
     {
      "what": "press",
-     "at": 3,
-     "s": 0.367,
-     "got": true
+     "at": 2.967,
+     "s": 0.333,
+     "got": true,
+     "from": 2.567,
+     "to": 2.967,
+     "still": true
     }
    ],
    "log": [
     "start 1.10",
-    "press 3.03",
+    "press 3.00",
     "rack 4.20"
    ]
   }

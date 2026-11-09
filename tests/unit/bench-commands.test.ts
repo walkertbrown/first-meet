@@ -13,10 +13,12 @@ describe('bench commands test', () => {
 
   it('gives results/commands.json', () => {
     const want = JSON.parse(readFileSync(join(B, 'results', 'commands.json'), 'utf8'));
-    expect(JSON.parse(JSON.stringify({ rules: RULES, lines: got.lines, rows: got.rows }))).toEqual(want);
+    expect(JSON.parse(JSON.stringify({ rules: RULES, lines: got.lines, notes: got.notes, rows: got.rows }))).toEqual(want);
   });
 
-  for (const [k, l] of Object.entries(got.lines)) it(`${k} passes`, () => expect(l.pass, l.text).toBe(true));
+  // Line 1 may be "not shown on clips" (too few reps get Press! in the clip itself), but never failed. The rest must pass.
+  it('line1 does not fail', () => expect(got.lines.line1.status, got.lines.line1.text).not.toBe('FAIL'));
+  for (const [k, l] of Object.entries(got.lines)) if (k !== 'line1') it(`${k} passes`, () => expect(l.status, l.text).toBe('PASS'));
 
   it('never looks ahead', () => {
     const run = (pj: { mark: { x: number; y: number }; w: number; h: number; racked: boolean }, pts: number[][]) => {
