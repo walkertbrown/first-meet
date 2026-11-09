@@ -52,6 +52,8 @@ export type MeetAttemptProps = {
   demoReferee?: boolean;
   /** Under the attempt card, during flight time: "Your flight is lifting" (5.24, look 5.8). */
   strip?: React.ReactNode;
+  /** item 81: the flight strip goes under the links, not above "I'm ready" */
+  item81?: boolean;
   /**
    * Item 80 (look 5.10, "Never while she lifts"): true from "I'm ready" until her result panel has
    * settled (its 480 ms slide-in has ended), so the platform holds every banner while she may be under a bar.
@@ -98,7 +100,7 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true, strip, onBusy }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true, strip, onBusy, item81 = PLAN_SWITCHES.item81 }: MeetAttemptProps) {
   const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
@@ -666,12 +668,13 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <p className="small">{loading}</p>
           <p className="body ac-because">{because}</p>
         </article>
-        {strip}
+        {!item81 && strip}
         <div className="try-actions">
           <button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button>
           <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
           <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
         </div>
+        {item81 && strip}
       </main></div>
     );
   }

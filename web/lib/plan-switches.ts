@@ -42,4 +42,11 @@ export const PLAN_SWITCHES = {
    * the 1:12 AM copy, where cheers are kept but never shown to her, and a lights banner drops in at once.
    */
   item80: process.env.NEXT_PUBLIC_PLAN_ITEM80 === '1',
+  /**
+   * Item 81: the flight strip moves under "I'm ready" (5.24, look 5.8 "Place and height"). On: the
+   * attempt card, "I'm ready", the links, then the strip 32 px under "Test your spot first", always up
+   * to three rows, nothing measured. Off: the 1:12 AM copy's order, the strip above "I'm ready",
+   * with as many rows as leave the button on the visible screen.
+   */
+  item81: process.env.NEXT_PUBLIC_PLAN_ITEM81 === '1',
 } as const;

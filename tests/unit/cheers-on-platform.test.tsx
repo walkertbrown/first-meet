@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { cheerCount, cheeredYouOn, cornerBlock, namesOf, oneCheerParts, partsText, waitingParts, type HerCheer } from '../../web/lib/cheer-words';
 import { CheerBanner, YourCorner, step, type Shown } from '../../web/components/cheer-banner';
-import { DEMO_FLIGHT_CYCLE_S, DEMO_FLIGHT_NAMES, demoFlightAt, isDemoFlightId, rowsThatFit } from '../../web/lib/demo-flight';
+import { DEMO_FLIGHT_CYCLE_S, DEMO_FLIGHT_NAMES, demoFlightAt, isDemoFlightId } from '../../web/lib/demo-flight';
 
 const c = (id: string, name: string | null, kind: HerCheer['kind'] = 'strong'): HerCheer => ({ id, kind, who: name ? name.toLowerCase() : null, name });
 const momx3 = [c('1', 'Mom'), c('2', null), c('3', 'Mom'), c('4', 'Dee'), c('5', 'Mom'), c('6', 'Ana'), c('7', null)];
@@ -118,23 +118,28 @@ describe('the demo flight (5.36)', () => {
   });
 });
 
-describe('the strip\'s height (look 5.8): as many rows as leave "I\'m ready" on the visible screen', () => {
-  // the 844 px phone LookieBot's note was about: three rows put the button's bottom at 956
-  const at844 = { max: 3, screen: 844, rowH: 65 };
-  it('drops rows until the button ends 16 px above the bottom, down to the header alone', () => {
-    expect(rowsThatFit({ ...at844, shown: 3, bottom: 956 })).toBe(1); // 956 − 130 = 826 ≤ 828
-    expect(rowsThatFit({ ...at844, shown: 3, bottom: 1100 })).toBe(0); // even one row is too many
-    expect(rowsThatFit({ ...at844, shown: 3, bottom: 700 })).toBe(3);
+describe('the strip\'s place (item 81, look 5.8 "Place and height on /platform")', () => {
+  const props = {
+    attempt: { id: 'a1', lift: 'squat', number: 1, weight: 135, reps_declared: null, status: 'declared' },
+    lifter: { division: 'barbell' as const, units: 'lb' as const, cardName: 'Dana', barWeight: 45, homeWeights: [] },
+    because: 'Your opener.', voicePack: 'a', onNext: () => {},
+    strip: <section className="flight-strip">STRIP</section>,
+  };
+  const order = async (item81: boolean) => {
+    const { MeetAttempt } = await import('../../web/components/meet-attempt');
+    const html = renderToStaticMarkup(<MeetAttempt {...(props as never)} item81={item81} />);
+    return ['attempt-card', 'I&#x27;m ready', 'Test your spot first', 'STRIP'].map(t => html.indexOf(t));
+  };
+  it('on: the card, "I\'m ready", the links, then the strip', async () => {
+    const at = await order(true);
+    expect(at.every(i => i >= 0)).toBe(true);
+    expect([...at].sort((x, y) => x - y)).toEqual(at);
   });
-  it('a row comes back only with 24 px to spare, so the toolbar sliding never flickers it', () => {
-    expect(rowsThatFit({ ...at844, shown: 1, bottom: 826 })).toBe(1);
-    // the toolbar goes and the screen grows 56 px: room for a row with 24 to spare is 89, not yet
-    expect(rowsThatFit({ ...at844, screen: 900, shown: 1, bottom: 826 })).toBe(1);
-    expect(rowsThatFit({ ...at844, screen: 931, shown: 1, bottom: 826 })).toBe(2);
-    // the toolbar back: 2 rows at 891 don't fit 828, so one goes at once
-    expect(rowsThatFit({ ...at844, shown: 2, bottom: 891 })).toBe(1);
-    // from the header alone, the first row brings the list's own 9 px with it
-    expect(rowsThatFit({ ...at844, shown: 0, bottom: 731 })).toBe(0); // 731 + 74 + 24 = 829 > 828
-    expect(rowsThatFit({ ...at844, shown: 0, bottom: 730 })).toBe(1);
+  it('off: the 1:12 AM copy, the strip between the card and "I\'m ready"', async () => {
+    const [card, ready, , strip] = await order(false);
+    expect(card < strip && strip < ready).toBe(true);
+  });
+  it('three rows at most, newest first, nothing measured', () => {
+    for (let s = 0; s < DEMO_FLIGHT_CYCLE_S; s += 7) expect(demoFlightAt(new Date(Date.UTC(2026, 10, 9, 12) + s * 1000), 'barbell', 'lb', 3).rows.length).toBeLessThanOrEqual(3);
   });
 });

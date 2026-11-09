@@ -62,25 +62,5 @@ export function demoFlightAt(now: Date, division: Division, units: 'lb' | 'kg', 
   return { rows, nextAt: cycle * cycleMs + next * 1000 };
 }
 
-/**
- * Look 5.8 "Height": how many rows (up to `max`) the strip shows so "I'm ready" ends at least 16 px
- * above the bottom of the visible screen. Rows go as soon as they don't fit; one comes back only
- * when it fits with 24 px to spare, so the browser's toolbar sliding in and out never flickers it.
- * `bottom` is the button's bottom and `screen` the visible height less the safe area (px, page
- * coordinates); `rowH` one row's height; the list's own top (8 px gap and its rule) comes with
- * its first row.
- */
-export function rowsThatFit(o: { shown: number; max: number; bottom: number; screen: number; rowH: number; listTop?: number }): number {
-  const listTop = o.listTop ?? 9;
-  const h = (n: number) => (n === 0 ? 0 : listTop + n * o.rowH);
-  const limit = o.screen - 16;
-  let n = Math.min(o.shown, o.max);
-  const base = o.bottom - h(n);
-  while (n > 0 && base + h(n) > limit) n--;
-  if (n < o.shown) return n;
-  while (n < o.max && base + h(n + 1) + 24 <= limit) n++;
-  return n;
-}
-
 /** A demo flightmate's attempt id, as the cheer route takes it. */
 export const isDemoFlightId = (id: unknown): id is string => typeof id === 'string' && /^flight-\d{1,12}-\d{1,2}$/.test(id);

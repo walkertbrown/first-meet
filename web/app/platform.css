@@ -179,7 +179,8 @@
 
 /* "Your flight is lifting" (5.24, look 5.8): under her attempt card, newest first */
 .flight-strip { margin-top: 24px; }
-.safe-probe { position: fixed; bottom: 0; height: 0; padding-bottom: env(safe-area-inset-bottom); visibility: hidden; pointer-events: none; }
+/* item 81: 32 px under "Test your spot first", with the column's 16 px gap */
+.flight-strip.under { margin-top: 16px; }
 .flight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .flight-head .caption { color: var(--ink-3); }
 .flight-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--rule); }
