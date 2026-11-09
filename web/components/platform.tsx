@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MeetAttempt } from '@/components/meet-attempt';
 import { BarDiagram } from '@/components/bar-diagram';
+import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
 import type { DeclareSheet } from '@/lib/meet-flow';
 import {
@@ -18,28 +19,37 @@ type Declared = { lift: string; number: number; weight: number; reps_declared: n
 
 const GROUPS: Record<'barbell' | 'home', string[]> = { barbell: ['Squat', 'Bench', 'Deadlift'], home: ['Goblet squat', 'Overhead press', 'Deadlift'] };
 
-/** The 9-attempt row (look 4): three groups of three 34 px slots; a judged slot shows its mini lamp. */
-export function NineRow({ row, division }: { row: RowCell[]; division: 'barbell' | 'home' }) {
+/**
+ * The 9-attempt row (look 4): three groups of three 34 px slots; a judged slot shows its mini lamp.
+ * A close call (5.27): the 1:12 AM copy puts "Waiting" in the slot; item 76 keeps the slot 34 px with
+ * only its pulsing unlit lamp and puts "WAITING" under the group, once (look 4, "Waiting on a referee").
+ */
+export function NineRow({ row, division, item76 = PLAN_SWITCHES.item76 }: { row: RowCell[]; division: 'barbell' | 'home'; item76?: boolean }) {
   return (
-    <div className="nine" aria-label="Your nine attempts">
-      {[0, 1, 2].map(g => (
-        <div className="grp" key={g}>
-          <span className="eyebrow">{GROUPS[division][g]}</span>
-          <div className="slots">
-            {row.slice(g * 3, g * 3 + 3).map(c => {
-              const name = `${liftWord(c.lift, division)} ${c.number}`;
-              const said = c.state === 'white' ? 'good lift' : c.state === 'red' ? 'no lift' : c.state === 'waiting' ? 'Waiting' : c.state === 'now' ? 'now' : '';
-              return (
-                <div key={c.number} className={`slot ${c.state}`} aria-label={said ? `${name}, ${said}` : name} role="img">
-                  {c.state === 'white' || c.state === 'red' ? <i className={`mini-lamp ${c.state}`} />
-                    : c.state === 'waiting' ? <><i className="mini-lamp pulse" /><span className="slot-wait">Waiting</span></>
-                      : <span aria-hidden="true">{c.number}</span>}
-                </div>
-              );
-            })}
+    <div className={item76 ? 'nine wait-below' : 'nine'} aria-label="Your nine attempts">
+      {[0, 1, 2].map(g => {
+        const cells = row.slice(g * 3, g * 3 + 3);
+        return (
+          <div className="grp" key={g}>
+            <span className="eyebrow">{GROUPS[division][g]}</span>
+            <div className="slots">
+              {cells.map(c => {
+                const name = `${liftWord(c.lift, division)} ${c.number}`;
+                const said = c.state === 'white' ? 'good lift' : c.state === 'red' ? 'no lift'
+                  : c.state === 'waiting' ? (item76 ? 'waiting for a referee' : 'Waiting') : c.state === 'now' ? 'now' : '';
+                return (
+                  <div key={c.number} className={`slot ${c.state}`} aria-label={said ? `${name}, ${said}` : name} role="img">
+                    {c.state === 'white' || c.state === 'red' ? <i className={`mini-lamp ${c.state}`} />
+                      : c.state === 'waiting' ? <><i className="mini-lamp pulse" />{!item76 && <span className="slot-wait">Waiting</span>}</>
+                        : <span aria-hidden="true">{c.number}</span>}
+                  </div>
+                );
+              })}
+            </div>
+            {item76 && <span className={cells.some(c => c.state === 'waiting') ? 'grp-wait eyebrow on' : 'grp-wait eyebrow'} aria-hidden="true">Waiting</span>}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

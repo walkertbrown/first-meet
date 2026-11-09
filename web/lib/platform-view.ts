@@ -6,6 +6,8 @@ import type { Lift } from '@/db/schema';
 import { ORDER, homeKind, platformState, type Units } from '@/lib/meet';
 import { declareNext, lifterCaps, meetAttempts, platformOpen, type AttemptRow, type LiftCap, type LifterRow } from '@/lib/meet-flow';
 import { demoBecause } from '@/lib/demo';
+import { PLAN_SWITCHES } from '@/lib/plan-switches';
+import { capSentence } from '@/lib/stage/meet-words';
 
 /** One cell of the 9-attempt row (look 4, plan 5.27). */
 export type RowCell = {
@@ -19,10 +21,13 @@ export type CardAttempt = {
   kind: 'pair' | 'bell' | null;
 };
 
+/** One of her nine after the meet, as "See my lifts" lists it. */
+export type DoneAttempt = { id: string; lift: Lift; number: number; weight: number; reps: number | null; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] };
+
 export type PlatformView =
   | { kind: 'before'; opensAt: string; closesAt: string | null; meetName: string }
   | { kind: 'closed'; meetName: string }
-  | { kind: 'done' }
+  | { kind: 'done'; meetName: string; row: RowCell[]; nine: DoneAttempt[] }
   | {
     kind: 'open'; meetName: string; demo: boolean; closesAt: string | null;
     row: RowCell[];
@@ -39,14 +44,19 @@ const shortDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', d
  * at <w> with white lights on <date>. This one is fewer, so it's already yours." Not judged: "Lighter
  * than your best logged triple. Not judged in training yet." (Home: "Fewer than your best logged
  * set. …")
+ *
+ * Item 76: at exactly her cap (`declared`: the weight on Barbell, the reps on Home), "lighter" and
+ * "fewer" aren't true, so the second sentence says "the same".
  */
-export function becauseLine(division: 'barbell' | 'home', lift: Lift, cap: LiftCap, units: Units): string {
+export function becauseLine(division: 'barbell' | 'home', lift: Lift, cap: LiftCap, units: Units, declared?: number | null, item76 = PLAN_SWITCHES.item76): string {
+  const same = item76 && declared != null && declared === cap.cap;
   if (!cap.judged || !cap.at) {
+    if (same) return division === 'home' ? 'The same as your best logged set. Not judged in training yet.' : 'The same weight as your best logged triple, for just one. Not judged in training yet.';
     return division === 'home' ? 'Fewer than your best logged set. Not judged in training yet.' : 'Lighter than your best logged triple. Not judged in training yet.';
   }
   const date = shortDate(cap.at);
-  if (division === 'home') return `You did ${cap.cap} at ${cap.weight} ${units} with white lights on ${date}. This one is fewer, so it's already yours.`;
-  return `You ${PAST[lift]} ${cap.cap} for 3 with white lights on ${date}. This one is lighter, so it's already yours.`;
+  if (division === 'home') return `You did ${cap.cap} at ${cap.weight} ${units} with white lights on ${date}. ${capSentence('home', same)}`;
+  return `You ${PAST[lift]} ${cap.cap} for 3 with white lights on ${date}. ${capSentence('barbell', same)}`;
 }
 
 /** The 9-attempt row: every slot, in the meet's order. */
@@ -81,7 +91,14 @@ export async function platformView(db: Db, l: LifterRow, meet: { kind: string; s
     const lifted = rows.some(a => a.status !== 'declared');
     if (!lifted) return { kind: 'closed', meetName };
   }
-  if (st.done && st.current && ['judged', 'close_call'].includes(st.current.status)) return { kind: 'done' };
+  if (st.done && st.current && ['judged', 'close_call'].includes(st.current.status)) {
+    const nine = ORDER.map(s => rows.find(a => a.lift === s.lift && a.number === s.number)!).map(a => ({
+      id: a.id, lift: a.lift, number: a.number, weight: a.weight, reps: a.repsDeclared,
+      call: (a.call ?? null) as DoneAttempt['call'],
+      lights: ((a.lights ?? []) as string[]).filter((x): x is 'white' | 'red' => x === 'white' || x === 'red'),
+    }));
+    return { kind: 'done', meetName, row: nineRow(rows, null), nine };
+  }
   if (open && !st.current && st.toDeclare?.number === 1) {
     await declareNext(db, l, null, now);
     rows = await meetAttempts(db, l);
@@ -100,7 +117,9 @@ export async function platformView(db: Db, l: LifterRow, meet: { kind: string; s
       id: cur.id, lift: cur.lift, number: cur.number, weight: cur.weight, reps_declared: cur.repsDeclared, status: cur.status,
       kind: l.division === 'home' ? homeKind(lift, cur.weight, l.homeWeights) : null,
     },
-    because: l.isDemo ? demoBecause(l.division, lift, units, now) : becauseLine(l.division, lift, caps[lift], units),
+    because: l.isDemo
+      ? demoBecause(l.division, lift, units, now, l.division === 'home' ? cur.repsDeclared : cur.weight)
+      : becauseLine(l.division, lift, caps[lift], units, l.division === 'home' ? cur.repsDeclared : cur.weight),
     notJudged: !l.isDemo && !caps[lift].judged,
   };
 }

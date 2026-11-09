@@ -29,6 +29,8 @@ export const meets = pgTable('meets', {
   replayVideoId: text('replay_video_id'),
   liveMinutes: integer('live_minutes').notNull().default(60),
   rollcallRows: smallint('rollcall_rows').notNull().default(1),
+  /** The Monday (Eastern) its 12-week block starts (plan 3.2, item 76): the closed page, 5.8, 5.32. */
+  blockStartsOn: date('block_starts_on', { mode: 'string' }),
 });
 
 export type HomeWeight = { weight: number; kind: 'pair' | 'bell' };

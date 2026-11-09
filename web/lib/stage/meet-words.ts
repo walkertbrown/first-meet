@@ -229,3 +229,9 @@ export const REFUSED_WORDS = {
 /** Under "SAMPLE LIFT" on a Home attempt (5.36). */
 export const sampleRepsLine = (n: number) =>
   n === 1 ? "This sample is one rep, so it's judged as one." : `This sample is ${n} reps, so it's judged as ${n}.`;
+
+/** The because line's second sentence, judged (5.25 step 1; item 76 when she's at her cap). */
+export function capSentence(division: 'barbell' | 'home', same: boolean): string {
+  if (division === 'home') return same ? 'This one is the same number, so it\'s already yours.' : 'This one is fewer, so it\'s already yours.';
+  return same ? 'This one is the same weight for just one, so it\'s already yours.' : 'This one is lighter, so it\'s already yours.';
+}

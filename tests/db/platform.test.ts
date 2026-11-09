@@ -71,7 +71,11 @@ describe.skipIf(!URL_)('the platform', () => {
       const pick = sheet.choices.find(c => c.selected && !c.disabled) ?? sheet.choices.find(c => !c.disabled)!;
       expect(await declareNext(db, l, pick.value)).toMatchObject({ status: 200 });
     }
-    expect(await platformView(db, l, meet)).toEqual({ kind: 'done' });
+    const done = await platformView(db, l, meet);
+    if (done.kind !== 'done') throw new Error(done.kind);
+    expect(done.row.map(c => c.state)).toEqual([...calls]);
+    expect(done.nine.map(a => a.call)).toEqual([...calls]);
+    expect(done.nine[1].lights).toEqual(['red', 'red', 'white']);
   });
 
   it('a close call waits in the row; the next attempt can still be declared', async () => {

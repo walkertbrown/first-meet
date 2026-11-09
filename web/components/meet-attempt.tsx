@@ -42,6 +42,8 @@ export type MeetAttemptProps = {
   onNext?: () => void;
   /** The panel button's words, when the platform knows better (the banner's attempt: "Back to the platform"). */
   nextLabel?: string;
+  /** The panel button as a Ghost (item 76: "Back to the platform", 5.27). */
+  nextGhost?: boolean;
   /** Above the attempt card: the platform's eyebrow and the 9-attempt row (5.24). */
   top?: React.ReactNode;
   /** No judged set behind the cap yet: the `NOT JUDGED YET` tag beside the weight (look 5.6). */
@@ -89,7 +91,7 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, top, notJudged, demoReferee = true }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true }: MeetAttemptProps) {
   const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
@@ -779,13 +781,13 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               )}
             </div>
             {waiting && busy && onNext && (
-              <div className="try-actions"><button className="btn" type="button" onClick={onNext}>{nextLabel}</button></div>
+              <div className="try-actions"><button className={nextGhost ? 'btn ghost' : 'btn'} type="button" onClick={onNext}>{nextLabel}</button></div>
             )}
             {(phase === 'close' || (judged && resultOn)) && (
               <div className="after">
                 <hr className="rule" />
                 <div className="try-actions">
-                  {onNext && <button className="btn" type="button" onClick={onNext}>{nextLabel}</button>}
+                  {onNext && <button className={nextGhost ? 'btn ghost' : 'btn'} type="button" onClick={onNext}>{nextLabel}</button>}
                   {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{MEET_WORDS.refereeLink}</Link>}
                 </div>
               </div>

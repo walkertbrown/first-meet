@@ -10,4 +10,11 @@ export const PLAN_SWITCHES = {
    * a squat sample standing in for another lift says so.
    */
   item75: process.env.NEXT_PUBLIC_PLAN_ITEM75 === '1',
+  /**
+   * Item 76: the platform's last gaps. On: the closed page's next block date comes from the next
+   * real meet's `block_starts_on` (Spring 2027 is seeded); a card at exactly her cap says "the same
+   * weight for just one" / "the same number"; "Back to the platform" is a Ghost; and "Waiting" sits
+   * under its group on the 9-attempt row, not inside the slot.
+   */
+  item76: process.env.NEXT_PUBLIC_PLAN_ITEM76 === '1',
 } as const;

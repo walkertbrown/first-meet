@@ -77,6 +77,15 @@
 /* a close call (5.27): unlit pulsing lamp and "Waiting"; the slot takes the room the word needs */
 .slot.waiting { flex: 2.4; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
 .slot-wait { font-family: var(--font-text); font-weight: 600; font-size: 11px; line-height: 12px; }
+/* Item 76 (look 4, "Waiting on a referee"): every slot stays 34 px; "WAITING" sits 4 px under its group,
+   once, in Eyebrow --ink-2, and takes no room when nothing in the group waits. When the lights land the
+   word fades in 200 ms, then the room closes in 260 ms; it appears at once. Motion off: both at once. */
+.nine.wait-below { align-items: flex-start; }
+.nine.wait-below .slot.waiting { flex: 1; }
+.nine .grp > .grp-wait { display: block; height: 0; margin-top: -6px; opacity: 0; overflow: hidden; color: var(--ink-2); white-space: nowrap;
+  transition: opacity 200ms linear, height 260ms var(--ease-out) 200ms, margin-top 260ms var(--ease-out) 200ms; }
+.nine .grp > .grp-wait.on { height: 16px; margin-top: -2px; opacity: 1; transition: none; }
+@media (prefers-reduced-motion: reduce) { .nine .grp > .grp-wait { transition: none; } }
 
 /* Item 75's stand-in line (look 5.14a): under SAMPLE LIFT on the stage, under the sentence on the result. */
 .meet-stand-in { margin: 6px 0 0; max-width: 260px; color: var(--stage-ink-2); text-align: left; }
@@ -118,3 +127,31 @@
 .banner-more { display: block; color: var(--ink-2); }
 @keyframes banner-in { from { transform: translateY(-140%); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .banner { animation: none; } }
+
+/* ---------- "You totaled" (plan 5.28; type from look's scale, parts from the meet card) ---------- */
+.total-page { gap: 0; }
+.total-page .page-title { margin-top: 20px; }
+.total-page .body-l, .total-page > .body { margin-top: 16px; }
+.total-page .try-actions { margin-top: 28px; }
+.total-num { container-type: inline-size; margin-top: 8px; }
+/* Meet total type, shrunk to fit a long total on a narrow phone */
+.meet-total { display: block; font-weight: 900; font-stretch: 130%; letter-spacing: -.04em; white-space: nowrap;
+  font-size: min(118px, calc(100cqw / (var(--chars, 3) * .78))); line-height: .85; }
+.total-unit { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.nine-for-nine { padding: 3px 7px; border-radius: 3px; background: var(--lamp-white); color: var(--stage);
+  font-family: var(--font-display); font-weight: 800; font-stretch: 88%; font-size: 13px; line-height: 16px; letter-spacing: .06em; }
+.total-lifts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--rule); }
+.total-lifts > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.total-lifts dd { margin: 0; }
+.number-s { font-weight: 800; font-stretch: 105%; font-size: 24px; line-height: 28px; }
+.total-sum { margin-top: 12px; }
+.so-far { display: flex; align-items: baseline; gap: 8px; margin-top: 20px; }
+.so-far .weight-m .unit { font-size: 17px; margin-left: 4px; color: var(--ink-2); font-weight: 800; letter-spacing: 0; }
+
+/* her nine, after the meet (item 75's "See my lifts") */
+.nine-list { list-style: none; margin: 20px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.nine-list a { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.nine-list a:hover .nine-what { text-decoration: underline; }
+.nine-list a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.nine-what { flex: 1; min-width: 0; }
+.nine-list .lamps-mini { display: flex; gap: 6px; }
