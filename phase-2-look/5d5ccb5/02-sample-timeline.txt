@@ -1,0 +1,19 @@
+Sample lift on /demo, 390 x 844, staging at 5d5ccb5, headless Chromium with the pose model blocked so the stage runs at frame rate. Times in ms from page start; @ is the clip's currentTime.
+
+== motion on
+3447 Good spot.
+4947 Bar is loaded.  (+1500)
+6445 clip play
+6447 SQUAT!
+12030 RACK! @5.62
+12218 clip ended @5.77  (+188 after RACK!)
+12384 RACK! cleared  (354 ms on screen)
+
+== motion off
+3258 Good spot.
+4758 Bar is loaded.  (+1500)
+6245 clip play
+6258 SQUAT!  (+1500)
+11841 RACK! @5.63
+12018 clip ended @5.77  (+177)
+12186 RACK! cleared  (345 ms on screen)
