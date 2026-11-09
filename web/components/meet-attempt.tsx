@@ -33,7 +33,7 @@ type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit';
 type Mode = 'lift' | 'spot' | 'sample' | 'resume';
 type Phase = 'loading' | 'spot' | 'good-spot' | 'spot-done' | 'loaded' | 'lifting' | 'norep' | 'held' | 'lit' | 'close' | 'replay' | 'hold' | 'offline' | 'refused';
 type Command = { text: string; kind: 'soft' | 'on' } | null;
-type State = { status: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null };
+type State = { status: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judged_frame_ms?: number | null };
 type SampleClip = { id: string; file: string; credit: string; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
@@ -146,7 +146,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
    * then "The judges are looking"; 45 s and 90 s lines; the lights from the live stream (with a
    * 5 s poll behind it), lit 330 ms apart. A close call waits, pulsing, for the referee's lights.
    */
-  const awaitLights = useCallback(async (alive: () => boolean, attemptId: string, sent: Promise<boolean>, snap: SideSnap | null, replay: () => Promise<void>) => {
+  const awaitLights = useCallback(async (alive: () => boolean, attemptId: string, sent: Promise<boolean>, snap: SideSnap | null, replay: () => Promise<void>, snapAt?: (ms: number) => Promise<SideSnap | null>) => {
     const t0 = performance.now();
     setPhase('held'); setCommand(null); setWaitLine(MEET_WORDS.sending);
     const ok = await sent;
@@ -159,7 +159,8 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     let wake: (() => void) | null = null;
     const check = async (withWait = false) => {
       const r = await getJson(`/api/attempts/${attemptId}${withWait ? '?wait=1' : ''}`).catch(() => null);
-      if (r?.status === 200) { state = r.body.attempt as State; wake?.(); }
+      // the route answers with the attempt's state itself, not wrapped
+      if (r?.status === 200) { state = r.body as unknown as State; wake?.(); }
     };
     const es = typeof EventSource !== 'undefined' ? new EventSource(`/api/live?attempt=${attemptId}`) : null;
     es?.addEventListener('attempt', () => void check());
@@ -209,8 +210,12 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       if (!alive()) return;
       if (!reduced()) { await replay().catch(() => {}); if (!alive()) return; }
       setReplaying(false);
-      setFrozen(!!freeze(snap));
-      if (snap) setMarks(marksOf(snap.p, snap.side, { w: snap.canvas.width, h: snap.canvas.height }));
+      // a sample's frozen frame is the server's judged moment, when it says which
+      let judged = snap;
+      if (snapAt && typeof s.judged_frame_ms === 'number') judged = (await snapAt(s.judged_frame_ms).catch(() => null)) ?? snap;
+      if (!alive()) return;
+      setFrozen(!!freeze(judged));
+      if (judged?.p.length) setMarks(marksOf(judged.p, judged.side, { w: judged.canvas.width, h: judged.canvas.height }));
       setPhase('hold');
     } finally { stop(); }
   }, [attempt.lift]);
@@ -423,9 +428,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     let snap = deeperOf(deepest);
     if (!snap) {
       await seekTo(video, (ct.squat + ct.rack) / 2000).catch(() => {});
-      const c = document.createElement('canvas'); c.width = d.w; c.height = d.h;
-      c.getContext('2d')!.drawImage(video, 0, 0, d.w, d.h);
-      snap = { t: 0, depth: 0, p: [], canvas: c, side: 'left' };
+      snap = grab(video, d);
     }
     freeze(snap);
     const replay = async () => {
@@ -435,7 +438,14 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       await new Promise<void>(res => { const c = () => (!alive() || video.ended || video.currentTime >= ct.rack / 1000 ? res() : requestAnimationFrame(c)); requestAnimationFrame(c); });
       video.pause();
     };
-    await awaitLights(alive, attempt.id, Promise.resolve(true), snap.p.length ? snap : null, replay);
+    const snapAt = async (ms: number) => {
+      await within(seekTo(video, ms / 1000), 2000);
+      if (!pose) return grab(video, d);
+      const one = new DeepestFrames(d);
+      one.offer({ t: ms, p: pose.detect(video) }, video);
+      return deeperOf(one) ?? grab(video, d);
+    };
+    await awaitLights(alive, attempt.id, Promise.resolve(true), snap, replay, snapAt);
   }, [attempt.id, home, stopCamera, awaitLights]);
 
   /** A reload in the middle: keep sending what's saved, and wait for the lights. */
@@ -601,7 +611,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             {PARTS.map(p => <span key={p} className={parts[p] ? 'seen' : ''}>{p}</span>)}
           </div>
           <div className="rec" aria-hidden="true"><b /><span>{recLabel}</span></div>
-          {!isSample && <div className={`cliptag${phase === 'replay' || phase === 'hold' ? ' on' : ''}`}>Your clip</div>}
+          {!isSample && <div className={`cliptag${phase === 'replay' || (phase === 'hold' && frozen) ? ' on' : ''}`}>Your clip</div>}
           {isSample && sample && <div className="credit">{sample.credit}</div>}
         </div>
 
@@ -665,6 +675,13 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       </section>
     </div>
   );
+}
+
+/** The video's current frame, with no points (no marks). */
+function grab(video: HTMLVideoElement, d: Dims): SideSnap {
+  const c = document.createElement('canvas'); c.width = d.w; c.height = d.h;
+  c.getContext('2d')!.drawImage(video, 0, 0, d.w, d.h);
+  return { t: 0, depth: 0, p: [], canvas: c, side: 'left' };
 }
 
 /** The deeper of the two sides' deepest frames: the judged moment (or the judged side's, when known). */

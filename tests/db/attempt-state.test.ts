@@ -29,10 +29,10 @@ describe.skipIf(!URL_)('an attempt\'s state on the phone', () => {
     expect(await attemptState(db, one.attempt.id, two.lifter.id)).toMatchObject({ status: 403 });
     expect(await attemptState(db, '00000000-0000-0000-0000-000000000000', one.lifter.id)).toMatchObject({ status: 404 });
     expect(await attemptState(db, 'nope', one.lifter.id)).toMatchObject({ status: 404 });
-    expect(await attemptState(db, one.attempt.id, one.lifter.id)).toMatchObject({ status: 200, attempt: { status: 'declared', call: null, wait_minutes: null } });
+    expect(await attemptState(db, one.attempt.id, one.lifter.id)).toMatchObject({ status: 200, attempt: { status: 'declared', call: null, wait_minutes: null, judged_frame_ms: null } });
   });
 
-  it('queued: a whole-minute estimate when asked; judged: the call, lights and red rep', async () => {
+  it('queued: a whole-minute estimate when asked; judged: the call, lights, red rep and judged frame', async () => {
     const first = await queued();
     const second = await queued();
     await db.insert(events).values({ kind: 'judged', detail: { clip_s: 60, pose_secs: 40 } });
@@ -41,9 +41,9 @@ describe.skipIf(!URL_)('an attempt\'s state on the phone', () => {
     expect(r.attempt.status).toBe('queued');
     expect(Number.isInteger(r.attempt.wait_minutes)).toBe(true);
     expect(r.attempt.wait_minutes).toBeGreaterThanOrEqual(1);
-    await db.update(attempts).set({ status: 'judged', call: 'red', reason: 'depth', lights: ['red', 'red', 'red'], measures: { red_rep: 2 } }).where(eq(attempts.id, first.attempt.id));
+    await db.update(attempts).set({ status: 'judged', call: 'red', reason: 'depth', lights: ['red', 'red', 'red'], measures: { red_rep: 2 }, judgedFrameMs: 2400 }).where(eq(attempts.id, first.attempt.id));
     expect(await attemptState(db, first.attempt.id, first.lifter.id, true)).toMatchObject({
-      status: 200, attempt: { status: 'judged', call: 'red', reason: 'depth', lights: ['red', 'red', 'red'], red_rep: 2, wait_minutes: null },
+      status: 200, attempt: { status: 'judged', call: 'red', reason: 'depth', lights: ['red', 'red', 'red'], red_rep: 2, wait_minutes: null, judged_frame_ms: 2400 },
     });
   });
 });

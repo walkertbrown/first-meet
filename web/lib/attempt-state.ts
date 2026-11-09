@@ -17,6 +17,8 @@ export type AttemptState = {
   /** Home: the rep the red reason is for ("REP <k> · <REASON>"). */
   red_rep: number | null;
   sample: boolean;
+  /** The judged moment, ms from the recording's start: the frozen frame after the lights. */
+  judged_frame_ms: number | null;
   /** Whole minutes, once she has waited 90 s (3.9 step 8). */
   wait_minutes: number | null;
 };
@@ -34,7 +36,7 @@ export async function attemptState(db: Db, id: string, lifterId: string, withWai
     attempt: {
       id: a.id, status: a.status, lift: a.lift, number: a.number, weight: a.weight, reps_declared: a.repsDeclared,
       call: a.call, lights: (a.lights as AttemptState['lights']) ?? null, reason: a.reason,
-      red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip,
+      red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip, judged_frame_ms: a.judgedFrameMs ?? null,
       wait_minutes: withWait && WAITING.includes(a.status) ? await waitMinutes(db, a.id) : null,
     },
   };

@@ -3,7 +3,6 @@
 
 /* ---------- Chalk pages under the demo strip ---------- */
 .meet-page { min-height: calc(100dvh - 32px - env(safe-area-inset-top)); padding-top: 16px; }
-.meet-page .try-col { margin: 0 auto; }
 @media (min-width: 1024px) { .meet-page { padding-top: 40px; } }
 
 /* ---------- The attempt card (look 5.6, 5.14b) ---------- */
@@ -27,6 +26,9 @@
 /* ---------- The stage under the strip ---------- */
 .meet-app.try-app { height: calc(100dvh - 32px - env(safe-area-inset-top)); }
 .meet-app .hud { padding-top: 22px; }
+/* The meet HUD is three lines deep, so the lamps and the wait line sit under it. */
+.meet-app .stage .lamps { top: 132px; }
+.meet-app .waitline { top: 222px; text-shadow: 0 1px 10px rgb(10 11 14 / .85), 0 0 2px rgb(10 11 14 / .6); }
 .meet-hud-text { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .meet-hud-text .caption { color: var(--stage-ink-2); margin: 0; }
 .meet-hud-text .try-what.boxed { margin-top: 2px; }

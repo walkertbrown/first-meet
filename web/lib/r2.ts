@@ -53,6 +53,12 @@ export class R2 {
     return { bytes: Number(res.headers.get('content-length') ?? 0), type: res.headers.get('content-type') };
   }
 
+  /** Puts bytes at a key (seeding the bucket: the sample lifts, health/ok.txt). */
+  async put(key: string, body: BodyInit, type: string) {
+    const res = await this.call('PUT', key, { body, headers: { 'content-type': type } });
+    if (!res.ok) throw new Error(`R2 PUT ${res.status}`);
+  }
+
   async putJson(key: string, value: unknown) {
     const res = await this.call('PUT', key, { body: JSON.stringify(value), headers: { 'content-type': 'application/json' } });
     if (!res.ok) throw new Error(`R2 PUT ${res.status}`);
