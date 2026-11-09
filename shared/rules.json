@@ -24,7 +24,8 @@
     "windowStartHipRiseTorso": 0.02,
     "noLockoutMs": 12000,
     "hitchDropDeg": 8,
-    "rearmBelowDeg": 150
+    "rearmBelowDeg": 150,
+    "homeNoRepMs": 8000
   },
   "bench": {
     "startElbowMinDeg": 155,

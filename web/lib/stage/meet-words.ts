@@ -108,6 +108,15 @@ export function liftCommands(lift: string, division: 'barbell' | 'home'): { call
   return { calls: ['SQUAT!'], end: 'RACK!' };
 }
 
+/** The commands' words on the stage (5.25 steps 5 and 7), by `command_times` key's word. */
+export const COMMAND_TEXT = { squat: 'SQUAT!', start: 'START!', press: 'PRESS!', rack: 'RACK!', down: 'DOWN!' } as const;
+
+/** No lift was seen (5.25; the squat's line, for each lift): "We didn't see a bench press." */
+export function noRepLine(lift: string, division: 'barbell' | 'home') {
+  const w = liftLower(lift, division);
+  return `We didn't see ${/^[aeiou]/.test(w) ? 'an' : 'a'} ${w}. Try again when you're ready.`;
+}
+
 /** 5.25 step 11: the panel's button once the lights are in. */
 export function nextButton(lift: string, number: number, division: 'barbell' | 'home') {
   if (number < 3) return 'Declare your next attempt';

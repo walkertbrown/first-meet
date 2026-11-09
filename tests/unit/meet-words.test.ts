@@ -1,6 +1,6 @@
 // A meet attempt's words (5.25 step 9, 3.5, the Barbell loading line).
 import { describe, expect, it } from 'vitest';
-import { barLoading, meetResult, MEET_WORDS } from '../../web/lib/stage/meet-words';
+import { COMMAND_TEXT, barLoading, meetResult, MEET_WORDS, noRepLine } from '../../web/lib/stage/meet-words';
 import { estimateMinutes } from '../../web/lib/attempt-state';
 import { isFor } from '../../web/lib/live';
 
@@ -93,5 +93,11 @@ describe('Weight XL and the refused sheet', () => {
   it('the refused sheet says the attempt is still hers (3.11)', async () => {
     const { REFUSED_WORDS } = await import('../../web/lib/stage/meet-words');
     expect(REFUSED_WORDS).toEqual({ title: "Your clip didn't send", body: "Nothing was judged, so this attempt is still yours. Lift it again when you're ready." });
+  });
+  it('a no-rep names her lift, and the commands are the plan\'s words', () => {
+    expect(noRepLine('squat', 'barbell')).toBe("We didn't see a squat. Try again when you're ready.");
+    expect(noRepLine('bench', 'home')).toBe("We didn't see an overhead press. Try again when you're ready.");
+    expect(noRepLine('squat', 'home')).toBe("We didn't see a goblet squat. Try again when you're ready.");
+    expect(Object.values(COMMAND_TEXT)).toEqual(['SQUAT!', 'START!', 'PRESS!', 'RACK!', 'DOWN!']);
   });
 });

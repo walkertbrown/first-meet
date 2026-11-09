@@ -1,40 +1,52 @@
 'use client';
-// One meet attempt (plan 5.25, look 9 steps 1–11), as the demo meet runs it in phase 2: the
-// attempt card, the stage, the commands, the recording saved on the phone and sent to R2, the
-// held breath while Render judges it, and the lights as they land. A sample lift (5.36) runs the
-// same server path; the phone only plays the clip.
+// One meet attempt (plan 5.25, look 9 steps 1–11), any of the nine: the attempt card, the stage,
+// the lift's own commands, the recording saved on the phone and sent to R2, the held breath while
+// Render judges it, and the lights as they land. A sample lift (5.36) runs the same server path;
+// the phone only plays the clip. What comes next (declaring, the next lift, the total) is the
+// platform's: the panel's button calls `onNext`.
 import Link from 'next/link';
 import type React from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
-import { RULES, TryALift, type Dims, type Part } from '@/lib/judge';
+import { RULES, type Dims, type Part } from '@/lib/judge';
+import { MeetLift, type MeetLiftName } from '@/lib/judge/meet-lift';
+import { nearSide } from '@/lib/judge/pose';
 import { Lamps, type LampState } from '@/components/lamps';
 import { BarDiagram, BellDiagram } from '@/components/bar-diagram';
 import { loadPoseModel, LivePose } from '@/lib/stage/pose-live';
 import { Voice, type VoiceKey } from '@/lib/stage/voice';
 import { thock, audio } from '@/lib/stage/thock';
-import { DeepestFrames, marksOf, type Marks, type Snap } from '@/lib/stage/snap';
+import { DeepestFrames, liftMarks, type LiftMarks, type Snap } from '@/lib/stage/snap';
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
-import { MEET_WORDS, REFUSED_WORDS, barLoading, hudLine, meetResult, sampleRepsLine, weightDigits, type MeetResult } from '@/lib/stage/meet-words';
+import {
+  COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
+  standInLine, weightDigits, type MeetResult,
+} from '@/lib/stage/meet-words';
+import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
 import samples from '../../content/samples/samples.json';
 import { WaitLine } from '@/components/wait-line';
 
 export type MeetAttemptProps = {
-  attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string };
+  attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string; kind?: 'pair' | 'bell' | null };
   lifter: { cardName: string; ageGroup: string | null; division: 'barbell' | 'home'; units: 'lb' | 'kg' };
   /** The because line (5.25 step 1), worked out on the server. */
   because: string;
   voicePack: string;
+  /**
+   * The panel's button (5.25 step 11): "Declare your next attempt", "Next: <lift>" or "See your
+   * total". It shows once the lights are in, and from 90 s or on a close call (step 8), while she waits.
+   */
+  onNext?: () => void;
 };
 
 type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit';
 type Mode = 'lift' | 'spot' | 'sample' | 'resume';
 type Phase = 'loading' | 'spot' | 'good-spot' | 'spot-done' | 'loaded' | 'lifting' | 'norep' | 'held' | 'lit' | 'close' | 'replay' | 'hold' | 'offline' | 'refused';
 type Command = { text: string; kind: 'soft' | 'on' } | null;
-type State = { status: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judged_frame_ms?: number | null };
+type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judged_frame_ms?: number | null };
 type SampleClip = { id: string; file: string; credit: string; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
@@ -55,9 +67,7 @@ const BUSY_REFRESH_MS = 30_000;
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
 const wait = (ms: number) => sleep(ms);
-const LIFT_NAMES: Record<string, { barbell: string; home: string }> = {
-  squat: { barbell: 'SQUAT', home: 'GOBLET SQUAT' }, bench: { barbell: 'BENCH', home: 'OVERHEAD PRESS' }, deadlift: { barbell: 'DEADLIFT', home: 'DEADLIFT' },
-};
+const asLift = (l: string): MeetLiftName => (l === 'bench' || l === 'deadlift' ? l : 'squat');
 
 function containBox(stage: { w: number; h: number }, d: Dims | null) {
   if (!d || !stage.w || !stage.h) return { left: 0, top: 0, width: stage.w, height: stage.h };
@@ -71,8 +81,8 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt: first, lifter, because, voicePack }: MeetAttemptProps) {
-  const [attempt, setAttempt] = useState(first);
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext }: MeetAttemptProps) {
+  const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
   const [view, setView] = useState<View>(startView);
@@ -96,12 +106,13 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
   const [result, setResult] = useState<MeetResult | null>(null);
   const [resultOn, setResultOn] = useState(false);
   const [frozen, setFrozen] = useState(false);
-  const [marks, setMarks] = useState<Marks | null>(null);
+  const [marks, setMarks] = useState<LiftMarks | null>(null);
+  /** The lift the judge ran: a squat sample can stand in for another lift (5.36). */
+  const [shownLift, setShownLift] = useState(attempt.lift);
   const [replaying, setReplaying] = useState(false);
   const [dims, setDims] = useState<Dims | null>(null);
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
   const [sample, setSample] = useState<{ credit: string; reps: number } | null>(null);
-  const [again, setAgain] = useState(false);
   const [error, setError] = useState('');
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -136,7 +147,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
   const resetStage = () => {
     setPhase('loading'); setSlow(false); setParts(NO_PARTS); setLine(null); setCommand(null); setRecOn(false); setReps(0);
     setLamps(['off', 'off', 'off']); setWaitLine(''); setBusy(false); setSlowUpload(false); setSpill(''); setResult(null); setResultOn(false);
-    setFrozen(false); setMarks(null); setReplaying(false); setSample(null); setError('');
+    setFrozen(false); setMarks(null); setReplaying(false); setSample(null); setError(''); setShownLift(attempt.lift);
   };
 
   /** Freezes the stage on the judged moment: the deepest frame the phone saw. */
@@ -203,6 +214,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
           if (!alive()) return;
           clearTimeout(t45); clearTimeout(t90); clearInterval(every);
           setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
+          setShownLift(s.shown_lift ?? attempt.lift);
           setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
         }
         if (s && (s.call === 'white' || s.call === 'red')) break;
@@ -214,6 +226,8 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       if (!alive()) return;
       const s = state as unknown as State;
       const res = meetResult({ ...s, lift: attempt.lift })!;
+      const shown = s.shown_lift ?? attempt.lift;
+      setShownLift(shown);
       setResult(res); setResultOn(false); setWaitLine(''); setBusy(false);
       // the lights: left, head, right, 330 ms apart, then the spill, then the result 420 ms later
       setPhase('lit');
@@ -237,7 +251,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       if (snapAt && typeof s.judged_frame_ms === 'number') judged = (await snapAt(s.judged_frame_ms).catch(() => null)) ?? snap;
       if (!alive()) return;
       setFrozen(!!freeze(judged));
-      if (judged?.p.length) setMarks(marksOf(judged.p, judged.side, { w: judged.canvas.width, h: judged.canvas.height }));
+      if (judged?.p.length) setMarks(liftMarks(shown, judged.p, { w: judged.canvas.width, h: judged.canvas.height }, judged.side));
       setPhase('hold');
     } finally { stop(); }
   }, [attempt.lift]);
@@ -299,18 +313,25 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     if (!alive()) return;
     setSlow(false); setPhase('spot');
 
-    const declared = attempt.reps_declared ?? undefined;
-    const tal = new TryALift(d, { reps: declared, judgeLater: true });
+    const lift = asLift(attempt.lift);
+    const ml = new MeetLift(d, lift, { reps: home ? attempt.reps_declared ?? 1 : null });
+    const endWord = liftCommands(lift, lifter.division).end;
     const deepest = new DeepestFrames(d);
     const recording = new Recording(home ? 1_500_000 : 2_500_000);
     const ct: Record<string, number> = {};
     const t0 = performance.now();
-    let lastMedia = -1, recTimer: ReturnType<typeof setInterval> | null = null, squatAt = 0, rackAt = 0, noRep = false, spotDone = false;
+    let lastMedia = -1, recTimer: ReturnType<typeof setInterval> | null = null, liftAt = 0, endAt = 0, noRep = false, spotDone = false;
     // command_times and the 1.5 s after "Rack!" run from the frame that earned each command
-    // (plan 3.4 piece 2, 3.10), not from after the pose model and the judge have run on it
+    // (plan 3.4 piece 2, 3.10), not from after the pose model has run on it
     const since = (frameAt: number) => Math.round(frameAt - recording.startedAt);
-    // "Rack!" goes on screen on its own frame; the judging waits for the next one, after the paint
-    const judgeNextFrame = (done: () => void) => requestAnimationFrame(() => { if (alive()) tal.finish(rackAt - t0); done(); });
+    // REC and its timer run from her start command; the deadlift has none, so from "Bar is loaded."
+    const startRec = (at: number) => {
+      if (liftAt) return;
+      liftAt = at;
+      flushSync(() => { setPhase('lifting'); setRecSec(0); setRecOn(true); });
+      recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - at) / 1000)), 250);
+    };
+    const show = (text: string) => flushSync(() => setCommand({ text, kind: 'on' }));
 
     await new Promise<void>(resolve => {
       const done = () => { if (recTimer) clearInterval(recTimer); resolve(); };
@@ -320,37 +341,42 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
         if (video.currentTime === lastMedia) return void requestAnimationFrame(tick);
         lastMedia = video.currentTime;
         const f = { t: now - t0, p: pose.detect(video) };
-        if (tal.phase !== 'spot' && tal.phase !== 'done') deepest.offer(f, video);
-        for (const ev of tal.feed(f)) {
+        // the squat's held frame is its deepest; other lifts hold their last frame
+        if (lift === 'squat' && liftAt) deepest.offer(f, video);
+        for (const ev of ml.feed(f)) {
           if (ev.type === 'spot') { setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts)); setLine(ev.spot.line); }
           else if (ev.type === 'good-spot') {
             setPhase('good-spot'); setLine(null); setParts({ head: true, hips: true, knees: true, feet: true });
             setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');
             if (spotOnly) { spotDone = true; return done(); }
-          } else if (ev.type === 'stand-tall') {
+          } else if (ev.type === 'loaded') {
             // 5.25 step 4: the soft command; the recording starts here, so it is 0 in command_times
             setPhase('loaded'); setCommand({ text: home ? MEET_WORDS.soft.home : MEET_WORDS.soft.barbell, kind: 'soft' });
             voice.say(home ? 'weights-ready' : 'bar-loaded');
             if (streamRef.current) recording.start(streamRef.current);
             ct.loaded = 0;
-          } else if (ev.type === 'squat') {
-            squatAt = now; ct.squat = since(now);
-            flushSync(() => { setPhase('lifting'); setCommand({ text: MEET_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
-            voice.say('squat');
-            recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - squatAt) / 1000)), 250);
+            if (lift === 'deadlift') startRec(now);
+          } else if (ev.type === 'call') {
+            ct[ev.key] = since(now);
+            if (ev.word !== 'press') startRec(now);
+            show(COMMAND_TEXT[ev.word]); voice.say(ev.word);
           } else if (ev.type === 'rep') {
-            if (declared) { ct[`rep_${ev.k}`] = since(now); setReps(ev.k); if (ev.k <= 20) voice.say(`count-${ev.k}` as VoiceKey); }
-          } else if (ev.type === 'rack') {
-            rackAt = now; ct.rack = since(now); noRep = ev.noRep;
-            flushSync(() => setCommand({ text: MEET_WORDS.rack, kind: 'on' })); voice.say('rack');
-          } else if (ev.type === 'result') return done();
+            ct[ev.key] = since(now); setReps(ev.k);
+            // a Home deadlift says "Down!" after each rep (3.8a); the others count softly
+            if (ev.down) { show(COMMAND_TEXT.down); voice.say('down'); }
+            else if (ev.k <= 20) voice.say(`count-${ev.k}` as VoiceKey);
+          } else if (ev.type === 'end') {
+            endAt = now; ct[ev.key] = since(now); noRep = ev.noRep;
+            show(endWord); voice.say(ev.key);
+            return done();
+          }
         }
-        if (tal.phase === 'racked') return judgeNextFrame(done);
-        if (home && squatAt && now - squatAt > HOME_CAP_MS && tal.phase !== 'done') {
-          // 90 s is the most a Home set can run: "Rack!" now, on what was seen
-          rackAt = now; ct.rack = since(now);
-          flushSync(() => setCommand({ text: MEET_WORDS.rack, kind: 'on' })); voice.say('rack');
-          return judgeNextFrame(done);
+        if (home && liftAt && now - liftAt > HOME_CAP_MS) {
+          // 90 s is the most a Home set can run: the end command now, on what was seen
+          const key = lift === 'deadlift' ? 'down' : 'rack';
+          endAt = now; ct[key] = since(now);
+          show(endWord); voice.say(key);
+          return done();
         }
         requestAnimationFrame(tick);
       };
@@ -363,26 +389,27 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       stopCamera(); setCommand(null); setPhase('spot-done');
       return;
     }
-    // 3.10: recording stops 1.5 s after "Rack!"
-    await sleep(Math.max(0, rackAt + AFTER_RACK_MS - performance.now()));
+    // 3.10: recording stops 1.5 s after "Rack!" / "Down!"
+    await sleep(Math.max(0, endAt + AFTER_RACK_MS - performance.now()));
+    const last = grab(video, d);
     const blob = await recording.stop();
     setRecOn(false);
     stopCamera();
     if (!alive()) return;
-    if (noRep || !blob || !tal.result || tal.result.noRep || ct.squat === undefined) {
+    if (noRep || !blob || !liftAt) {
       await wait(900);
       if (!alive()) return;
-      setCommand(null); setPhase('norep'); setWaitLine(MEET_WORDS.noRep);
+      setCommand(null); setPhase('norep'); setWaitLine(noRepLine(lift, lifter.division));
       return;
     }
     // Saved on the phone before anything is sent (3.10), so a reload or a lost signal keeps it.
     await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes: ct, uploadId: null, savedAt: Date.now() });
-    const snap = deeperOf(deepest, tal.result.side);
-    freeze(snap);
+    freeze((lift === 'squat' && deeperOf(deepest)) || last);
+    const clipUrl = URL.createObjectURL(blob);
     const replay = async () => {
       const rv = replayRef.current;
       if (!rv) return;
-      rv.src = URL.createObjectURL(blob);
+      rv.src = clipUrl;
       await within(readyToSeek(rv), 3000);
       await within(seekTo(rv, Math.max(0, rv.duration - 2)), 2000);
       setPhase('replay'); setReplaying(true); setFrozen(false);
@@ -390,8 +417,18 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
       await new Promise<void>(res => { const c = () => (!alive() || rv.ended ? res() : requestAnimationFrame(c)); requestAnimationFrame(c); });
       rv.pause();
     };
-    await awaitLights(alive, attempt.id, send(alive, attempt.id), snap, replay);
-  }, [attempt.id, attempt.reps_declared, home, stopCamera, awaitLights, send]);
+    // the frozen frame is the server's judged frame (3.4), found in her own recording, with its marks
+    const snapAt = async (ms: number): Promise<SideSnap | null> => {
+      const rv = replayRef.current;
+      if (!rv) return null;
+      if (rv.src !== clipUrl) { rv.src = clipUrl; await within(readyToSeek(rv), 3000); }
+      await within(seekTo(rv, ms / 1000), 2000);
+      const g = grab(rv, d);
+      const p = pose.detect(rv);
+      return p ? { ...g, p, side: nearSide({ t: ms, p }) } : g;
+    };
+    await awaitLights(alive, attempt.id, send(alive, attempt.id), (lift === 'squat' && deeperOf(deepest)) || last, replay, snapAt);
+  }, [attempt.id, attempt.lift, attempt.reps_declared, home, lifter.division, stopCamera, awaitLights, send]);
 
   /** "Use a sample lift instead" (5.36): the server copies and queues the clip; the phone plays it. */
   const runSample = useCallback(async () => {
@@ -402,10 +439,13 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     if (!alive()) return;
     if (r?.status === 429) { setLimit((r.body.limit as 'lifter' | 'everyone') ?? 'lifter'); setView('limit'); return; }
     if (r?.status !== 200) { console.warn('sample refused', r?.status, r?.body.error); setPhase('refused'); return; }
-    const picked = r.body.sample as { id: string; credit: string; reps: number };
+    const picked = r.body.sample as { id: string; credit: string; reps: number; lift?: string };
+    setShownLift(picked.lift ?? 'squat');
     const clip = (samples.clips as SampleClip[]).find(c => c.id === picked.id);
     setSample({ credit: picked.credit, reps: picked.reps });
-    const ct = clip?.meet?.command_times ?? { loaded: 0, squat: 200, rack: 4000 };
+    // a sample is a squat clip (its own lift's, once there are any): its start and end commands
+    const times = clip?.meet?.command_times ?? { loaded: 0, squat: 200, rack: 4000 };
+    const ct = { squat: times.squat ?? times.start ?? 200, rack: times.rack ?? times.down ?? 4000 };
     const video = feedRef.current!;
     stopCamera();
     video.srcObject = null;
@@ -534,21 +574,10 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
 
   const toCard = () => { runRef.current++; stopCamera(); resetStage(); setView('card'); };
 
-  /** Phase 2 has only the first attempt: "Lift it again" makes a fresh one. */
-  const liftAgain = async () => {
-    setAgain(true);
-    const r = await getJson('/api/demo/again', { method: 'POST' }).catch(() => null);
-    setAgain(false);
-    if (r?.status === 200) {
-      const a = r.body.attempt as { id: string; lift: string; number: number; weight: number; repsDeclared: number | null; status: string };
-      setAttempt({ id: a.id, lift: a.lift, number: a.number, weight: a.weight, reps_declared: a.repsDeclared, status: a.status });
-      toCard();
-    }
-  };
-
-  const liftName = (LIFT_NAMES[attempt.lift] ?? LIFT_NAMES.squat)[lifter.division];
+  const liftName = liftCaps(attempt.lift, lifter.division);
   const ofLine = `Attempt ${attempt.number} of 3`;
-  const loading = home ? `One ${attempt.weight} ${lifter.units} dumbbell` : barLoading(attempt.weight, lifter.units);
+  const loading = loadingLine(lifter.division, attempt.weight, lifter.units, attempt.lift, attempt.kind ?? undefined);
+  const standIn = PLAN_SWITCHES.item75 && shownLift !== attempt.lift ? standInLine(shownLift, attempt.lift, lifter.division) : null;
 
   if (view === 'limit') {
     return (
@@ -619,6 +648,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
   const recLabel = `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}`;
   const waiting = phase === 'held' || phase === 'offline';
   const judged = phase === 'lit' || phase === 'replay' || phase === 'hold';
+  const nextLabel = nextButton(attempt.lift, attempt.number, lifter.division);
 
   return (
     <div className="try-app meet-app">
@@ -630,9 +660,8 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             <canvas ref={frozenRef} className="feed" aria-hidden="true" hidden={!frozen} />
             {marks && dims && (
               <svg className="marks" viewBox={`0 0 ${dims.w} ${dims.h}`} aria-hidden="true">
-                <line x1={marks.hip.x} y1={marks.hip.y} x2={marks.knee.x} y2={marks.knee.y} stroke={colour} strokeWidth={2.5 / k} strokeDasharray={`${6 / k} ${5 / k}`} />
-                <circle cx={marks.hip.x} cy={marks.hip.y} r={6 / k} fill={colour} />
-                <circle cx={marks.knee.x} cy={marks.knee.y} r={6 / k} fill={colour} />
+                <polyline points={marks.pts.map(q => `${q.x},${q.y}`).join(' ')} fill="none" stroke={colour} strokeWidth={2.5 / k} strokeDasharray={`${6 / k} ${5 / k}`} />
+                {marks.pts.map((q, i) => <circle key={i} cx={q.x} cy={q.y} r={6 / k} fill={colour} />)}
               </svg>
             )}
           </div>
@@ -642,8 +671,9 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
           <div className="hud meet-hud">
             <button className="close" type="button" aria-label="Back to the attempt card" onClick={toCard} disabled={!lifting && phase !== 'loading' && phase !== 'spot-done' && phase !== 'norep'}><X weight="bold" /></button>
             <div className="meet-hud-text">
-              <div className="eyebrow">{`${(LIFT_NAMES[attempt.lift] ?? LIFT_NAMES.squat).barbell} · ${attempt.number} OF 3`}</div>
+              <div className="eyebrow">{`${liftName} · ${attempt.number} OF 3`}</div>
               {isSample && <div className="eyebrow try-what boxed">Sample lift</div>}
+              {isSample && standIn && <p className="caption meet-stand-in">{standIn}</p>}
               {isSample && home && sample && <p className="caption meet-sample-reps">{sampleRepsLine(sample.reps)}</p>}
               <div className="caption meet-hud-who">{hudLine(lifter.cardName, lifter.ageGroup, lifter.division)}</div>
             </div>
@@ -702,7 +732,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
               <div role="alert">
                 <p className="sheet-title">{REFUSED_WORDS.title}</p>
                 <p className="body">{REFUSED_WORDS.body}</p>
-                <div className="try-actions"><button className="btn" type="button" onClick={liftAgain} aria-busy={again}>Lift it again</button></div>
+                <div className="try-actions"><button className="btn" type="button" onClick={toCard}>Lift it again</button></div>
               </div>
             )}
             <div className="live" aria-live="polite">
@@ -720,15 +750,19 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
                   {result.small && <p className="small">{result.small}</p>}
                   {result.reason && <div className="why"><b>{result.reason.eyebrow}</b><span>{result.reason.text}</span></div>}
                   {result.body && <p className="main">{result.body}</p>}
+                  {standIn && result.title === 'Good lift' && <p className="small stand-in">{standIn}</p>}
                 </div>
               )}
             </div>
+            {waiting && busy && onNext && (
+              <div className="try-actions"><button className="btn" type="button" onClick={onNext}>{nextLabel}</button></div>
+            )}
             {(phase === 'close' || (judged && resultOn)) && (
               <div className="after">
                 <hr className="rule" />
                 <div className="try-actions">
+                  {onNext && <button className="btn" type="button" onClick={onNext}>{nextLabel}</button>}
                   {phase === 'close' && <Link className="link" href={`/referee/demo/${attempt.id}`}>{MEET_WORDS.refereeLink}</Link>}
-                  {judged && <button className="btn" type="button" onClick={liftAgain} aria-busy={again} disabled={again}>Lift it again</button>}
                 </div>
               </div>
             )}
