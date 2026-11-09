@@ -9,9 +9,10 @@
 // and y fractions of the frame.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PlateTracker, TRACK, type Gray } from './plate-tracker';
+import { BAR_TRACK, PlateTracker, type Gray } from './plate-tracker';
 
-export const TRACK_USED = { ...TRACK, tpl: 0.08, follow: 0.1, search: 0.08 };
+// the bench's settings (shared/rules.json benchBar.tracker): the template 8% of the frame tall
+export const TRACK_USED = BAR_TRACK;
 
 type Mark = { t: number; x: number; y: number; racked: boolean };
 

@@ -22,8 +22,8 @@ after it are cut off (no look-ahead).
 
 | File | What it is |
 | --- | --- |
-| `caller.ts` | `BenchCaller`: the caller under test, with its settings in `RULES`. The header comment gives every rule. |
-| `plate-tracker.ts` | Item 70's plate tracker, unchanged. |
+| `caller.ts` | `BenchCaller`: the caller under test, with its settings in `RULES`. It is the phone's and the server's own caller, `web/lib/judge/bar-caller.ts` (settings in `shared/rules.json` `benchBar`), re-exported. Its header comment gives every rule. |
+| `plate-tracker.ts` | Item 70's plate tracker, unchanged, re-exported from `web/lib/judge/plate-tracker.ts`. |
 | `track.ts` | How the traces were made from the grey frames. It reproduces `data/traces` exactly, but needs the frames, which are not committed. There's no whole-frame search (3.4b, choice (b)). |
 | `score.ts` | The scoring: the six lines below. |
 | `eye.py` | The by-eye times (`data/eyetimes.json`), from the by-eye calls and the reference traces. Plain Python, no packages. It reproduces the committed file byte for byte. |
