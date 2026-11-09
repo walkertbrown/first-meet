@@ -165,6 +165,25 @@ describe('overhead press (Home)', () => {
     expect(r.reps[0].lockoutElbowDeg).toBeLessThanOrEqual(165);
   });
 
+  it('counts a lockout whose dumbbells settle a little (under 12% of the arm in 0.4 s), not one that keeps moving', () => {
+    // the wrists sink `px` pixels over the 800 ms hold at the top (the arm is 240 px)
+    const settle = (px: number) => (t0: number) => hold(t0, 800, t => {
+      const p = arm(LOCKED[0], LOCKED[1]);
+      const dy = (px * (t - t0)) / 800 / d.h;
+      p[15] = [p[15][0], p[15][1] + dy, p[15][2]]; p[16] = [p[16][0], p[16][1] + dy, p[16][2]];
+      return p;
+    });
+    const set = (px: number) => [
+      ...still(0, 1000, RACKED), ...move(1000, 700, RACKED, LOCKED), ...settle(px)(1700),
+      ...move(2500, 700, LOCKED, RACKED), ...still(3200, 300, RACKED),
+    ];
+    const ok = set(40); // 20 px in 0.4 s: 8% of the arm
+    const { ct, cmds } = runOverhead(ok, 1);
+    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
+    expect(judgeOverhead(ok, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 1).call).toEqual({ light: 'white' });
+    expect(runOverhead(set(120), 1).cmds.map(c => c.cmd)).toEqual(['start']); // 60 px in 0.4 s: 25%
+  });
+
   it('waits for "Start!" while the elbows are over 100° or the wrists are above the nose', () => {
     const HIGH: [number, number] = [-20, -100]; // wrists above the nose
     const OPEN: [number, number] = [70, 20]; // elbows ~130°, wrists below the nose

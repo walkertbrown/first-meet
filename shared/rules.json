@@ -49,6 +49,7 @@
     "borderlineElbowMinDeg": 155,
     "lockoutStillMs": 400,
     "stillMaxArm": 0.07,
+    "lockoutStillMaxArm": 0.12,
     "noRepMs": 20000,
     "homeNoRepMs": 8000
   }

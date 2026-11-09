@@ -43,7 +43,8 @@ export type OverheadCommand = { cmd: 'start'; t: number } | { cmd: 'rep'; t: num
  *   the wrists still (under 7% of her arm) for 0.5 s;
  * - no "Press!";
  * - a rep starts when the wrists rise above the nose, and ends when both elbows are over 165° with
- *   the wrists above the nose, held still for 0.4 s; the next can start once the wrists come back
+ *   the wrists above the nose, held still (under 12% of her arm: dumbbells settle a little at the
+ *   top) for 0.4 s; the next can start once the wrists come back
  *   below the nose;
  * - "Rack!" after the declared reps, 8 s after a rep with no new one (3.8a), or 20 s after
  *   "Start!" with no rep.
@@ -104,7 +105,7 @@ export class OverheadCaller {
     if (!locked(m, r)) { this.lockSince = null; return null; }
     if (this.lockSince === null) this.lockSince = f.t;
     const still = pointRange(this.hist, f.t, r.lockoutStillMs, x => x.wr, this.armRef!);
-    if (f.t - this.lockSince >= r.lockoutStillMs && still !== null && still < r.stillMaxArm) {
+    if (f.t - this.lockSince >= r.lockoutStillMs && still !== null && still < r.lockoutStillMaxArm) {
       this.lockSince = null; this.phase = 'locked';
       this.repsDone++; this.lastRepAt = f.t;
       if (this.repsDone >= this.reps) {
@@ -132,7 +133,7 @@ function bestHold(list: (Sample & { p: Pt[] })[], r: Rules['overhead'], arm: num
     while (j < i && list[i].t - list[j + 1].t >= r.lockoutStillMs) j++;
     if (deg[i] > r.lockoutElbowMinDeg) { if (lockFrom < 0) lockFrom = i; } else lockFrom = -1;
     if (list[i].t - list[j].t < r.lockoutStillMs) continue;
-    if (moved(list.slice(j, i + 1), x => x.wr, arm) >= r.stillMaxArm) continue;
+    if (moved(list.slice(j, i + 1), x => x.wr, arm) >= r.lockoutStillMaxArm) continue;
     const low = Math.min(...deg.slice(j, i + 1));
     // a lockout: the run over the line, held still; its first frame is the judged frame
     if (low > r.lockoutElbowMinDeg) return { deg: low, first: list[Math.min(lockFrom, j)] };
