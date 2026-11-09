@@ -57,6 +57,8 @@ jobs:
           cache: pip
           cache-dependency-path: worker/requirements.txt
       - run: npm ci
+      # MediaPipe's library links libEGL and libGLESv2 even when it runs on the CPU
+      - run: sudo apt-get update -q && sudo apt-get install -y -q libegl1 libgles2
       - run: pip install -r worker/requirements.txt
       - run: python -m unittest discover worker/tests
       - run: npx vitest run -c tests/worker/vitest.config.ts --silent=false
