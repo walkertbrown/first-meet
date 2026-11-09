@@ -3,12 +3,16 @@
 // (so a reloaded phone resumes), and finishes it. Only the attempt's own lifter can.
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { attempts } from '@/db/schema';
+import { attempts, lifters } from '@/db/schema';
+import { countDemoRun, demoLimitHit, type LimitHit } from '@/lib/demo';
 import { extOf, keys, type R2 } from '@/lib/r2';
 import { markUploaded } from '@/lib/queue';
 
 export type UploadStore = Pick<R2, 'startUpload' | 'signPart' | 'listParts' | 'finishUpload' | 'head' | 'putJson' | 'getJson' | 'signedGet'>;
-type Fail = { status: 400 | 403 | 404 | 409; error: string };
+type Fail = { status: 400 | 403 | 404 | 409 | 429; error: string; limit?: LimitHit };
+
+const isDemoLifter = async (db: Db, id: string) =>
+  !!(await db.select({ d: lifters.isDemo }).from(lifters).where(eq(lifters.id, id)))[0]?.d;
 const MAX_PARTS = 40; // 200 MB: a 90 s Home attempt at 1.5 Mbps is about 17 MB
 
 async function own(db: Db, attemptId: string, lifterId: string) {
@@ -27,6 +31,11 @@ export async function startAttemptUpload(db: Db, store: UploadStore, attemptId: 
   if (!['declared', 'recording', 'uploading'].includes(a.status)) return { status: 409, error: `attempt is ${a.status}` } as Fail;
   const ext = extOf(type);
   if (!ext) return { status: 400, error: 'video/webm or video/mp4 only' } as Fail;
+  // every demo attempt is a paid Workflow run (5.36): refused before anything is uploaded
+  if (await isDemoLifter(db, lifterId)) {
+    const hit = await demoLimitHit(db, lifterId);
+    if (hit) return { status: 429, error: 'limit', limit: hit } as Fail;
+  }
   const key = keys.meetVideo(a.meetId, a.lifterId, a.id, ext);
   const uploadId = await store.startUpload(key, type.split(';')[0]);
   await db.update(attempts).set({ videoKey: key, status: 'uploading', recordedAt: a.recordedAt ?? new Date() }).where(eq(attempts.id, a.id));
@@ -68,5 +77,6 @@ export async function attemptUploaded(db: Db, store: UploadStore, attemptId: str
   const ct = body.command_times && typeof body.command_times === 'object' ? body.command_times : null;
   const r = await markUploaded(db, store, attemptId, ct);
   if (r.status !== 200) return r as Fail;
+  if (['declared', 'recording', 'uploading'].includes(a.status) && await isDemoLifter(db, lifterId)) await countDemoRun(db, lifterId, a.id, false);
   return { status: 200 as const, attempt: { id: r.attempt.id, status: r.attempt.status } };
 }

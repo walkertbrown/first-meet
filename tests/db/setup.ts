@@ -34,6 +34,30 @@ export class MemStore implements Store {
     if (!this.objects.has(from)) throw new Error(`R2 copy 404 ${from}`);
     this.objects.set(to, this.objects.get(from));
   }
+  // multipart uploads, as R2 does them: parts kept per upload id until finished
+  uploads = new Map<string, { key: string; parts: Map<number, string> }>();
+  async startUpload(key: string) {
+    const id = `up-${this.uploads.size + 1}`;
+    this.uploads.set(id, { key, parts: new Map() });
+    return id;
+  }
+  async signPart(key: string, uploadId: string, part: number) { return `https://r2.test/${key}?uploadId=${uploadId}&partNumber=${part}`; }
+  /** What a phone's PUT of a part does. */
+  putPart(uploadId: string, part: number) {
+    const u = this.uploads.get(uploadId)!;
+    u.parts.set(part, `"etag-${part}"`);
+    return `"etag-${part}"`;
+  }
+  async listParts(_key: string, uploadId: string) {
+    const u = this.uploads.get(uploadId);
+    return u ? [...u.parts].map(([part, etag]) => ({ part, etag, bytes: 5 })) : null;
+  }
+  async finishUpload(key: string, uploadId: string, parts: { part: number; etag: string }[]) {
+    const u = this.uploads.get(uploadId);
+    if (!u || u.key !== key || parts.some(p => u.parts.get(p.part) !== p.etag)) throw new Error('R2 finish upload 400');
+    this.objects.set(key, 'video');
+    this.uploads.delete(uploadId);
+  }
 }
 
 export async function seed(db: Db, store: MemStore, n: number, lift: 'squat' | 'deadlift' = 'squat') {
