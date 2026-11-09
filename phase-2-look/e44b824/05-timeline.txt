@@ -5,6 +5,6 @@ motion on, run 1: 12254 -> 13771 (+1517) -> 13964
 motion on, run 2: 11991 -> 13507 (+1516) -> 13729
 motion off, run 1: 12388 -> 13949 (+1561) -> 14096
 motion off, run 2: 11787 -> 13303 (+1516) -> 13475
-Good spot -> Bar is loaded -> SQUAT!: 1500/1500, 1500/1499, 1500/1504, 1499/1501
+Good spot -> Bar is loaded -> SQUAT! (on 1, on 2, off 1, off 2): 1500/1500, 1500/1499, 1500/1500, 1499/1501
 
 Model loaded, motion on: RACK! 22192 -> stage leaves 23717 (+1525); judged frame has marks; three whites.
