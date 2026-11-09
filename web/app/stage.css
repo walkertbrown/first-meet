@@ -27,7 +27,9 @@
   color: var(--stage-ink-2); box-shadow: inset 0 0 0 1.5px rgb(241 239 232 / .28); transition: background-color 180ms, color 180ms, box-shadow 180ms; }
 .spotparts span.seen { background: var(--lamp-white); color: #16181F; box-shadow: none; }
 
-.spotline { position: absolute; left: 20px; right: 20px; bottom: 76px; z-index: 3; text-align: center; font-size: 18px; line-height: 26px; color: var(--stage-ink);
+/* look.md 9, "Find your spot" (Nov 9): at most 560 px, centred, balanced, so the bench's long
+   set-up line sits on two even lines on a landscape stage */
+.spotline { position: absolute; left: 20px; right: 20px; bottom: 76px; max-width: 560px; margin: 0 auto; text-wrap: balance; z-index: 3; text-align: center; font-size: 18px; line-height: 26px; color: var(--stage-ink);
   text-shadow: 0 1px 0 rgb(0 0 0 / .5), 0 0 24px rgb(0 0 0 / .7); min-height: 52px; }
 
 .command { position: absolute; left: 0; right: 0; top: 41%; transform: translateY(-50%); z-index: 4; text-align: center; pointer-events: none; padding: 0 16px; }

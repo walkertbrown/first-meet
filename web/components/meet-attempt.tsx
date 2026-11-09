@@ -24,7 +24,7 @@ import { heldFrameMs } from '@/lib/stage/held-frame';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
 import {
   COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
-  standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
+  setupLine, spotLineShown, standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
 } from '@/lib/stage/meet-words';
 import { WindowText } from '@/components/window-words';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
@@ -354,6 +354,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
 
     const lift = asLift(attempt.lift);
     const ml = new MeetLift(d, lift, { reps: home ? attempt.reps_declared ?? 1 : null });
+    // 5.25 step 3 (item 89): the set-up line first, until the frame check sees her
+    const setup = setupLine(lift, lifter.division);
+    let seenYet = false;
+    setLine(setup);
     const endWord = liftCommands(lift, lifter.division).end;
     const deepest = new DeepestFrames(d);
     const recording = new Recording(home ? 1_500_000 : 2_500_000);
@@ -383,7 +387,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         // the squat's held frame is its deepest; other lifts hold their last frame
         if (lift === 'squat' && liftAt) deepest.offer(f, video);
         for (const ev of ml.feed(f)) {
-          if (ev.type === 'spot') { setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts)); setLine(ev.spot.line); }
+          if (ev.type === 'spot') { setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts)); seenYet ||= f.p !== null; setLine(spotLineShown(setup, seenYet, ev.spot.line)); }
           else if (ev.type === 'good-spot') {
             setPhase('good-spot'); setLine(null); setParts({ head: true, hips: true, knees: true, feet: true });
             setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');

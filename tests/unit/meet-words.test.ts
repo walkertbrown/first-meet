@@ -1,6 +1,6 @@
 // A meet attempt's words (5.25 step 9, 3.5, the Barbell loading line).
 import { describe, expect, it } from 'vitest';
-import { COMMAND_TEXT, barLoading, meetResult, MEET_WORDS, noRepLine } from '../../web/lib/stage/meet-words';
+import { COMMAND_TEXT, barLoading, meetResult, MEET_WORDS, noRepLine, setupLine, spotLineShown } from '../../web/lib/stage/meet-words';
 import { estimateMinutes } from '../../web/lib/attempt-state';
 import { isFor } from '../../web/lib/live';
 
@@ -100,5 +100,32 @@ describe('Weight XL and the refused sheet', () => {
     expect(noRepLine('bench', 'home')).toBe("We didn't see an overhead press. Try again when you're ready.");
     expect(noRepLine('squat', 'home')).toBe("We didn't see a goblet squat. Try again when you're ready.");
     expect(Object.values(COMMAND_TEXT)).toEqual(['SQUAT!', 'START!', 'PRESS!', 'RACK!', 'DOWN!']);
+  });
+});
+
+describe("the set-up line at Find your spot (5.25 step 3, item 89)", () => {
+  it('only the Home overhead press and the Barbell bench have one, in the plan words', () => {
+    expect(setupLine('bench', 'home')).toBe('Face the phone, with room above your head.');
+    expect(setupLine('bench', 'barbell')).toBe('Turn your phone on its side on the floor, level with the bench, against a mug or a shoe.');
+    for (const d of ['barbell', 'home'] as const) {
+      expect(setupLine('squat', d)).toBeNull();
+      expect(setupLine('deadlift', d)).toBeNull();
+    }
+  });
+  it('shows until the frame check sees her, then gives way to its lines and does not come back', () => {
+    const setup = setupLine('bench', 'home');
+    const frames: [boolean, string | null][] = [
+      [false, 'Step back until we can see your feet.'], // nobody in frame yet: she is placing the phone
+      [false, 'Step back until we can see your feet.'],
+      [true, 'Turn to face the phone.'], // seen: the frame check speaks on this frame
+      [false, 'Step back until we can see your feet.'], // she steps out: the frame check's line, not the set-up line
+      [true, null], // the spot is right
+    ];
+    let seen = false;
+    const shown = frames.map(([p, l]) => { seen ||= p; return spotLineShown(setup, seen, l); });
+    expect(shown).toEqual([setup, setup, 'Turn to face the phone.', 'Step back until we can see your feet.', null]);
+  });
+  it('a lift with no set-up line shows the frame check line from the first frame', () => {
+    expect(spotLineShown(null, false, 'Step back until we can see your feet.')).toBe('Step back until we can see your feet.');
   });
 });

@@ -112,6 +112,31 @@ export function liftCommands(lift: string, division: 'barbell' | 'home'): { call
   return { calls: ['SQUAT!'], end: 'RACK!' };
 }
 
+/**
+ * 5.25 step 3 (item 89): the lift's set-up line, the stage's first line at "Find your spot". The
+ * Home overhead press (5.34, 3.4c) and the Barbell bench (3.10) have one; squat, goblet squat and
+ * deadlift have none.
+ */
+export const SETUP_LINES = {
+  press: 'Face the phone, with room above your head.',
+  bench: 'Turn your phone on its side on the floor, level with the bench, against a mug or a shoe.',
+} as const;
+export function setupLine(lift: string, division: 'barbell' | 'home'): string | null {
+  if (lift !== 'bench') return null;
+  return division === 'home' ? SETUP_LINES.press : SETUP_LINES.bench;
+}
+
+/**
+ * The one spot line the stage shows (5.25 step 3, item 89). The set-up line stays until the frame
+ * check gives a line of its own: from the first frame it sees her in (`seen`), its line replaces
+ * the set-up line on that same frame, and the set-up line doesn't come back. While nobody is in
+ * frame she is still placing the phone, so the set-up line stands in for "Step back until we can
+ * see your feet.". Without a set-up line, the frame check's line as before.
+ */
+export function spotLineShown(setup: string | null, seenYet: boolean, frameLine: string | null): string | null {
+  return setup && !seenYet ? setup : frameLine;
+}
+
 /** The commands' words on the stage (5.25 steps 5 and 7), by `command_times` key's word. */
 export const COMMAND_TEXT = { squat: 'SQUAT!', start: 'START!', press: 'PRESS!', rack: 'RACK!', down: 'DOWN!' } as const;
 
