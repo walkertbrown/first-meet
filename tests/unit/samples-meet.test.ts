@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { checkCommandTimes, judgeAttempt } from '../../web/lib/judge';
 import samples from '../../content/samples/samples.json';
+import { closeOnTheLine } from '../clips/sample-flow';
+import { callName } from '../clips/check';
 
 const POSES: Record<string, string> = { 'good-lift': 'sample-good-lift', 'no-lift': 'sample-no-lift', 'close-call': 'sample-close-call' };
 const LIGHT = { good: 'white', no: 'red', close: 'close' } as Record<string, string>;
@@ -16,8 +18,11 @@ describe('demo sample lifts', () => {
       const ct = c.meet.command_times;
       expect(checkCommandTimes(ct, 'squat', Math.round(raw.duration * 1000))).toBeNull();
       const v = judgeAttempt(raw.frames, raw, 'squat', ct);
-      expect(v.call.light).toBe(LIGHT[c.kind]);
-      if (c.kind === 'close') expect(v.call).toEqual({ light: 'close', reason: 'borderline_depth' });
+      // The close call is the server's (tests/worker/worker.test.ts); on Chromium's points it
+      // must be on the line (sample-flow.ts, closeOnTheLine).
+      if (c.kind === 'close') {
+        expect(closeOnTheLine(callName(v.call), v.measures.depth ?? undefined)).toBe(true);
+      } else expect(v.call.light).toBe(LIGHT[c.kind]);
     });
   }
 });

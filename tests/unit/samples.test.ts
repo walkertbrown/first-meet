@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CLIPS_DIR } from '../clips/check';
-import { KIND_CALL, SAMPLES, SAMPLES_DIR, checkSample, runSample } from '../clips/sample-flow';
+import { KIND_CALL, SAMPLES, SAMPLES_DIR, checkSample, closeOnTheLine, runSample } from '../clips/sample-flow';
 
 describe('the sample lifts', () => {
   it('there is a good lift, a no lift and a close call (5.36), each with its file and a credit', () => {
@@ -29,7 +29,8 @@ describe('the sample lifts', () => {
       expect(run.squatCalled).toBe(true);
       expect(run.rackAt, '"Rack!" is called').not.toBeNull();
       expect(run.noRep).toBe(false);
-      expect(run.call).toBe(KIND_CALL[s.kind]);
+      if (s.kind === 'close') expect(closeOnTheLine(run.call, run.result?.reps[0]?.depth)).toBe(true);
+      else expect(run.call).toBe(KIND_CALL[s.kind]);
     });
   }
 });
