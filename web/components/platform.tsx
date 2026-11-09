@@ -147,7 +147,10 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
     return () => es.close();
   }, [current.id, lifter.division, lifter.units, router, pushLights]);
 
-  const closesLine = closesAt ? untilLine(closesAt) : null;
+  // the phone's own time only after hydration: the server renders in its own zone (React #418)
+  const [here, setHere] = useState(false);
+  useEffect(() => setHere(true), []);
+  const closesLine = closesAt ? untilLine(closesAt, here) : null;
   const top = (
     <header className="platform-top">
       <p className="eyebrow">{`${meetName} · The platform is open`}</p>
@@ -196,9 +199,10 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
 }
 
 /** "Until Saturday 6 pm Eastern (<local>)" (5.24). */
-function untilLine(iso: string) {
+function untilLine(iso: string, here: boolean) {
   const d = new Date(iso);
   const et = d.toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).replace(':00', '').replace(' AM', ' am').replace(' PM', ' pm');
+  if (!here) return `Until ${et} Eastern`;
   const local = d.toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' AM', ' am').replace(' PM', ' pm');
   return `Until ${et} Eastern${local !== et ? ` (${local})` : ''}`;
 }

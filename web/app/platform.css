@@ -203,7 +203,7 @@
 .your-corner-names { margin: 8px 0 0; color: var(--ink); }
 .your-corner-names strong { font-weight: 700; }
 .your-corner-count { margin: 4px 0 0; color: var(--ink-2); }
-.total-page .your-corner + .try-actions { margin-top: 32px; }
+.total-page .your-corner + .try-actions { margin-top: 32px; padding-top: 0; }
 .your-corner.opening { animation: corner-open 260ms var(--ease-out); }
 .your-corner.opening .your-corner-in > * { animation: fade-in 200ms var(--ease-out) 260ms both; }
 @keyframes corner-open { from { grid-template-rows: 0fr; margin-top: 0; border-top-color: transparent; } to { grid-template-rows: 1fr; } }
