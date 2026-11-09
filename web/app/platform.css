@@ -23,6 +23,30 @@
 .attempt-card .small { margin: 0; }
 .ac-because { margin: 0; padding-top: 12px; border-top: 1px solid var(--rule); }
 
+/* ---------- Item 81, look 5.6: short screens, and "I'm ready" docks when it can't fit ---------- */
+/* The Primary's wrapper is a direct child of the column. Its place: 40 px under the card (24 on
+   short screens), as when it led the actions group; the links follow it 12 px apart. */
+.look-56 { overflow-x: clip; }
+.look-56 .attempt-card { margin-bottom: 24px; }
+.ready-dock { position: sticky; z-index: 1; bottom: calc(16px + env(safe-area-inset-bottom)); margin-top: auto; display: flex; flex-direction: column; }
+/* 1 px, straight after the button, taking no space: its top is the button's own bottom edge
+   (-16 cancels the column's gap), and -1 below gives its pixel back. Edge to edge with the
+   observer's line counts as on screen, so docked starts the same pixel sticky lifts. */
+.ready-sentinel { display: block; height: 1px; margin: -16px 0 -1px; pointer-events: none; }
+.look-56 .ready-links { margin-top: -4px; padding-top: 0; }
+/* docked: a --chalk band, full width, from 12 px above the button to the bottom edge, a 1 px rule
+   along its top. No shadow, no blur, no motion. */
+.ready-dock[data-docked]::before { content: ''; position: absolute; z-index: -1; top: -12px; left: -100vmax; right: -100vmax;
+  bottom: calc(-16px - env(safe-area-inset-bottom)); background: var(--chalk); border-top: 1px solid var(--rule); }
+@media (min-width: 1024px) { .ready-dock { margin-top: 16px; } }
+@media (max-height: 700px) {
+  .look-56 .platform-top { margin-bottom: 8px; }
+  .look-56 .nine { margin-top: 12px; }
+  .look-56 .attempt-card { padding: 16px; gap: 8px; margin-bottom: 8px; }
+  .look-56 .ac-because { padding-top: 8px; }
+  .look-56 .attempt-card .bar-diagram { height: 44px; }
+}
+
 /* ---------- The stage under the strip ---------- */
 .meet-app.try-app { height: calc(100dvh - 32px - env(safe-area-inset-top)); }
 .meet-app .hud { padding-top: 22px; }

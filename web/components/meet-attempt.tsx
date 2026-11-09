@@ -14,6 +14,7 @@ import { MeetLift, type MeetLiftName } from '@/lib/judge/meet-lift';
 import { nearSide, type Pt } from '@/lib/judge/pose';
 import { Lamps, type LampState } from '@/components/lamps';
 import { BarDiagram, BellDiagram } from '@/components/bar-diagram';
+import { ReadyDock } from '@/components/ready-dock';
 import { loadPoseModel, LivePose } from '@/lib/stage/pose-live';
 import { Voice, type VoiceKey } from '@/lib/stage/voice';
 import { thock, audio } from '@/lib/stage/thock';
@@ -653,7 +654,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
 
   if (view === 'card') {
     return (
-      <div className="try-page meet-page"><main className="try-col meet-col">
+      <div className={`try-page meet-page${item81 ? ' look-56' : ''}`}><main className="try-col meet-col">
         {top}
         <article className="attempt-card" aria-label={`${liftName}, ${ofLine}`}>
           <div className="ac-row1">
@@ -668,13 +669,26 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <p className="small">{loading}</p>
           <p className="body ac-because">{because}</p>
         </article>
-        {!item81 && strip}
-        <div className="try-actions">
-          <button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button>
-          <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
-          <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
-        </div>
-        {item81 && strip}
+        {item81 ? (
+          <>
+            {/* look 5.6: the Primary on its own, a direct child of the column, so it can dock */}
+            <ReadyDock><button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
+            <div className="try-actions ready-links">
+              <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
+              <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
+            </div>
+            {strip}
+          </>
+        ) : (
+          <>
+            {strip}
+            <div className="try-actions">
+              <button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button>
+              <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
+              <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
+            </div>
+          </>
+        )}
       </main></div>
     );
   }
