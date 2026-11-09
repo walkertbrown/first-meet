@@ -29,7 +29,8 @@ filter or grade.
   stands. A few people train in the background. Found in 5.36's step 3 search
   (YouTube's Creative Commons filter), Nov 9, 2026: one rep of the source's run of
   back-to-back reps. The server's judge (the worker's points) measures her depth at
-  -0.052 on her near (left) side, and -0.013 on the far side, so it is a close call
+  -0.054 on her near (left) side, and 0.002 on the far side, both for her depth
+  (`borderline_depth`, with no frame too hard to see), so it is a close call
   well inside the band (within 0.10 of parallel, not 0.05 past it) whichever side the
   judge takes: never a red or a white. "Squat!" is at 0.3 s, "Rack!" at 2.05 s, after
   she stands.
