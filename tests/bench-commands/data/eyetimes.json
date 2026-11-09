@@ -1,0 +1,376 @@
+{
+ "AMih": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   19.9,
+   21.2
+  ],
+  "settled": 20.367,
+  "settled5": 20.7,
+  "settled10": 20.367,
+  "descent": 21.833,
+  "stop": 25.1,
+  "pauseEnd": 25.67,
+  "bottom": 25.433,
+  "backUp": 28.3,
+  "traceFrom": 19.0
+ },
+ "ak3m2": {
+  "grp": "meet",
+  "call": "either",
+  "start": [
+   27.6,
+   28.0
+  ],
+  "settled": 27.6,
+  "settled5": 27.36,
+  "settled10": 27.127,
+  "descent": 28.228,
+  "stop": 29.93,
+  "pauseEnd": 30.36,
+  "bottom": 30.197,
+  "backUp": 31.264,
+  "traceFrom": 25.99
+ },
+ "ak3m3": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   44.0,
+   44.15
+  ],
+  "settled": 44.0,
+  "settled5": 43.777,
+  "settled10": 43.643,
+  "descent": 44.444,
+  "stop": 46.08,
+  "pauseEnd": 46.58,
+  "bottom": 46.246,
+  "backUp": 47.547,
+  "traceFrom": 41.01
+ },
+ "cE2t": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   19.8,
+   22.9
+  ],
+  "settled": 19.8,
+  "settled5": 19.811,
+  "settled10": 19.77,
+  "descent": 23.107,
+  "stop": 24.48,
+  "pauseEnd": 25.36,
+  "bottom": 24.817,
+  "backUp": 28.653,
+  "traceFrom": 19.02
+ },
+ "Ecs1": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   22.5,
+   25.3
+  ],
+  "settled": 22.566,
+  "settled5": 25.533,
+  "settled10": 22.566,
+  "descent": 25.6,
+  "stop": 26.53,
+  "pauseEnd": 27.2,
+  "bottom": 26.967,
+  "backUp": 28.934,
+  "traceFrom": 21.0
+ },
+ "Ecs2": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   43.6,
+   45.9
+  ],
+  "settled": 43.634,
+  "settled5": 44.367,
+  "settled10": 43.634,
+  "descent": 45.967,
+  "stop": 46.87,
+  "pauseEnd": 47.53,
+  "bottom": 47.367,
+  "backUp": 50.067,
+  "traceFrom": 42.0
+ },
+ "KrDo": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   50.5,
+   54.0
+  ],
+  "settled": 50.5,
+  "settled5": 52.467,
+  "settled10": 50.5,
+  "descent": 54.167,
+  "stop": 56.8,
+  "pauseEnd": 57.87,
+  "bottom": 57.467,
+  "backUp": 59.4,
+  "traceFrom": 50.5
+ },
+ "Lj0X": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   2.0,
+   2.5
+  ],
+  "settled": 2.002,
+  "settled5": 2.002,
+  "settled10": 2.002,
+  "descent": 2.603,
+  "stop": 3.94,
+  "pauseEnd": 4.57,
+  "bottom": 4.037,
+  "backUp": 6.574,
+  "traceFrom": 2.0
+ },
+ "Nazt": {
+  "grp": "meet",
+  "call": "red:no_lockout",
+  "start": [
+   11.0,
+   12.0
+  ],
+  "settled": 11.0,
+  "settled5": 10.833,
+  "settled10": 10.567,
+  "descent": 12.267,
+  "stop": 14.3,
+  "pauseEnd": 15.33,
+  "bottom": 15.1,
+  "backUp": 19.267,
+  "traceFrom": 9.0
+ },
+ "uGCh": {
+  "grp": "meet",
+  "call": "white",
+  "start": [
+   27.2,
+   28.3
+  ],
+  "settled": 28.0,
+  "settled5": 28.0,
+  "settled10": 28.0,
+  "descent": 28.367,
+  "stop": 29.63,
+  "pauseEnd": 30.7,
+  "bottom": 30.067,
+  "backUp": 32.8,
+  "traceFrom": 28.0
+ },
+ "6K8vpaHae6M": {
+  "grp": "run1",
+  "call": "either",
+  "start": [
+   1.5,
+   3.0
+  ],
+  "settled": 1.5,
+  "settled5": 2.567,
+  "settled10": 1.5,
+  "descent": 3.3,
+  "stop": 4.43,
+  "pauseEnd": 4.8,
+  "bottom": 4.667,
+  "backUp": 5.333,
+  "traceFrom": 1.5
+ },
+ "83WAq9kcQ0k": {
+  "grp": "run1",
+  "call": "white",
+  "start": [
+   0.5,
+   3.8
+  ],
+  "settled": 0.5,
+  "settled5": 0.0,
+  "settled10": 0.0,
+  "descent": 3.941,
+  "stop": 4.81,
+  "pauseEnd": 5.51,
+  "bottom": 4.976,
+  "backUp": 6.178,
+  "traceFrom": 0.0
+ },
+ "8qzWMdTtQLI": {
+  "grp": "run1",
+  "call": "white",
+  "start": [
+   6.0,
+   8.2
+  ],
+  "settled": 6.0,
+  "settled5": 5.806,
+  "settled10": 5.639,
+  "descent": 8.375,
+  "stop": 9.61,
+  "pauseEnd": 10.28,
+  "bottom": 9.677,
+  "backUp": 12.213,
+  "traceFrom": 5.51
+ },
+ "hIuj1H1WOxM": {
+  "grp": "run1",
+  "call": "white",
+  "start": [
+   0.5,
+   1.4
+  ],
+  "settled": 1.001,
+  "settled5": 1.001,
+  "settled10": 1.001,
+  "descent": 1.535,
+  "stop": 2.57,
+  "pauseEnd": 3.37,
+  "bottom": 3.003,
+  "backUp": 4.004,
+  "traceFrom": 1.0
+ },
+ "IA0PhDBzsz0": {
+  "grp": "run1",
+  "call": "either",
+  "start": [
+   6.8,
+   7.7
+  ],
+  "settled": 6.8,
+  "settled5": 6.707,
+  "settled10": 6.607,
+  "descent": 7.841,
+  "stop": 9.24,
+  "pauseEnd": 9.68,
+  "bottom": 9.376,
+  "backUp": 10.51,
+  "traceFrom": 5.0
+ },
+ "IKuXsXyFqUQ": {
+  "grp": "run1",
+  "call": "either",
+  "start": [
+   0.2,
+   1.6
+  ],
+  "settled": 1.0,
+  "settled5": 1.0,
+  "settled10": 1.0,
+  "descent": 1.733,
+  "stop": 2.73,
+  "pauseEnd": 3.03,
+  "bottom": 2.867,
+  "backUp": 3.5,
+  "traceFrom": 1.0
+ },
+ "m-k8mm8-HTg": {
+  "grp": "run1",
+  "call": "red:no_pause",
+  "start": [
+   9.8,
+   11.2
+  ],
+  "settled": 9.8,
+  "settled5": 9.733,
+  "settled10": 9.633,
+  "descent": 11.434,
+  "stop": 12.27,
+  "pauseEnd": 12.43,
+  "bottom": 12.3,
+  "backUp": null,
+  "traceFrom": 3.0
+ },
+ "NFjKcUxgqzA": {
+  "grp": "run1",
+  "call": "either",
+  "start": [
+   3.0,
+   4.2
+  ],
+  "settled": 3.504,
+  "settled5": 3.504,
+  "settled10": 3.504,
+  "descent": 4.204,
+  "stop": 5.91,
+  "pauseEnd": 6.37,
+  "bottom": 6.173,
+  "backUp": 7.04,
+  "traceFrom": 3.5
+ },
+ "Nv9hrTzZxJ0": {
+  "grp": "run1",
+  "call": "red:no_pause",
+  "start": [
+   10.0,
+   10.9
+  ],
+  "settled": 10.0,
+  "settled5": 9.733,
+  "settled10": 9.666,
+  "descent": 11.067,
+  "stop": 11.97,
+  "pauseEnd": 12.2,
+  "bottom": 12.067,
+  "backUp": 12.767,
+  "traceFrom": 9.0
+ },
+ "VM_y8r4ZLBw": {
+  "grp": "run1",
+  "call": "red:no_pause",
+  "start": [
+   3.2,
+   4.8
+  ],
+  "settled": 3.267,
+  "settled5": 3.567,
+  "settled10": 3.267,
+  "descent": 4.833,
+  "stop": 5.57,
+  "pauseEnd": 5.77,
+  "bottom": 5.634,
+  "backUp": 6.267,
+  "traceFrom": 0.0
+ },
+ "xXFjNqroOQ0": {
+  "grp": "run1",
+  "call": "red:no_pause",
+  "start": [
+   13.8,
+   15.0
+  ],
+  "settled": 13.8,
+  "settled5": 13.666,
+  "settled10": 13.633,
+  "descent": 15.266,
+  "stop": 16.13,
+  "pauseEnd": 16.33,
+  "bottom": 16.2,
+  "backUp": 16.933,
+  "traceFrom": 9.0
+ },
+ "z838WQVSBmk": {
+  "grp": "run1",
+  "call": "white",
+  "start": [
+   0.0,
+   1.2
+  ],
+  "settled": 0.5,
+  "settled5": 0.5,
+  "settled10": 0.5,
+  "descent": 1.3,
+  "stop": 2.43,
+  "pauseEnd": 2.97,
+  "bottom": 2.867,
+  "backUp": 3.4,
+  "traceFrom": 0.5
+ }
+}
