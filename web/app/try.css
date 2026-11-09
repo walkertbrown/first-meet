@@ -81,6 +81,8 @@
 .result .why { margin-top: 12px; border-radius: 4px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), inset 5px 0 0 var(--lamp-red); padding: 12px 14px 12px 20px; }
 .result .why b { display: block; font-family: var(--font-display); font-weight: 800; font-stretch: 110%; font-size: 14px; line-height: 18px; letter-spacing: .1em; text-transform: uppercase; color: var(--no-text); margin-bottom: 2px; }
 .result .why span { font-size: 17px; line-height: 25px; }
+/* Item 91: a decided attempt reopened (a reload, "Back to the platform") is already settled. */
+.settled-open .spill, .settled-open .stage .dim, .settled-open .result h2, .settled-open .result p, .settled-open .result .why { transition: none; }
 
 /* ---------- Desktop: a single 560 px column on the left (look 4) ---------- */
 @media (min-width: 1024px) {

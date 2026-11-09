@@ -203,6 +203,39 @@ test('a reload during the held breath holds the lift\'s frame, dimmed', async ({
   expect(mean).toBeGreaterThan(12);
 });
 
+// Item 91 (LookieBot's fail 1, NerdCider on febfc59): a decided attempt reopened by a reload
+// opens settled. The lamps are lit with no bloom (and no thock), and the result is up at once,
+// never the held breath. A sample keeps its SAMPLE LIFT box and credit.
+async function settledOnReload(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __sawHeld: boolean };
+    w.__sawHeld = false;
+    new MutationObserver(() => {
+      if (document.querySelector('.stage.judging') || document.body?.textContent?.includes('Sending to the judges')) w.__sawHeld = true;
+    }).observe(document, { childList: true, subtree: true, characterData: true, attributes: true });
+  });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /^(Good lift|No lift)$/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.stage .lamps .lamp.settled')).toHaveCount(3);
+  await expect(page.getByText('Sample lift', { exact: true })).toBeVisible();
+  await expect(page.locator('.stage .credit')).toHaveText(/\S/);
+  await expect(page.locator('.stage canvas.feed')).toBeVisible({ timeout: 20_000 });
+  expect(await page.evaluate(() => (window as unknown as { __sawHeld: boolean }).__sawHeld), 'the held breath never shows').toBe(false);
+}
+test('a reload after the lights opens settled, and the sample keeps its box and credit', async ({ page }) => {
+  test.setTimeout(8 * 60_000);
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  const credit = await page.locator('.stage .credit').textContent();
+  await expect(page.getByRole('heading', { name: /^(Good lift|No lift)$/ })).toBeVisible({ timeout: 5 * 60_000 });
+  await settledOnReload(page);
+  await expect(page.locator('.stage .credit')).toHaveText(credit!);
+});
+
 // NerdCider on 20d916a (fail 5): after the demo referee's "Save the lights", "Back to the
 // platform" showed the old Squat 3 card ("I'm ready"), the client router's copy of the platform
 // from before the lift. It must show squat 3's lights, then Bench press 1 (5.36, 5.25 step 11).
@@ -239,6 +272,10 @@ test('after the demo referee saves, "Back to the platform" shows squat 3\'s ligh
   await expect(page).toHaveURL(/\/platform$/);
   await expect(page.getByRole('heading', { name: 'Good lift' })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: "I'm ready" })).toHaveCount(0);
+  // item 91: settled, and still the sample, with its box and credit
+  await expect(page.locator('.stage .lamps .lamp.settled')).toHaveCount(3);
+  await expect(page.getByText('Sample lift', { exact: true })).toBeVisible();
+  await expect(page.locator('.stage .credit')).toHaveText(/\S/);
   await page.getByRole('button', { name: /^(Declare your next attempt|Next: Bench press)$/ }).click();
   await expect(page.getByRole('article', { name: /^Bench press, Attempt 1 of 3/i })).toBeVisible({ timeout: 30_000 });
 });

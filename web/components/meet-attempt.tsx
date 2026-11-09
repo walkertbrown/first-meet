@@ -77,7 +77,7 @@ type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit' | 'window';
 type Mode = 'lift' | 'spot' | 'sample' | 'resume';
 type Phase = 'loading' | 'spot' | 'good-spot' | 'spot-done' | 'loaded' | 'lifting' | 'norep' | 'held' | 'lit' | 'close' | 'replay' | 'hold' | 'offline' | 'refused';
 type Command = { text: string; kind: 'soft' | 'on' } | null;
-type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null };
+type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null; sample?: boolean; sample_clip?: { credit: string; reps: number } | null };
 type SampleClip = { id: string; file: string; credit: string; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
@@ -124,7 +124,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const [sound, setSound] = useState(true);
   const [limit, setLimit] = useState<'lifter' | 'everyone'>('lifter');
 
-  const [phase, setPhase] = useState<Phase>(startView === 'stage' ? 'held' : 'loading');
+  // a decided attempt opens settled (item 91): never the held breath again
+  const [phase, setPhase] = useState<Phase>(startView === 'stage' ? (first.status === 'judged' ? 'hold' : 'held') : 'loading');
   const [slow, setSlow] = useState(false);
   const [parts, setParts] = useState<Record<Part, boolean>>(NO_PARTS);
   const [line, setLine] = useState<string | null>(null);
@@ -147,6 +148,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const [dims, setDims] = useState<Dims | null>(null);
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
   const [sample, setSample] = useState<{ credit: string; reps: number } | null>(null);
+  /** Reopened on a sample's attempt (a reload, "Back to the platform"): it keeps its SAMPLE LIFT box and credit. */
+  const [resumedSample, setResumedSample] = useState(false);
+  /** Reopened on a decided attempt: the lamps lit with no bloom and no thock, the result up at once (item 91). */
+  const [settledOpen, setSettledOpen] = useState(false);
   const [error, setError] = useState('');
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -182,6 +187,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     setPhase('loading'); setSlow(false); setParts(NO_PARTS); setLine(null); setCommand(null); setRecOn(false); setReps(0);
     setLamps(['off', 'off', 'off']); setWaitLine(''); setBusy(false); setSlowUpload(false); setSpill(''); setResult(null); setResultOn(false);
     setFrozen(false); setMarks(null); setReplaying(false); setSample(null); setError(''); setShownLift(attempt.lift);
+    setResumedSample(false); setSettledOpen(false);
   };
 
   /** Freezes the stage on the judged moment: the deepest frame the phone saw. */
@@ -630,11 +636,29 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       setDims(d);
       return grab(rv, d);
     };
+    // what the server has: a sample keeps its box and credit, and a decided attempt opens settled
+    const r0 = saved ? null : await getJson(`/api/attempts/${attempt.id}`).catch(() => null);
+    if (!alive()) return;
+    const st = r0?.status === 200 ? (r0.body as unknown as State) : null;
+    if (st?.sample) { setResumedSample(true); if (st.sample_clip) setSample({ credit: st.sample_clip.credit, reps: st.sample_clip.reps }); }
+    if (st?.call === 'white' || st?.call === 'red') {
+      const shown = st.shown_lift ?? attempt.lift;
+      const res = meetResult({ ...st, lift: attempt.lift })!;
+      setShownLift(shown); setSettledOpen(true);
+      setResult(res); setLamps(res.lamps); setSpill(st.call === 'white' ? 'white' : 'red');
+      setResultOn(true); setWaitLine(''); setBusy(false); setPhase('hold');
+      const judged = await snapAt().catch(() => null) ?? await held().catch(() => null);
+      if (!alive()) return;
+      freeze(judged);
+      if (judged?.p.length) setMarks(liftMarks(shown, judged.p, { w: judged.canvas.width, h: judged.canvas.height }, judged.side));
+      return;
+    }
+    setPhase(p => (p === 'hold' ? 'held' : p));
     const snap = await held().catch(() => null);
     if (!alive()) return;
     freeze(snap);
     await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt);
-  }, [attempt.id, send, awaitLights]);
+  }, [attempt.id, attempt.lift, send, awaitLights]);
 
   const start = (m: Mode) => {
     // item 85: a lift started at or after the close isn't judged. Nothing films and nothing is
@@ -775,7 +799,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   }
 
   // The stage.
-  const isSample = mode === 'sample';
+  const isSample = mode === 'sample' || resumedSample;
   const box = containBox(stageSize, dims);
   const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'loaded' || phase === 'lifting';
   const panelOpen = !lifting && !(phase === 'loading' && !slow && !error);
@@ -795,7 +819,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const nextLabel = nextLabelProp ?? nextButton(attempt.lift, attempt.number, lifter.division);
 
   return (
-    <div className="try-app meet-app">
+    <div className={`try-app meet-app${settledOpen ? ' settled-open' : ''}`}>
       <section className={`try-stagecol${panelOpen ? '' : ' full'}`} aria-label={isSample ? 'Sample lift' : 'Your lift'}>
         <div className={stageClass} ref={stageRef}>
           <div className={`footage${isSample ? '' : ' mirror'}`} style={box}>
@@ -829,7 +853,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               {sound ? <SpeakerHigh weight="bold" /> : <SpeakerSlash weight="bold" />}
             </button>
           </div>
-          <Lamps states={lamps} />
+          <Lamps states={lamps} settled={settledOpen} />
           <WaitLine text={waitLine} lineRef={waitLineRef} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}

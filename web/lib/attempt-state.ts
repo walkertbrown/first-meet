@@ -4,6 +4,7 @@ import { eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts } from '@/db/schema';
 import { judgedLift } from '@/lib/queue';
+import { sampleOfAttempt } from '@/lib/demo';
 import { nearSide, type Frame, type Pt, type Side } from '@/lib/judge/pose';
 import type { R2 } from '@/lib/r2';
 import { heldFrameMs } from '@/lib/stage/held-frame';
@@ -23,6 +24,8 @@ export type AttemptState = {
   /** Home: the rep the red reason is for ("REP <k> · <REASON>"). */
   red_rep: number | null;
   sample: boolean;
+  /** The sample that stood in (5.36): its credit and reps, so a reload keeps the SAMPLE LIFT box. */
+  sample_clip: { id: string; credit: string; reps: number } | null;
   /** The judged moment, ms from the recording's start: the frozen frame after the lights. */
   judged_frame_ms: number | null;
   /** Whole minutes, once she has waited 90 s (3.9 step 8). Null while judging is paused. */
@@ -44,7 +47,8 @@ export async function attemptState(db: Db, id: string, lifterId: string, withWai
     attempt: {
       id: a.id, status: a.status, lift: a.lift, shown_lift: judgedLift(a), number: a.number, weight: a.weight, reps_declared: a.repsDeclared,
       call: a.call, lights: (a.lights as AttemptState['lights']) ?? null, reason: a.reason,
-      red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip, judged_frame_ms: a.judgedFrameMs ?? null,
+      red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip,
+      sample_clip: a.isSampleClip ? await sampleOfAttempt(db, a.id, a.commandTimes) : null, judged_frame_ms: a.judgedFrameMs ?? null,
       ...(withWait && WAITING.includes(a.status)
         ? await judgingState(db, a.id).then(j => ({ wait_minutes: j.minutes, judging: j.state }))
         : { wait_minutes: null, judging: null }),

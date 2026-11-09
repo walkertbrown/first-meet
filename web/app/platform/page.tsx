@@ -41,7 +41,7 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
     const anyJudged = view.nine.some(a => a.call === 'white' || a.call === 'red');
     return (
       <>{strip}<ResumeSending anyJudged={anyJudged} />
-        <div className="try-page meet-page"><main className="try-col meet-col">
+        <div className="try-page meet-page"><main className="try-col meet-col nine-page">
           <div className="platform-top">
             <span className="eyebrow">{`${view.meetName} · Your nine attempts`}</span>
             <NineRow row={view.row} division={division} />
@@ -50,7 +50,7 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
             {view.nine.map(a => (
               <li key={a.id}>
                 <Link href={`/platform/attempt/${a.id}`}>
-                  <span className="nine-what body">{`${liftWord(a.lift, division)} ${a.number} · `}<span className={a.voidReason ? 'nj-weight' : undefined}>{division === 'home' ? `${a.reps} reps at ${a.weight} ${l.units}` : `${a.weight} ${l.units}`}</span></span>
+                  <span className="nine-what">{`${liftWord(a.lift, division)} ${a.number} · `}<span className={a.voidReason ? 'nj-weight' : undefined}>{division === 'home' ? `${a.reps} reps at ${a.weight} ${l.units}` : `${a.weight} ${l.units}`}</span></span>
                   {a.voidReason ? <span className="small nj-line">{notJudgedLine(a.voidReason)}</span>
                     : a.call === 'close' || a.held ? <span className="small">Waiting</span>
                     : <span className="lamps-mini" role="img" aria-label={a.call === 'white' ? 'Good lift' : 'No lift'}>{a.lights.map((x, i) => <i key={i} className={`mini-lamp ${x}`} />)}</span>}

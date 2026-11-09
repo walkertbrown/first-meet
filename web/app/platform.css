@@ -180,7 +180,11 @@
 .nine-list a { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
 .nine-list a:hover .nine-what { text-decoration: underline; }
 .nine-list a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.nine-what { flex: 1; min-width: 0; }
+.nine-what { flex: 1; min-width: 0; font-weight: 600; font-size: 16px; line-height: 22px; }
+/* LookieBot on 5573a20: the list starts 24 px under the slots (the column's 16 px gap and 8 px),
+   with no room held for a WAITING line that isn't there. The names are the corner page's (5.4). */
+.nine-page .platform-top { margin-bottom: 0; }
+.nine-page .nine-list { margin-top: 8px; }
 .nine-list .lamps-mini { display: flex; gap: 6px; }
 
 /* Item 80: the cheer banner (look 5.10): the lights banner with no lamps; a newer line crossfades in */

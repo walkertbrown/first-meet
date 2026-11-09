@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, lifters, meets, reviews } from '../../web/db/schema';
-import { countDemoRun, demoLimitHit, DEMO_SAMPLES, sampleLift, startDemo } from '../../web/lib/demo';
+import { countDemoRun, demoLimitHit, DEMO_SAMPLES, sampleLift, sampleOfAttempt, startDemo } from '../../web/lib/demo';
+import { attemptState } from '../../web/lib/attempt-state';
 import { declareNext, declareSheet } from '../../web/lib/meet-flow';
 import { askAnother, closeCallQueue, saveLights } from '../../web/lib/referee';
 import { keys } from '../../web/lib/r2';
@@ -50,6 +51,21 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     if (d.status !== 200) return;
     const r2 = await sampleLift(db, store, lifter.id, d.attempt.id);
     expect(r2).toMatchObject({ status: 200, sample: { kind: 'no' } });
+  });
+
+  it('the attempt says which sample stood in, so a reload keeps the SAMPLE LIFT box and the credit (item 91)', async () => {
+    const { lifter, attempt } = await startDemo(db, { division: 'barbell' });
+    await sampleLift(db, store, lifter.id, attempt.id);
+    const good = DEMO_SAMPLES.find(c => c.kind === 'good')!;
+    const r = await attemptState(db, attempt.id, lifter.id);
+    expect(r).toMatchObject({ status: 200, attempt: { sample: true, sample_clip: { id: good.id, credit: good.credit, reps: good.meet!.reps } } });
+    // a run noted before the clip was: found by the command times it was given
+    await db.update(events).set({ detail: { lifter_id: lifter.id, sample: true, lift: 'squat' } }).where(eq(events.attemptId, attempt.id));
+    expect(await sampleOfAttempt(db, attempt.id, good.meet!.command_times)).toMatchObject({ id: good.id });
+    expect(await sampleOfAttempt(db, attempt.id, { loaded: 0, squat: 1, rack: 2 })).toBeNull();
+    // a filmed lift has none
+    const filmed = await startDemo(db, { division: 'barbell' });
+    expect(await attemptState(db, filmed.attempt.id, filmed.lifter.id)).toMatchObject({ status: 200, attempt: { sample: false, sample_clip: null } });
   });
 
   it('a Home sample is judged on the clip\'s reps', async () => {
