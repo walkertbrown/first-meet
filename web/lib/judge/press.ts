@@ -57,18 +57,26 @@ export function pointRange(hist: Sample[], now: number, ms: number, pick: (m: Pr
 
 export type PressCommand =
   | { cmd: 'start'; t: number }
-  | { cmd: 'press'; t: number; k: number }
+  | { cmd: 'press'; t: number; k: number; late?: boolean }
   | { cmd: 'rep'; t: number; k: number }
   | { cmd: 'rack'; t: number; noRep?: boolean };
 
-/** The `command_times` key for rep k's "Press!": `press`, then `press_2`, `press_3`, …. */
-export const pressKey = (k: number) => (k === 1 ? 'press' : `press_${k}`);
+/**
+ * The `command_times` key for rep k's "Press!": `press`, then `press_2`, `press_3`, …. A late
+ * "Press!" (the pose missed the bent elbow, 3.4) is `press_late`, `press_late_2`, … in its place.
+ */
+export const pressKey = (k: number, late = false) => {
+  const base = late ? 'press_late' : 'press';
+  return k === 1 ? base : `${base}_${k}`;
+};
 
 /**
  * The bench (Barbell), 3.4:
  * - "Start!" when the elbows are over 155° and the wrists still (under 7% of the arm, each
  *   coordinate steadied over three frames) for 0.5 s;
  * - "Press!" when, after the elbows bend below 110°, the wrists stay still for 0.4 s;
+ * - "Press!" anyway, marked late, when the wrists are 0.3 arm or more below where they were at
+ *   "Start!" and still for 1.5 s with no "Press!": she's never left holding the bar on her chest;
  * - the rep ends when the elbows pass 155° again and hold for 0.4 s, then "Rack!";
  * - "Rack!" anyway 20 s after "Start!" with no rep.
  */
@@ -81,8 +89,12 @@ export class BenchCaller {
   repsDone = 0;
   /** "Press!" times, one per rep that had one. */
   presses: Record<number, number> = {};
+  /** Reps whose "Press!" was called late. */
+  late = new Set<number>();
   /** The straight arm's length in pixels, taken over the "Start!" hold: the unit for "still". */
   armRef: number | null = null;
+  /** Where the wrist was (image y, pixels) over the "Start!" hold. */
+  startWristY: number | null = null;
   private lockSince: number | null = null;
   private queue: PressCommand[] = [];
   private hist: Sample[] = [];
@@ -109,7 +121,9 @@ export class BenchCaller {
       const still = pointRange(this.hist, f.t, r.startStillMs, x => x.wr);
       if (m.bothDeg > r.startElbowMinDeg && still !== null && still < r.pauseStillMaxArm) {
         this.state = 'lifting'; this.startAt = f.t; this.side = side; this.phase = 'up';
-        this.armRef = median(this.hist.filter(x => f.t - x.t <= r.startStillMs).map(x => x.m.arm));
+        const held = this.hist.filter(x => f.t - x.t <= r.startStillMs);
+        this.armRef = median(held.map(x => x.m.arm));
+        this.startWristY = median(held.map(x => x.m.wr.y));
         return { cmd: 'start', t: f.t };
       }
       return null;
@@ -120,8 +134,20 @@ export class BenchCaller {
       const still = pointRange(this.hist, f.t, r.pauseStillMs, x => x.wr, this.armRef!);
       if (still !== null && still < r.pauseStillMaxArm) return this.press(f.t, this.repsDone + 1);
     }
-    // a rep ends at lockout, pressed on the call or not (pressing early is the judge's red, not the phone's)
-    if (this.phase !== 'up' && m.bothDeg > r.lockoutElbowMinDeg) {
+    if (this.phase === 'up') {
+      // the pose missed the bent elbow: the bar is down and still, so call it anyway (late)
+      const drop = (m.wr.y - this.startWristY!) / this.armRef!;
+      if (drop >= r.pressLateDropArm) {
+        const still = pointRange(this.hist, f.t, r.pressLateStillMs, x => x.wr, this.armRef!);
+        if (still !== null && still < r.pauseStillMaxArm) return this.press(f.t, this.repsDone + 1, true);
+      }
+    }
+    // a rep ends at lockout, pressed on the call or not (pressing early is the judge's red, not the phone's).
+    // After a late "Press!" the elbows may read straight with the bar still down, so the wrists must
+    // also be back above the late line.
+    const k = this.repsDone + 1;
+    const backUp = !this.late.has(k) || (m.wr.y - this.startWristY!) / this.armRef! < r.pressLateDropArm;
+    if (this.phase !== 'up' && m.bothDeg > r.lockoutElbowMinDeg && backUp) {
       if (this.lockSince === null) this.lockSince = f.t;
       if (f.t - this.lockSince >= r.lockoutHoldMs) {
         this.lockSince = null; this.phase = 'up';
@@ -134,15 +160,18 @@ export class BenchCaller {
     return null;
   }
 
-  private press(t: number, k: number): PressCommand {
+  private press(t: number, k: number, late = false): PressCommand {
     this.phase = 'pressed'; this.presses[k] = t;
-    return { cmd: 'press', t, k };
+    if (late) this.late.add(k);
+    return late ? { cmd: 'press', t, k, late } : { cmd: 'press', t, k };
   }
 }
 
 export type PressTimes = {
-  /** "Press!" per rep, by rep number (rep 1 is `press`). */
+  /** "Press!" per rep, by rep number (rep 1 is `press` or `press_late`). */
   presses: Record<number, number>;
+  /** Reps whose "Press!" the phone called late (`press_late`, `press_late_2`, …). */
+  late?: Set<number>;
   /** Each rep's end (`rep_1`, …), in order, when the phone wrote them. */
   repEnds: number[];
 };
@@ -150,15 +179,19 @@ export type PressTimes = {
 /** Reads the press times out of `command_times`. */
 export function pressTimes(ct: Record<string, number>): PressTimes {
   const presses: Record<number, number> = {};
+  const late = new Set<number>();
   const repEnds: [number, number][] = [];
   for (const [key, t] of Object.entries(ct)) {
-    if (key === 'press') presses[1] = t;
-    const p = /^press_(\d+)$/.exec(key);
-    if (p) presses[Number(p[1])] = t;
+    const p = /^press(_late)?(?:_(\d+))?$/.exec(key);
+    if (p) {
+      const k = p[2] ? Number(p[2]) : 1;
+      presses[k] = t;
+      if (p[1]) late.add(k);
+    }
     const e = /^rep_?(\d+)$/.exec(key);
     if (e) repEnds.push([Number(e[1]), t]);
   }
-  return { presses, repEnds: repEnds.sort((a, b) => a[0] - b[0]).map(x => x[1]) };
+  return { presses, late, repEnds: repEnds.sort((a, b) => a[0] - b[0]).map(x => x[1]) };
 }
 
 const VISIBILITY: Call = { light: 'close', reason: 'visibility' };
@@ -189,9 +222,11 @@ export type PressRep = RepResult & {
  * - white if, after "Press!", both elbows pass 155° before the rep's end ("Rack!");
  * - red `no_lockout` if they don't;
  * - red `no_pause` if the wrist rose more than 3% of arm length from its lowest point before
- *   "Press!", or the rep was pressed with no "Press!" at all;
+ *   "Press!", or the rep was pressed with no "Press!" at all: only when the server saw the elbows
+ *   bend below 110° on that rep. If it never did, close `visibility` (we didn't see the bottom);
  * - close `short_pause` if the wrist's still that the server measures before "Press!" is under 0.3 s;
- * - close `visibility` if the near shoulder, elbow or wrist isn't seen on the "Press!" frame.
+ * - close `visibility` if the near shoulder, elbow or wrist isn't seen on the "Press!" frame, and
+ *   always for a late "Press!" (`press_late`).
  */
 export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, rules: Rules = RULES): AttemptResult & { reps: PressRep[] } {
   const r = rules.bench;
@@ -208,6 +243,8 @@ export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, 
   const hold = all.filter(f => f.p && f.t >= w.start - r.startStillMs && f.t <= w.start).map(f => pressMeasure(f.p!, d, side, rules).arm);
   const straight = samples.filter(x => x.m.bothDeg > r.lockoutElbowMinDeg).map(x => x.m.arm);
   const armRef = hold.length ? median(hold) : straight.length ? median(straight) : median(samples.map(x => x.m.arm));
+  const holdY = all.filter(f => f.p && f.t >= w.start - r.startStillMs && f.t <= w.start).map(f => pressMeasure(f.p!, d, side, rules).wr.y);
+  const startY = holdY.length ? median(holdY) : samples[0]?.m.wr.y ?? 0;
 
   for (let k = 1; k <= Math.max(count, 1); k++) {
     const segStart = k === 1 ? w.start : times.repEnds[k - 2];
@@ -218,8 +255,16 @@ export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, 
     const pressAt = times.presses[k] ?? null;
     if (pressAt === null) {
       if (downAt === null) {
-        if (count === 0) break; // no rep at all: the attempt's no-rep red below
-        reps.push({ call: { light: 'red', reason: 'no_lockout' }, startMs: segStart, judgedFrameMs: seg.at(-1)?.t ?? segEnd });
+        if (count === 0) {
+          // the bar came down (the late line) and went back up, but no one saw the elbows bend: a referee's call
+          const low = seg.reduce<Sample | null>((a, s) => (!a || s.m.wr.y > a.m.wr.y ? s : a), null);
+          if (low && (low.m.wr.y - startY) / armRef >= r.pressLateDropArm) {
+            reps.push({ call: VISIBILITY, startMs: segStart, judgedFrameMs: low.t });
+          }
+          break; // otherwise no rep at all: the attempt's no-rep red below
+        }
+        // the phone ended a rep it saw go down, but the server never saw the bottom: a referee's call
+        reps.push({ call: VISIBILITY, startMs: segStart, judgedFrameMs: seg.at(-1)?.t ?? segEnd });
         continue;
       }
       // down and back up with no "Press!": pressed before the call
@@ -253,8 +298,9 @@ export function judgePress(all: Frame[], d: Dims, w: Window, times: PressTimes, 
     const bestElbow = after.reduce((a, s) => Math.max(a, s.m.bothDeg), 0);
 
     let call: Call;
-    if (!judgedFrameSeen(pf.p, side, JUDGED_POINTS.press, rules)) call = VISIBILITY;
-    else if (rise > r.noPauseRiseArm) call = { light: 'red', reason: 'no_pause' };
+    if (times.late?.has(k)) call = VISIBILITY;
+    else if (!judgedFrameSeen(pf.p, side, JUDGED_POINTS.press, rules)) call = VISIBILITY;
+    else if (rise > r.noPauseRiseArm) call = downAt === null ? VISIBILITY : { light: 'red', reason: 'no_pause' };
     else if (!lock) call = { light: 'red', reason: 'no_lockout' };
     else if (pauseMs < r.serverPauseMinMs) call = { light: 'close', reason: 'short_pause' };
     else call = { light: 'white' };

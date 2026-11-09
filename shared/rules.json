@@ -36,6 +36,8 @@
     "lockoutHoldMs": 400,
     "noPauseRiseArm": 0.03,
     "serverPauseMinMs": 300,
+    "pressLateDropArm": 0.3,
+    "pressLateStillMs": 1500,
     "noRepMs": 20000
   },
   "tryALift": {

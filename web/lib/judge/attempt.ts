@@ -18,7 +18,8 @@ export type MeetLift = 'squat' | 'bench' | 'deadlift';
  */
 export const COMMAND_ORDER: Record<MeetLift, { soft: string[]; start: string | null; then: string[] }> = {
   squat: { soft: ['loaded', 'ready'], start: 'squat', then: ['rack'] },
-  bench: { soft: ['loaded', 'ready'], start: 'start', then: ['press', 'rack'] },
+  // a recording has `press` or, when the phone called it late (3.4), `press_late`: never both
+  bench: { soft: ['loaded', 'ready'], start: 'start', then: ['press', 'press_late', 'rack'] },
   deadlift: { soft: ['loaded', 'ready'], start: null, then: ['down'] },
 };
 

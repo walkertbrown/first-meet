@@ -1,6 +1,6 @@
 // The press judges on synthetic poses: the Barbell bench (3.4) and Home's overhead press (3.7).
 import { describe, expect, it } from 'vitest';
-import { BenchCaller, judgePress, pressTimes, type PressCommand } from '@/lib/judge/press';
+import { BenchCaller, judgePress, pressKey, pressTimes, type PressCommand } from '@/lib/judge/press';
 import { OverheadCaller, judgeOverhead, type OverheadCommand } from '@/lib/judge/overhead';
 import { judgeAttempt } from '@/lib/judge/attempt';
 import type { Frame, Pt } from '@/lib/judge/pose';
@@ -50,7 +50,7 @@ function runBench(frames: Frame[]) {
     let x = c.feed(f);
     while (x) {
       cmds.push(x);
-      ct[x.cmd === 'press' ? 'press' : x.cmd === 'rep' ? `rep_${x.k}` : x.cmd] = x.t;
+      ct[x.cmd === 'press' ? pressKey(x.k, x.late) : x.cmd === 'rep' ? `rep_${x.k}` : x.cmd] = x.t;
       x = x.cmd === 'rep' ? c.feed(f) : null;
     }
   }
@@ -97,6 +97,71 @@ describe('bench (Barbell)', () => {
     const v = judgeAttempt(paused, { ...d, duration: 4.7 }, 'bench', ct);
     expect(v.call).toEqual({ light: 'white' });
     expect(v.measures.press_ms).toBe(ct.press);
+  });
+
+  // The pose missed the bent elbow: the arm reads straight, angled 35° up, the wrist 0.42 arm below Start!.
+  const MISSED: [number, number] = [-35, -35];
+  const missedBottom = [
+    ...still(0, 1000, UP), ...move(1000, 800, UP, MISSED), ...still(1800, 2500, MISSED),
+    ...move(4300, 800, MISSED, UP), ...still(5100, 1000, UP),
+  ];
+
+  it('calls a late "Press!" within 2 s when the bar is down and still but the bent elbow was missed', () => {
+    const { ct, cmds } = runBench(missedBottom);
+    expect(cmds.map(c => c.cmd)).toEqual(['start', 'press', 'rep', 'rack']);
+    expect(ct.press).toBeUndefined();
+    expect(ct.press_late).toBeGreaterThan(1800);
+    expect(ct.press_late - 1800).toBeLessThanOrEqual(2000);
+    // she's never racked with the bar on her chest: the rep ends only once the wrists are back up
+    expect(ct.rep_1).toBeGreaterThan(4300);
+  });
+
+  it('a late "Press!" is always a close call for a referee, never a light', () => {
+    const { ct } = runBench(missedBottom);
+    const r = judgePress(missedBottom, d, { start: ct.start, end: ct.rack }, pressTimes(ct));
+    expect(r.call).toEqual({ light: 'close', reason: 'visibility' });
+    const v = judgeAttempt(missedBottom, { ...d, duration: 6.1 }, 'bench', ct);
+    expect(v.call).toEqual({ light: 'close', reason: 'visibility' });
+    expect(v.lights).toBeNull();
+  });
+
+  it('no late "Press!" for a small dip (under 0.3 arm) or while the bar is still moving', () => {
+    const DIP: [number, number] = [-55, -55]; // wrist 0.18 arm below Start!
+    expect(runBench([...still(0, 1000, UP), ...move(1000, 600, UP, DIP), ...still(1600, 2500, DIP)]).ct.press_late).toBeUndefined();
+    const drifting = [...still(0, 1000, UP), ...move(1000, 800, UP, MISSED), ...move(1800, 2500, MISSED, [-20, -20])];
+    expect(runBench(drifting).ct.press_late).toBeUndefined();
+  });
+
+  it('a missed bottom is a close call, never a red: pressed with no "Press!" and the elbows never seen under 110°', () => {
+    const tngMissed = [...still(0, 1000, UP), ...move(1000, 700, UP, MISSED), ...move(1700, 700, MISSED, UP), ...still(2400, 1000, UP)];
+    const { ct } = runBench(tngMissed);
+    expect(ct.press).toBeUndefined();
+    expect(ct.press_late).toBeUndefined();
+    const r = judgePress(tngMissed, d, { start: ct.start, end: 3400 }, pressTimes(ct));
+    expect(r.call).toEqual({ light: 'close', reason: 'visibility' });
+  });
+
+  it('a rise before "Press!" is red no_pause only when the server saw the elbows bend under 110°', () => {
+    // down, still, then rising: "Press!" comes 400 ms into the rise (the phone's times, given by hand)
+    const rep = (bottom: [number, number]) => [
+      ...still(0, 1000, UP), ...move(1000, 800, UP, bottom), ...still(1800, 900, bottom),
+      ...move(2700, 800, bottom, UP), ...still(3500, 1000, UP),
+    ];
+    const ct = { loaded: 0, start: 933, press: 3100, rep_1: 3900, rack: 3900 };
+    const seen = judgePress(rep(DOWN), d, { start: ct.start, end: ct.rack }, pressTimes(ct));
+    expect(seen.call).toEqual({ light: 'red', reason: 'no_pause' });
+    const unseen = judgePress(rep(MISSED), d, { start: ct.start, end: ct.rack }, pressTimes(ct));
+    expect(unseen.reps[0].riseArm).toBeGreaterThan(0.03);
+    expect(unseen.call).toEqual({ light: 'close', reason: 'visibility' });
+  });
+
+  it('reads press_late keys as late presses', () => {
+    const t = pressTimes({ start: 1, press_late: 5, rep_1: 7, press_late_2: 9, press_3: 11 });
+    expect(t.presses).toEqual({ 1: 5, 2: 9, 3: 11 });
+    expect([...t.late!]).toEqual([1, 2]);
+    expect(pressKey(1, true)).toBe('press_late');
+    expect(pressKey(2, true)).toBe('press_late_2');
+    expect(pressKey(2)).toBe('press_2');
   });
 });
 
