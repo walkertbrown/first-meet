@@ -1,10 +1,10 @@
 // The phone's meet video upload (3.10) on Postgres: start, sign parts, resume, finish, queue.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue } from '../../web/db/schema';
 import { countDemoRun, startDemo } from '../../web/lib/demo';
-import { attemptUploaded, partsDone, signParts, startAttemptUpload } from '../../web/lib/uploads';
+import { attemptUploaded, partsDone, signParts, startAttemptUpload, uploadFailed } from '../../web/lib/uploads';
 import { freshDb, MemStore, URL_ } from './setup';
 
 describe.skipIf(!URL_)('the meet video upload', () => {
@@ -73,5 +73,36 @@ describe.skipIf(!URL_)('the meet video upload', () => {
     const { lifter, attempt } = await startDemo(db, {});
     for (let i = 0; i < 30; i++) await countDemoRun(db, lifter.id, attempt.id, false);
     expect(await startAttemptUpload(db, store, attempt.id, lifter.id, 'video/webm')).toMatchObject({ status: 429, limit: 'lifter' });
+  });
+
+  it('/ops counts (2.4): each upload started, with its device; a refusal once, whether the server or the phone saw it', async () => {
+    const { lifter, attempt } = await startDemo(db, {});
+    const kinds = async () => (await db.select().from(events).where(eq(events.attemptId, attempt.id))).map(e => [e.kind, e.detail]);
+    const s = await startAttemptUpload(db, store, attempt.id, lifter.id, 'video/webm', 'Chrome 142 · Android 15 Pixel 8');
+    if (!('uploadId' in s)) throw new Error(JSON.stringify(s));
+    expect(await kinds()).toEqual([['upload_started', { device: 'Chrome 142 · Android 15 Pixel 8' }]]);
+    // the server refuses it as too big, then the phone reports the same refusal: counted once
+    store.putPart(s.uploadId, 1);
+    store.partBytes = 29 * 1024 * 1024;
+    try {
+      expect(await attemptUploaded(db, store, attempt.id, lifter.id, { upload_id: s.uploadId, parts: [{ part: 1, etag: '"etag-1"' }], command_times: ct })).toMatchObject({ status: 413 });
+    } finally { store.partBytes = 5; }
+    expect(await uploadFailed(db, attempt.id, lifter.id, { error: 'clip too big' }, 'Chrome 142 · Android 15 Pixel 8')).toEqual({ status: 200, counted: false });
+    // she lifts it again; this upload fails on the phone (not one the server saw): counted
+    await startAttemptUpload(db, store, attempt.id, lifter.id, 'video/webm', 'Chrome 142 · Android 15 Pixel 8');
+    expect(await uploadFailed(db, attempt.id, lifter.id, { error: 'attempt is void' })).toEqual({ status: 200, counted: true });
+    const failed = await db.select().from(events).where(and(eq(events.attemptId, attempt.id), eq(events.kind, 'upload_failed')));
+    expect(failed.map(e => e.detail)).toEqual([{ device: 'unknown', error: 'attempt is void', before_start: false }]);
+    expect((await kinds()).map(k => k[0])).toEqual(['upload_started', 'upload_refused', 'upload_started', 'upload_failed']);
+    // only her own attempt
+    const other = await startDemo(db, {});
+    expect((await uploadFailed(db, attempt.id, other.lifter.id, { error: 'x' })).status).toBe(403);
+  });
+
+  it('a clip the phone turned down before any upload began counts as tried and failed', async () => {
+    const { lifter, attempt } = await startDemo(db, {});
+    expect(await uploadFailed(db, attempt.id, lifter.id, { error: 'clip too big', before_start: true }, 'Safari 18 · iPhone')).toEqual({ status: 200, counted: true });
+    const [e] = await db.select().from(events).where(and(eq(events.attemptId, attempt.id), eq(events.kind, 'upload_failed')));
+    expect(e.detail).toEqual({ device: 'Safari 18 · iPhone', error: 'clip too big', before_start: true });
   });
 });

@@ -18,6 +18,7 @@ import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recor
 import { makeClip, shareOrDownload } from '@/lib/stage/clip-maker';
 import { RESULT_WORDS, STAGE_WORDS, lampsOf, markColour, outcomeOf, type Outcome } from '@/lib/stage/try-words';
 import { WaitLine } from '@/components/wait-line';
+import { deviceOf } from '@/lib/device';
 
 type Step = 'choose' | 'setup' | 'stage' | 'denied' | 'nocamera';
 type Source = { kind: 'camera' } | { kind: 'sample'; sample: Sample };
@@ -46,34 +47,6 @@ function browserOf(): 'android' | 'ios' | 'other' {
   if (/Android/i.test(ua)) return 'android';
   if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'ios';
   return 'other';
-}
-
-/** The browser and its major version, from the user agent ("Chrome 142", "Safari 18"). */
-function browserNameOf(ua: string): string {
-  for (const [re, name] of [[/Edg\/(\d+)/, 'Edge'], [/SamsungBrowser\/(\d+)/, 'Samsung Internet'], [/(?:Firefox|FxiOS)\/(\d+)/, 'Firefox'], [/CriOS\/(\d+)/, 'Chrome'], [/Chrome\/(\d+)/, 'Chrome'], [/Version\/(\d+).*Safari/, 'Safari']] as const) {
-    const m = ua.match(re);
-    if (m) return `${name} ${m[1]}`;
-  }
-  return 'Other browser';
-}
-
-/**
- * Which phone judged the clip: the browser and the model (plan 2.4, the phone judge's time per
- * clip, by device). Nothing that names her.
- */
-async function deviceOf(): Promise<string> {
-  const ua = navigator.userAgent;
-  const browser = browserNameOf(ua);
-  const uad = (navigator as Navigator & { userAgentData?: { getHighEntropyValues(k: string[]): Promise<{ model?: string; platform?: string; platformVersion?: string }> } }).userAgentData;
-  try {
-    if (uad) {
-      const h = await uad.getHighEntropyValues(['model', 'platform', 'platformVersion']);
-      const s = [h.platform, h.platformVersion?.split('.')[0], h.model].filter(Boolean).join(' ');
-      if (s) return `${browser} · ${s}`.slice(0, 80);
-    }
-  } catch { /* fall through */ }
-  const m = ua.match(/\(([^)]+)\)/)?.[1] ?? '';
-  return `${browser} · ${m}`.slice(0, 80);
 }
 
 function reportJudgeTime(body: Record<string, unknown>) {

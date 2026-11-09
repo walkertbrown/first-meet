@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers, lifters, meets } from '../../web/db/schema';
-import { commitsDiffer, errorText, opsNumbers, opsSections, type OpsNumbers } from '../../web/lib/ops';
+import { commitsDiffer, errorText, failedOf, opsNumbers, opsSections, uploadRows, type OpsNumbers } from '../../web/lib/ops';
 import { freshDb, URL_ } from './setup';
 
 const BUDGETS = { runStartsPerMin: 10, cpuPerMin: 4, workersMax: 30 };
@@ -49,6 +49,19 @@ describe.skipIf(!URL_)('/ops numbers', () => {
       { kind: 'close_call', attemptId: q2, detail: { reason: 'judge_unavailable', why: 'no worker' } },
       { kind: 'close_call', attemptId: q2, detail: { reason: 'depth' } },
       { kind: 'demo_run', detail: { lifter_id: 'x' } }, { kind: 'demo_run', detail: { lifter_id: 'y' } },
+    ]);
+    // uploads (2.4): Chrome tried 3, one refused by the server (its device from its upload); Safari
+    // tried 1 and the phone turned one down before it began; one from two days ago doesn't count
+    const [u1, u2, u3, u4] = [await mk(real.id, 'judged'), await mk(real.id, 'judged'), await mk(real.id, 'judged'), await mk(real.id, 'judged')];
+    const chrome = 'Chrome 142 · Android 15 Pixel 8', safari = 'Safari 18 · iPhone; CPU iPhone OS 18_1 like Mac OS X';
+    await db.insert(events).values([
+      { kind: 'upload_started', attemptId: u1, detail: { device: chrome } },
+      { kind: 'upload_refused', attemptId: u1, detail: { why: 'too big' } },
+      { kind: 'upload_started', attemptId: u2, detail: { device: chrome } },
+      { kind: 'upload_started', attemptId: u3, detail: { device: chrome } },
+      { kind: 'upload_started', attemptId: u4, detail: { device: safari } },
+      { kind: 'upload_failed', attemptId: u4, detail: { device: safari, error: 'clip too big', before_start: true } },
+      { kind: 'upload_started', attemptId: u4, detail: { device: safari }, at: sql`now() - interval '2 days'` as never },
     ]);
     await db.insert(judgeWorkers).values([
       { workerId: 'w1', attemptsDone: 3, commit: 'bbbbbbb2222' },
@@ -97,9 +110,22 @@ describe.skipIf(!URL_)('/ops numbers', () => {
     expect(commitsDiffer(n.commits)).toBe(true);
   });
 
-  it('the sections: QUEUE, SPEED, RENDER, MEET, DEMO, with budgets as "of" values', () => {
+  it('UPLOADS: failed or refused uploads in 24 h against all uploads, by device', () => {
+    expect(n.uploads).toEqual([
+      { device: 'Chrome 142 · Android 15 Pixel 8', tried: 3, failed: 1 },
+      { device: 'Safari 18 · iPhone; CPU iPhone OS 18_1 like Mac OS X', tried: 2, failed: 1 },
+    ]);
+    const rows = opsSections(n, BUDGETS).find(x => x.eyebrow === 'UPLOADS')!.rows;
+    expect(rows).toEqual([
+      { label: 'Uploads failed or refused, 24 h', value: '2 of 5 · 40%' },
+      { label: 'Failed or refused · Chrome 142 · Android 15 Pixel 8', value: '1 of 3 · 33%' },
+      { label: 'Failed or refused · Safari 18 · iPhone; CPU iPhone OS 18_1 like Mac OS X', value: '1 of 2 · 50%' },
+    ]);
+  });
+
+  it('the sections: QUEUE, SPEED, RENDER, MEET, UPLOADS, DEMO, with budgets as "of" values', () => {
     const s = opsSections(n, BUDGETS);
-    expect(s.map(x => x.eyebrow)).toEqual(['QUEUE', 'SPEED', 'RENDER', 'MEET', 'DEMO']);
+    expect(s.map(x => x.eyebrow)).toEqual(['QUEUE', 'SPEED', 'RENDER', 'MEET', 'UPLOADS', 'DEMO']);
     const row = (eyebrow: string, label: string) => s.find(x => x.eyebrow === eyebrow)!.rows.find(r => r.label === label)?.value;
     expect(row('QUEUE', 'Waiting')).toBe('2');
     expect(row('QUEUE', 'Oldest')).toBe('5 min');
@@ -113,6 +139,10 @@ describe.skipIf(!URL_)('/ops numbers', () => {
 });
 
 describe('ops words', () => {
+  it('uploadRows: none yet, and the share', () => {
+    expect(uploadRows([])).toEqual([{ label: 'Uploads failed or refused, 24 h', value: '0 of 0' }]);
+    expect(failedOf(1, 40)).toBe('1 of 40 · 3%');
+  });
   it('commitsDiffer only when both commits are known and differ', () => {
     expect(commitsDiffer({ web: 'abc1234', judge: 'abc1234' })).toBe(false);
     expect(commitsDiffer({ web: 'abc1234', judge: null })).toBe(false);

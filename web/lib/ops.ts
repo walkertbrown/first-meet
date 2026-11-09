@@ -21,6 +21,8 @@ export type OpsNumbers = {
     startsLastMin: number; startsHour: number; http429Hour: number;
   };
   meet: { onPlatform: number };
+  /** 2.4: the last 24 hours' uploads tried and failed or refused, by device (most uploads first). */
+  uploads: { device: string; tried: number; failed: number }[];
   demo: { runsToday: number; runsLimit: number; waiting: number; closeCalls: number; onPlatform: number; lights15mMedian: number | null };
   errors: { at: string; kind: string; attemptId: string | null; text: string }[];
   commits: { web: string | null; judge: string | null };
@@ -64,6 +66,24 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     from events where kind = 'phone_judge_time' and at > now() - interval '30 days' and detail->>'poseMs' is not null
     group by 1 order by n desc, device limit 20`);
 
+  // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device.
+  // An upload tried is a started upload, or one the phone turned down before it began (too big).
+  // A failure's device is its own, or else its upload's.
+  const up = await db.execute<Record<string, unknown>>(sql`
+    with tried as (
+      select coalesce(detail->>'device', 'unknown') as device from events
+      where at > now() - interval '24 hours'
+        and (kind = 'upload_started' or (kind = 'upload_failed' and (detail->>'before_start')::boolean))
+    ), failed as (
+      select coalesce(e.detail->>'device',
+        (select s.detail->>'device' from events s where s.kind = 'upload_started' and s.attempt_id = e.attempt_id and s.at <= e.at order by s.at desc limit 1),
+        'unknown') as device
+      from events e where e.kind in ('upload_refused', 'upload_failed') and e.at > now() - interval '24 hours'
+    )
+    select device, sum(t)::int as tried, sum(f)::int as failed from (
+      select device, 1 as t, 0 as f from tried union all select device, 0, 1 from failed
+    ) x group by device order by tried desc, device limit 20`);
+
   const [r] = await db.execute<Record<string, unknown>>(sql`
     select
       (select count(*) from judge_workers where ended_at is null) as live,
@@ -105,6 +125,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       startsLastMin: num(r.starts_min), startsHour: num(r.started_hour), http429Hour: num(r.http429_hour),
     },
     meet: { onPlatform: num(p?.real) },
+    uploads: up.map(x => ({ device: String(x.device ?? 'unknown'), tried: num(x.tried), failed: num(x.failed) })),
     demo: {
       runsToday: (await demoRunsToday(db, '')).all, runsLimit: demoLimits().perDay,
       waiting: num(q?.demo_waiting), closeCalls: num(cc?.demo), onPlatform: num(p?.demo), lights15mMedian: numOrNull(d15?.median),
@@ -130,6 +151,19 @@ export const commitsDiffer = (c: OpsNumbers['commits']) => !!c.web && !!c.judge 
 
 const secs = (s: number | null) => (s === null ? '—' : s < 60 ? `${s.toFixed(1)} s` : `${Math.floor(s / 60)} min ${Math.round(s % 60)} s`);
 const mins = (s: number | null) => (s === null ? '—' : `${Math.max(1, Math.round(s / 60))} min`);
+
+/** "2 of 40 · 5%": failed or refused against all, with the share. */
+export const failedOf = (failed: number, tried: number) =>
+  `${failed} of ${tried}${tried ? ` · ${Math.round((failed / Math.max(tried, failed)) * 100)}%` : ''}`;
+
+/** 2.4: failed or refused uploads in the last 24 hours, all devices, then each device. */
+export function uploadRows(u: OpsNumbers['uploads']): OpsRow[] {
+  const tried = u.reduce((a, x) => a + x.tried, 0), failed = u.reduce((a, x) => a + x.failed, 0);
+  return [
+    { label: 'Uploads failed or refused, 24 h', value: failedOf(failed, tried) },
+    ...u.map(x => ({ label: `Failed or refused · ${x.device}`, value: failedOf(x.failed, x.tried) })),
+  ];
+}
 
 export type OpsRow = { label: string; value: string };
 export type OpsSection = { eyebrow: string; rows: OpsRow[] };
@@ -168,6 +202,7 @@ export function opsSections(n: OpsNumbers, budgets: Budgets): OpsSection[] {
     { eyebrow: 'MEET', rows: [
       { label: 'On the platform now', value: String(n.meet.onPlatform) },
     ] },
+    { eyebrow: 'UPLOADS', rows: uploadRows(n.uploads) },
     { eyebrow: 'DEMO', rows: [
       { label: 'Demo runs today', value: `${n.demo.runsToday} of ${n.demo.runsLimit}` },
       { label: 'On the platform now', value: String(n.demo.onPlatform) },

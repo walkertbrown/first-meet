@@ -159,7 +159,11 @@ export function keepSending(attemptId: string, onStatus: (s: UploadStatus) => vo
     for (;;) {
       if (cancelled) return { kind: 'retrying' };
       const p = await getPending(attemptId).catch(() => undefined);
-      if (!p) return { kind: 'refused', error: 'not saved on this phone' };
+      if (!p) {
+        const status = { kind: 'refused', error: 'not saved on this phone' } as const;
+        reportFailed(net, attemptId, status.error, true);
+        return status;
+      }
       try {
         const status = await sendOnce(p, net, onStatus);
         await dropPending(attemptId).catch(() => {});
@@ -167,6 +171,7 @@ export function keepSending(attemptId: string, onStatus: (s: UploadStatus) => vo
       } catch (e) {
         if (e instanceof Stop) {
           await dropPending(attemptId).catch(() => {});
+          if (e.status.kind === 'refused') reportFailed(net, attemptId, e.status.error, !p.uploadId);
           onStatus(e.status);
           return e.status;
         }
@@ -176,6 +181,15 @@ export function keepSending(attemptId: string, onStatus: (s: UploadStatus) => vo
     }
   })();
   return { done, cancel: () => { cancelled = true; wake?.(); } };
+}
+
+/**
+ * "Your clip didn't send": tells the server why, for /ops (2.4, failed and refused uploads by
+ * device). `beforeStart`: no upload had begun. Never holds up the sheet; a lost report is only a
+ * missing count.
+ */
+function reportFailed(net: Net, attemptId: string, error: string, beforeStart: boolean) {
+  void net.api(`/api/attempts/${attemptId}/upload-failed`, { method: 'POST', body: { error, before_start: beforeStart } }).catch(() => {});
 }
 
 /** On page load: anything saved but not yet confirmed keeps sending (a reload resumes). */
