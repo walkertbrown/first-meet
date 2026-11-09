@@ -93,6 +93,14 @@ describe.skipIf(!URL_)('the meet window', () => {
     expect(await platformView(db, none.l, none.m)).toEqual({ kind: 'closed', meetName: 'Winter 2027' });
   });
 
+  it('her total after the close with nothing lifted: no total, no bomb out, no free entry (NerdCider on 20d916a)', async () => {
+    const none = await setup(1);
+    expect(await totalFor(db, none.l)).toEqual({ kind: 'none' });
+    await startAfterClose(db, none.a.id, none.l.id);
+    expect(await totalFor(db, none.l)).toEqual({ kind: 'none' });
+    expect((await db.select().from(lifters).where(eq(lifters.id, none.l.id)))[0].freeEntryCredit).toBe(false);
+  });
+
   it('her platform after the close: her lifts, a void slot not judged, a declared slot empty; the deadline settles a clip that never came', async () => {
     const closesAt = new Date(Date.now() - 7 * H);
     const [m] = await db.insert(meets).values({ slug: `m-${Math.random()}`, name: 'Winter 2027', kind: 'real', status: 'open', opensAt: new Date(closesAt.getTime() - 48 * H), closesAt }).returning();

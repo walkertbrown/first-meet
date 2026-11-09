@@ -8,6 +8,7 @@ import { DemoStrip } from '@/components/demo-strip';
 import { NineRow, Platform } from '@/components/platform';
 import { liftWord, notJudgedLine } from '@/lib/stage/meet-words';
 import { ResumeSending } from '@/components/resume-sending';
+import { DoneLive } from '@/components/done-live';
 import { OpensIn } from '@/components/opens-in';
 import { currentViewer } from '@/lib/roles';
 import { platformView } from '@/lib/platform-view';
@@ -60,6 +61,7 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
           </ul>
           <div className="try-actions"><Link className="btn" href="/platform/total">See your total</Link></div>
         </main></div>
+        <DoneLive waiting={view.nine.filter(a => !a.voidReason && (a.call === 'close' || a.held)).map(a => a.id)} division={division} units={l.units} />
       </>
     );
   }

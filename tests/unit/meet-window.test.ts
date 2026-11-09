@@ -21,6 +21,15 @@ describe('the total after the close (item 85)', () => {
     const t = meetTotal(list, 'barbell', true);
     expect(t).toMatchObject({ kind: 'total', value: 3 * 120 });
   });
+  it('nothing judged and nothing on its way: no total and no bomb out, the closed page (5.24)', () => {
+    const declaredOnly = nine(() => ({ status: 'declared', call: null })).slice(0, 1);
+    expect(meetTotal(declaredOnly, 'barbell', true)).toEqual({ kind: 'none' });
+    expect(meetTotal([], 'barbell', true)).toEqual({ kind: 'none' });
+    const voided = nine(s => (s.lift === 'squat' && s.number === 1 ? { status: 'void', call: null } : { status: 'declared', call: null }));
+    expect(meetTotal(voided, 'barbell', true)).toEqual({ kind: 'none' });
+    const sending = nine(s => (s.lift === 'squat' && s.number === 1 ? { status: 'uploading', call: null } : { status: 'declared', call: null }));
+    expect(meetTotal(sending, 'barbell', true).kind).not.toBe('none');
+  });
   it('a slot she never lifted does not hold it', () => {
     const t = meetTotal(nine().filter(a => a.number < 3), 'barbell', true);
     expect(t).toMatchObject({ kind: 'total', value: 360 });

@@ -240,6 +240,8 @@ export const attemptScore = (a: MeetAttempt, division: Division) =>
 
 export type Total =
   | { kind: 'lifting' }
+  /** after the close, nothing judged and nothing on its way: she didn't lift this time (5.24's closed page) */
+  | { kind: 'none' }
   | { kind: 'total'; value: number; best: Record<Lift, MeetAttempt>; nineForNine: boolean; lastCountedAt: Date | null }
   | { kind: 'waiting'; soFar: number; on: MeetAttempt }
   /** after the close, a clip of hers is still sending (5.28 "Waiting on your clip", item 85) */
@@ -264,6 +266,8 @@ export function meetTotal(list: MeetAttempt[], division: Division, closed = fals
   // after the close: a clip still sending, or arrived and with the judges, holds the total
   const held = closed ? nine.filter((a): a is MeetAttempt => !!a && !judged(a) && a.status !== 'void' && a.status !== 'declared') : [];
   const sending = held.find(a => a.status === 'recording' || a.status === 'uploading') ?? held[0];
+  // nothing judged, nothing still coming: no total and no bomb out (and so no free entry)
+  if (closed && !nine.some(a => !!a && judged(a)) && !held.length) return { kind: 'none' };
   if (!closed && all.length < ORDER.length) {
     // a lift that has already bombed is known before the ninth, but the page waits for nine
     return { kind: 'lifting' };

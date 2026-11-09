@@ -35,7 +35,8 @@ export default async function TotalPage() {
   const [m] = await db().select().from(meets).where(eq(meets.id, l.meetId));
   const now = new Date();
   const t = await totalFor(db(), l, undefined, undefined, now);
-  if (t.kind === 'lifting') redirect('/platform');
+  // still lifting, or the platform closed with nothing lifted (5.24's closed page)
+  if (t.kind === 'lifting' || t.kind === 'none') redirect('/platform');
   // after the close, until the clip deadline, a late clip can still land (3.8): keep listening
   const closed = !!m && meetClosed(m, now);
   const lateCanLand = closed && !pastDeadline(m, now);

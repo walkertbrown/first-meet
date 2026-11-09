@@ -12,9 +12,9 @@ const props = {
   because: 'Your opener.', voicePack: 'a', onNext: () => {},
   strip: <section className="flight-strip">STRIP</section>,
 };
-const card = async (item81: boolean) => {
+const card = async (item81: boolean, demo = true) => {
   const { MeetAttempt } = await import('../../web/components/meet-attempt');
-  return renderToStaticMarkup(<MeetAttempt {...(props as never)} item81={item81} />);
+  return renderToStaticMarkup(<MeetAttempt {...(props as never)} item81={item81} demoReferee={demo} />);
 };
 const css = readFileSync('web/app/platform.css', 'utf8');
 const src = readFileSync('web/components/ready-dock.tsx', 'utf8');
@@ -24,6 +24,15 @@ describe('"I\'m ready" docks (look 5.6)', () => {
     const html = await card(true);
     expect(html).toMatch(/^<div class="try-page meet-page look-56"><main class="try-col meet-col">/);
     expect(html).toMatch(/<\/article><div class="ready-dock"><button class="btn" type="button">I&#x27;m ready<\/button><\/div><i class="ready-sentinel" aria-hidden="true"><\/i><div class="try-actions ready-links"><button class="link" type="button">Use a sample lift instead<\/button><button class="link" type="button">Test your spot first<\/button><\/div><section class="flight-strip">STRIP<\/section><\/main>/);
+  });
+
+  it('a real (or the test) meet has no "Use a sample lift instead": the demo meet\'s only (5.36)', async () => {
+    for (const on of [true, false]) {
+      const html = await card(on, false);
+      expect(html).not.toContain('Use a sample lift');
+      expect(html).toContain('Test your spot first');
+    }
+    expect(await card(false, true)).toContain('Use a sample lift instead');
   });
 
   it('off: the 1:12 AM markup, no dock and no short-screen class', async () => {

@@ -52,7 +52,7 @@ export type MeetAttemptProps = {
   top?: React.ReactNode;
   /** No judged set behind the cap yet: the `NOT JUDGED YET` tag beside the weight (look 5.6). */
   notJudged?: boolean;
-  /** The demo meet's close call has "Be the referee" (5.36); a real meet's waits for a real referee. */
+  /** The demo meet (5.36): "Use a sample lift instead", and the close call's "Be the referee". A real meet's lifts are filmed and its close calls wait for a real referee. */
   demoReferee?: boolean;
   /** Under the attempt card, during flight time: "Your flight is lifting" (5.24, look 5.8). */
   strip?: React.ReactNode;
@@ -115,8 +115,10 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true, strip, onBusy, closesAt = null, anyJudged = false, item81 = PLAN_SWITCHES.item81 }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = false, strip, onBusy, closesAt = null, anyJudged = false, item81 = PLAN_SWITCHES.item81 }: MeetAttemptProps) {
   const [win, setWin] = useState<WindowStop | null>(null);
+  // "Use a sample lift instead" is the demo meet's only (5.36): a real meet's lifts are filmed
+  const demo = demoReferee;
   const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
@@ -734,10 +736,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             <p className="body">Android Chrome: Tap the icon left of the address, then Permissions, then Camera, Allow.</p>
             <p className="body">iPhone Safari: Tap aA in the address bar, then Website Settings, then Camera, Allow.</p>
           </>
-        ) : <p className="body-l">This device has no camera we can use. Use a sample lift, or open First Meet on your phone.</p>}
+        ) : <p className="body-l">{demo ? 'This device has no camera we can use. Use a sample lift, or open First Meet on your phone.' : 'This device has no camera we can use. Open First Meet on your phone.'}</p>}
         <div className="try-actions">
           {view === 'denied' && <button className="btn" type="button" onClick={() => start('lift')}>Try again</button>}
-          <button className={`btn${view === 'denied' ? ' ghost' : ''}`} type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
+          {demo && <button className={`btn${view === 'denied' ? ' ghost' : ''}`} type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
         </div>
       </main></div>
     );
@@ -765,7 +767,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             {/* look 5.6: the Primary on its own, a direct child of the column, so it can dock */}
             <ReadyDock><button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
             <div className="try-actions ready-links">
-              <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
+              {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
               <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
             </div>
             {strip}
@@ -775,7 +777,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             {strip}
             <div className="try-actions">
               <button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button>
-              <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
+              {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
               <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
             </div>
           </>
@@ -865,7 +867,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             {phase === 'norep' && (
               <div className="try-actions">
                 <button className="btn" type="button" onClick={() => start('lift')}>Try again</button>
-                <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>
+                {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
               </div>
             )}
             {phase === 'offline' && (
