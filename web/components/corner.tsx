@@ -13,7 +13,7 @@ import { notJudgedLine } from '@/lib/stage/meet-words';
 import { LightsBanner } from '@/components/banner-layer';
 
 export const NAME_COOKIE = 'fm_corner_name';
-type Live = Exclude<CornerView, { kind: 'gone' } | { kind: 'before' }>;
+type Live = Exclude<CornerView, { kind: 'gone' } | { kind: 'before' } | { kind: 'closed' }>;
 
 export function saveCornerName(name: string) {
   document.cookie = `${NAME_COOKIE}=${encodeURIComponent(name)}; path=/corner; max-age=${60 * 60 * 24 * 400}; samesite=lax`;

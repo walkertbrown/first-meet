@@ -838,7 +838,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <div className={`spill${spill ? ` ${spill} on` : ''}`} />
           <div className="hud meet-hud">
             <button className="close" type="button" aria-label="Back to the attempt card" onClick={toCard} disabled={!lifting && phase !== 'loading' && phase !== 'spot-done' && phase !== 'norep'}><X weight="bold" /></button>
-            <div className="meet-hud-text">
+            <div className={`meet-hud-text${isSample && standIn ? ' standing-in' : ''}`}>
               <div className="eyebrow">{`${liftName} · ${attempt.number} OF 3`}</div>
               {isSample && <div className="eyebrow try-what boxed">Sample lift</div>}
               {isSample && standIn && <p className="caption meet-stand-in">{standIn}</p>}

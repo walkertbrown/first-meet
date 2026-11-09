@@ -81,6 +81,25 @@ describe.skipIf(!URL_)('the corner page', () => {
     expect(v?.kind === 'live' && v.list[0].clip).toBe('https://r2.test/clips/0.webm');
   });
 
+  it('item 90: after the close, if she lifted none, her meet has closed; a clip on its way keeps it live', async () => {
+    const after = new Date('2027-02-28T12:00:00Z');
+    const none = await lifter();
+    await lift(none.l, 0, null, 'declared');
+    const v = await cornerView(db, none.token, after, sign);
+    expect(v).toEqual({ kind: 'closed', meetName: 'Winter 2027', name: 'Dana', title: 'Dana\'s meet has closed.' });
+    // a clip still sending holds it: not closed yet
+    const sending = await lifter();
+    await lift(sending.l, 0, null, 'uploading');
+    expect((await cornerView(db, sending.token, new Date('2027-02-27T23:30:00Z'), sign))?.kind).not.toBe('closed');
+    // one lift judged: her lifts, never the closed page
+    const one = await lifter();
+    await lift(one.l, 0, 'white');
+    expect((await cornerView(db, one.token, after, sign))?.kind).not.toBe('closed');
+    // the demo meet never closes
+    const demo = await lifter({ kind: 'demo', closes: new Date('2027-02-27T23:00:00Z') });
+    expect((await cornerView(db, demo.token, after, sign))?.kind).toBe('live');
+  });
+
   it('totaled, and bombed', async () => {
     const t = await lifter();
     for (let k = 0; k < 9; k++) await lift(t.l, k, 'white');

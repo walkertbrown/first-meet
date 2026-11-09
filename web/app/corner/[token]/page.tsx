@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { db, hasDb } from '@/db';
 import { CornerLive, CornerNameForm, NAME_COOKIE } from '@/components/corner';
 import { LightsDown } from '@/components/lights-down';
-import { cornerView, juneView, type CornerView } from '@/lib/corner-view';
+import { CLOSED_BODY, cornerView, juneView, type CornerView } from '@/lib/corner-view';
 import { cleanCornerName } from '@/lib/cheer-words';
 import { hasR2, r2 } from '@/lib/r2';
 import { DEMO_LINE } from '@/lib/total-view';
@@ -51,6 +51,18 @@ export default async function CornerPage({ params }: { params: Promise<{ token: 
         <p className="body-l">You&apos;re in her corner. On meet weekend, her lifts and their referee lights show up here as they&apos;re judged, and you can cheer each one.</p>
         <CornerNameForm saved={saved} />
         <p className="small corner-note">No account needed. Bookmark this page.</p>
+        <div className="try-actions"><Link className="btn ghost" href="/">What is First Meet?</Link></div>
+      </main></div>
+    );
+  }
+
+  if (view.kind === 'closed') {
+    // not LIVE: the meet has closed. No row, no list, no "Cheer" (5.4, item 90)
+    return (
+      <div className="try-page"><main className="try-col corner-col">
+        <span className="eyebrow">{`First Meet · ${view.meetName}`}</span>
+        <h1 className="page-title">{view.title}</h1>
+        <p className="body-l">{CLOSED_BODY}</p>
         <div className="try-actions"><Link className="btn ghost" href="/">What is First Meet?</Link></div>
       </main></div>
     );

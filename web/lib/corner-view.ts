@@ -35,6 +35,8 @@ type Shared = { meetName: string; name: string; division: Division; demo: boolea
 export type CornerView =
   | { kind: 'gone' }
   | { kind: 'before'; meetName: string; name: string; title: string }
+  /** after the close, nothing judged and nothing on its way: she didn't lift this time (5.4, item 90) */
+  | { kind: 'closed'; meetName: string; name: string; title: string }
   | (Shared & { kind: 'live'; notStarted: string | null })
   | (Shared & { kind: 'totaled'; total: string; unit: Units })
   | (Shared & { kind: 'bombed' });
@@ -58,6 +60,10 @@ export function weekendWords(opens: Date, closes: Date | null): string {
 export function beforeTitle(name: string, opens: Date, closes: Date | null, now: Date): string {
   return opens.getTime() - now.getTime() > 7 * DAY ? `${name} lifts on ${weekendWords(opens, closes)}.` : `${name} lifts this weekend.`;
 }
+
+/** After the close, when she lifted none (5.4): the page title, and its Body L. */
+export const closedTitle = (name: string) => `${name}'s meet has closed.`;
+export const CLOSED_BODY = 'She didn\'t lift this time. Her training still counts, and there\'s another meet in the spring.';
 
 /** "Saturday 6 pm" (Eastern), from the platform's close. */
 const closesWords = (d: Date) => et(d, { weekday: 'long', hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' AM', ' am').replace(' PM', ' pm');
@@ -117,6 +123,8 @@ async function lifterView(db: Db, l: LifterRow, m: typeof meets.$inferSelect, no
   const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), division, closed);
   if (t.kind === 'total') return { ...shared, kind: 'totaled', total: formatTotal(t.value), unit: units };
   if (t.kind === 'bombed') return { ...shared, kind: 'bombed' };
+  // the demo meet never closes, so a demo corner page never shows this
+  if (t.kind === 'none' && !demo) return { kind: 'closed', meetName: m.name, name, title: closedTitle(name) };
   return { ...shared, kind: 'live', notStarted: list.length ? null : platformOpen(m, now) || demo ? notStartedLine(demo ? null : m.closesAt) : null };
 }
 

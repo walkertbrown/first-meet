@@ -117,6 +117,15 @@
 /* Item 75's stand-in line (look 5.14a): under SAMPLE LIFT on the stage, under the sentence on the result. */
 .meet-stand-in { margin: 6px 0 0; max-width: 260px; color: var(--stage-ink-2); text-align: left; }
 .small.stand-in { margin-top: 8px; color: var(--ink-2); }
+/* Item 91 (2): the lamps never land on words. On a sample standing in, the stand-in line and "Demo lifter ·
+   Barbell" fade out over the lamps' 320 ms as they fade in; the title and the box stay. At once with motion
+   off, or when a decided attempt reopens settled. */
+.standing-in .meet-stand-in, .standing-in .meet-hud-who { transition: opacity 320ms var(--ease-out); }
+.stage.judging .standing-in .meet-stand-in, .stage.judging .standing-in .meet-hud-who,
+.stage.lit .standing-in .meet-stand-in, .stage.lit .standing-in .meet-hud-who,
+.stage.norep .standing-in .meet-stand-in, .stage.norep .standing-in .meet-hud-who { opacity: 0; }
+.settled-open .standing-in .meet-stand-in, .settled-open .standing-in .meet-hud-who { transition: none; }
+@media (prefers-reduced-motion: reduce) { .standing-in .meet-stand-in, .standing-in .meet-hud-who { transition: none; } }
 
 /* Bottom sheet (look 5.10) */
 .sheet-scrim { position: fixed; inset: 0; z-index: 50; background: rgb(5 6 10 / .5); display: flex; align-items: flex-end; justify-content: center; animation: scrim-in 320ms var(--ease-out); }

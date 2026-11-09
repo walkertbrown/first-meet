@@ -95,7 +95,8 @@ export default async function TotalPage() {
   const late = closed ? lateLift(t.best, m.closesAt!) : null;
   return page(<>
     {lateCanLand && <LiveRefresh />}
-    <span className="eyebrow">WINTER 2027</span>
+    {/* the meet's name, as on the nine attempts page: "WINTER 2027", the demo "DEMO MEET" (5.28, item 91) */}
+    <span className="eyebrow">{m?.name ?? 'Winter 2027'}</span>
     <TotalFigures storeKey={storeKey} value={t.value} valueText={value} unitLine={unitLine(units, division)}
       nineForNine={t.nineForNine} lifts={lifts} title={`You totaled, ${l.cardName}.`}
       late={late ? { lift: late.lift, line: lateLine(late, division) } : null} />
