@@ -1,0 +1,135 @@
+/* The desk pages: the referee's queue and close call (plan 5.33, look 5.13), the demo referee
+   (look 5.14a) and /ops (5.39). Desktop first; they still work on a phone. */
+
+.desk main { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; }
+.desk .page-title { margin-bottom: 4px; }
+.desk-line { color: var(--ink-2); }
+.desk-empty { display: flex; flex-direction: column; gap: 4px; padding: 24px 0; }
+
+/* ---------- Tables in Board row type (look 3, 5.11) ---------- */
+.board { width: 100%; border-collapse: collapse; margin-top: 16px; font-family: var(--font-display); font-weight: 600; font-stretch: 75%; font-size: 17px; line-height: 24px; letter-spacing: .01em; }
+.board th { text-align: left; font-weight: 700; font-stretch: 88%; font-size: 13px; line-height: 16px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-2); padding: 0 16px 8px 0; border-bottom: 1px solid var(--rule); }
+.board td { padding: 8px 16px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; height: 48px; }
+.board .n { text-align: right; font-variant-numeric: tabular-nums lining-nums; padding-right: 0; }
+.board .strong { font-weight: 800; }
+.board a { text-decoration: none; }
+.board a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ref-sub { display: block; font-family: var(--font-text); font-weight: 400; font-stretch: 100%; font-size: 15px; line-height: 22px; letter-spacing: 0; color: var(--ink-2); }
+.ref-thumb { display: block; width: 120px; aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; background: var(--stage); }
+.ref-thumb video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+@media (min-width: 1024px) {
+  .board { font-size: 19px; line-height: 28px; }
+  .board td { height: 56px; }
+}
+@media (max-width: 640px) {
+  .ref-queue th:first-child, .ref-queue td:first-child { display: none; }
+}
+
+/* ---------- One close call ---------- */
+.ref-main { gap: 8px; }
+.ref-second { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 4px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), inset 4px 0 0 var(--ink); }
+.ref-call { display: grid; grid-template-columns: minmax(0, 800px) minmax(300px, 1fr); gap: 32px; align-items: start; margin-top: 16px; }
+@media (max-width: 1100px) { .ref-call { grid-template-columns: minmax(0, 1fr); } }
+
+.ref-clip { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ref-video {
+  position: relative; background: var(--stage); border-radius: 4px; overflow: hidden;
+  aspect-ratio: var(--ar, 16 / 9); width: min(800px, 100%, calc(72vh * var(--ar, 1.78))); margin: 0 auto;
+}
+.ref-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; }
+.ref-marks { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; pointer-events: none; }
+.ref-noclip { position: absolute; inset: 0; display: grid; place-items: center; color: var(--stage-ink-2); }
+
+.ref-scrub { position: relative; height: 24px; }
+.ref-scrub input { width: 100%; height: 24px; margin: 0; accent-color: var(--ink); }
+.ref-tick { position: absolute; top: 7px; width: 2px; height: 10px; margin-left: -1px; background: var(--stage-ink-2); pointer-events: none; }
+
+.ref-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ref-controls .btn { width: auto; padding: 0 16px; }
+.ref-controls .btn[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.ref-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; margin-left: auto; cursor: pointer; font-weight: 600; font-size: 15px; }
+.ref-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ref-switch span { position: relative; width: 52px; height: 32px; border-radius: 4px; background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--ink); transition: background-color 160ms var(--ease-out); }
+.ref-switch span::after { content: ""; position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border-radius: 3px; background: var(--ink); transition: transform 160ms var(--ease-out), background-color 160ms; }
+.ref-switch input:checked + span { background: var(--ink); }
+.ref-switch input:checked + span::after { transform: translateX(20px); background: var(--on-ink); }
+.ref-switch input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 3px; }
+.ref-switch input:disabled + span { opacity: .4; }
+
+/* The rep strip (Home): 40 × 48 cells, Number S, a 12 px mini lamp. */
+.ref-reps { display: flex; flex-direction: column; gap: 8px; }
+.ref-repstrip { display: flex; gap: 4px; overflow-x: auto; padding: 3px; }
+.ref-rep {
+  flex: none; width: 40px; height: 48px; padding: 4px 0; border: 0; border-radius: 4px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  background: var(--surface); box-shadow: 0 0 0 1px var(--rule);
+}
+.ref-rep .num { font-weight: 800; font-stretch: 105%; font-size: 24px; line-height: 28px; }
+.ref-rep[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--ink); }
+.mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
+.mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
+.mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
+.mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
+@keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
+
+/* The side: what the judge measured, the lamps, the reasons, save. */
+.ref-side { display: flex; flex-direction: column; gap: 20px; }
+.ref-measured { display: flex; flex-direction: column; gap: 4px; }
+.ref-measured .eyebrow { margin-bottom: 4px; }
+.ref-lamps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 20px 12px; border-radius: 4px; background: var(--stage); }
+.ref-lamp { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.ref-lamp .eyebrow { color: var(--stage-ink-2); }
+.ref-lamp .lamp { width: 48px; height: 48px; margin: 6px 0 10px; }
+/* The only coloured buttons in the product: pressing one is a light (look 5.13). */
+.ref-light {
+  width: 100%; min-height: 48px; padding: 0 6px; border: 0; border-radius: 4px; cursor: pointer;
+  font-family: var(--font-display); font-weight: 800; font-stretch: 100%; font-size: 16px; line-height: 20px;
+  transition: transform 120ms var(--ease-out);
+}
+.ref-light.white { background: var(--lamp-white); color: #16181F; }
+.ref-light.red { background: var(--lamp-red); color: #FFFFFF; }
+.ref-light[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--stage), 0 0 0 5px var(--stage-ink); }
+.ref-light:active { transform: scale(.97); }
+.ref-light:focus-visible { outline-color: var(--stage-ink); }
+.ref-all { display: flex; gap: 8px; }
+.ref-all .btn { flex: 1; }
+
+.ref-reasons { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.choice { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 4px; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
+.choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.choice:hover { box-shadow: 0 0 0 1.5px var(--ink-3); }
+.choice:has(input:checked) { box-shadow: 0 0 0 2.5px var(--ink); }
+.choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.choice-label { color: var(--no-text); }
+
+.ref-actions { display: flex; flex-direction: column; gap: 12px; }
+.ref-note { display: flex; flex-direction: column; gap: 6px; }
+.ref-note textarea { width: 100%; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink-3); font-size: 17px; line-height: 25px; resize: vertical; }
+.ref-note textarea:focus { box-shadow: inset 0 0 0 2px var(--ink); outline: none; }
+.ref-done { display: flex; flex-direction: column; gap: 16px; max-width: 480px; padding: 24px 0; }
+.ref-done .btn { align-self: flex-start; width: auto; min-width: 200px; }
+
+/* ---------- The demo strip (look 5.14a) ---------- */
+.demo-strip {
+  position: sticky; top: 0; z-index: 10; height: calc(32px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 20px 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--ink); color: var(--on-ink);
+}
+.demo-strip .eyebrow { color: var(--on-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-strip a { color: var(--on-ink); font-size: 15px; line-height: 20px; font-weight: 600; text-underline-offset: 3px; white-space: nowrap; }
+@media (min-width: 1024px) { .demo-strip { padding-left: 40px; padding-right: 40px; } }
+
+/* ---------- /ops ---------- */
+.ops-warn { color: var(--no-text); }
+.ops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 32px 40px; margin-top: 16px; }
+.ops-section { display: flex; flex-direction: column; gap: 4px; }
+.ops-section dl, .ops-section ol { margin: 0; padding: 0; list-style: none; }
+.ops-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.ops-row dt { font-size: 15px; line-height: 22px; color: var(--ink-2); }
+.ops-row dd { margin: 0; font-weight: 800; font-stretch: 105%; font-size: 20px; line-height: 24px; text-align: right; white-space: nowrap; }
+.ops-errors { grid-column: 1 / -1; }
+.ops-errors .ops-row { justify-content: flex-start; font-size: 15px; line-height: 22px; }
+.ops-errors .ops-row > .small:first-child { flex: none; width: 190px; }
+@media (max-width: 640px) { .ops-grid { grid-template-columns: minmax(0, 1fr); } .ops-errors .ops-row { flex-direction: column; gap: 2px; } }
+
+@media (prefers-reduced-motion: reduce) { .mini-lamp.pulse { animation: none; } }

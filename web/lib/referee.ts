@@ -28,12 +28,18 @@ export const COMMAND_PROBLEM: Record<string, string> = {
 export const REFEREE_REASONS = ['depth', 'no_lockout', 'no_pause', 'moved_feet', 'downward', 'weight_not_shown', 'not_whole_lift'] as const;
 export type RefereeReason = (typeof REFEREE_REASONS)[number];
 
-export type QueueRow = { attemptId: string; lift: string; division: string; reason: string | null; waitingS: number; secondOpinion: boolean };
+export type QueueRow = {
+  attemptId: string; lift: string; number: number; weight: number; repsDeclared: number | null; units: string; division: string;
+  reason: string | null; waitingS: number; secondOpinion: boolean; videoKey: string | null; judgedFrameMs: number | null;
+};
 
 /** Close calls waiting, oldest first. Demo close calls are the demo lifter's own, never in the queue. */
 export async function closeCallQueue(db: Db, refereeId: string): Promise<QueueRow[]> {
-  const rows = await db.execute<{ attempt_id: string; lift: string; division: string; reason: string | null; waiting_s: number; second: boolean }>(sql`
-    select a.id as attempt_id, a.lift, l.division, a.reason,
+  const rows = await db.execute<{
+    attempt_id: string; lift: string; number: number; weight: number; reps_declared: number | null; units: string; division: string;
+    reason: string | null; waiting_s: number; second: boolean; video_key: string | null; judged_frame_ms: number | null;
+  }>(sql`
+    select a.id as attempt_id, a.lift, a.number, a.weight, a.reps_declared, l.units, l.division, a.reason, a.video_key, a.judged_frame_ms,
       extract(epoch from now() - coalesce(a.judged_at, a.uploaded_at, a.created_at))::int as waiting_s,
       exists (select 1 from ${reviews} r where r.attempt_id = a.id and r.kind = 'second_opinion') as second
     from ${attempts} a
@@ -43,7 +49,11 @@ export async function closeCallQueue(db: Db, refereeId: string): Promise<QueueRo
       and not exists (select 1 from ${reviews} r where r.attempt_id = a.id and r.kind = 'second_opinion' and r.referee_id = ${refereeId})
     order by coalesce(a.judged_at, a.uploaded_at, a.created_at) asc
     limit 200`);
-  return rows.map(r => ({ attemptId: r.attempt_id, lift: r.lift, division: r.division, reason: r.reason, waitingS: Number(r.waiting_s), secondOpinion: r.second }));
+  return rows.map(r => ({
+    attemptId: r.attempt_id, lift: r.lift, number: Number(r.number), weight: Number(r.weight), repsDeclared: r.reps_declared === null ? null : Number(r.reps_declared),
+    units: r.units, division: r.division, reason: r.reason, waitingS: Number(r.waiting_s), secondOpinion: r.second,
+    videoKey: r.video_key, judgedFrameMs: r.judged_frame_ms === null ? null : Number(r.judged_frame_ms),
+  }));
 }
 
 /** One close call, as a referee sees it: no lifter's name, only division, age group and lift. */
