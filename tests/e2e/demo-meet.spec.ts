@@ -17,8 +17,11 @@ async function joinDemo(page: Page) {
   const welcome = page.getByRole('dialog', { name: 'Welcome to the demo meet' });
   await expect(welcome).toBeVisible();
   await expect(welcome.getByRole('link', { name: /Open my corner page/ })).toHaveAttribute('href', /^\/corner\/[\w-]{16}$/);
-  await welcome.getByRole('button', { name: 'Go to the platform' }).click();
-  await expect(welcome).toBeHidden();
+  // the sheet is in the server's HTML, and a click before the page hydrates does nothing
+  await expect(async () => {
+    if (await welcome.isVisible()) await welcome.getByRole('button', { name: 'Go to the platform' }).click({ timeout: 2000 });
+    await expect(welcome).toBeHidden({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
   await expect(page).toHaveURL(/\/platform$/);
 }
 
@@ -39,7 +42,8 @@ test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({
   await expect(page.getByRole('heading', { name: /^(Good lift|No lift|Close call)$/ })).toBeVisible({ timeout: 4 * 60_000 });
   const title = await page.getByRole('heading', { name: /^(Good lift|No lift|Close call)$/ }).textContent();
   if (title === 'Close call') await expect(page.getByRole('link', { name: "See the referee's side of this close call" })).toBeVisible();
-  else await expect(page.getByRole('button', { name: 'Lift it again' })).toBeVisible();
+  // 5.25 step 11: the first squat's lights lead to the next attempt
+  else await expect(page.getByRole('button', { name: 'Declare your next attempt' })).toBeVisible();
 });
 
 // The stage's beats on a sample lift, timed in the page (MutationObserver, never timers): when
