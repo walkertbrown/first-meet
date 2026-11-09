@@ -8,7 +8,7 @@ import { attempts, cheers, flights, lifters, meets } from '../../web/db/schema';
 import { ORDER } from '../../web/lib/meet';
 import { cornerView } from '../../web/lib/corner-view';
 import { cornerBlock, herCheers, markSeen, partsText, sendCheer, sendFlightCheer, waitingParts } from '../../web/lib/cheers';
-import { subscribe } from '../../web/lib/live';
+import { listening, subscribe } from '../../web/lib/live';
 import type { LiveEvent } from '../../web/lib/queue';
 import { freshDb, URL_ } from './setup';
 
@@ -94,7 +94,8 @@ describe.skipIf(!URL_)('the corner page', () => {
     const { l, token } = await lifter();
     const a = await lift(l, 0, 'white');
     const heard: LiveEvent[] = [];
-    const stop = await subscribe(db, e => { heard.push(e); });
+    const stop = subscribe(db, e => { heard.push(e); });
+    await listening(); // or the first cheer can go out before the LISTEN is in place
     try {
       expect(await sendCheer(db, token, { attempt_id: a.id, kind: 'strong', name: ' Mary  Jo ' })).toEqual({ status: 200, kind: 'strong' });
       expect((await sendCheer(db, token, { attempt_id: a.id, kind: 'white_lights', name: 'Mary Jo' })).status).toBe(409);
@@ -105,7 +106,7 @@ describe.skipIf(!URL_)('the corner page', () => {
       expect(kept.every(c => c.attemptId === a.id)).toBe(true);
       for (let i = 0; i < 20 && heard.filter(e => e.kind === 'cheer').length < 3; i++) await new Promise(r => setTimeout(r, 50));
       expect(heard.filter(e => e.kind === 'cheer')).toContainEqual({ kind: 'cheer', lifter_id: l.id, attempt_id: a.id, cheer: 'strong', name: 'Mary Jo' });
-    } finally { await stop(); }
+    } finally { stop(); }
   });
 
   it('no cheer on an attempt that isn\'t hers, isn\'t sent, or a page that has closed', async () => {

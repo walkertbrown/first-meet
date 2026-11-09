@@ -21,6 +21,9 @@ export function subscribe(db: Db, fn: Sub): () => void {
   return () => { s.subs.delete(fn); };
 }
 
+/** Settles once this process's LISTEN is in place: an event published after it is heard. */
+export const listening = async () => { await g.__fmLive?.listening; };
+
 /** Whether a stream for this lifter, watching this attempt, gets the event. Only her own. */
 export const isFor = (e: LiveEvent, lifterId: string, attemptId: string | null) =>
   e.kind === 'attempt' && (('lifter_id' in e && e.lifter_id === lifterId) || (!!attemptId && e.attempt_id === attemptId && !e.lifter_id));
