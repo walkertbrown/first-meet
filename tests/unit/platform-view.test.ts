@@ -23,6 +23,20 @@ describe('the 9-attempt row (look 4)', () => {
     expect(row.map(c => c.state)).toEqual(['white', 'red', 'waiting', 'now', 'empty', 'empty', 'declared', 'empty', 'empty']);
   });
 
+  it('item 85: a void that stays is not judged, with its reason; after the close a slot only declared is empty', () => {
+    const rows = [
+      { lift: 'squat', number: 1, status: 'void', call: null, voidReason: 'after_close' as const },
+      { lift: 'squat', number: 2, status: 'void', call: null, voidReason: 'upload_late' as const },
+      { lift: 'squat', number: 3, status: 'declared', call: null },
+    ];
+    expect(nineRow(rows, null, true).slice(0, 3)).toEqual([
+      { lift: 'squat', number: 1, state: 'void', voidReason: 'after_close' },
+      { lift: 'squat', number: 2, state: 'void', voidReason: 'upload_late' },
+      { lift: 'squat', number: 3, state: 'empty' },
+    ]);
+    expect(nineRow(rows, null)[2].state).toBe('declared');
+  });
+
   it('a sent attempt still waiting on the queue isn\'t lit', () => {
     const row = nineRow([{ lift: 'squat', number: 1, status: 'queued', call: null }], null);
     expect(row[0].state).toBe('sent');

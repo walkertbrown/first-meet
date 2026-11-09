@@ -15,6 +15,8 @@ export const MEET_WORDS = {
   still45: 'Still looking. This one is taking a little longer.',
   busy90: (n: number) => `Busy platform. Your lights in about ${n} minute${n === 1 ? '' : 's'}.`,
   busy90Panel: 'You can declare your next attempt while you wait.',
+  /** 5.25 step 8 (item 87): judging paused (3.9 step 9) at or after 90 s, with no minutes */
+  paused90: "Judging is paused for a moment. Your lift is saved and will be judged when it's back.",
   slowUpload: 'Your connection is slow. Your lift is saved on this phone while it sends.',
   offlineTitle: 'Your lift is saved on this phone',
   offlineBody: "We'll send it to the judges as soon as you're back online. You can keep this screen open or come back later.",
@@ -247,3 +249,68 @@ export function capSentence(division: 'barbell' | 'home', same: boolean): string
   if (division === 'home') return same ? 'This one is the same number, so it\'s already yours.' : 'This one is fewer, so it\'s already yours.';
   return same ? 'This one is the same weight for just one, so it\'s already yours.' : 'This one is lighter, so it\'s already yours.';
 }
+
+// ---------- the meet window (3.8, 3.11, 5.28; item 85) ----------
+
+const clock = (d: Date, timeZone: string | undefined, weekday: boolean) =>
+  d.toLocaleString('en-US', { ...(weekday ? { weekday: 'long' as const } : {}), hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) })
+    .replace(':00', '').replace(' AM', ' am').replace(' PM', ' pm');
+
+/**
+ * A meet time as 5.24 writes it: Eastern first, then her own time in brackets when it differs
+ * ("6 pm Eastern (3 pm)"). `weekday` names the day ("Sunday 12 am Eastern (Saturday 9 pm)"); without
+ * it her time still names its day when that isn't Eastern's. `local`: her time zone (the phone's
+ * own when left out); null on the server, which doesn't know it, writes Eastern alone.
+ */
+export function windowTime(iso: string, o: { weekday?: boolean; local?: string | null } = {}): string {
+  const d = new Date(iso);
+  const et = clock(d, 'America/New_York', !!o.weekday);
+  if (o.local === null) return `${et} Eastern`;
+  const sameDay = clock(d, 'America/New_York', true).split(' ')[0] === clock(d, o.local, true).split(' ')[0];
+  const local = clock(d, o.local, !!o.weekday || !sameDay);
+  return `${et} Eastern${local !== et ? ` (${local})` : ''}`;
+}
+
+/** 3.11's two sheets, and what her Primary does. With no judged lift, "OK" goes to the closed page. */
+export const WINDOW_WORDS = {
+  closedTitle: 'The platform has closed',
+  closedBody: (closesAt: string, local?: string | null) =>
+    `It closed at ${windowTime(closesAt, { local })}, before this lift started, so this one isn't judged. Your judged lifts stand.`,
+  lateTitle: 'Your clip arrived too late',
+  lateBody: (deadline: string, local?: string | null) =>
+    `The judges took clips until ${windowTime(deadline, { weekday: true, local })}, and this one didn't reach us in time, so it isn't judged. Your judged lifts stand.`,
+  seeTotal: 'See your total',
+  ok: 'OK',
+};
+
+/** 5.28 "Waiting on your clip": her clip still sending after the close. */
+export const waitingClipBody = (on: { lift: string; number: number }, division: 'barbell' | 'home', deadline: string, local?: string | null) =>
+  `Your ${liftLower(on.lift, division)} ${on.number} is still sending from your phone. Keep First Meet open with a connection, and your total lands once it's judged. Clips count until ${windowTime(deadline, { weekday: true, local })}.`;
+
+/**
+ * 5.28 "Waiting on the judges": after the close, her clip has reached us (`queued` or `judging`)
+ * with no lights yet. With an estimated wait (3.9 step 8) of 2 minutes or more, the second
+ * sentence gives it.
+ */
+export const judgingClipBody = (on: { lift: string; number: number }, division: 'barbell' | 'home', waitMin: number | null = null, paused = false) =>
+  paused
+    // 3.9 step 9 (item 87): no minutes while judging is paused
+    ? `Your ${liftLower(on.lift, division)} ${on.number} reached us and is saved. Judging is paused for a moment, and your total lands once it's back. You don't need to keep First Meet open.`
+    : `Your ${liftLower(on.lift, division)} ${on.number} reached us, and the judges are looking. ` +
+  (waitMin !== null && waitMin >= 2 ? `Your total lands once it's judged, in about ${waitMin} minutes.` : `Your total lands once it's judged, usually within a minute.`) +
+  ` You don't need to keep First Meet open.`;
+
+/** 3.8: a late clip raised her total. "Your squat 3 landed after the close, so your total changed." */
+export const lateLine = (on: { lift: string; number: number }, division: 'barbell' | 'home') =>
+  `Your ${liftLower(on.lift, division)} ${on.number} landed after the close, so your total changed.`;
+
+/** Her lifts lists' Small line for a `void` attempt (3.8): "Not judged · after the close" / "… sent too late". */
+export function notJudgedLine(reason: string | null | undefined): string {
+  if (reason === 'after_close') return 'Not judged · after the close';
+  if (reason === 'upload_late') return 'Not judged · sent too late';
+  return 'Not judged';
+}
+
+/** A screen reader's words for a not-judged slot on the row (look 4): "<Lift> <n>, not judged, after the close". */
+export const notJudgedLabel = (lift: string, n: number, reason: string | null | undefined) =>
+  `${lift} ${n}, not judged${reason === 'after_close' ? ', after the close' : reason === 'upload_late' ? ', sent too late' : ''}`;

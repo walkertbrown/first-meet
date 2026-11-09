@@ -36,6 +36,13 @@
       "when": 1794226049263,
       "tag": "0004_meet_flight_hour_cutoff",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794233829339,
+      "tag": "0005_meet_clip_deadline",
+      "breakpoints": true
     }
   ]
 }

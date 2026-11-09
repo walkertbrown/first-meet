@@ -110,6 +110,11 @@
   transition: opacity 200ms linear, height 260ms var(--ease-out) 200ms, margin-top 260ms var(--ease-out) 200ms; }
 .nine .grp > .grp-wait.on { height: 16px; margin-top: -2px; opacity: 1; transition: none; }
 @media (prefers-reduced-motion: reduce) { .nine .grp > .grp-wait { transition: none; } }
+/* item 85 (look 4 "Not judged"): the empty look with an en dash; NOT JUDGED in --ink-3 where WAITING goes */
+.nine.nj-below { align-items: flex-start; }
+.nine .grp > .grp-wait.nj { color: var(--ink-3); }
+.nine-list .nj-weight { color: var(--ink-3); }
+.nine-list .nj-line { color: var(--ink-2); flex: none; }
 
 /* Item 75's stand-in line (look 5.14a): under SAMPLE LIFT on the stage, under the sentence on the result. */
 .meet-stand-in { margin: 6px 0 0; max-width: 260px; color: var(--stage-ink-2); text-align: left; }
@@ -221,3 +226,10 @@
   .cheer-line.leaving { display: none; }
   .cheer-line.coming, .your-corner.opening, .your-corner.opening .your-corner-in > *, .flight-row.arrive { animation: none; }
 }
+
+/* item 85: a late clip's total (look 4 "A total that changes after its reveal") */
+.meet-total[data-pending] { opacity: 0; }
+.total-late { margin-top: 8px; color: var(--ink-2); }
+.lift-drop { animation: lift-drop 560ms var(--ease-lamp); }
+@keyframes lift-drop { from { transform: translateY(-30px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .lift-drop { animation: none; } }

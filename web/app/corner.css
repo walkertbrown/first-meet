@@ -50,3 +50,7 @@
 @media (prefers-reduced-motion: reduce) {
   .sheet-scrim.leaving, .sheet-scrim.leaving .bottom-sheet { animation: none; }
 }
+
+/* item 85 (look 4 "Not judged"): the weight in --ink-3; the line where the lamps would be; no Cheer */
+.corner-row .nj-weight { color: var(--ink-3); }
+.corner-row .nj-line { color: var(--ink-2); flex: none; }

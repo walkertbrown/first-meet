@@ -3,6 +3,8 @@
 // every 15 s and on the `online` event; a reload picks up where it stopped (the server lists the
 // parts R2 already has). It leaves IndexedDB only after the server confirms the upload.
 
+import { apiFetch } from '@/lib/stage/server-clock';
+
 export const PART_BYTES = 5 * 1024 * 1024;
 /** web/lib/queue.ts MAX_CLIP_BYTES: 90 s at 2.5 Mbps. */
 export const MAX_CLIP_BYTES = 28 * 1024 * 1024;
@@ -21,7 +23,9 @@ export type Pending = {
 
 export type UploadStatus =
   | { kind: 'saved' } | { kind: 'sending'; sent: number; of: number } | { kind: 'offline' } | { kind: 'retrying' }
-  | { kind: 'sent'; status: string } | { kind: 'limit'; limit: 'lifter' | 'everyone' } | { kind: 'refused'; error: string };
+  | { kind: 'sent'; status: string } | { kind: 'limit'; limit: 'lifter' | 'everyone' } | { kind: 'refused'; error: string }
+  /** item 85: the meet window turned it away (410), so it's void and isn't judged: never sent again */
+  | { kind: 'window'; reason: 'after_close' | 'upload_late'; closesAt: string | null; deadline: string | null };
 
 const DB = 'first-meet';
 const STORE = 'uploads';
@@ -61,8 +65,9 @@ export type Net = {
 
 export const browserNet: Net = {
   async api(path, init = {}) {
-    const res = await fetch(path, {
-      method: init.method ?? 'GET', credentials: 'same-origin',
+    // our API, never cached: each answer also corrects the phone's clock (item 86)
+    const res = await apiFetch(path, {
+      method: init.method ?? 'GET',
       headers: init.body ? { 'content-type': 'application/json' } : undefined,
       body: init.body ? JSON.stringify(init.body) : undefined,
     });
@@ -89,6 +94,12 @@ export async function sendOnce(p: Pending, net: Net, onStatus: (s: UploadStatus)
     let r;
     try { r = await net.api(path, init); } catch { throw new Retry(); }
     if (r.status >= 500 || r.status === 0) throw new Retry();
+    if (r.status === 410) {
+      throw new Stop({
+        kind: 'window', reason: r.body.void_reason === 'after_close' ? 'after_close' : 'upload_late',
+        closesAt: (r.body.closes_at as string | null) ?? null, deadline: (r.body.clip_deadline_at as string | null) ?? null,
+      });
+    }
     return r;
   };
   const base = `/api/attempts/${p.attemptId}`;

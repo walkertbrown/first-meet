@@ -34,6 +34,8 @@ export const meets = pgTable('meets', {
   blockStartsOn: date('block_starts_on', { mode: 'string' }),
   /** When the flight hour is decided (plan 3.2, 5.23): opens_at − 72 h for a real meet; the test meet's is set by /signin/test. */
   flightHourCutoffAt: at('flight_hour_cutoff_at'),
+  /** The last moment a meet clip's upload can finish (plan 3.2, 3.8): closes_at + 6 h for a real meet; the test meet's is set by /signin/test. */
+  clipDeadlineAt: at('clip_deadline_at'),
 });
 
 export type HomeWeight = { weight: number; kind: 'pair' | 'bell' };
@@ -130,6 +132,8 @@ export const judgedSets = pgTable('judged_sets', {
 }, t => [index('judged_sets_lifter').on(t.lifterId, t.movement)]);
 
 export type AttemptStatus = 'declared' | 'recording' | 'uploading' | 'queued' | 'judging' | 'close_call' | 'judged' | 'void';
+/** Why a `void` attempt isn't judged (plan 3.2, 3.8): it's never a red, and it's never lifted again. */
+export type VoidReason = 'turned' | 'lost_bar' | 'after_close' | 'upload_late';
 
 export const attempts = pgTable('attempts', {
   id: id(),
@@ -144,6 +148,7 @@ export const attempts = pgTable('attempts', {
   commandTimes: jsonb('command_times').$type<Record<string, number>>(),
   posesKey: text('poses_key'),
   status: text('status').$type<AttemptStatus>().notNull().default('declared'),
+  voidReason: text('void_reason').$type<VoidReason>(),
   videoKey: text('video_key'),
   recordedAt: at('recorded_at'),
   uploadedAt: at('uploaded_at'),

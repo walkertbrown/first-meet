@@ -11,6 +11,7 @@ import {
 } from '@/lib/meet';
 import { DEMO_CAPS, demoCapAt } from '@/lib/demo';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
+import { meetClosed, runClipDeadline } from '@/lib/meet-window';
 
 export type LifterRow = typeof lifters.$inferSelect;
 export type AttemptRow = typeof attempts.$inferSelect;
@@ -142,15 +143,20 @@ export async function declareNext(db: Db, l: LifterRow, value: number | null, no
   return { status: 200, attempt: had, slot };
 }
 
-/** The demo meet is always open; a real meet between its opening and closing (5.24). */
+/**
+ * The demo meet is always open; a real (or the test) meet from `opens_at` until `closes_at` (5.24).
+ * The times decide it: nothing moves a meet's `status` to `open`, so it only shuts one that is
+ * `closed` or `final` early.
+ */
 export const platformOpen = (m: Pick<typeof meets.$inferSelect, 'kind' | 'status' | 'opensAt' | 'closesAt'>, now = new Date()) =>
-  m.kind === 'demo' || (m.status === 'open' && (!m.opensAt || m.opensAt <= now) && (!m.closesAt || now < m.closesAt));
+  m.kind === 'demo' || ((m.kind === 'real' || m.kind === 'test') && m.status !== 'closed' && m.status !== 'final'
+    && !!m.opensAt && m.opensAt <= now && !!m.closesAt && now < m.closesAt);
 
 /** An attempt as the total's rules see it, with a Home lift's load (3.8a). */
 export function asMeetAttempt(a: AttemptRow, l: Pick<LifterRow, 'homeWeights'>): MeetAttempt {
   return {
-    lift: a.lift, number: a.number, weight: a.weight, repsDeclared: a.repsDeclared, status: a.status, call: a.call,
-    recordedAt: a.recordedAt, homeLoad: homeLoad(a.lift, a.weight, homeKind(a.lift, a.weight, l.homeWeights)),
+    id: a.id, lift: a.lift, number: a.number, weight: a.weight, repsDeclared: a.repsDeclared, status: a.status, call: a.call,
+    recordedAt: a.recordedAt, uploadedAt: a.uploadedAt, homeLoad: homeLoad(a.lift, a.weight, homeKind(a.lift, a.weight, l.homeWeights)),
   };
 }
 
@@ -158,9 +164,13 @@ export function asMeetAttempt(a: AttemptRow, l: Pick<LifterRow, 'homeWeights'>):
  * Her total (5.28). Bombing out sets `free_entry_credit` (#bombout-free: yes), once. Item 77: a
  * demo lifter's bomb out sets nothing.
  */
-export async function totalFor(db: Db, l: LifterRow, list?: AttemptRow[], item77 = PLAN_SWITCHES.item77) {
+export async function totalFor(db: Db, l: LifterRow, list?: AttemptRow[], item77 = PLAN_SWITCHES.item77, now = new Date()) {
+  const [m] = l.meetId ? await db.select().from(meets).where(eq(meets.id, l.meetId)) : [];
+  const closed = !!m && meetClosed(m, now);
+  // the clip deadline's job, on read (3.8): a clip still sending past it is sent too late
+  if (closed && await runClipDeadline(db, now, m.id)) list = undefined;
   const rows = list ?? await meetAttempts(db, l);
-  const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), l.division);
+  const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), l.division, closed);
   if (t.kind === 'bombed' && !l.freeEntryCredit && !(item77 && l.isDemo)) await db.update(lifters).set({ freeEntryCredit: true }).where(eq(lifters.id, l.id));
   return t;
 }

@@ -190,6 +190,9 @@ export const slotIndex = (s: { lift: string; number: number }) => ORDER.findInde
 export type MeetAttempt = {
   lift: Lift; number: number; weight: number; repsDeclared: number | null; status: string;
   call: 'white' | 'red' | 'close' | null; recordedAt: Date | null; homeLoad?: number;
+  /** when its clip reached us (item 85: a lift that landed after the close) */
+  uploadedAt?: Date | null;
+  id?: string;
 };
 
 /** The slot after her latest attempt, or null after deadlift 3. */
@@ -239,6 +242,8 @@ export type Total =
   | { kind: 'lifting' }
   | { kind: 'total'; value: number; best: Record<Lift, MeetAttempt>; nineForNine: boolean; lastCountedAt: Date | null }
   | { kind: 'waiting'; soFar: number; on: MeetAttempt }
+  /** after the close, a clip of hers is still sending (5.28 "Waiting on your clip", item 85) */
+  | { kind: 'waiting_clip'; soFar: number; on: MeetAttempt }
   | { kind: 'bombed'; lift: Lift };
 
 /**
@@ -246,29 +251,39 @@ export type Total =
  * lift (and none waiting on a referee) means no total: she bombed out. Pending close calls
  * mean "Total waiting on a referee". It's worked out once her ninth attempt has lights or is a
  * close call; before that she's still lifting.
+ *
+ * A `void` attempt (item 85: after the close, or sent too late) isn't judged, so it's done and
+ * doesn't count. `closed` (the platform has closed): it doesn't wait for all nine. A slot she
+ * didn't lift doesn't count; only a clip still sending ("Waiting on your clip") or one with the
+ * judges holds it.
  */
-export function meetTotal(list: MeetAttempt[], division: Division): Total {
-  const done = (a: MeetAttempt) => a.call === 'white' || a.call === 'red' || a.call === 'close';
+export function meetTotal(list: MeetAttempt[], division: Division, closed = false): Total {
+  const judged = (a: MeetAttempt) => a.call === 'white' || a.call === 'red' || a.call === 'close' || a.status === 'close_call';
   const nine = ORDER.map(s => list.find(a => a.lift === s.lift && a.number === s.number));
-  if (nine.some(a => !a || !done(a))) {
+  const all = nine.filter((a): a is MeetAttempt => !!a && (judged(a) || a.status === 'void'));
+  // after the close: a clip still sending, or arrived and with the judges, holds the total
+  const held = closed ? nine.filter((a): a is MeetAttempt => !!a && !judged(a) && a.status !== 'void' && a.status !== 'declared') : [];
+  const sending = held.find(a => a.status === 'recording' || a.status === 'uploading') ?? held[0];
+  if (!closed && all.length < ORDER.length) {
     // a lift that has already bombed is known before the ninth, but the page waits for nine
     return { kind: 'lifting' };
   }
-  const all = nine as MeetAttempt[];
   for (const lift of LIFTS) {
     const mine = all.filter(a => a.lift === lift);
-    if (!mine.some(a => a.call === 'white' || a.call === 'close')) return { kind: 'bombed', lift };
+    // a clip still sending in this lift may yet be its good lift
+    if (!mine.some(a => a.call === 'white' || a.call === 'close' || a.status === 'close_call') && !held.some(a => a.lift === lift)) return { kind: 'bombed', lift };
   }
   const bestOf = (lift: Lift) => all.filter(a => a.lift === lift && a.call === 'white')
     .reduce<MeetAttempt | null>((b, a) => (!b || attemptScore(a, division) > attemptScore(b, division) ? a : b), null);
   const soFar = LIFTS.reduce((s, l) => s + (bestOf(l) ? attemptScore(bestOf(l)!, division) : 0), 0);
-  const pending = all.find(a => a.call === 'close');
+  if (sending) return { kind: 'waiting_clip', soFar: round(soFar), on: sending };
+  const pending = all.find(a => a.call === 'close' || a.status === 'close_call');
   if (pending) return { kind: 'waiting', soFar: round(soFar), on: pending };
   const best = Object.fromEntries(LIFTS.map(l => [l, bestOf(l)!])) as Record<Lift, MeetAttempt>;
   const times = LIFTS.map(l => best[l].recordedAt).filter((d): d is Date => !!d);
   return {
     kind: 'total', value: round(soFar), best,
-    nineForNine: all.every(a => a.call === 'white'),
+    nineForNine: all.length === ORDER.length && all.every(a => a.call === 'white'),
     lastCountedAt: times.length ? new Date(Math.max(...times.map(d => d.getTime()))) : null,
   };
 }

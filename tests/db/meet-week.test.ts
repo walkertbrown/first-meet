@@ -6,7 +6,9 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, flightHourVotes, flights, lifters, meets } from '../../web/db/schema';
 import { meetWeekPlace, saveOpeners, saveVotes } from '../../web/lib/meet-week';
-import { meetWeekAccount, setTestHourNow, testAccount, testMeetDates, testMeetExists, TEST_MEET_SLUG } from '../../web/lib/test-signin';
+import { meetWeekAccount, setTestHourNow, testAccount, testMeetDates, testMeetExists, testMeetWindow, TEST_MEET_SLUG } from '../../web/lib/test-signin';
+import { platformView } from '../../web/lib/platform-view';
+import { boardFinalReady } from '../../web/lib/meet-window';
 import { freshDb, URL_ } from './setup';
 
 const NOW = new Date('2026-11-09T17:00:00Z'); // Monday noon Eastern
@@ -17,6 +19,7 @@ describe('the test meet\'s dates (3.1, item 82)', () => {
     expect(testMeetDates(NOW)).toEqual({
       blockStartsOn: '2026-08-24',
       opensAt: new Date('2026-11-13T11:00:00Z'), closesAt: new Date('2026-11-14T23:00:00Z'), liveAt: new Date('2026-11-15T01:00:00Z'),
+      clipDeadlineAt: new Date('2026-11-15T05:00:00Z'),
       flightHourCutoffAt: new Date('2026-11-09T18:00:00Z'),
     });
     // pressed on a Friday after 6 am, or a Sunday: the next week's window, the same week 12
@@ -156,6 +159,37 @@ describe.skipIf(!URL_)('meet week', () => {
     expect(p.view.flight).toMatchObject({ counts: [2, 0, 0, 0, 0, 2, 0, 0], mine: [], open: true, hour: null });
     const [f] = await db.select().from(flights).where(eq(flights.id, l.flightId!));
     expect(f.flightHour).toBeNull();
+  });
+
+  it('item 86: open, close and the clip deadline by hand; the platform follows; the board waits for the deadline', async () => {
+    const at = new Date('2026-11-09T17:20:00Z');
+    const { id } = await meetWeekAccount(db, 'meetweek', at);
+    await testMeetWindow(db, 'open-now', at);
+    const meet = async () => (await db.select().from(meets).where(eq(meets.slug, TEST_MEET_SLUG)))[0];
+    let m = await meet();
+    expect(m).toMatchObject({ opensAt: at, closesAt: new Date(at.getTime() + 2 * 3_600_000),
+      clipDeadlineAt: new Date(at.getTime() + 8 * 3_600_000), liveAt: new Date(at.getTime() + 4 * 3_600_000), flightHourCutoffAt: at });
+    const l = await her(id);
+    const [f] = await db.select().from(flights).where(eq(flights.id, l.flightId!));
+    expect(f.flightHour).toEqual(new Date('2026-11-09T17:00:00Z'));
+    expect((await platformView(db, l, m, new Date(at.getTime() + 1000))).kind).toBe('open');
+    // she sends her opener; then the close, then the deadline before it ever arrives
+    const [a] = await db.select().from(attempts).where(eq(attempts.lifterId, id));
+    await db.update(attempts).set({ status: 'uploading' }).where(eq(attempts.id, a.id));
+    const shut = new Date(at.getTime() + 60_000);
+    await testMeetWindow(db, 'close-now', shut);
+    m = await meet();
+    expect(m).toMatchObject({ closesAt: shut, clipDeadlineAt: new Date(shut.getTime() + 6 * 3_600_000), liveAt: new Date(shut.getTime() + 2 * 3_600_000) });
+    expect(await boardFinalReady(db, m, new Date(shut.getTime() + 1000))).toEqual({ ok: false, why: 'clip_deadline', line: 'Clips can still arrive until Monday 6:21 pm Eastern.' });
+    const v = await platformView(db, l, m, new Date(shut.getTime() + 1000));
+    expect(v.kind).toBe('done');
+    const end = new Date(shut.getTime() + 120_000);
+    await testMeetWindow(db, 'deadline-now', end);
+    expect((await db.select().from(attempts).where(eq(attempts.id, a.id)))[0]).toMatchObject({ status: 'void', voidReason: 'upload_late' });
+    m = await meet();
+    expect(await boardFinalReady(db, m, new Date(end.getTime() + 1000))).toEqual({ ok: true });
+    // nothing judged, nothing on its way: the closed page
+    expect((await platformView(db, l, m, new Date(end.getTime() + 1000))).kind).toBe('closed');
   });
 
   it('nobody ticked any: no hour', async () => {

@@ -23,10 +23,12 @@ import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recor
 import { STAGE_WORDS } from '@/lib/stage/try-words';
 import {
   COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
-  standInLine, weightDigits, type MeetResult,
+  standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
 } from '@/lib/stage/meet-words';
+import { WindowText } from '@/components/window-words';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
+import { apiFetch, phoneNow } from '@/lib/stage/server-clock';
 import samples from '../../content/samples/samples.json';
 import { WaitLine } from '@/components/wait-line';
 
@@ -60,13 +62,24 @@ export type MeetAttemptProps = {
    * settled (its 480 ms slide-in has ended), so the platform holds every banner while she may be under a bar.
    */
   onBusy?: (busy: boolean) => void;
+  /**
+   * Item 85 (3.8, 3.11): when the platform closes. From then, "I'm ready" starts nothing: the attempt
+   * is `void` (`after_close`) and she sees "The platform has closed". Checked by the phone's clock,
+   * corrected by our server's (item 86). Null: it never closes (the demo).
+   */
+  closesAt?: string | null;
+  /** Item 85: she has a judged lift, so the closed sheet's button is "See your total" (else "OK", to the closed page). */
+  anyJudged?: boolean;
 };
 
-type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit';
+/** The meet window's sheet (3.11, item 85): why this attempt isn't judged. */
+type WindowStop = { reason: 'after_close' | 'upload_late'; closesAt: string | null; deadline: string | null };
+
+type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit' | 'window';
 type Mode = 'lift' | 'spot' | 'sample' | 'resume';
 type Phase = 'loading' | 'spot' | 'good-spot' | 'spot-done' | 'loaded' | 'lifting' | 'norep' | 'held' | 'lit' | 'close' | 'replay' | 'hold' | 'offline' | 'refused';
 type Command = { text: string; kind: 'soft' | 'on' } | null;
-type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judged_frame_ms?: number | null };
+type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null };
 type SampleClip = { id: string; file: string; credit: string; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
@@ -97,11 +110,12 @@ function containBox(stage: { w: number; h: number }, d: Dims | null) {
 }
 
 async function getJson(path: string, init?: RequestInit) {
-  const r = await fetch(path, { credentials: 'same-origin', ...init });
+  const r = await apiFetch(path, init);
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true, strip, onBusy, item81 = PLAN_SWITCHES.item81 }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true, strip, onBusy, closesAt = null, anyJudged = false, item81 = PLAN_SWITCHES.item81 }: MeetAttemptProps) {
+  const [win, setWin] = useState<WindowStop | null>(null);
   const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
@@ -211,8 +225,11 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     let shown = 0, dueAt = 0, every: ReturnType<typeof setInterval> | undefined;
     const estimate = async () => {
       await check(true);
+      if (!alive()) return;
+      // item 87: paused (3.9 step 9) says so, with no minutes; once it un-pauses, a fresh estimate
+      if ((state as State | null)?.judging === 'paused') { shown = 0; setWaitLine(MEET_WORDS.paused90); setBusy(true); return; }
       const n0 = (state as State | null)?.wait_minutes;
-      if (!alive() || !n0) return;
+      if (!n0) return;
       const n = shown && performance.now() > dueAt ? Math.max(n0, shown + 1) : n0;
       if (n !== shown) { shown = n; dueAt = performance.now() + n * 60_000; }
       setWaitLine(MEET_WORDS.busy90(shown)); setBusy(true);
@@ -293,12 +310,14 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         setSlowUpload(false);
         if (s.kind === 'sent') { setPhase('held'); return resolve(true); }
         if (s.kind === 'limit') { setLimit(s.limit); setView('limit'); return resolve(false); }
+        // 3.11 (item 85): after the close, or past the clip deadline. Not judged; her clip is gone from the phone.
+        if (s.kind === 'window') { stopCamera(); setWin({ reason: s.reason, closesAt: s.closesAt, deadline: s.deadline }); setView('window'); return resolve(false); }
         if (s.kind === 'refused') console.warn('upload refused', s.error);
         setPhase('refused'); resolve(false);
       });
       void started;
     });
-  }, []);
+  }, [stopCamera]);
 
   /** Her own lift, or "Test your spot first" (the frame check alone, 5.23). */
   const runCamera = useCallback(async (spotOnly: boolean) => {
@@ -423,7 +442,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       return;
     }
     // Saved on the phone before anything is sent (3.10), so a reload or a lost signal keeps it.
-    const savedAt = Date.now();
+    // by the corrected clock (item 86), so a slow phone clock can't put a lift before the close
+    const savedAt = phoneNow();
     await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes: ct, uploadId: null, savedAt, recordedAt: Math.round(savedAt - (performance.now() - recording.startedAt)) });
     freeze((lift === 'squat' && deeperOf(deepest)) || last);
     const clipUrl = URL.createObjectURL(blob);
@@ -588,6 +608,20 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   }, [attempt.id, send, awaitLights]);
 
   const start = (m: Mode) => {
+    // item 85: a lift started at or after the close isn't judged. Nothing films and nothing is
+    // uploaded; the server marks it `void` (`after_close`) by its own clock. If the server says the
+    // platform is still open (her phone's clock ran ahead), the lift goes ahead.
+    if (m !== 'spot' && closesAt && phoneNow() >= Date.parse(closesAt)) {
+      setWin({ reason: 'after_close', closesAt, deadline: null });
+      setView('window');
+      void apiFetch(`/api/attempts/${attempt.id}/after-close`, { method: 'POST' })
+        .then(r => { if (r.status === 409) { setWin(null); go(m); } })
+        .catch(() => {});
+      return;
+    }
+    go(m);
+  };
+  const go = (m: Mode) => {
     resetStage();
     setMode(m);
     setView('stage');
@@ -642,6 +676,25 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       <div className="try-page meet-page"><main className="try-col meet-col" role="alert">
         <p className="body-l">{MEET_WORDS.limit[limit]}</p>
         <div className="try-actions"><Link className="btn ghost" href="/sample">Watch a meet night</Link></div>
+      </main></div>
+    );
+  }
+
+  if (view === 'window' && win) {
+    // 3.11: one sheet, one Primary. With nothing judged after the close, "OK" goes to the closed page (5.24).
+    const closed = win.reason === 'after_close';
+    const toTotal = !closed || anyJudged;
+    return (
+      <div className="try-page meet-page"><main className="try-col meet-col" role="alert">
+        <h1 className="sheet-title">{closed ? WINDOW_WORDS.closedTitle : WINDOW_WORDS.lateTitle}</h1>
+        <p className="body">
+          {closed
+            ? (win.closesAt ? <WindowText say={{ kind: 'closed', closesAt: win.closesAt }} /> : null)
+            : (win.deadline ? <WindowText say={{ kind: 'late', deadline: win.deadline }} /> : null)}
+        </p>
+        <div className="try-actions">
+          <a className="btn" href={toTotal ? '/platform/total' : '/platform'}>{toTotal ? WINDOW_WORDS.seeTotal : WINDOW_WORDS.ok}</a>
+        </div>
       </main></div>
     );
   }

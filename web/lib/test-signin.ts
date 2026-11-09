@@ -8,6 +8,7 @@ import { LIFTS } from '@/lib/meet';
 import { DEMO_CAPS, DEMO_HOME_WEIGHTS } from '@/lib/demo';
 import { easternDay } from '@/lib/next-block';
 import { etWallToUtc } from '@/lib/meet-week-words';
+import { CLIP_GRACE_MS, runClipDeadline } from '@/lib/meet-window';
 
 export const PRODUCTION_SERVICE = 'first-meet-web';
 
@@ -63,9 +64,10 @@ export function testMeetDates(now: Date) {
   let friday = addDays(today, (5 - weekday(today) + 7) % 7);
   if (etWallToUtc(friday, 6) <= now) friday = addDays(friday, 7);
   const saturday = addDays(friday, 1);
+  const closesAt = etWallToUtc(saturday, 18);
   return {
     blockStartsOn: addDays(monday, -77),
-    opensAt: etWallToUtc(friday, 6), closesAt: etWallToUtc(saturday, 18), liveAt: etWallToUtc(saturday, 20),
+    opensAt: etWallToUtc(friday, 6), closesAt, clipDeadlineAt: new Date(closesAt.getTime() + CLIP_GRACE_MS), liveAt: etWallToUtc(saturday, 20),
     flightHourCutoffAt: new Date(now.getTime() + 3_600_000),
   };
 }
@@ -124,6 +126,39 @@ export async function meetWeekAccount(db: Db, who: MeetWeekWho, now = new Date()
 /** "Set the test meet's flight hour now": the next read decides it, as Tuesday 6 am does for a real meet. */
 export async function setTestHourNow(db: Db, now = new Date()) {
   await db.update(meets).set({ flightHourCutoffAt: now }).where(and(eq(meets.slug, TEST_MEET_SLUG), eq(meets.kind, 'test')));
+}
+
+const H = 3_600_000;
+export type WindowButton = 'open-now' | 'close-now' | 'deadline-now';
+export const WINDOW_BUTTONS: Record<WindowButton, string> = {
+  'open-now': "Open the test meet's platform now",
+  'close-now': "Close the test meet's platform now",
+  'deadline-now': 'Run the clip deadline now',
+};
+
+/**
+ * Item 86 (plan 3.1): the test meet's window by hand, so the closed page, the late-clip words and a
+ * bomb out can be checked on staging. Open: opens now, closes in 2 h, the clip deadline 6 h after
+ * that, live 2 h after the close, the flight hour the hour that holds now and its cutoff now. Close:
+ * closes now, the deadline in 6 h, live in 2 h. Deadline: the deadline now, and its job runs at once.
+ */
+export async function testMeetWindow(db: Db, b: WindowButton, now = new Date()) {
+  const [m] = await db.select().from(meets).where(and(eq(meets.slug, TEST_MEET_SLUG), eq(meets.kind, 'test')));
+  if (!m) return false;
+  if (b === 'open-now') {
+    const closesAt = new Date(now.getTime() + 2 * H);
+    await db.update(meets).set({ opensAt: now, closesAt, clipDeadlineAt: new Date(closesAt.getTime() + CLIP_GRACE_MS), liveAt: new Date(closesAt.getTime() + 2 * H), flightHourCutoffAt: now })
+      .where(eq(meets.id, m.id));
+    await db.update(flights).set({ flightHour: new Date(Math.floor(now.getTime() / H) * H) }).where(eq(flights.meetId, m.id));
+  } else if (b === 'close-now') {
+    await db.update(meets).set({ closesAt: now, clipDeadlineAt: new Date(now.getTime() + CLIP_GRACE_MS), liveAt: new Date(now.getTime() + 2 * H) })
+      .where(eq(meets.id, m.id));
+  } else {
+    await db.update(meets).set({ clipDeadlineAt: now }).where(eq(meets.id, m.id));
+    // "now" has passed by the time the job asks
+    await runClipDeadline(db, new Date(now.getTime() + 1), m.id);
+  }
+  return true;
 }
 
 export async function testMeetExists(db: Db) {

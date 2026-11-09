@@ -1,6 +1,7 @@
 // The next block's start (plan 3.2, 5.24, item 76): read from the next real meet whose block hasn't
 // started yet, so Walker's answer on #spring-date is a change to a row, not to the code.
 import { and, asc, eq, gt, isNull } from 'drizzle-orm';
+import { CLIP_GRACE_MS } from '@/lib/meet-window';
 import type { Db } from '@/db';
 import { meets } from '@/db/schema';
 
@@ -20,7 +21,10 @@ export const REAL_MEETS = [
 export async function ensureRealMeets(db: Db) {
   for (const m of REAL_MEETS) {
     const flightHourCutoffAt = new Date(m.opensAt.getTime() - 72 * 3_600_000);
-    await db.insert(meets).values({ ...m, kind: 'real', status: 'upcoming', flightHourCutoffAt }).onConflictDoNothing();
+    // item 86: the clip deadline is the close + 6 h (3.8)
+    const clipDeadlineAt = new Date(m.closesAt.getTime() + CLIP_GRACE_MS);
+    await db.insert(meets).values({ ...m, kind: 'real', status: 'upcoming', flightHourCutoffAt, clipDeadlineAt }).onConflictDoNothing();
+    await db.update(meets).set({ clipDeadlineAt }).where(and(eq(meets.slug, m.slug), isNull(meets.clipDeadlineAt)));
     await db.update(meets).set({ blockStartsOn: m.blockStartsOn }).where(and(eq(meets.slug, m.slug), isNull(meets.blockStartsOn)));
     await db.update(meets).set({ flightHourCutoffAt }).where(and(eq(meets.slug, m.slug), isNull(meets.flightHourCutoffAt)));
   }

@@ -6,7 +6,8 @@ import { db, hasDb } from '@/db';
 import { lifters, meets } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
 import { NineRow, Platform } from '@/components/platform';
-import { liftWord } from '@/lib/stage/meet-words';
+import { liftWord, notJudgedLine } from '@/lib/stage/meet-words';
+import { ResumeSending } from '@/components/resume-sending';
 import { OpensIn } from '@/components/opens-in';
 import { currentViewer } from '@/lib/roles';
 import { platformView } from '@/lib/platform-view';
@@ -37,8 +38,9 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
   if (view.kind === 'done') {
     // her nine with their lights ("See my lifts", item 75); the total is one tap away
     const division = l.division;
+    const anyJudged = view.nine.some(a => a.call === 'white' || a.call === 'red');
     return (
-      <>{strip}
+      <>{strip}<ResumeSending anyJudged={anyJudged} />
         <div className="try-page meet-page"><main className="try-col meet-col">
           <div className="platform-top">
             <span className="eyebrow">{`${view.meetName} · Your nine attempts`}</span>
@@ -48,8 +50,9 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
             {view.nine.map(a => (
               <li key={a.id}>
                 <Link href={`/platform/attempt/${a.id}`}>
-                  <span className="nine-what body">{`${liftWord(a.lift, division)} ${a.number} · ${division === 'home' ? `${a.reps} reps at ${a.weight} ${l.units}` : `${a.weight} ${l.units}`}`}</span>
-                  {a.call === 'close' ? <span className="small">Waiting</span>
+                  <span className="nine-what body">{`${liftWord(a.lift, division)} ${a.number} · `}<span className={a.voidReason ? 'nj-weight' : undefined}>{division === 'home' ? `${a.reps} reps at ${a.weight} ${l.units}` : `${a.weight} ${l.units}`}</span></span>
+                  {a.voidReason ? <span className="small nj-line">{notJudgedLine(a.voidReason)}</span>
+                    : a.call === 'close' || a.held ? <span className="small">Waiting</span>
                     : <span className="lamps-mini" role="img" aria-label={a.call === 'white' ? 'Good lift' : 'No lift'}>{a.lights.map((x, i) => <i key={i} className={`mini-lamp ${x}`} />)}</span>}
                 </Link>
               </li>
@@ -73,7 +76,7 @@ export default async function PlatformPage({ searchParams }: { searchParams: Pro
   if (view.kind === 'closed') {
     const starts = await nextBlockDate();
     return (
-      <>{strip}
+      <>{strip}<ResumeSending anyJudged={false} />
         <div className="try-page meet-page"><main className="try-col meet-col platform-msg">
           <h1 className="page-title">The platform has closed</h1>
           <p className="body-l">{`You didn't lift this time. Your training still counts, and the next block starts ${starts}.`}</p>

@@ -10,6 +10,7 @@ import { NineRow } from '@/components/platform';
 import type { CornerRow, CornerView } from '@/lib/corner-view';
 import { CHEERS, CHEER_KINDS, cheerEyebrow, cleanCornerName, type CheerKind } from '@/lib/cheer-words';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
+import { notJudgedLine } from '@/lib/stage/meet-words';
 
 export const NAME_COOKIE = 'fm_corner_name';
 type Live = Exclude<CornerView, { kind: 'gone' } | { kind: 'before' }>;
@@ -120,17 +121,18 @@ export function CornerLive({ view, token, savedName, children }: { view: Live; t
                 </button>
               )}
               <div className="corner-what">
-                <span className="corner-name">{`${r.name} · ${r.weight}`}</span>
+                <span className="corner-name">{`${r.name} · `}<span className={r.state === 'void' ? 'nj-weight' : undefined}>{r.weight}</span></span>
                 {r.state === 'looking' && <span className="small">The judges are looking</span>}
                 {r.state === 'close' && <span className="small">A referee is looking at this one.</span>}
               </div>
-              {r.state === 'close' ? <span className="lamps-mini" aria-hidden="true"><i className="mini-lamp pulse" /></span>
+              {r.state === 'void' ? <span className="small nj-line">{notJudgedLine(r.voidReason)}</span>
+                : r.state === 'close' ? <span className="lamps-mini" aria-hidden="true"><i className="mini-lamp pulse" /></span>
                 : (
                   <span className="lamps-mini" role="img" aria-label={r.state === 'white' ? 'Good lift' : r.state === 'red' ? 'No lift' : 'Not judged yet'}>
                     {(r.state === 'looking' ? ['', '', ''] : r.lights).map((x, i) => <i key={i} className={`mini-lamp ${x}`} />)}
                   </span>
                 )}
-              {sent[r.id]
+              {r.state === 'void' ? null : sent[r.id]
                 ? <span className="cheer-btn sent">{`Cheered: ${CHEERS[sent[r.id]]}`}</span>
                 : <button type="button" className="cheer-btn" onClick={() => setSheet(r)}>Cheer</button>}
             </li>

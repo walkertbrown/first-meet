@@ -4,10 +4,11 @@
 // the clock (web/lib/june.ts). The rules are web/lib/meet.ts; this only puts them together.
 import { eq } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { lifters, meets, type Lift } from '@/db/schema';
+import { lifters, meets, type Lift, type VoidReason } from '@/db/schema';
 import { meetTotal, type MeetAttempt, type Units } from '@/lib/meet';
 import { asMeetAttempt, meetAttempts, platformOpen, type AttemptRow, type LifterRow } from '@/lib/meet-flow';
-import { nineRow, type RowCell } from '@/lib/platform-view';
+import { nineRow, notJudgedVoid, type RowCell } from '@/lib/platform-view';
+import { meetClosed } from '@/lib/meet-window';
 import { formatTotal } from '@/lib/total-view';
 import { juneAt, JUNE } from '@/lib/june';
 import { liftWord } from '@/lib/stage/meet-words';
@@ -21,8 +22,10 @@ export type CornerRow = {
   id: string; lift: Lift; number: number;
   /** "Squat 2 · 135 lb", or on Home "Goblet squat 2 · 10 reps at 25 lb" */
   name: string; weight: string;
-  /** looking: sending or with the judges; close: a referee is looking; white/red: its lights */
-  state: 'looking' | 'close' | 'white' | 'red';
+  /** looking: sending or with the judges; close: a referee is looking; white/red: its lights;
+   * void: not judged for good (3.8, item 85), with its reason */
+  state: 'looking' | 'close' | 'white' | 'red' | 'void';
+  voidReason?: VoidReason | null;
   lights: Light[];
   /** her clip (9:16), when her clip_visibility lets anyone with the link see it */
   clip: string | null;
@@ -69,8 +72,11 @@ export function notStartedLine(closes: Date | null): string {
 export const weightWords = (a: { weight: number; repsDeclared: number | null }, division: Division, units: string) =>
   keepWhole(division === 'home' ? `${a.repsDeclared ?? 0} reps at ${a.weight} ${units}` : `${a.weight} ${units}`);
 
-function rowOf(a: Pick<AttemptRow, 'id' | 'lift' | 'number' | 'weight' | 'repsDeclared' | 'status' | 'call' | 'lights'>, division: Division, units: string, clip: string | null): CornerRow {
+function rowOf(a: Pick<AttemptRow, 'id' | 'lift' | 'number' | 'weight' | 'repsDeclared' | 'status' | 'call' | 'lights'> & { voidReason?: VoidReason | null }, division: Division, units: string, clip: string | null): CornerRow {
   const lights = ((a.lights ?? []) as string[]).filter((x): x is Light => x === 'white' || x === 'red');
+  if (notJudgedVoid(a)) {
+    return { id: a.id, lift: a.lift as Lift, number: a.number, name: `${liftWord(a.lift as Lift, division)} ${a.number}`, weight: weightWords(a, division, units), state: 'void', voidReason: a.voidReason ?? null, lights: [], clip: null };
+  }
   const state: CornerRow['state'] = a.call === 'white' || a.call === 'red' ? a.call : a.call === 'close' || a.status === 'close_call' ? 'close' : 'looking';
   return {
     id: a.id, lift: a.lift as Lift, number: a.number, name: `${liftWord(a.lift as Lift, division)} ${a.number}`,
@@ -103,11 +109,12 @@ async function lifterView(db: Db, l: LifterRow, m: typeof meets.$inferSelect, no
   const rows = await meetAttempts(db, l);
   const division = l.division as Division;
   const units = l.units as Units;
-  const sent = newestFirst(rows.filter(a => SENT.includes(a.status)));
+  const closed = meetClosed(m, now);
+  const sent = newestFirst(rows.filter(a => SENT.includes(a.status) || notJudgedVoid(a)));
   const canShowClip = l.clipVisibility === 'link';
   const list = await Promise.all(sent.map(async a => rowOf(a, division, units, canShowClip && a.clipKey ? await clipUrl(a.clipKey) : null)));
-  const shared: Shared = { meetName: m.name, name, division, demo, june: false, row: nineRow(rows, null), list, nextAt: null };
-  const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), division);
+  const shared: Shared = { meetName: m.name, name, division, demo, june: false, row: nineRow(rows, null, closed), list, nextAt: null };
+  const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), division, closed);
   if (t.kind === 'total') return { ...shared, kind: 'totaled', total: formatTotal(t.value), unit: units };
   if (t.kind === 'bombed') return { ...shared, kind: 'bombed' };
   return { ...shared, kind: 'live', notStarted: list.length ? null : platformOpen(m, now) || demo ? notStartedLine(demo ? null : m.closesAt) : null };

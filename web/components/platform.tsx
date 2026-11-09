@@ -10,6 +10,8 @@ import { BarDiagram } from '@/components/bar-diagram';
 import { CheerBanner, useBanners } from '@/components/cheer-banner';
 import { DemoFlightStrip } from '@/components/flight-strip';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
+import { apiFetch } from '@/lib/stage/server-clock';
+import { notJudgedLabel } from '@/lib/stage/meet-words';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
 import type { DeclareSheet } from '@/lib/meet-flow';
 import {
@@ -29,7 +31,8 @@ const GROUPS: Record<'barbell' | 'home', string[]> = { barbell: ['Squat', 'Bench
  */
 export function NineRow({ row, division, label = 'Your nine attempts', item76 = PLAN_SWITCHES.item76 }: { row: RowCell[]; division: 'barbell' | 'home'; label?: string; item76?: boolean }) {
   return (
-    <div className={item76 ? 'nine wait-below' : 'nine'} aria-label={label}>
+    // item 85 (look 4 "Not judged"): a void slot's NOT JUDGED sits under its group where WAITING goes
+    <div className={item76 ? 'nine wait-below' : row.some(c => c.state === 'void') ? 'nine nj-below' : 'nine'} aria-label={label}>
       {[0, 1, 2].map(g => {
         const cells = row.slice(g * 3, g * 3 + 3);
         return (
@@ -40,16 +43,23 @@ export function NineRow({ row, division, label = 'Your nine attempts', item76 = 
                 const name = `${liftWord(c.lift, division)} ${c.number}`;
                 const said = c.state === 'white' ? 'good lift' : c.state === 'red' ? 'no lift'
                   : c.state === 'waiting' ? (item76 ? 'waiting for a referee' : 'Waiting') : c.state === 'now' ? 'now' : '';
+                const aria = c.state === 'void' ? notJudgedLabel(liftWord(c.lift, division), c.number, c.voidReason) : said ? `${name}, ${said}` : name;
                 return (
-                  <div key={c.number} className={`slot ${c.state}`} aria-label={said ? `${name}, ${said}` : name} role="img">
-                    {c.state === 'white' || c.state === 'red' ? <i className={`mini-lamp ${c.state}`} />
+                  <div key={c.number} className={`slot ${c.state}`} aria-label={aria} role="img">
+                    {c.state === 'void' ? <span aria-hidden="true">{'\u2013'}</span>
+                      : c.state === 'white' || c.state === 'red' ? <i className={`mini-lamp ${c.state}`} />
                       : c.state === 'waiting' ? <><i className="mini-lamp pulse" />{!item76 && <span className="slot-wait">Waiting</span>}</>
                         : <span aria-hidden="true">{c.number}</span>}
                   </div>
                 );
               })}
             </div>
-            {item76 && <span className={cells.some(c => c.state === 'waiting') ? 'grp-wait eyebrow on' : 'grp-wait eyebrow'} aria-hidden="true">Waiting</span>}
+            {(() => {
+              const waits = item76 && cells.some(c => c.state === 'waiting');
+              const nj = cells.some(c => c.state === 'void');
+              if (!item76 && !nj) return null;
+              return <span className={`grp-wait eyebrow${waits || nj ? ' on' : ''}${!waits && nj ? ' nj' : ''}`} aria-hidden="true">{waits || !nj ? 'Waiting' : 'Not judged'}</span>;
+            })()}
           </div>
         );
       })}
@@ -84,13 +94,13 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
   // "Declare your next attempt" / "Next: <lift>" / "See your total" (5.25 step 11)
   const onNext = useCallback(async () => {
     setError('');
-    const r = await fetch('/api/meet/declare', { credentials: 'same-origin', cache: 'no-store' }).catch(() => null);
+    const r = await apiFetch('/api/meet/declare').catch(() => null);
     const s = r?.ok ? await r.json() as DeclareSheet : null;
     if (!s) { setError("We couldn't reach First Meet. Try again in a moment."); return; }
     if (s.kind === 'none') { if (s.why === 'done') router.push('/platform/total'); else router.refresh(); return; }
     if (s.kind === 'opener') {
       // an opener is on her card without a sheet ("Next: Bench press")
-      const p = await fetch('/api/meet/declare', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: '{}' }).catch(() => null);
+      const p = await apiFetch('/api/meet/declare', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }).catch(() => null);
       if (!p?.ok) { setError("We couldn't reach First Meet. Try again in a moment."); return; }
       router.refresh();
       return;
@@ -102,8 +112,8 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
   const declare = async () => {
     if (!sheet || picked === null || declaring) return;
     setDeclaring(true); setError('');
-    const r = await fetch('/api/meet/declare', {
-      method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ value: picked }),
+    const r = await apiFetch('/api/meet/declare', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ value: picked }),
     }).catch(() => null);
     setDeclaring(false);
     const body = r ? await r.json().catch(() => null) as { attempt?: Declared } | null : null;
@@ -124,7 +134,7 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
     es.addEventListener('attempt', async ev => {
       const { attempt_id: id, status } = JSON.parse((ev as MessageEvent).data) as { attempt_id: string; status: string };
       if (id === current.id || status !== 'judged') return;
-      const r = await fetch(`/api/attempts/${id}`, { credentials: 'same-origin', cache: 'no-store' }).catch(() => null);
+      const r = await apiFetch(`/api/attempts/${id}`).catch(() => null);
       const a = r?.ok ? await r.json() as { lift: string; number: number; weight: number; reps_declared: number | null; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null } : null;
       if (!a || (a.call !== 'white' && a.call !== 'red')) return;
       const wasWaiting = rowRef.current.some(c => c.lift === a.lift && c.number === a.number && c.state === 'waiting');
@@ -160,6 +170,8 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
         onNext={() => void onNext()}
         top={top}
         demoReferee={demo}
+        closesAt={closesAt}
+        anyJudged={row.some(c => c.state === 'white' || c.state === 'red')}
         onBusy={PLAN_SWITCHES.item80 ? setBusy : undefined}
         strip={demo ? <DemoFlightStrip division={lifter.division} units={lifter.units} cardName={lifter.cardName} /> : null}
       />
