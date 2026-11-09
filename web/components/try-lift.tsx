@@ -17,6 +17,7 @@ import { DeepestFrames, marksOf, type Marks } from '@/lib/stage/snap';
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { makeClip, shareOrDownload } from '@/lib/stage/clip-maker';
 import { RESULT_WORDS, STAGE_WORDS, lampsOf, markColour, outcomeOf, type Outcome } from '@/lib/stage/try-words';
+import { WaitLine } from '@/components/wait-line';
 
 type Step = 'choose' | 'setup' | 'stage' | 'denied' | 'nocamera';
 type Source = { kind: 'camera' } | { kind: 'sample'; sample: Sample };
@@ -36,8 +37,8 @@ const SAMPLE_END_HOLD_MS = 1500;
 
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
-/** Look's waits, shortened with motion off (as in sample.html). */
-const wait = (ms: number) => sleep(reduced() ? Math.min(ms, 600) : ms);
+/** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
+const wait = (ms: number) => sleep(ms);
 
 function browserOf(): 'android' | 'ios' | 'other' {
   if (typeof navigator === 'undefined') return 'other';
@@ -105,7 +106,9 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const [parts, setParts] = useState<Record<Part, boolean>>(NO_PARTS);
   const [line, setLine] = useState<string | null>(null);
   const [command, setCommand] = useState<Command>(null);
-  const [recSec, setRecSec] = useState<number | null>(null);
+  // REC's seconds outlive the recording: the label holds its last second through the fade-out.
+  const [recSec, setRecSec] = useState(0);
+  const [recOn, setRecOn] = useState(false);
   const [lamps, setLamps] = useState<LampState[]>(['off', 'off', 'off']);
   const [waitLine, setWaitLine] = useState('');
   const [spill, setSpill] = useState<'' | 'white' | 'red'>('');
@@ -150,7 +153,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   useEffect(() => () => { runRef.current++; stopCamera(); }, [stopCamera]);
 
   const resetStage = () => {
-    setPhase('loading'); setSlow(false); setParts(NO_PARTS); setLine(null); setCommand(null); setRecSec(null);
+    setPhase('loading'); setSlow(false); setParts(NO_PARTS); setLine(null); setCommand(null); setRecOn(false);
     setLamps(['off', 'off', 'off']); setWaitLine(''); setSpill(''); setOutcome(null); setResultOn(false);
     setFrozen(false); setMarks(null); setReplaying(false); setClipState('idle');
     clipRef.current = { input: null, file: null, wanted: false };
@@ -212,7 +215,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
     setSlow(false);
     setPhase('spot');
 
-    const tal = new TryALift(d);
+    const tal = new TryALift(d, { judgeLater: true });
     const deepest = new DeepestFrames(d);
     const recording = new Recording();
     const t0 = performance.now();
@@ -239,6 +242,8 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
       const next = PARTS.find(k => want[k] && !lit[k]);
       if (next && now - litAt >= PART_STEP_MS) { lit = { ...lit, [next]: true }; litAt = now; const l = lit; flushSync(() => setParts(l)); }
     };
+    // "Good spot." waits until the fourth segment has finished its 180 ms (look 6, step 2).
+    const lightsSettling = () => PARTS.some(k => !lit[k]) || performance.now() - litAt < PART_STEP_MS;
     const sideways = () => !isSample && coarse() && video.videoWidth > video.videoHeight;
 
     // 3. The frame check, the commands and the lift, frame by frame.
@@ -250,7 +255,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
         if (isSample) {
           stepLights();
           if (goodSpotWaitFrom !== null) {
-            if (PARTS.some(k => !lit[k])) return void requestAnimationFrame(tick);
+            if (lightsSettling()) return void requestAnimationFrame(tick);
             heldMs += now - goodSpotWaitFrom; goodSpotWaitFrom = null;
             showGoodSpot();
           }
@@ -275,7 +280,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
             else setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts));
             setLine(turned ? PORTRAIT_LINE : ev.spot.line);
           } else if (ev.type === 'good-spot') {
-            if (isSample && PARTS.some(k => !lit[k])) { want = { head: true, hips: true, knees: true, feet: true }; goodSpotWaitFrom = now; }
+            if (isSample && lightsSettling()) { want = { head: true, hips: true, knees: true, feet: true }; goodSpotWaitFrom = now; }
             else showGoodSpot();
           } else if (ev.type === 'stand-tall') {
             setPhase('stand-tall'); setCommand({ text: STAGE_WORDS.standTall, kind: 'soft' });
@@ -283,7 +288,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
             squatAt = now; poseAtSquat = pose.poseMs; framesAtSquat = pose.frames;
             // "Squat!", REC, the voice and (on a sample) the clip all start on the same frame
             // (look 9 step 5): the word and REC are in the page before anything else starts.
-            flushSync(() => { setPhase('lifting'); setCommand({ text: STAGE_WORDS.squat, kind: 'on' }); setRecSec(0); });
+            flushSync(() => { setPhase('lifting'); setCommand({ text: STAGE_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
             voice.say('squat');
             // A sample holds its first frame (she stands still) until "Squat!", then plays: the
             // lifter in the clip squats on the command, as she will.
@@ -292,12 +297,22 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
             recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - squatAt) / 1000)), 250);
           } else if (ev.type === 'rack') {
             rackMedia = video.currentTime; rackShownAt = now;
-            setCommand({ text: STAGE_WORDS.rack, kind: 'on' }); voice.say('rack');
+            flushSync(() => setCommand({ text: STAGE_WORDS.rack, kind: 'on' })); voice.say('rack');
             noRep = ev.noRep;
           } else if (ev.type === 'result') {
             result = ev.result;
             return done();
           }
+        }
+        // "Rack!" goes on screen on its own frame, within 300 ms of it (plan 3.4, piece 2); the
+        // judging waits for the next frame, after the paint
+        if (tal.phase === 'racked') {
+          return void requestAnimationFrame(() => {
+            if (!alive()) return done();
+            const ev = tal.finish(t);
+            if (ev.type === 'result') result = ev.result;
+            done();
+          });
         }
         // A sample's last frame is held, as its first was, so a lifter who ends the clip
         // standing gets "Rack!" (rackStillMs of stillness). If no rack comes in 1.5 s, the
@@ -316,7 +331,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
     if (!alive()) return;
     const blob = isSample ? null : await recording.stop();
     if (isSample) video.pause();
-    setRecSec(null);
+    setRecOn(false);
     const r = result as AttemptResult | null;
     if (r) {
       reportJudgeTime({
@@ -533,8 +548,9 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'stand-tall' || phase === 'lifting';
   const panelOpen = !(lifting && !(isSample && phase !== 'lifting')) && !(phase === 'loading' && !slow);
   const stageClass = ['stage',
-    phase === 'spot' || (isSample && (phase === 'loading' || phase === 'intro')) ? 'spotting' : '',
-    recSec !== null ? 'recording' : '',
+    // The segments stay up, lit, while "Good spot." shows; they go on "Stand tall and still."
+    phase === 'spot' || phase === 'good-spot' || (isSample && (phase === 'loading' || phase === 'intro')) ? 'spotting' : '',
+    recOn ? 'recording' : '',
     phase === 'judging' ? 'judging' : '',
     phase === 'norep' ? 'norep' : '',
     phase === 'lit' || phase === 'replay' || phase === 'hold' ? 'lit' : '',
@@ -544,7 +560,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const mirror = !isSample;
   const k = dims ? box.width / dims.w : 1;
   const colour = outcome ? markColour(outcome) : 'var(--stage-ink-2)';
-  const recLabel = recSec !== null ? `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}` : 'REC 0:00';
+  const recLabel = `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}`;
 
   return (
     <div className="try-app">
@@ -579,7 +595,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
             </button>
           </div>
           <Lamps states={lamps} />
-          <div className={`waitline${waitLine ? ' on' : ''}`} aria-live="polite">{waitLine}</div>
+          <WaitLine text={waitLine} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
           </div>

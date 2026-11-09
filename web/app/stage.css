@@ -20,8 +20,9 @@
 .stage.recording .rec b { animation: blink 1s steps(2, jump-none) infinite; }
 @keyframes blink { 50% { opacity: .2; } }
 
-.spotparts { position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 3; display: flex; gap: 6px; opacity: 0; transform: translateY(8px); transition: opacity 240ms var(--ease-out), transform 240ms var(--ease-out); }
-.stage.spotting .spotparts { opacity: 1; transform: none; }
+/* In over 240 ms; out over 160 ms on "Stand tall and still." (look 6, step 2). */
+.spotparts { position: absolute; left: 20px; right: 20px; bottom: 20px; z-index: 3; display: flex; gap: 6px; opacity: 0; transform: translateY(8px); transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out); }
+.stage.spotting .spotparts { opacity: 1; transform: none; transition-duration: 240ms; }
 .spotparts span { flex: 1; height: 40px; border-radius: 3px; display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-stretch: 96%; font-size: 14px; letter-spacing: .06em; text-transform: uppercase;
   color: var(--stage-ink-2); box-shadow: inset 0 0 0 1.5px rgb(241 239 232 / .28); transition: background-color 180ms, color 180ms, box-shadow 180ms; }
 .spotparts span.seen { background: var(--lamp-white); color: #16181F; box-shadow: none; }
@@ -47,6 +48,13 @@
 
 .waitline { position: absolute; left: 0; right: 0; top: 198px; z-index: 3; text-align: center; font-size: 17px; line-height: 24px; color: var(--stage-ink-2); opacity: 0; transition: opacity 400ms var(--ease-out); }
 .waitline.on { opacity: 1; }
+/* one line crossfading into the next (look 5.25 step 8): the old one fades out on top */
+.waitline > span { display: block; }
+.waitline > .wl-out { position: absolute; left: 0; right: 0; top: 0; animation: wl-out 400ms var(--ease-out) forwards; }
+.waitline > .wl-in { animation: wl-in 400ms var(--ease-out); }
+@keyframes wl-out { to { opacity: 0; } }
+@keyframes wl-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .waitline > .wl-out { display: none; } .waitline > .wl-in { animation: none; } }
 .cliptag { position: absolute; right: 20px; bottom: 18px; z-index: 3; font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--stage-ink-2); opacity: 0; transition: opacity 300ms; }
 .cliptag.on { opacity: 1; }
 .credit { position: absolute; left: 20px; bottom: 18px; z-index: 3; font-size: 14px; line-height: 18px; color: rgb(241 239 232 / .7); }

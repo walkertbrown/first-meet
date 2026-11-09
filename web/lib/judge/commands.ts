@@ -27,29 +27,39 @@ export function hipRange(hist: Sample[], now: number, ms: number): number | null
   return Math.hypot(maxX - minX, maxY - minY) / torso;
 }
 
-export type SquatCommand = { cmd: 'squat' | 'rack'; t: number; noRep?: boolean };
+export type SquatCommand = { cmd: 'squat' | 'rack'; t: number; noRep?: boolean } | { cmd: 'rep'; t: number; k: number };
 
 /**
  * Squat: "Squat!" when she stands still and upright and the spot still passes;
  * "Rack!" after down (knee < 140°) and up (knee > 160°) and 0.5 s still;
  * "Rack!" anyway 20 s after "Squat!" with no rep.
+ *
+ * `reps` (a Home attempt, 3.8a): each rep is counted when she stands back up ("rep", k), and
+ * "Rack!" comes after the declared reps and 0.5 s still. With no rep for 20 s it racks anyway.
  */
 export class SquatCaller {
   state: 'waiting' | 'lifting' | 'done' = 'waiting';
   squatAt: number | null = null;
   rackAt: number | null = null;
   wentDown = false;
+  repsDone = 0;
+  private counted = false;
+  private lastRepAt: number | null = null;
+  private pending: SquatCommand | null = null;
   private hist: Sample[] = [];
   private side: Side | null = null;
   /** `skipFrameCheck`: "Squat!" doesn't wait for the spot (the tests' 3/4 clips; plan 3.4, piece 1). */
-  constructor(private d: Dims, private rules: Rules = RULES, private skipFrameCheck = false) {}
+  constructor(private d: Dims, private rules: Rules = RULES, private skipFrameCheck = false, private reps = 1) {}
 
   feed(f: Frame): SquatCommand | null {
+    if (this.pending) { const p = this.pending; this.pending = null; return p; }
     const r = this.rules.squat;
     if (this.state === 'done') return null;
-    if (this.state === 'lifting' && this.squatAt !== null && f.t - this.squatAt >= r.noRepMs) {
+    // one rep: 20 s from "Squat!"; many: 20 s from the last rep
+    const since = this.reps > 1 ? (this.lastRepAt ?? this.squatAt) : this.squatAt;
+    if (this.state === 'lifting' && since !== null && f.t - since >= r.noRepMs) {
       this.state = 'done'; this.rackAt = f.t;
-      return { cmd: 'rack', t: f.t, noRep: !this.wentDown };
+      return { cmd: 'rack', t: f.t, noRep: this.repsDone === 0 && !this.wentDown };
     }
     if (!f.p) { this.hist = []; return null; }
     const side = this.side ?? nearSide(f);
@@ -67,14 +77,26 @@ export class SquatCaller {
     }
     // lifting
     if (m.knee_deg < r.downKneeMaxDeg) this.wentDown = true;
+    let rep: SquatCommand | null = null;
     if (this.wentDown && m.knee_deg > r.standKneeMinDeg) {
+      if (!this.counted) {
+        this.counted = true; this.repsDone++; this.lastRepAt = f.t;
+        rep = { cmd: 'rep', t: f.t, k: this.repsDone };
+      }
+      if (this.repsDone < this.reps) {
+        // up from this rep: the next one starts
+        this.wentDown = false; this.counted = false;
+        return rep;
+      }
       const range = hipRange(this.hist.filter(s => s.m.knee_deg > r.standKneeMinDeg), f.t, r.rackStillMs);
       if (range !== null && range < r.stillHipMaxTorso) {
         this.state = 'done'; this.rackAt = f.t;
-        return { cmd: 'rack', t: f.t };
+        const rack: SquatCommand = { cmd: 'rack', t: f.t };
+        if (rep) { this.pending = rack; return rep; }
+        return rack;
       }
     }
-    return null;
+    return rep;
   }
 }
 

@@ -16,6 +16,8 @@ export type RepResult = {
   startMs: number;
   /** The frame the call is about: the lowest frame (squat), the first lockout frame (deadlift). */
   judgedFrameMs: number;
+  /** When the rep was over: standing back up (squat), the lockout held (deadlift). Absent if it never was. */
+  endMs?: number;
   depth?: number;
   bottomKneeDeg?: number;
   lockoutHipDeg?: number;
@@ -91,9 +93,9 @@ export function judgeSquat(all: Frame[], d: Dims, w: Window, rules: Rules = RULE
   const lowVisShare = lowVisibilityShare(frames, side, rules);
   const r = rules.squat;
   const reps: RepResult[] = [];
-  const squatRep = (b: NonNullable<typeof best>, stood: boolean): RepResult => ({
-    call: judgedFrameSeen(b.p, side, JUDGED_POINTS.squat, rules) ? depthCall(b.depth, stood, rules) : VISIBILITY,
-    startMs, judgedFrameMs: b.t, depth: b.depth, bottomKneeDeg: b.knee,
+  const squatRep = (b: NonNullable<typeof best>, stoodAt: number | null): RepResult => ({
+    call: judgedFrameSeen(b.p, side, JUDGED_POINTS.squat, rules) ? depthCall(b.depth, stoodAt !== null, rules) : VISIBILITY,
+    startMs, judgedFrameMs: b.t, ...(stoodAt !== null && { endMs: stoodAt }), depth: b.depth, bottomKneeDeg: b.knee,
   });
   let down = false;
   let best: { t: number; depth: number; knee: number; p: Pt[] } | null = null;
@@ -105,13 +107,13 @@ export function judgeSquat(all: Frame[], d: Dims, w: Window, rules: Rules = RULE
     if (down && best) {
       if (m.depth > best.depth) best = { t: f.t, depth: m.depth, knee: m.knee_deg, p: f.p };
       if (m.knee_deg > r.standKneeMinDeg) {
-        reps.push(squatRep(best, true));
+        reps.push(squatRep(best, f.t));
         down = false; best = null;
       }
     }
   }
   // went down but never stood back up before the window closed
-  if (down && best) reps.push(squatRep(best, false));
+  if (down && best) reps.push(squatRep(best, null));
 
   let call: Call;
   if (lowVisShare > rules.visibilityCloseCallShare) call = VISIBILITY;
@@ -153,7 +155,7 @@ export function judgeDeadlift(all: Frame[], d: Dims, w: Window, rules: Rules = R
       if (f.t - lockSince >= r.lockoutHoldMs && lockFirst) {
         const call: Call = !judgedFrameSeen(lockFirst.p, side, JUDGED_POINTS.deadlift, rules) ? VISIBILITY
           : hitch ? { light: 'close', reason: 'hitch' } : { light: 'white' };
-        reps.push({ call, startMs, judgedFrameMs: lockFirst.t, lockoutHipDeg: lockFirst.hip, lockoutKneeDeg: lockFirst.knee });
+        reps.push({ call, startMs, judgedFrameMs: lockFirst.t, endMs: f.t, lockoutHipDeg: lockFirst.hip, lockoutKneeDeg: lockFirst.knee });
         armed = false; lockSince = null; lockFirst = null;
       }
     } else { lockSince = null; lockFirst = null; }

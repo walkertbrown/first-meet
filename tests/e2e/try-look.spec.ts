@@ -2,7 +2,7 @@
 // the stage and the panel, and when (look 4, 6, 7 and 9).
 import { expect, test, type Page } from '@playwright/test';
 
-type Mark = { what: string; t: number; media?: number; opacity?: string; name?: string; duration?: string; transform?: string; elapsed?: number };
+type Mark = { what: string; t: number; media?: number; opacity?: string; name?: string; duration?: string; transform?: string; elapsed?: number; segs?: number };
 declare global { interface Window { __marks: Mark[] } }
 
 /** Records the spot segments lighting, "Squat!" going up (and the clip's time then), the clip starting, and REC. */
@@ -33,7 +33,7 @@ async function watch(page: Page) {
             // Its style the moment it goes up, and the keyframe's own end event: the main thread
             // can be busy judging, so no timers.
             const cs = getComputedStyle(n);
-            mark(`shown:${text}`, { media: v?.currentTime, opacity: cs.opacity, name: cs.animationName, duration: cs.animationDuration, transform: cs.transform });
+            mark(`shown:${text}`, { segs: document.querySelectorAll('.stage.spotting .spotparts span.seen').length, media: v?.currentTime, opacity: cs.opacity, name: cs.animationName, duration: cs.animationDuration, transform: cs.transform });
             n.addEventListener('animationend', e => mark(`${text}:end`, { opacity: getComputedStyle(n).opacity, name: e.animationName, elapsed: e.elapsedTime }));
           }
         }
@@ -78,6 +78,13 @@ test('the sample, motion on: segments, "Squat!" before the clip plays, REC, "Bre
   const lit = ['head', 'hips', 'knees', 'feet'].map(p => at(ms, `seen:${p}`));
   for (const m of lit) expect(m).toBeTruthy();
   for (let k = 1; k < 4; k++) expect(lit[k]!.t - lit[k - 1]!.t).toBeGreaterThanOrEqual(150);
+  // Look 6 step 2: "Good spot." waits for the fourth's 180 ms, with all four still up and lit;
+  // they go when "Stand tall and still." comes, over 160 ms.
+  const good = at(ms, 'shown:Good spot.')!;
+  expect(good.t - lit[3]!.t).toBeGreaterThanOrEqual(170);
+  expect(good.segs).toBe(4);
+  expect(at(ms, 'shown:Stand tall and still.')!.segs).toBe(0);
+  await expect(page.locator('.spotparts')).toHaveCSS('transition-duration', '0.16s, 0.16s');
 
   // 2. The clip holds its first frame until "Squat!" is up; then it plays.
   const squat = at(ms, 'shown:Squat!');
@@ -109,6 +116,12 @@ test('the sample, motion on: segments, "Squat!" before the clip plays, REC, "Bre
   await expect(after).toHaveCSS('animation-delay', '0.2s');
   await expect(after).toHaveCSS('animation-duration', '0.26s');
   await expect(after).toHaveCSS('opacity', '1');
+
+  // REC holds its last second through the fade-out, not "REC 0:00".
+  await expect(page.locator('.stage .rec')).toHaveCSS('opacity', '0');
+  await expect(page.locator('.stage .rec span')).toHaveText(/^REC 0:(0[1-9]|[1-5]\d)$/);
+  // Look 4: the meet line's date never breaks.
+  await expect(page.locator('.result strong, .after strong').first()).toContainText('Feb\u00A026\u2060–\u206027');
 });
 
 test('the sample, motion off: "Squat!" is up 900 ms, with no scale, and the result comes all at once', async ({ page }) => {

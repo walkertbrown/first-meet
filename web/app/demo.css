@@ -1,0 +1,14 @@
+/* Shared by every demo screen (plan 5.36, look 5.14a). */
+/* ---------- The demo strip (look 5.14a) ---------- */
+.demo-strip {
+  position: sticky; top: 0; z-index: 10; height: calc(32px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 16px 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--ink); color: var(--on-ink);
+}
+.demo-strip .eyebrow { color: var(--on-ink); letter-spacing: .06em; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.demo-strip a, .demo-strip button { color: var(--on-ink); font-size: 15px; line-height: 20px; font-weight: 600; text-underline-offset: 3px; white-space: nowrap; }
+.demo-strip form { margin: 0; flex: none; }
+.demo-strip button { background: none; border: 0; padding: 0; min-height: 32px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+@media (min-width: 1024px) { .demo-strip { padding-left: 40px; padding-right: 40px; } }
+
+.try-page.under-strip { min-height: calc(100dvh - 32px - env(safe-area-inset-top)); }

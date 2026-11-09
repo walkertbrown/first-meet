@@ -1,0 +1,162 @@
+/* The desk pages: the referee's queue and close call (plan 5.33, look 5.13), the demo referee
+   (look 5.14a) and /ops (5.39). Desktop first; they still work on a phone. */
+
+.desk main { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; }
+.desk .page-title { margin-bottom: 4px; }
+.desk-line { color: var(--ink-2); }
+.desk-empty { display: flex; flex-direction: column; gap: 4px; padding: 24px 0; }
+
+/* ---------- Tables in Board row type (look 3, 5.11) ---------- */
+.board { width: 100%; border-collapse: collapse; margin-top: 16px; font-family: var(--font-display); font-weight: 600; font-stretch: 75%; font-size: 17px; line-height: 24px; letter-spacing: .01em; }
+.board th { text-align: left; font-weight: 700; font-stretch: 88%; font-size: 13px; line-height: 16px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-2); padding: 0 16px 8px 0; border-bottom: 1px solid var(--rule); }
+.board td { padding: 8px 16px 8px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; height: 48px; }
+.board .n { text-align: right; font-variant-numeric: tabular-nums lining-nums; padding-right: 0; }
+.board .strong { font-weight: 800; }
+.board a { text-decoration: none; }
+.board a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ref-sub { display: block; font-family: var(--font-text); font-weight: 400; font-stretch: 100%; font-size: 15px; line-height: 22px; letter-spacing: 0; color: var(--ink-2); }
+.ref-thumb { display: block; width: 120px; aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; background: var(--stage); }
+.ref-thumb video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+@media (min-width: 1024px) {
+  .board { font-size: 19px; line-height: 28px; }
+  .board td { height: 56px; }
+}
+@media (max-width: 640px) {
+  .ref-queue th:first-child, .ref-queue td:first-child { display: none; }
+}
+
+/* ---------- One close call ---------- */
+.ref-main { gap: 8px; }
+.ref-second { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 4px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), inset 4px 0 0 var(--ink); }
+.ref-call { display: grid; grid-template-columns: minmax(0, 800px) minmax(360px, 1fr); gap: 32px; align-items: start; margin-top: 16px; }
+@media (max-width: 1100px) { .ref-call { grid-template-columns: minmax(0, 1fr); } }
+
+.ref-clip { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.ref-video {
+  position: relative; background: var(--stage); border-radius: 4px; overflow: hidden;
+  aspect-ratio: var(--ar, 16 / 9); width: min(800px, 100%, calc(72vh * var(--ar, 1.78))); margin: 0 auto;
+}
+.ref-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; }
+.ref-marks { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; pointer-events: none; }
+.ref-noclip { position: absolute; inset: 0; display: grid; place-items: center; color: var(--stage-ink-2); }
+
+/* The scrub bar (look 5.13): never the browser's own. A 4 px track, the played part in ink, a
+   10 x 24 playhead (only lights are round), a 44 px hit area, the focus outline round the thumb. */
+.ref-scrub { --track: var(--rule); --fill: var(--ink); position: relative; height: 44px; }
+.ref-scrub input {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; margin: 0; padding: 0;
+  background: transparent; cursor: pointer; outline: none;
+}
+.ref-scrub input::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 4px;
+  background: linear-gradient(to right, var(--fill) var(--played, 0%), var(--track) var(--played, 0%));
+}
+.ref-scrub input::-moz-range-track { height: 4px; border-radius: 4px; background: var(--track); }
+.ref-scrub input::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--fill); }
+.ref-scrub input::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 10px; height: 24px; margin-top: -10px; border: 0; border-radius: 2px; background: var(--fill);
+}
+.ref-scrub input::-moz-range-thumb { width: 10px; height: 24px; border: 0; border-radius: 2px; background: var(--fill); }
+.ref-scrub input:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ref-scrub input:focus-visible::-moz-range-thumb { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ref-scrub.on-stage { --track: #2A2D37; --fill: var(--stage-ink); }
+/* A rep's judged frame: a 2 x 10 tick, placed where the thumb's centre would be. */
+.ref-tick { position: absolute; top: 17px; left: calc(5px + (100% - 10px) * var(--at, 0)); width: 2px; height: 10px; margin-left: -1px; background: var(--stage-ink-2); pointer-events: none; }
+
+.ref-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ref-controls .btn { width: auto; padding: 0 16px; }
+.ref-controls .btn[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+.ref-switch { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; margin-left: auto; cursor: pointer; font-weight: 600; font-size: 15px; }
+.ref-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.ref-switch span { position: relative; width: 52px; height: 32px; border-radius: 4px; background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--ink); transition: background-color 160ms var(--ease-out); }
+.ref-switch span::after { content: ""; position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border-radius: 3px; background: var(--ink); transition: transform 160ms var(--ease-out), background-color 160ms; }
+.ref-switch input:checked + span { background: var(--ink); }
+.ref-switch input:checked + span::after { transform: translateX(20px); background: var(--on-ink); }
+.ref-switch input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 3px; }
+.ref-switch input:disabled + span { opacity: .4; }
+
+/* The rep strip (Home): 40 × 48 cells, Number S, a 12 px mini lamp. */
+.ref-reps { display: flex; flex-direction: column; gap: 8px; }
+.ref-repstrip { display: flex; gap: 4px; overflow-x: auto; padding: 3px; }
+.ref-rep {
+  flex: none; width: 40px; height: 48px; padding: 4px 0; border: 0; border-radius: 4px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  background: var(--surface); box-shadow: 0 0 0 1px var(--rule);
+}
+.ref-rep .num { font-weight: 800; font-stretch: 105%; font-size: 24px; line-height: 28px; }
+.ref-rep[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--ink); }
+.mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
+.mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
+.mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
+.mini-lamp.lg { width: 24px; height: 24px; flex: none; box-shadow: 0 0 0 2px var(--lamp-bezel); }
+.mini-lamp.lg.white { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-white-glow) / .6); animation: mini-bloom 180ms var(--ease-lamp); }
+.mini-lamp.lg.red { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-red-glow) / .5); animation: mini-bloom 180ms var(--ease-lamp); }
+@keyframes mini-bloom { from { transform: scale(.55); opacity: .5; } to { transform: scale(1); opacity: 1; } }
+.mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
+@keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
+
+/* The side: what the judge measured, the lamps, the reasons, save. */
+.ref-side { display: flex; flex-direction: column; gap: 20px; }
+.ref-measured { display: flex; flex-direction: column; gap: 4px; }
+.ref-measured .eyebrow { margin-bottom: 4px; }
+/* The three lamps (look 5.13): three stacked 64 px rows with a rule between, the eyebrow and a
+   24 px mini lamp on the left, "White light" and "Red light" on the right. */
+.ref-lamps { display: flex; flex-direction: column; }
+.ref-lamp + .ref-lamp { border-top: 1px solid var(--rule); }
+.ref-lamp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
+.ref-lamp-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ref-lamp-buttons { display: flex; gap: 8px; flex: none; }
+/* The only coloured buttons in the product: pressing one is a light. At rest, a 2 px ring in its
+   colour on the surface; chosen, the fill. */
+.ref-light {
+  min-width: 132px; height: 48px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; white-space: nowrap;
+  font-family: var(--font-display); font-weight: 800; font-stretch: 100%; font-size: 16px; line-height: 20px;
+  background: var(--surface); color: var(--ink);
+  transition: transform 120ms var(--ease-out);
+}
+.ref-light.white { box-shadow: inset 0 0 0 2px var(--lamp-white), 0 0 0 1px var(--rule); }
+.ref-light.red { box-shadow: inset 0 0 0 2px var(--lamp-red); }
+.ref-light.white[aria-pressed="true"] { background: var(--lamp-white); color: #16181F; box-shadow: none; }
+.ref-light.red[aria-pressed="true"] { background: var(--lamp-red); color: #FFFFFF; box-shadow: none; }
+.ref-light:active { transform: scale(.97); }
+.ref-lamp .ref-reasons { padding-bottom: 16px; }
+.ref-all { display: flex; gap: 8px; }
+.ref-all .btn { flex: 1 1 0; width: auto; }
+@media (max-width: 420px) {
+  .ref-lamp-row { gap: 8px; }
+  .ref-lamp-name { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+.ref-lamp-name .eyebrow { white-space: nowrap; }
+
+.ref-reasons { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.choice { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 4px; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
+.choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.choice:hover { box-shadow: 0 0 0 1.5px var(--ink-3); }
+.choice:has(input:checked) { box-shadow: 0 0 0 2.5px var(--ink); }
+.choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.choice-label { color: var(--no-text); }
+
+.ref-actions { display: flex; flex-direction: column; gap: 12px; }
+/* The line naming what's missing sits directly above "Save the lights" (5.1), and goes at once. */
+.ref-save { display: flex; flex-direction: column; gap: 8px; }
+.ref-missing { margin: 0; }
+.ref-note { display: flex; flex-direction: column; gap: 6px; }
+.ref-note textarea { width: 100%; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink-3); font-size: 17px; line-height: 25px; resize: vertical; }
+.ref-note textarea:focus { box-shadow: inset 0 0 0 2px var(--ink); outline: none; }
+.ref-done { display: flex; flex-direction: column; gap: 16px; max-width: 480px; padding: 24px 0; }
+.ref-done .btn { align-self: flex-start; width: auto; min-width: 200px; }
+
+/* ---------- /ops ---------- */
+.ops-warn { color: var(--no-text); }
+.ops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 32px 40px; margin-top: 16px; }
+.ops-section { display: flex; flex-direction: column; gap: 4px; }
+.ops-section dl, .ops-section ol { margin: 0; padding: 0; list-style: none; }
+.ops-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.ops-row dt { font-size: 15px; line-height: 22px; color: var(--ink-2); }
+.ops-row dd { margin: 0; font-weight: 800; font-stretch: 105%; font-size: 20px; line-height: 24px; text-align: right; white-space: nowrap; }
+.ops-errors { grid-column: 1 / -1; }
+.ops-errors .ops-row { justify-content: flex-start; font-size: 15px; line-height: 22px; }
+.ops-errors .ops-row > .small:first-child { flex: none; width: 190px; }
+@media (max-width: 640px) { .ops-grid { grid-template-columns: minmax(0, 1fr); } .ops-errors .ops-row { flex-direction: column; gap: 2px; } }
+
+@media (prefers-reduced-motion: reduce) { .mini-lamp.pulse, .mini-lamp.lg { animation: none; } }

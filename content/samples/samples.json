@@ -1,7 +1,35 @@
 {
-  "$comment": "The sample lifts (plan 5.2). Each clip's source, licence and credit are in SOURCES.md. LookieBot checks them before phase 1 merges.",
+  "$comment": "The sample lifts (plan 5.2). Each clip's source, licence and credit are in SOURCES.md. LookieBot checks them before phase 1 merges. `meet`: the stored command times the demo meet uses when a sample lift stands in for a filmed attempt (5.36), and `reps`, the reps in the clip: a sample standing in for a Home attempt is judged on them. Each clip starts on \"Squat!\". tests/unit/samples-meet.test.ts checks the server's judge calls each one as its kind.",
   "clips": [
-    { "id": "good-lift", "kind": "good", "file": "good-lift-wabba.mp4", "credit": "WABBA on YouTube (CC BY)" },
-    { "id": "no-lift", "kind": "no", "file": "no-lift-half-squat-motion.mp4", "credit": "Motion on YouTube (CC BY)" }
+    {
+      "id": "good-lift",
+      "kind": "good",
+      "file": "good-lift-wabba.mp4",
+      "credit": "WABBA on YouTube (CC BY)",
+      "meet": {
+        "lift": "squat",
+        "reps": 1,
+        "command_times": {
+          "loaded": 0,
+          "squat": 200,
+          "rack": 5600
+        }
+      }
+    },
+    {
+      "id": "no-lift",
+      "kind": "no",
+      "file": "no-lift-half-squat-motion.mp4",
+      "credit": "Motion on YouTube (CC BY)",
+      "meet": {
+        "lift": "squat",
+        "reps": 1,
+        "command_times": {
+          "loaded": 0,
+          "squat": 200,
+          "rack": 4533
+        }
+      }
+    }
   ]
 }

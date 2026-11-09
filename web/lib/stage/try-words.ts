@@ -1,6 +1,7 @@
 // Try a lift's words (plan 5.2, steps 3–5), exactly, and which result a call gets.
 import type { AttemptResult } from '@/lib/judge';
 import type { LampState } from '@/components/lamps';
+import { keepWhole } from '@/lib/site';
 
 export type Outcome = 'good' | 'depth' | 'no_lockout' | 'close' | 'unseen';
 
@@ -65,4 +66,4 @@ export function markColour(o: Outcome): string {
 }
 
 /** "Winter meet · Feb 26–27 · <N> weeks away." */
-export const meetLineBold = (short: string, dates: string, away: string) => `${short} · ${dates} · ${away}.`;
+export const meetLineBold = (short: string, dates: string, away: string) => `${short} · ${keepWhole(dates)} · ${away}.`;

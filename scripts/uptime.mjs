@@ -1,13 +1,19 @@
 // The uptime check (plan 2.4), shared by the GitHub schedule and, from phase 2, the Render cron
 // job. Checks /healthz twice, 60 s apart; two failures open the issue "First Meet is down:
 // <part>", and a healthy check closes any open one. Needs HEALTH_URL, GITHUB_TOKEN and
-// GITHUB_REPOSITORY. Node 22, no packages.
-const { HEALTH_URL, GITHUB_TOKEN, GITHUB_REPOSITORY } = process.env;
+// GITHUB_REPOSITORY; HEALTH_WAIT_MS overrides the wait. Node 22, no packages.
+const { HEALTH_URL, GITHUB_TOKEN, GITHUB_REPOSITORY, HEALTH_WAIT_MS } = process.env;
 const TITLE = 'First Meet is down';
 
-export async function check(url, timeoutMs = 90_000) {
+/**
+ * How long each /healthz may take before it counts as a failure. While production is on
+ * Render's free tier it sleeps and takes about a minute to wake (80 s seen on Nov 8), so the
+ * outside check waits up to 150 s (plan 2.4).
+ */
+export const WAIT_MS = Number(HEALTH_WAIT_MS) || 150_000;
+
+export async function check(url, timeoutMs = WAIT_MS) {
   try {
-    // A sleeping free instance takes about a minute to wake, so the wait is long.
     const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), headers: { 'user-agent': 'first-meet-uptime' } });
     const body = await res.json().catch(() => null);
     if (res.ok && body?.ok) return { ok: true };
@@ -44,7 +50,7 @@ async function main() {
   }
   console.log(`down: ${r.part}`);
   if (!open.length) {
-    await gh('/issues', { method: 'POST', body: JSON.stringify({ title: `${TITLE}: ${r.part}`, body: `${HEALTH_URL} failed twice, 60 s apart, at ${new Date().toISOString()}.` }) });
+    await gh('/issues', { method: 'POST', body: JSON.stringify({ title: `${TITLE}: ${r.part}`, body: `${HEALTH_URL} failed twice, 60 s apart (each given ${WAIT_MS / 1000} s to answer), at ${new Date().toISOString()}.` }) });
   }
   process.exitCode = 1;
 }
