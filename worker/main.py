@@ -5,6 +5,10 @@ attempt, finds its poses in two passes, posts the points back, and asks again. I
 judges: the one judge (web/lib/judge/) runs in the web service, which also tells it
 where the second pass looks.
 
+A Barbell bench (plan 3.4b) comes with `track: 'bar'` and her `plate_tap`: in place of the
+pose run, the worker follows the plate from the tap on its 15-a-second frames
+(worker/plate.py, the phone's tracker in Python) and posts the path to /api/internal/bar.
+
 `find_clip(clip, times_ms, split_ms, fps)` finds poses in one of the repo's test clips at
 the times given, or in a timing clip made from one (worker/timing_clip.py). It proves the
 pose finder on Render (piece 6) and measures it; its points come back gzipped in the
@@ -32,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from render import Retry, TaskContext, Workflows  # noqa: E402
 
+import plate  # noqa: E402
 import poses  # noqa: E402
 import timing_clip  # noqa: E402
 
@@ -113,11 +118,36 @@ def one_attempt(job: dict) -> dict:
     return {'attempt_id': job['attempt_id'], 'frames': len(f1) + len(f2), 'secs': round(secs, 2), 'posted': status}
 
 
+def one_bar(job: dict) -> dict:
+    """A Barbell bench (plan 3.4b): the plate's path from her tap, for the referee's marks."""
+    t0 = time.monotonic()
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, 'clip')
+        urllib.request.urlretrieve(job['video_url'], path)
+        got = time.monotonic()
+        info = poses.clip_info(path)
+        bar = plate.track_clip(path, job['plate_tap'], info.duration)
+        secs = time.monotonic() - t0
+        status, _ = post('/api/internal/bar', {
+            'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'),
+            'w': info.w, 'h': info.h, 'duration': info.duration, 'path': bar,
+            'commit': COMMIT, 'secs': round(secs, 2), 'download_secs': round(got - t0, 2),
+        })
+        if status != 200:
+            return {'attempt_id': job['attempt_id'], 'error': f'bar post: {status}'}
+    return {'attempt_id': job['attempt_id'], 'frames': len(bar), 'secs': round(secs, 2), 'posted': status}
+
+
+def run_for(job: dict):
+    """The bench's bar path, or the two pose passes."""
+    return one_bar if job.get('track') == 'bar' else one_attempt
+
+
 def attempt_or_report(job: dict, run=None) -> dict:
     """One attempt; if anything about it fails, that attempt alone becomes a close call
     (`judge_unavailable`, plan 3.11) and the worker goes on to the next one."""
     try:
-        out = (run or one_attempt)(job)
+        out = (run or run_for(job))(job)
     except Exception as e:  # noqa: BLE001 - one bad clip never stops the worker
         out = {'attempt_id': job['attempt_id'], 'error': f'{type(e).__name__}: {e}'[:300]}
     if out.get('error'):

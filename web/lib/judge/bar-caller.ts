@@ -26,7 +26,8 @@ export const BAR_RULES: BarRel = BENCH_BAR;
 /** The stuck-track rule's numbers. The plan's guess was 0.99 for 0.3 s; 0.3 s calls a real held bar lost (IA0P). */
 export const BAR_STUCK = { score: BAR_RULES.freezeScore, ms: BAR_RULES.freezeMs };
 
-export type BarCmd = { cmd: 'start' | 'press' | 'rack'; t: number; late?: boolean; noRep?: boolean; void?: boolean };
+/** `why` on a late Press! (3.4b, `press_late_why`): `still`, down and still 1.5 s with no Press!, or `lost`, 2 s after the track was lost. */
+export type BarCmd = { cmd: 'start' | 'press' | 'rack'; t: number; late?: boolean; why?: 'still' | 'lost'; noRep?: boolean; void?: boolean };
 
 type P = { t: number; x: number; y: number; score: number };
 
@@ -102,7 +103,7 @@ export class BarCaller {
     }
     if (!ok && r.stuckRule && this.state === 'lifting') {
       if (this.lostSince === null) this.lostSince = this.frozeAt.at(-1) === t ? t - r.freezeMs : t;
-      if (t - this.lostSince >= r.lostLateMs) { this.state = 'pressed'; this.pressAt = t; this.late = true; this.lostPress = true; this.backSince = null; return { cmd: 'press', t, late: true }; }
+      if (t - this.lostSince >= r.lostLateMs) { this.state = 'pressed'; this.pressAt = t; this.late = true; this.lostPress = true; this.backSince = null; return { cmd: 'press', t, late: true, why: 'lost' }; }
       return null;
     }
     if (r.stuckRule && this.state === 'pressed' && this.lostPress) {
@@ -144,7 +145,7 @@ export class BarCaller {
       }
       if (p.y - this.startY! >= r.pressDown && t - this.hist[0].t >= r.lateMs && this.spread(t - r.lateMs) < r.lateStill) {
         this.state = 'pressed'; this.pressAt = t; this.late = true; this.backSince = null;
-        return { cmd: 'press', t, late: true };
+        return { cmd: 'press', t, late: true, why: 'still' };
       }
       if (r.shortPause && this.lowY - this.startY! >= r.pressDown && p.y - this.startY! <= this.back()) {
         if (this.backSince === null) this.backSince = t;

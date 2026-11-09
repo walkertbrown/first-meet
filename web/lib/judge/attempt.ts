@@ -7,6 +7,7 @@ import { RULES, type Rules } from './rules';
 import type { CommandTimes } from './zoom';
 import { judgePress, pressTimes, type PressRep } from './press';
 import { judgeOverhead, type OverheadRep } from './overhead';
+import { extrasOk, timesOnly } from './bar-measure';
 
 export type RepLight = { call: 'white' | 'red' | 'close'; reason: string | null; frame_ms?: number };
 
@@ -32,6 +33,9 @@ export type CommandProblem = 'missing_soft' | 'missing_start' | 'out_of_order' |
  */
 export function checkCommandTimes(ct: CommandTimes | null | undefined, lift: MeetLift, durationMs: number): CommandProblem | null {
   if (!ct || typeof ct !== 'object') return 'missing_soft';
+  // the bench's `plate_tap` and `press_late_why` (3.4b) aren't times: a broken one can't be read
+  if (!extrasOk(ct)) return 'not_a_number';
+  ct = timesOnly(ct);
   for (const v of Object.values(ct)) if (typeof v !== 'number' || !Number.isFinite(v)) return 'not_a_number';
   for (const v of Object.values(ct)) if (v < 0 || v > durationMs) return 'outside_clip';
   const o = COMMAND_ORDER[lift];

@@ -147,6 +147,10 @@ export const attempts = pgTable('attempts', {
   score: real('score'),
   commandTimes: jsonb('command_times').$type<Record<string, number>>(),
   posesKey: text('poses_key'),
+  /** Bench (3.4b): the server's plate path, R2 `bar/<attempt>.json`, for the referee's marks. */
+  barKey: text('bar_key'),
+  /** Bench (3.4b): the bar's own call, like `lights`; never shown to her or a referee. */
+  shadowLights: jsonb('shadow_lights').$type<Light[]>(),
   status: text('status').$type<AttemptStatus>().notNull().default('declared'),
   voidReason: text('void_reason').$type<VoidReason>(),
   videoKey: text('video_key'),

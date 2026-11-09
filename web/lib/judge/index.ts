@@ -13,3 +13,4 @@ export * from './press';
 export * from './overhead';
 export * from './plate-tracker';
 export * from './bar-caller';
+export * from './bar-measure';

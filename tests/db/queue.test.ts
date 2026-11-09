@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { eq, sql } from 'drizzle-orm';
 import { connect, type Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '../../web/db/schema';
-import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
-import { judgeClip, type Frame } from '../../web/lib/judge';
+import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, parseBar, takeBar, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
+import { BarCaller, judgeClip, type BarPoint, type Frame } from '../../web/lib/judge';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
 type Raw = { w: number; h: number; duration: number; frames: Frame[] };
@@ -89,6 +89,81 @@ describe.skipIf(!URL_)('the judge queue', () => {
     const [back] = await db.select().from(attempts).where(eq(attempts.id, id));
     expect(back).toMatchObject({ status: 'declared', videoKey: null });
     expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+  });
+
+  describe('a Barbell bench (3.4b): every one to a referee, followed from her tap', () => {
+    const tr = JSON.parse(readFileSync(join(__dirname, '../bench-commands/data/traces/KrDo.json'), 'utf8')) as
+      { w: number; h: number; racked: boolean; mark: { x: number; y: number }; pts: BarPoint[] };
+    const tap = { x: tr.mark.x, y: tr.mark.y, size: 0.08 };
+    const phone: Record<string, unknown> = { loaded: tr.pts[0][0], plate_tap: tap };
+    const c = new BarCaller(tr.mark, tr, undefined, tr.racked);
+    for (const [t, x, y, s] of tr.pts) { const r = c.feed(t, x, y, s); if (r) phone[r.cmd] = t; }
+    const BENCH_CT = phone as Record<string, number>;
+    const dims = { w: tr.w, h: tr.h, duration: tr.pts.at(-1)![0] / 1000 + 1 };
+
+    it('the job says to follow the bar; its path is saved and measured, and it goes to a referee', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      expect((await markUploaded(db, store, id, BENCH_CT)).status).toBe(200);
+      const w = await worker('w-bench');
+      const job = await claimNext(db, store, w);
+      expect(job).toMatchObject({ attempt_id: id, lift: 'bench', track: 'bar', plate_tap: tap });
+      const post = parseBar({ attempt_id: id, worker_id: w, ...dims, path: tr.pts, commit: 'abc1234', secs: 1.5 });
+      expect(post).not.toBeNull();
+      expect(await takeBar(db, store, { ...post!, worker_id: 'w-other' })).toMatchObject({ status: 409 });
+      expect(await takeBar(db, store, post!)).toEqual({ status: 200, call: 'close' });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', lights: null, barKey: `bar/${id}.json`, shadowLights: ['white', 'white', 'white'] });
+      expect(a.measures).toMatchObject({ press_while_sinking: false, lost_share: 0, lost_after_start: false, shadow: { light: 'white' }, commit: 'abc1234' });
+      expect((a.measures as { pause_s: number }).pause_s).toBeGreaterThan(0.5);
+      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ tap, path: tr.pts });
+      expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+      const [ev] = await db.select().from(events).where(sql`${events.kind} = 'close_call' and ${events.attemptId} = ${id}`);
+      expect(ev.detail).toMatchObject({ reason: 'bench_referee', shadow: { light: 'white' }, bar_secs: 1.5 });
+      // posting it again changes nothing
+      expect(await takeBar(db, store, post!)).toMatchObject({ status: 404 });
+    });
+
+    it('broken command times: still to a referee, as a command_times close call', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await markUploaded(db, store, id, { ...BENCH_CT, press: BENCH_CT.start - 100 });
+      const w = await worker('w-bench-bad');
+      await claimNext(db, store, w);
+      await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: tr.pts });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', reason: 'command_times', shadowLights: null, measures: { command_times: 'out_of_order' } });
+    });
+
+    it('no plate_tap: nothing to follow, so straight to a referee with no worker run', async () => {
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      const noTap: Record<string, unknown> = { ...BENCH_CT };
+      delete noTap.plate_tap;
+      await markUploaded(db, store, id, noTap);
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', measures: { plate_tap: 'missing' } });
+      expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+    });
+
+    it("a worker that ran poses on it anyway never gives it the camera's light", async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await markUploaded(db, store, id, { loaded: 0, start: 1000, press: 3000, rack: 5000, plate_tap: tap } as unknown as Record<string, number>);
+      const w = await worker('w-old');
+      await claimNext(db, store, w);
+      const d = { w: racked.w, h: racked.h, duration: racked.duration };
+      await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 1, ...d, frames: racked.frames });
+      await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 2, ...d, frames: racked.frames });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', lights: null });
+      expect(['bench_referee', 'visibility', 'command_times', 'judge_unavailable']).toContain(a.reason);
+    });
+
+    it('parseBar refuses a path that is not [t, x, y, score] points', () => {
+      expect(parseBar({ attempt_id: 'a', worker_id: 'w', ...dims, path: [[0, 0.5, 0.5]] })).toBeNull();
+      expect(parseBar({ attempt_id: 'a', worker_id: 'w', ...dims, path: [[0, 0.5, 0.5, 'x']] })).toBeNull();
+      expect(parseBar({ attempt_id: 'a', worker_id: 'w', ...dims, path: [] })).not.toBeNull();
+    });
   });
 
   it('one bad clip: only that attempt becomes judge_unavailable, and only its worker can say so', async () => {

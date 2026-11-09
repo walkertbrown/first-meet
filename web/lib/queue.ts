@@ -5,7 +5,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '@/db/schema';
-import { judgeAttempt, mergePasses, zoomWindows, type Frame, type MeetLift } from '@/lib/judge';
+import { checkCommandTimes, judgeAttempt, measureBar, mergePasses, plateTap, shadowLights, zoomWindows, type BarPoint, type Frame, type MeetLift, type PlateTap } from '@/lib/judge';
 import { keys } from '@/lib/r2';
 
 /** What the queue needs from R2 (web/lib/r2.ts), so the tests can use a stand-in. */
@@ -70,26 +70,43 @@ export async function markUploaded(db: Db, store: Store, attemptId: string, comm
   }
   const ct = commandTimes ?? a.commandTimes;
   const outside = pastLongestClip(ct);
-  const status = outside ? 'close_call' : 'queued';
+  // 3.4b: a Barbell bench is followed from her tap; with no tap there's nothing to follow, so it goes
+  // straight to a referee, who judges it from the clip
+  const noTap = !outside && benchByBar({ ...a, commandTimes: ct }) && !plateTap(ct);
+  const status = outside || noTap ? 'close_call' : 'queued';
   const updated = await db.transaction(async tx => {
     const [u] = await tx.update(attempts)
       .set(outside
         ? { status, uploadedAt: sql`now()`, commandTimes: ct, call: 'close', reason: 'command_times', lights: null, judgedAt: sql`now()`, measures: { command_times: 'outside_clip' } }
+        : noTap
+        ? { status, uploadedAt: sql`now()`, commandTimes: ct, call: 'close', reason: 'bench_referee', lights: null, judgedAt: sql`now()`, measures: { plate_tap: 'missing' } }
         : { status, uploadedAt: sql`now()`, commandTimes: ct })
       .where(and(eq(attempts.id, attemptId), sql`${attempts.status} in ('declared','recording','uploading')`))
       .returning();
-    if (u && !outside) await tx.insert(judgeQueue).values({ attemptId, kind: 'poses', clipSeconds: clipSecondsOf(ct) }).onConflictDoNothing();
+    if (u && status === 'queued') await tx.insert(judgeQueue).values({ attemptId, kind: 'poses', clipSeconds: clipSecondsOf(ct) }).onConflictDoNothing();
     return u;
   });
   if (updated) {
     await logEvent(db, 'uploaded', { bytes: head.bytes, type: head.type }, attemptId);
     if (outside) await logEvent(db, 'close_call', { reason: 'command_times', command_times: 'outside_clip' }, attemptId);
+    if (noTap) await logEvent(db, 'close_call', { reason: 'bench_referee', plate_tap: 'missing' }, attemptId);
     await publish(db, { kind: 'attempt', attempt_id: attemptId, lifter_id: a.lifterId, status });
   }
   return { status: 200 as const, attempt: updated ?? a };
 }
 
-export type Job = { attempt_id: string; video_url: string; command_times: Record<string, number> | null; lift: string; clip_seconds: number };
+export type Job = {
+  attempt_id: string; video_url: string; command_times: Record<string, number> | null; lift: string; clip_seconds: number;
+  /** A Barbell bench (3.4b): follow the plate from her tap in place of the pose run. */
+  track?: 'bar'; plate_tap?: PlateTap;
+};
+
+/**
+ * 3.4b: every Barbell bench goes to a referee, and the server follows the plate from her tap. Home's
+ * bench is the overhead press, judged from poses (3.7), and a sample lift is judged as the lift it shows.
+ */
+export const benchByBar = (a: { lift: string; repsDeclared: number | null; isSampleClip: boolean; commandTimes: Record<string, number> | null }) =>
+  a.lift === 'bench' && a.repsDeclared === null && judgedLift(a) === 'bench';
 
 /** Step 3: the oldest waiting attempt, leased to this worker; null when nothing waits. */
 export async function claimNext(db: Db, store: Store, workerId: string): Promise<Job | null> {
@@ -119,6 +136,7 @@ export async function claimNext(db: Db, store: Store, workerId: string): Promise
   return {
     attempt_id: a.id, video_url: await store.signedGet(a.videoKey!, LEASE_BASE_S + Number(row.clip_seconds)),
     command_times: a.commandTimes, lift: judgedLift(a), clip_seconds: Number(row.clip_seconds),
+    ...(benchByBar(a) && plateTap(a.commandTimes) ? { track: 'bar' as const, plate_tap: plateTap(a.commandTimes)! } : {}),
   };
 }
 
@@ -167,7 +185,10 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
   }
   const first = await store.getJson<{ frames: Frame[] }>(keys.firstPass(a.id));
   const frames = mergePasses(first?.frames ?? [], p.frames);
-  const v = judgeAttempt(frames, dims, judgedLift(a) as MeetLift, a.commandTimes, undefined, a.repsDeclared);
+  const judged = judgeAttempt(frames, dims, judgedLift(a) as MeetLift, a.commandTimes, undefined, a.repsDeclared);
+  // 3.4b: a Barbell bench never gets the camera's light, even from a worker that ran poses on it
+  const v = benchByBar(a) && judged.call.light !== 'close'
+    ? { ...judged, call: { light: 'close' as const, reason: 'bench_referee' as const }, lights: null, repLights: null } : judged;
   const posesKey = keys.poses(a.id);
   await store.putJson(posesKey, { ...dims, frames, commit: p.commit ?? null });
   const close = v.call.light === 'close';
@@ -197,6 +218,63 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
   console.log(JSON.stringify({ msg: 'judged', attempt_id: a.id, call: v.call.light, upload_to_lights_s: uploadToLights, pose_secs: p.secs }));
   await publish(db, { kind: 'attempt', attempt_id: a.id, lifter_id: a.lifterId, status });
   return { status: 200, call: v.call.light };
+}
+
+export type BarPost = {
+  attempt_id: string; worker_id: string;
+  w: number; h: number; duration: number; path: BarPoint[];
+  commit?: string; secs?: number; download_secs?: number;
+};
+
+export function parseBar(body: unknown): BarPost | null {
+  const b = body as BarPost;
+  if (!b || typeof b !== 'object' || typeof b.attempt_id !== 'string' || typeof b.worker_id !== 'string') return null;
+  if (![b.w, b.h, b.duration].every(n => typeof n === 'number' && n > 0 && Number.isFinite(n))) return null;
+  if (!Array.isArray(b.path) || b.path.some(p => !Array.isArray(p) || p.length !== 4 || p.some(v => typeof v !== 'number' || !Number.isFinite(v)))) return null;
+  return b;
+}
+
+/**
+ * 3.4b, "The lights": a Barbell bench's plate path. Saved for the referee's marks (`bar_key`), measured
+ * (the pause, "Press! while sinking", `shadow_lights`), and sent to a referee, reason `bench_referee`.
+ * Broken command times still make it a `command_times` close call, which the referee judges by eye.
+ */
+export async function takeBar(db: Db, store: Store, p: BarPost):
+  Promise<{ status: 200; call: 'close' } | { status: 409 | 404; error: string }> {
+  const [held] = await db.select({ q: judgeQueue, a: attempts }).from(judgeQueue)
+    .innerJoin(attempts, eq(attempts.id, judgeQueue.attemptId))
+    .where(and(eq(judgeQueue.attemptId, p.attempt_id), eq(judgeQueue.kind, 'poses')));
+  if (!held) return { status: 404, error: 'not in the queue' };
+  if (held.q.workerId !== p.worker_id) return { status: 409, error: 'not held by this worker' };
+  const a = held.a;
+  const ct = a.commandTimes;
+  const problem = checkCommandTimes(ct, 'bench', Math.round(p.duration * 1000));
+  const m = !problem && ct ? measureBar(p.path, ct, { w: p.w, h: p.h }) : null;
+  const barKey = keys.bar(a.id);
+  await store.putJson(barKey, { w: p.w, h: p.h, duration: p.duration, tap: plateTap(ct), path: p.path, commit: p.commit ?? null });
+  const reason = problem ? 'command_times' : 'bench_referee';
+  const measures = problem ? { command_times: problem, commit: p.commit ?? null } : { ...m!, commit: p.commit ?? null };
+  const done = await db.transaction(async tx => {
+    const gone = await tx.delete(judgeQueue)
+      .where(and(eq(judgeQueue.attemptId, a.id), eq(judgeQueue.kind, 'poses'), eq(judgeQueue.workerId, p.worker_id)))
+      .returning({ startedAt: judgeQueue.startedAt });
+    if (!gone.length) return false;
+    await tx.update(attempts).set({
+      status: 'close_call', barKey, judgedAt: sql`now()`, call: 'close', lights: null, reason,
+      shadowLights: m ? shadowLights(m.shadow) : null, measures,
+    }).where(eq(attempts.id, a.id));
+    await tx.update(judgeWorkers).set({ attemptsDone: sql`${judgeWorkers.attemptsDone} + 1`, lastSeenAt: sql`now()` })
+      .where(eq(judgeWorkers.workerId, p.worker_id));
+    return true;
+  });
+  if (!done) return { status: 409, error: 'not held by this worker' };
+  await logEvent(db, 'close_call', {
+    reason, ...(problem ? { command_times: problem } : {}), shadow: m?.shadow ?? null, press_while_sinking: m?.press_while_sinking ?? null,
+    bar_secs: p.secs ?? null, download_secs: p.download_secs ?? null, clip_s: p.duration, commit: p.commit ?? null, worker_id: p.worker_id,
+  }, a.id);
+  console.log(JSON.stringify({ msg: 'bench to a referee', attempt_id: a.id, reason, bar_secs: p.secs }));
+  await publish(db, { kind: 'attempt', attempt_id: a.id, lifter_id: a.lifterId, status: 'close_call' });
+  return { status: 200, call: 'close' };
 }
 
 /**

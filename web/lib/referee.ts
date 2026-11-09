@@ -17,6 +17,8 @@ export const WHY: Record<string, string> = {
   hitch: 'Possible hitch',
   judge_unavailable: "The judge couldn't run",
   command_times: "The phone's commands didn't line up",
+  // 3.4b: every Barbell bench goes to a referee
+  bench_referee: 'Every bench',
 };
 
 export const COMMAND_PROBLEM: Record<string, string> = {
