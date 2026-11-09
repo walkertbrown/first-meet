@@ -8,7 +8,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CLIPS_DIR, EXPECTED, checkClip, verdictOf } from '../clips/check';
-import { mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
+import { judgeAttempt, mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
+import samples from '../../content/samples/samples.json';
 
 const PY = process.env.WORKER_PYTHON;
 const CLI = join(__dirname, '../../worker/cli.py');
@@ -82,6 +83,23 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const v = verdictOf({ ...first, frames: mergePasses(first.frames, second.frames) }, { lift: 'squat', frameCheck: 'pass', skipped: [] } as never);
       timings[name] = { makeSecs, pass1Frames: first.frames.length, pass1: first.secs, pass2Frames: second.frames.length, pass2: second.secs, windows: zoom.windows.length, reps: v.skipped.length };
       expect(first.duration).toBeGreaterThan(29);
+    }, 600_000);
+  }
+  // The demo meet's sample lifts go through the server (5.36): the worker's two passes, then the
+  // judge with the clip's stored command times. A close call is judged on the line, where
+  // Python's and Chromium's points part ways (the Pexels 5025965 cut was a close call on
+  // Chromium's points, depth 0.008, and a white on the worker's, 0.077), so it is checked here.
+  for (const s of samples.clips) {
+    it(`demo sample ${s.id}: on the worker's points it is a ${s.kind === 'good' ? 'good lift' : s.kind === 'no' ? 'no lift' : 'close call'}`, () => {
+      const file = join(__dirname, '../../content/samples', s.file);
+      const ct = s.meet.command_times;
+      const first = runFile(file, ['--fps', '5']);
+      const zoom = zoomWindows(first.frames, first, 'squat', ct);
+      const times = [...new Set(zoom.windows.flatMap(w => grid15(first.duration, w)))].sort((a, b) => a - b);
+      const second = times.length ? runFile(file, ['--times', times.join(','), ...(zoom.splitMs !== null ? ['--split', String(zoom.splitMs)] : [])]) : { frames: [], secs: 0 };
+      const v = judgeAttempt(mergePasses(first.frames, second.frames), first, 'squat', ct, undefined, s.meet.reps);
+      timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
+      expect(v.call.light).toBe(({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind]);
     }, 600_000);
   }
   it('writes the timings', () => {

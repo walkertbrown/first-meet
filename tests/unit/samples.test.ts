@@ -24,9 +24,7 @@ describe('the sample lifts', () => {
       expect(existsSync(file), `sample-${s.id}.json is measured`).toBe(true);
       checkSample(expect, s, runSample(JSON.parse(readFileSync(file, 'utf8'))));
     });
-    // Only the clips Try a lift plays, judged live on the phone. The close call is the demo
-    // meet's (5.36), judged by the server on its 15-a-second grid: samples-meet.test.ts.
-    if (s.kind !== 'close') it(`${s.id} on a slow device (a frame every 600 ms): "Squat!", "Rack!" and the same call`, () => {
+    it(`${s.id} on a slow device (a frame every 600 ms): "Squat!", "Rack!" and the same call`, () => {
       const run = runSample(JSON.parse(readFileSync(join(CLIPS_DIR, 'poses', `sample-${s.id}.json`), 'utf8')), 600);
       expect(run.squatCalled).toBe(true);
       expect(run.rackAt, '"Rack!" is called').not.toBeNull();

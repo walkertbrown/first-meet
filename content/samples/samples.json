@@ -34,15 +34,15 @@
     {
       "id": "close-call",
       "kind": "close",
-      "file": "close-call-pexels.mp4",
-      "credit": "Pexels",
+      "file": "close-call-wabba.mp4",
+      "credit": "WABBA on YouTube (CC BY)",
       "meet": {
         "lift": "squat",
         "reps": 1,
         "command_times": {
           "loaded": 0,
           "squat": 200,
-          "rack": 2100
+          "rack": 18000
         }
       }
     }
