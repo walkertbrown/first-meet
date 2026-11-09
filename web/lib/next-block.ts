@@ -19,8 +19,10 @@ export const REAL_MEETS = [
 /** Adds the real meets if they're missing, and Winter's block date if its row has none. Never changes a date already set. */
 export async function ensureRealMeets(db: Db) {
   for (const m of REAL_MEETS) {
-    await db.insert(meets).values({ ...m, kind: 'real', status: 'upcoming' }).onConflictDoNothing();
+    const flightHourCutoffAt = new Date(m.opensAt.getTime() - 72 * 3_600_000);
+    await db.insert(meets).values({ ...m, kind: 'real', status: 'upcoming', flightHourCutoffAt }).onConflictDoNothing();
     await db.update(meets).set({ blockStartsOn: m.blockStartsOn }).where(and(eq(meets.slug, m.slug), isNull(meets.blockStartsOn)));
+    await db.update(meets).set({ flightHourCutoffAt }).where(and(eq(meets.slug, m.slug), isNull(meets.flightHourCutoffAt)));
   }
 }
 

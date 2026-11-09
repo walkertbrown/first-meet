@@ -22,7 +22,8 @@ export const meets = pgTable('meets', {
   opensAt: at('opens_at'),
   closesAt: at('closes_at'),
   liveAt: at('live_at'),
-  kind: text('kind').$type<'real' | 'demo' | 'sample'>().notNull(),
+  /** `test`: staging only, made by /signin/test's meet-week buttons (plan 3.1, item 82); nothing that looks for a `real` meet picks it. */
+  kind: text('kind').$type<'real' | 'demo' | 'sample' | 'test'>().notNull(),
   status: text('status').$type<'upcoming' | 'open' | 'closed' | 'final'>().notNull().default('upcoming'),
   streamVideoId: text('stream_video_id'),
   streamStartedAt: at('stream_started_at'),
@@ -31,6 +32,8 @@ export const meets = pgTable('meets', {
   rollcallRows: smallint('rollcall_rows').notNull().default(1),
   /** The Monday (Eastern) its 12-week block starts (plan 3.2, item 76): the closed page, 5.8, 5.32. */
   blockStartsOn: date('block_starts_on', { mode: 'string' }),
+  /** When the flight hour is decided (plan 3.2, 5.23): opens_at − 72 h for a real meet; the test meet's is set by /signin/test. */
+  flightHourCutoffAt: at('flight_hour_cutoff_at'),
 });
 
 export type HomeWeight = { weight: number; kind: 'pair' | 'bell' };
@@ -85,8 +88,9 @@ export const flights = pgTable('flights', {
 export const flightHourVotes = pgTable('flight_hour_votes', {
   flightId: uuid('flight_id').notNull().references(() => flights.id),
   lifterId: uuid('lifter_id').notNull().references(() => lifters.id, { onDelete: 'cascade' }),
+  // 0–7, MEET_WEEK_SLOTS in web/lib/meet-week.ts; she may tick every hour that works (5.23)
   slot: smallint('slot').notNull(),
-}, t => [primaryKey({ columns: [t.flightId, t.lifterId] })]);
+}, t => [primaryKey({ columns: [t.flightId, t.lifterId, t.slot] })]);
 
 export const sessions = pgTable('sessions', {
   id: id(),

@@ -27,7 +27,7 @@ export async function meetAttempts(db: Db, l: Pick<LifterRow, 'id' | 'meetId'>):
 }
 
 /** Her training sets as the cap rules read them (3.8, 3.8a). */
-async function trainingSets(db: Db, lifterId: string): Promise<{ judged: JudgedSet[]; logged: LoggedSet[] }> {
+export async function trainingSets(db: Db, lifterId: string): Promise<{ judged: JudgedSet[]; logged: LoggedSet[] }> {
   const js = await db.select({ s: judgedSets, week: sessions.week }).from(judgedSets)
     .leftJoin(sessions, eq(sessions.id, judgedSets.sessionId)).where(eq(judgedSets.lifterId, lifterId));
   const judged: JudgedSet[] = js.map(r => ({

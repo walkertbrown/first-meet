@@ -1,0 +1,23 @@
+/* Meet week (plan 5.23, look 5.9). The choice cards are platform.css's. */
+.mw-col { gap: 0; }
+.mw-block { display: flex; flex-direction: column; gap: 12px; padding: 24px 0; border-top: 1px solid var(--rule); }
+.mw-block:first-child { border-top: 0; padding-top: 8px; }
+.mw-block .try-actions { margin-top: 0; padding-top: 4px; }
+.mw-lift { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.mw-lift-name { font-family: var(--font-display); font-weight: 800; font-size: 22px; line-height: 26px; }
+.mw-weight-for { font-weight: 700; }
+.mw-reps { margin-top: 8px; }
+.mw-scores { color: var(--ink-2); }
+.mw-saved { font-weight: 700; }
+.mw-hour { cursor: default; box-shadow: 0 0 0 2.5px var(--ink); }
+.mw-hour:hover { box-shadow: 0 0 0 2.5px var(--ink); }
+.mw-hour .eyebrow { color: var(--ink-2); }
+.mw-other summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+.mw-other-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.mw-other-list li { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.mw-other-list .small { color: var(--ink-2); }
+.mw-checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.mw-check { display: flex; align-items: flex-start; gap: 12px; min-height: 48px; padding: 12px 0; cursor: pointer; }
+.mw-check input { flex: none; width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--ink); }
+.mw-check input:checked + .body { color: var(--ink-2); }
+.mw-link { word-break: break-all; user-select: all; }

@@ -22,6 +22,20 @@
       "when": 1794223915158,
       "tag": "0002_cheers_seen_at",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794225065158,
+      "tag": "0003_flight_votes_every_hour",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794226049263,
+      "tag": "0004_meet_flight_hour_cutoff",
+      "breakpoints": true
     }
   ]
 }
