@@ -12,6 +12,9 @@
 //         STUCK.ms counts as lost, and the stuck stretch is dropped from the history. Before Start!: "We lost the
 //         bar.", no Start!. After Start!: never Press! from stillness; if the track doesn't come back, a late Press!
 //         2 s after the loss and Rack! 3 s after that.
+// Missed start (3.4b, The Playner's 3:54 mail): off the hooks with no Start! within voidMs, or the track lost off the
+//         hooks before Start! (stuck, or under lostScore for freezeMs): "Rack!", then "We lost the bar.", and the attempt
+//         is void. Lost on the hooks before Start! is a re-tap, as before (no command).
 
 // ---- item 70's rules (phase 2's bench bar test), unchanged ----
 export type BarRules = {
@@ -41,7 +44,7 @@ export const BAR: BarRules = {
   pauseRise: 0.01, lostScore: 0.5, lostShare: 0.2, redOnBounce: false, stillY: false, shortPause: true,
 };
 
-export type BarCmd = { cmd: 'start' | 'press' | 'rack'; t: number; late?: boolean; noRep?: boolean };
+export type BarCmd = { cmd: 'start' | 'press' | 'rack'; t: number; late?: boolean; noRep?: boolean; void?: boolean };
 
 /** The stuck-track rule's numbers. The plan's guess was 0.99 for 0.3 s; 0.3 s calls a real held bar lost (IA0P). */
 export const STUCK = { score: 0.99, ms: 400 };
@@ -49,13 +52,14 @@ export const STUCK = { score: 0.99, ms: 400 };
 export type Rel = BarRules & {
   slopeMs: number; startXY: boolean; pressXY: boolean; startRel: number; startFloor: number; pressRel: number; pressFloor: number;
   pastPeakDown: number; rackRel: number; stuckRule: boolean; freezeScore: number; freezeMs: number;
+  voidRule: boolean; voidMs: number;
 };
 /** The numbers this test passes with (README). */
 export const RULES: Rel = {
   ...BAR, leftRack: 0.03, lostScore: 0.4,
   slopeMs: 500, startXY: true, pressXY: false, startRel: 0.1, startFloor: 0.05, startStillMs: 500,
   pressRel: 0.2, pressFloor: 0.01, pressStillMs: 500, pastPeakDown: 0, rackRel: 0.05, rackHoldMs: 400,
-  stuckRule: true, freezeScore: STUCK.score, freezeMs: STUCK.ms,
+  stuckRule: true, freezeScore: STUCK.score, freezeMs: STUCK.ms, voidRule: true, voidMs: 5000,
 };
 
 type P = { t: number; x: number; y: number; score: number };
@@ -79,6 +83,7 @@ export class BenchCaller {
   hist: P[] = []; all: P[] = [];
   speeds: { t: number; v: number; s: number }[] = [];
   private aspect: number; private h: number; private w: number; lostSince: number | null = null; frozeAt: number[] = []; lostBeforeStart: number | null = null; lostPress = false;
+  voidAt: number | null = null; private lowSince: number | null = null;
   constructor(private tap: { x: number; y: number }, dims: { w: number; h: number }, private r: Rel = RULES, racked = true) {
     this.aspect = dims.w / dims.h; this.w = dims.w; this.h = dims.h;
     if (!racked) this.state = 'waiting';
@@ -116,7 +121,19 @@ export class BenchCaller {
         if (this.lostSince === null) { const from = t - r.freezeMs; this.hist = this.hist.filter(q => q.t < from); this.speeds = this.speeds.filter(q => q.t < from); }
       }
     }
-    if (!ok && r.stuckRule && this.state === 'waiting' && this.leftAt !== null && score >= r.freezeScore) { this.state = 'done'; this.lostBeforeStart = t; return null; }
+    if (this.state === 'waiting' && this.leftAt !== null) {
+      // Lost off the hooks before Start!: stuck, or under lostScore for freezeMs.
+      this.lowSince = score < r.lostScore ? (this.lowSince ?? t) : null;
+      const stuck = !ok && r.stuckRule && score >= r.freezeScore;
+      const low = this.lowSince !== null && t - this.lowSince >= r.freezeMs;
+      if (stuck || (r.voidRule && low)) {
+        this.state = 'done'; this.lostBeforeStart = t;
+        if (!r.voidRule) return null;
+        this.voidAt = t; return { cmd: 'rack', t, void: true };
+      }
+      // Off the hooks with no Start! within voidMs.
+      if (r.voidRule && t - this.leftAt >= r.voidMs) { this.state = 'done'; this.voidAt = t; return { cmd: 'rack', t, void: true }; }
+    }
     if (!ok && r.stuckRule && this.state === 'lifting') {
       if (this.lostSince === null) this.lostSince = this.frozeAt.at(-1) === t ? t - r.freezeMs : t;
       if (t - this.lostSince >= 2000) { this.state = 'pressed'; this.pressAt = t; this.late = true; this.lostPress = true; this.backSince = null; return { cmd: 'press', t, late: true }; }

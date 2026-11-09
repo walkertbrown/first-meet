@@ -29,7 +29,9 @@
   "rackRel": 0.05,
   "stuckRule": true,
   "freezeScore": 0.99,
-  "freezeMs": 400
+  "freezeMs": 400,
+  "voidRule": true,
+  "voidMs": 5000
  },
  "lines": {
   "line1": {
@@ -42,15 +44,19 @@
   },
   "line3": {
    "pass": true,
-   "text": "3. No Start! before the bar settled, all 22 reps: 0 early (none). No Start!: m-k8, Nv9h, VM_y"
+   "text": "3. No Start! before the bar settled, all 22 reps: 0 early (none). No Start!: m-k8, Nv9h, VM_y; of those, not voided within 5 s of leaving the hooks or of the loss: 0 (none)"
   },
   "line4": {
    "pass": true,
-   "text": "4. No Rack! before the bar is back up, all 22 reps: 0 early (none)"
+   "text": "4. No Rack! before the bar is back up, all 22 reps: 0 early (none). A rep with no Start! passes only by the void's Rack!: 3 of 3"
   },
   "line5": {
    "pass": true,
    "text": "5. \"Back up\" agrees with the eye, 18 reps: 18 of 18 (disagree: none)"
+  },
+  "line6": {
+   "pass": true,
+   "text": "6. No scored rep voided, 18 reps: 0 (none)"
   }
  },
  "rows": [
@@ -64,6 +70,9 @@
    "rack": 7.1,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 0.667,
+   "voided": null,
+   "voidOk": false,
    "settled": 1.5,
    "descent": 3.867,
    "stop": 4.997,
@@ -111,6 +120,9 @@
    "rack": 7.0127165775401075,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 0.601,
+   "voided": null,
+   "voidOk": false,
    "settled": 0.5,
    "descent": 3.941,
    "stop": 4.81,
@@ -152,6 +164,9 @@
    "rack": 13.64775486381323,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 5.606,
+   "voided": null,
+   "voidOk": false,
    "settled": 6,
    "descent": 8.375,
    "stop": 9.61,
@@ -193,6 +208,9 @@
    "rack": 33.03269964664311,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 27.894,
+   "voided": null,
+   "voidOk": false,
    "settled": 27.6,
    "descent": 28.829,
    "stop": 30.531,
@@ -240,6 +258,9 @@
    "rack": 49.18248829431438,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 44.01,
+   "voided": null,
+   "voidOk": false,
    "settled": 44,
    "descent": 44.944,
    "stop": 46.58,
@@ -287,6 +308,9 @@
    "rack": 29.434,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 19.567,
+   "voided": null,
+   "voidOk": false,
    "settled": 20.367,
    "descent": 21.833,
    "stop": 25.1,
@@ -328,6 +352,9 @@
    "rack": 29.321,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 19.728,
+   "voided": null,
+   "voidOk": false,
    "settled": 19.8,
    "descent": 23.107,
    "stop": 24.48,
@@ -362,6 +389,9 @@
    "rack": 30.86733333333333,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 22.566,
+   "voided": null,
+   "voidOk": false,
    "settled": 22.566,
    "descent": 25.6,
    "stop": 26.53,
@@ -403,6 +433,9 @@
    "rack": 50.93366666666667,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 43.267,
+   "voided": null,
+   "voidOk": false,
    "settled": 43.634,
    "descent": 45.967,
    "stop": 46.87,
@@ -444,6 +477,9 @@
    "rack": 5.405020408163265,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 1.101,
+   "voided": null,
+   "voidOk": false,
    "settled": 1.001,
    "descent": 2.036,
    "stop": 3.0709999999999997,
@@ -491,6 +527,9 @@
    "rack": 11.84512020033389,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 6.206,
+   "voided": null,
+   "voidOk": false,
    "settled": 6.8,
    "descent": 8.308,
    "stop": 9.707,
@@ -538,6 +577,9 @@
    "rack": 11.833666666666666,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 1.1,
+   "voided": null,
+   "voidOk": false,
    "settled": 1,
    "descent": 2.566,
    "stop": 3.5629999999999997,
@@ -585,6 +627,9 @@
    "rack": 59.8333,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 50.6,
+   "voided": null,
+   "voidOk": false,
    "settled": 50.5,
    "descent": 54.167,
    "stop": 56.8,
@@ -619,6 +664,9 @@
    "rack": 7.974642201834862,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 2.102,
+   "voided": null,
+   "voidOk": false,
    "settled": 2.002,
    "descent": 3.0370000000000004,
    "stop": 4.374,
@@ -666,6 +714,9 @@
    "rack": null,
    "noRep": false,
    "lostBeforeStart": 1.5,
+   "leftHooks": 1.067,
+   "voided": 1.5,
+   "voidOk": true,
    "settled": 9.8,
    "descent": 11.434,
    "stop": 12.27,
@@ -684,7 +735,9 @@
    "sink": null,
    "sinking": false,
    "waits": [],
-   "log": []
+   "log": [
+    "Rack!(void) 1.50"
+   ]
   },
   {
    "id": "Nazt",
@@ -696,6 +749,9 @@
    "rack": 20.166666666666668,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 11.1,
+   "voided": null,
+   "voidOk": false,
    "settled": 11,
    "descent": 12.834,
    "stop": 14.867,
@@ -737,6 +793,9 @@
    "rack": 8.575070931849792,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 3.604,
+   "voided": null,
+   "voidOk": false,
    "settled": 3.504,
    "descent": 4.537999999999999,
    "stop": 6.244,
@@ -784,11 +843,14 @@
    "rack": null,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 9.566,
+   "voided": 14.567,
+   "voidOk": true,
    "settled": 10,
-   "descent": 14.067,
-   "stop": 14.97,
-   "pauseEnd": 15.2,
-   "backUpEye": 15.767,
+   "descent": 14.7,
+   "stop": 15.603000000000002,
+   "pauseEnd": 15.832999999999998,
+   "backUpEye": 16.4,
    "delay": null,
    "early": false,
    "within1": false,
@@ -805,11 +867,13 @@
     {
      "what": "start",
      "at": 10.967,
-     "s": 3,
+     "s": 3.633,
      "got": false
     }
    ],
-   "log": []
+   "log": [
+    "Rack!(void) 14.57"
+   ]
   },
   {
    "id": "uGCh",
@@ -821,6 +885,9 @@
    "rack": 33.699666666666666,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 28.1,
+   "voided": null,
+   "voidOk": false,
    "settled": 28,
    "descent": 29.034000000000002,
    "stop": 30.297,
@@ -862,11 +929,14 @@
    "rack": null,
    "noRep": false,
    "lostBeforeStart": 5.300333333333333,
+   "leftHooks": 2.9,
+   "voided": 5.300333333333333,
+   "voidOk": true,
    "settled": 3.267,
-   "descent": 7.833,
-   "stop": 8.57,
-   "pauseEnd": 8.77,
-   "backUpEye": 9.267,
+   "descent": 5.4,
+   "stop": 6.1370000000000005,
+   "pauseEnd": 6.337,
+   "backUpEye": 6.8340000000000005,
    "delay": null,
    "early": false,
    "within1": false,
@@ -883,11 +953,13 @@
     {
      "what": "start",
      "at": 4.767,
-     "s": 3,
+     "s": 0.567,
      "got": false
     }
    ],
-   "log": []
+   "log": [
+    "Rack!(void) 5.30"
+   ]
   },
   {
    "id": "xXFjNqroOQ0",
@@ -899,6 +971,9 @@
    "rack": 18.700283950617283,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 13.533,
+   "voided": null,
+   "voidOk": false,
    "settled": 13.8,
    "descent": 15.633,
    "stop": 16.497,
@@ -946,6 +1021,9 @@
    "rack": 4.199666666666667,
    "noRep": false,
    "lostBeforeStart": null,
+   "leftHooks": 0.6,
+   "voided": null,
+   "voidOk": false,
    "settled": 0.5,
    "descent": 1.3,
    "stop": 2.43,

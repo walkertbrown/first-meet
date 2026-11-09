@@ -1,6 +1,5 @@
-// The plate tracker from phase 2's bench bar test (item 70), unchanged, plus the whole-frame search the stuck-track
-// rule needs (plan 3.4b). Zero-mean normalised cross-correlation of a square template cut around the tapped point,
-// searched in a window around the last position on a small grey frame. The template follows slowly when the match is
+// The plate tracker from phase 2's bench bar test (item 70), unchanged. Zero-mean normalised cross-correlation of a
+// square template cut around the tapped point, searched in a window around the last position on a small grey frame. The template follows slowly when the match is
 // strong. Plain TS, no dependencies, past frames only.
 
 export type Gray = { w: number; h: number; px: Uint8Array };
@@ -67,23 +66,4 @@ export class PlateTracker {
     }
     return { x: this.x / f.w, y: this.y / f.h, score: best };
   }
-}
-
-/** The tap's own template, kept as it was cut (it never follows), for the whole-frame search. */
-export class TapTemplate {
-  private p: PlateTracker;
-  constructor(f: Gray, fx: number, fy: number, o: TrackOpts) { this.p = new PlateTracker(f, fx, fy, { ...o, follow: 0 }); }
-  /** The tap template's score centred at (cx, cy), px. */
-  at(f: Gray, cx: number, cy: number) { return this.p.score(f, Math.round(cx), Math.round(cy)); }
-  /** The best match anywhere on the frame, px. */
-  searchAll(f: Gray): { x: number; y: number; score: number } {
-    const h = this.p.n >> 1; let best = -3, bx = 0, by = 0;
-    for (let y = h; y < f.h - h; y++) for (let x = h; x < f.w - h; x++) { const s = this.p.score(f, x, y); if (s > best) { best = s; bx = x; by = y; } }
-    return { x: bx, y: by, score: best };
-  }
-}
-
-/** Re-seed a tracker on a found spot, with the tap's template. */
-export function reseed(tr: PlateTracker, tap: PlateTracker, x: number, y: number) {
-  tr.x = x; tr.y = y; tr.t.set(tap.t); tr.norm();
 }
