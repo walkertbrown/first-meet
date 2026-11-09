@@ -601,7 +601,18 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   };
 
   useEffect(() => {
-    if (startView === 'stage') requestAnimationFrame(() => void runResume());
+    if (startView === 'stage') { requestAnimationFrame(() => void runResume()); return; }
+    // 3.11, "come back later": she went offline before the server heard of the upload, so the
+    // attempt still reads declared. Her clip is saved on this phone: it sends and is judged, and
+    // the card never offers "I'm ready" for a lift she has already lifted.
+    let on = true;
+    const run = runRef.current;
+    void getPending(attempt.id).then(p => {
+      if (!on || !p || runRef.current !== run) return;
+      resetStage(); setMode('resume'); setView('stage'); setPhase('held');
+      requestAnimationFrame(() => void runResume());
+    }).catch(() => {});
+    return () => { on = false; };
     // only on the first render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

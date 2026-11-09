@@ -121,3 +121,41 @@ test('a lift on her own camera is judged, through the offline sheet\'s OK', asyn
     expect((await r.json()).reason).not.toBe('judge_unavailable');
   }
 });
+
+// 3.11's other way: "You can keep this screen open or come back later." She closes the tab while
+// offline; her clip waits on the phone (IndexedDB). Back online, she opens the platform again and
+// it sends from where it was and is judged; nothing is lost, and the attempt is never back to ready.
+test('offline after the lift, the tab closed: back later, her saved clip sends and is judged', async ({ page, context }) => {
+  test.setTimeout(9 * 60_000);
+  await fakeCamera(page, '/samples/good-lift-wabba.mp4');
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: "I'm ready" });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.locator('.stage')).toBeVisible({ timeout: 2000 });
+    await expect(page.getByRole('button', { name: "I'm ready" })).toBeHidden({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.locator('.stage.recording')).toBeVisible({ timeout: 90_000 });
+  await context.setOffline(true);
+  await expect(page.getByText('Your lift is saved on this phone')).toBeVisible({ timeout: 90_000 });
+  const saved = await page.evaluate(() => new Promise<number>((resolve, reject) => {
+    const open = indexedDB.open('first-meet');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      if (!db.objectStoreNames.contains('uploads')) { db.close(); return resolve(0); }
+      const req = db.transaction('uploads', 'readonly').objectStore('uploads').count();
+      req.onsuccess = () => { resolve(req.result); db.close(); };
+      req.onerror = () => reject(req.error);
+    };
+  }));
+  expect(saved).toBe(1);
+  await page.close();
+
+  await context.setOffline(false);
+  const back = await context.newPage();
+  await back.setViewportSize({ width: 390, height: 844 });
+  await back.goto('/platform');
+  await expect(back.getByRole('button', { name: "I'm ready" })).toBeHidden();
+  await expect(back.getByRole('heading', { name: LIGHTS })).toBeVisible({ timeout: 5 * 60_000 });
+});
