@@ -32,8 +32,10 @@ export class R2 {
   }
 
   private async call(method: string, key: string, init: { query?: Record<string, string>; body?: BodyInit; headers?: Record<string, string> } = {}) {
-    const res = await this.aws.fetch(this.url(key, init.query).toString(), { method, body: init.body, headers: init.headers });
-    return res;
+    // Sign, then send the plain body ourselves: aws4fetch's own fetch wraps it in a Request, so
+    // Node streams it chunked with no Content-Length, and R2 refuses a PUT like that (411).
+    const signed = await this.aws.sign(this.url(key, init.query).toString(), { method, body: init.body, headers: init.headers });
+    return fetch(signed.url, { method, headers: signed.headers, body: init.body });
   }
 
   private async presign(method: string, key: string, seconds: number, query: Record<string, string> = {}) {

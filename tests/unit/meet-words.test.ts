@@ -81,3 +81,17 @@ describe('the attempt card pieces', () => {
     expect(loadingLine('home', 25)).toBe('One 25 lb dumbbell');
   });
 });
+
+describe('Weight XL and the refused sheet', () => {
+  it('a decimal point counts .35 of a digit (look 5.6 row 2)', async () => {
+    const { weightDigits } = await import('../../web/lib/stage/meet-words');
+    expect(weightDigits(135)).toBe(3);
+    expect(weightDigits(95)).toBe(2);
+    expect(weightDigits(62.5)).toBeCloseTo(3.35);
+    expect(weightDigits(10)).toBe(2);
+  });
+  it('the refused sheet says the attempt is still hers (3.11)', async () => {
+    const { REFUSED_WORDS } = await import('../../web/lib/stage/meet-words');
+    expect(REFUSED_WORDS).toEqual({ title: "Your clip didn't send", body: "Nothing was judged, so this attempt is still yours. Lift it again when you're ready." });
+  });
+});

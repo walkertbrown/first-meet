@@ -90,6 +90,18 @@ export function barLoading(weight: number, units: 'lb' | 'kg' = 'lb', bar = barO
   return `${bar} ${units} bar + ${list} on each side`;
 }
 
+/** Weight XL's width in digits (look 5.6 row 2): a decimal point counts .35 of a digit, so "62.5" is 3.35. */
+export const weightDigits = (n: number) => {
+  const s = String(n);
+  return s.replace('.', '').length + (s.includes('.') ? 0.35 : 0);
+};
+
+/** The refused-upload sheet (3.11). */
+export const REFUSED_WORDS = {
+  title: "Your clip didn't send",
+  body: "Nothing was judged, so this attempt is still yours. Lift it again when you're ready.",
+} as const;
+
 /** Under "SAMPLE LIFT" on a Home attempt (5.36). */
 export const sampleRepsLine = (n: number) =>
   n === 1 ? "This sample is one rep, so it's judged as one." : `This sample is ${n} reps, so it's judged as ${n}.`;

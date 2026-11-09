@@ -17,7 +17,7 @@ import { thock, audio } from '@/lib/stage/thock';
 import { DeepestFrames, marksOf, type Marks, type Snap } from '@/lib/stage/snap';
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
-import { MEET_WORDS, barLoading, hudLine, meetResult, sampleRepsLine, type MeetResult } from '@/lib/stage/meet-words';
+import { MEET_WORDS, REFUSED_WORDS, barLoading, hudLine, meetResult, sampleRepsLine, weightDigits, type MeetResult } from '@/lib/stage/meet-words';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
 import samples from '../../content/samples/samples.json';
 
@@ -531,7 +531,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             <h1 className="lift-name">{home ? `${liftName} · ${ofLine}` : liftName}</h1>
             {!home && <span className="body ac-of">{ofLine}{attempt.number === 1 && <span className="ac-opener"> · opener</span>}</span>}
           </div>
-          <p className="weight-xl num" style={{ '--digits': String(home ? attempt.reps_declared ?? 0 : attempt.weight).length } as React.CSSProperties}>
+          <p className="weight-xl num" style={{ '--digits': weightDigits(home ? attempt.reps_declared ?? 0 : attempt.weight) } as React.CSSProperties}>
             {home ? attempt.reps_declared : attempt.weight}<span className="unit">{home ? 'reps' : lifter.units}</span>
           </p>
           {home ? <BellDiagram label={loading} /> : <BarDiagram weight={attempt.weight} units={lifter.units} label={loading} />}
@@ -638,8 +638,8 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             )}
             {phase === 'refused' && (
               <div role="alert">
-                <p className="sheet-title">Your clip didn&apos;t send</p>
-                <p className="body">Lift it again when you&apos;re ready.</p>
+                <p className="sheet-title">{REFUSED_WORDS.title}</p>
+                <p className="body">{REFUSED_WORDS.body}</p>
                 <div className="try-actions"><button className="btn" type="button" onClick={liftAgain} aria-busy={again}>Lift it again</button></div>
               </div>
             )}
