@@ -30,13 +30,15 @@
     "startElbowMinDeg": 155,
     "startStillMs": 500,
     "bottomElbowMaxDeg": 110,
-    "pauseStillMaxArm": 0.02,
+    "pauseStillMaxArm": 0.07,
     "pauseStillMs": 400,
     "lockoutElbowMinDeg": 155,
     "lockoutHoldMs": 400,
     "noPauseRiseArm": 0.03,
     "serverPauseMinMs": 300,
-    "noRepMs": 20000
+    "noRepMs": 20000,
+    "homeNoRepMs": 8000,
+    "floorTolArm": 0.1
   },
   "tryALift": {
     "goodSpotToStandTallMs": 1500,

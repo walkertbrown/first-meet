@@ -40,7 +40,7 @@ export type Window = { start: number; end: number };
 
 const inWindow = (frames: Frame[], w: Window) => frames.filter(f => f.t >= w.start && f.t <= w.end);
 
-function lowVisibilityShare(frames: Frame[], side: Side, rules: Rules): number {
+export function lowVisibilityShare(frames: Frame[], side: Side, rules: Rules = RULES): number {
   if (!frames.length) return 1;
   const s = SIDES[side];
   let low = 0;
