@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CLIPS_DIR, EXPECTED, checkClip, verdictOf } from '../clips/check';
-import { judgeAttempt, mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
+import { RULES, judgeAttempt, mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
 import samples from '../../content/samples/samples.json';
 
 const PY = process.env.WORKER_PYTHON;
@@ -89,6 +89,10 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
   // judge with the clip's stored command times. A close call is judged on the line, where
   // Python's and Chromium's points part ways (the Pexels 5025965 cut was a close call on
   // Chromium's points, depth 0.008, and a white on the worker's, 0.077), so it is checked here.
+  // And it must sit well inside the band: staging's judge read the Pexels 8837118 cut at -0.087
+  // and -0.121 on two runs of the same file (GitHub's worker: -0.073), so a close call within
+  // CLOSE_MARGIN of the band's edges is a red or a white on some machine.
+  const CLOSE_MARGIN = 0.04;
   for (const s of samples.clips) {
     it(`demo sample ${s.id}: on the worker's points it is a ${s.kind === 'good' ? 'good lift' : s.kind === 'no' ? 'no lift' : 'close call'}`, () => {
       const file = join(__dirname, '../../content/samples', s.file);
@@ -100,6 +104,11 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const v = judgeAttempt(mergePasses(first.frames, second.frames), first, 'squat', ct, undefined, s.meet.reps);
       timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
       expect(v.call.light).toBe(({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind]);
+      if (s.kind === 'close') {
+        const d = v.measures.depth!;
+        expect(d, `the close call's depth ${d} is ${CLOSE_MARGIN} inside the band`).toBeGreaterThanOrEqual(RULES.squat.redDepthMax + CLOSE_MARGIN);
+        expect(d).toBeLessThanOrEqual(RULES.squat.whiteDepthMin - CLOSE_MARGIN);
+      }
     }, 600_000);
   }
   it('writes the timings', () => {

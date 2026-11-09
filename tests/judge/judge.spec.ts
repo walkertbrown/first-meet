@@ -4,7 +4,7 @@
 import { expect, test } from '@playwright/test';
 import { EXPECTED, checkClip } from '../clips/check';
 import { openPosePage, findPoses } from './pose-page';
-import { SAMPLES, checkSample, runSample } from '../clips/sample-flow';
+import { SAMPLES, checkSample, checkServerSample, playsInTryALift, runSample } from '../clips/sample-flow';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -18,9 +18,10 @@ for (const [name, e] of EXPECTED) {
 
 // The sample lifts (plan 5.2), as shipped, through the stage's own sample timeline.
 for (const s of SAMPLES) {
-  test(`sample ${s.id}: judged as ${{ good: 'a good lift', no: 'a no lift', close: 'a close call' }[s.kind]}, trimmed to look 7`, async ({ page }) => {
+  test(`sample ${s.id}: judged as ${{ good: 'a good lift', no: 'a no lift', close: "a close call (the server's judge)" }[s.kind]}, trimmed to look 7`, async ({ page }) => {
     await openPosePage(page);
     const raw = await findPoses(page, `/samples/${s.file}`);
-    checkSample(expect, s, runSample(raw as never));
+    if (playsInTryALift(s)) checkSample(expect, s, runSample(raw as never));
+    else checkServerSample(expect, s, raw as never);
   });
 }

@@ -5,10 +5,10 @@
 // and judge.spec.ts on poses found fresh in Chromium, so both check what a visitor sees.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { RULES, TryALift, measure, nearSide, type AttemptResult, type Frame } from '../../web/lib/judge';
+import { RULES, TryALift, judgeAttempt, measure, nearSide, type AttemptResult, type Frame } from '../../web/lib/judge';
 import { callName } from './check';
 
-export type Sample = { id: string; kind: 'good' | 'no' | 'close'; file: string; credit: string };
+export type Sample = { id: string; kind: 'good' | 'no' | 'close'; file: string; credit: string; meet?: ServerMeet };
 /** The call each kind of sample must get. */
 export const KIND_CALL = { good: 'white', no: 'red:depth', close: 'close:borderline_depth' } as const;
 export const SAMPLES_DIR = join(__dirname, '../../content/samples');
@@ -83,6 +83,34 @@ export function checkSample(expect: (v: unknown, msg?: string) => any, s: Sample
     const depth = run.result?.reps[0]?.depth;
     expect(closeOnTheLine(run.call, depth), `${s.id}: a close call, or ${depth} on the edge of the close band`).toBe(true);
   } else expect(run.call, `${s.id}: judged as its kind, ${s.kind}`).toBe(KIND_CALL[s.kind]);
+}
+
+export type ServerMeet = { lift: 'squat'; reps: number; command_times: Record<string, number> };
+/** Try a lift plays only the good and the no lift; the close call is the server's alone (5.36). */
+export const playsInTryALift = (s: Sample) => s.kind !== 'close';
+
+/**
+ * A sample the server alone judges (the close call): the server's judge on these poses with the
+ * clip's stored command times, as the demo meet runs it, and the trim from those times (look 7):
+ * she goes down within 1.5 s of "Squat!", and the clip ends within 1 s of "Rack!". Try a lift's
+ * spot check never sees this clip (its three-quarter view would be asked to turn side-on).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function checkServerSample(expect: (v: unknown, msg?: string) => any, s: Sample,
+  raw: { w: number; h: number; duration: number; frames: Frame[] }) {
+  const ct = s.meet!.command_times;
+  const d = { w: raw.w, h: raw.h };
+  const first = raw.frames[0], last = raw.frames[raw.frames.length - 1];
+  const side = nearSide(first);
+  const down = raw.frames.find(f => f.t >= ct.squat && f.p && measure(f.p, d, side).knee_deg < RULES.squat.downKneeMaxDeg);
+  expect(down, `${s.id}: she goes down after "Squat!"`).toBeTruthy();
+  expect((down!.t - ct.squat) / 1000, `${s.id}: she goes down within 1.5 s of "Squat!"`).toBeLessThanOrEqual(1.5);
+  expect(ct.rack, `${s.id}: "Rack!" is inside the clip`).toBeLessThanOrEqual(last.t + 100);
+  expect((last.t - ct.rack) / 1000, `${s.id}: the clip ends within 1 s of "Rack!"`).toBeLessThanOrEqual(1);
+  const v = judgeAttempt(raw.frames, raw, 'squat', ct, undefined, s.meet!.reps);
+  const call = v.call.light === 'white' ? 'white' : `${v.call.light}:${v.call.reason}`;
+  const depth = v.measures.depth as number | undefined;
+  expect(closeOnTheLine(call, depth), `${s.id}: the server's judge calls ${call} at depth ${depth}`).toBe(true);
 }
 
 /**

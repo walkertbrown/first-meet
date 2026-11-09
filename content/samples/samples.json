@@ -34,7 +34,7 @@
     {
       "id": "close-call",
       "kind": "close",
-      "file": "close-call-pexels.mp4",
+      "file": "close-call-pexels-8837221.mp4",
       "credit": "MART PRODUCTION on Pexels",
       "meet": {
         "lift": "squat",
@@ -42,7 +42,7 @@
         "command_times": {
           "loaded": 0,
           "squat": 900,
-          "rack": 5700
+          "rack": 4100
         }
       }
     }
