@@ -154,6 +154,32 @@ describe('overhead press (Home)', () => {
     expect(r.call).toEqual({ light: 'red', reason: 'no_lockout' });
   });
 
+  it('gives a close call borderline_lockout to a rep held between 155° and 165°', () => {
+    const NEAR: [number, number] = [-80, -100]; // elbows ~160°, wrists above the nose
+    const frames = [...still(0, 1000, RACKED), ...rep(1000, NEAR, 1000), ...still(3700, 18000, RACKED)];
+    const { ct, cmds } = runOverhead(frames, 1);
+    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rack']);
+    const r = judgeOverhead(frames, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 1);
+    expect(r.reps[0].call).toEqual({ light: 'close', reason: 'borderline_lockout' });
+    expect(r.reps[0].lockoutElbowDeg).toBeGreaterThan(155);
+    expect(r.reps[0].lockoutElbowDeg).toBeLessThanOrEqual(165);
+  });
+
+  it('waits for "Start!" while the elbows are over 100° or the wrists are above the nose', () => {
+    const HIGH: [number, number] = [-20, -100]; // wrists above the nose
+    const OPEN: [number, number] = [70, 20]; // elbows ~130°, wrists below the nose
+    expect(runOverhead([...still(0, 2000, HIGH)], 1).cmds).toEqual([]);
+    expect(runOverhead([...still(0, 2000, OPEN)], 1).cmds).toEqual([]);
+  });
+
+  it('a failed rep before a good one is the red: the first time the wrists go above the nose', () => {
+    const frames = [...still(0, 1000, RACKED), ...rep(1000, BENT_TOP, 600), ...rep(3000)];
+    const { ct, cmds } = runOverhead(frames, 1);
+    expect(cmds.map(c => c.cmd)).toEqual(['start', 'rep', 'rack']);
+    const r = judgeOverhead(frames, d, { start: ct.start, end: ct.rack }, pressTimes(ct).repEnds, 1);
+    expect(r.reps[0].call).toEqual({ light: 'red', reason: 'no_lockout' });
+  });
+
   it('a Home bench attempt is the overhead press, judged per declared rep', () => {
     const frames = [...still(0, 1000, RACKED), ...rep(1000), ...rep(3200)];
     const { ct } = runOverhead(frames, 2);

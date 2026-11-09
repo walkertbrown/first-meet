@@ -11,6 +11,7 @@ export { callOf };
 /** "Why it was sent" (5.33; command_times from plan item 53). */
 export const WHY: Record<string, string> = {
   borderline_depth: 'Depth right on the line',
+  borderline_lockout: 'Lockout right on the line',
   visibility: 'Hard to see',
   short_pause: 'Short pause',
   hitch: 'Possible hitch',

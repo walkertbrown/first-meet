@@ -43,10 +43,10 @@
     "judgeLookingMinMs": 1200
   },
   "overhead": {
-    "startElbowMaxDeg": 110,
-    "startWristFromShoulderArm": 0.3,
+    "startElbowMaxDeg": 100,
     "startStillMs": 500,
     "lockoutElbowMinDeg": 165,
+    "borderlineElbowMinDeg": 155,
     "lockoutStillMs": 400,
     "stillMaxArm": 0.07,
     "noRepMs": 20000,

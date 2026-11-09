@@ -4,7 +4,7 @@ import { type Dims, type Frame, type Pt, type Side, type SidePts, measure, nearS
 import { RULES, type Rules } from './rules';
 
 export type RedReason = 'depth' | 'no_lockout' | 'no_pause';
-export type CloseReason = 'borderline_depth' | 'visibility' | 'short_pause' | 'hitch';
+export type CloseReason = 'borderline_depth' | 'borderline_lockout' | 'visibility' | 'short_pause' | 'hitch';
 export type Call =
   | { light: 'white' }
   | { light: 'red'; reason: RedReason }
