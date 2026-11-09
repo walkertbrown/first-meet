@@ -32,6 +32,14 @@
       <rect x="11.8" y="8.4" width="3.2" height="5" fill="currentColor" stroke="none"/>
     </symbol>
 
+    <!-- The one front-on figure: the finish, both dumbbells locked overhead (Nov 9). -->
+    <symbol id="lift-overhead-press" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
+      <circle cx="12" cy="8.4" r="1.9"/>
+      <path d="M8.6 4.8 9 11.8H15L15.4 4.8 M12 11.8V15.4 M12 15.4 9.6 20.6 M12 15.4 14.4 20.6"/>
+      <rect x="6.4" y="2.2" width="4.4" height="2.6" fill="currentColor" stroke="none"/>
+      <rect x="13.2" y="2.2" width="4.4" height="2.6" fill="currentColor" stroke="none"/>
+    </symbol>
+
     <symbol id="lift-floor-press" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter">
       <circle cx="4.2" cy="16.6" r="1.9"/>
       <path d="M6.8 17.6H13.4L17.2 12.4 20 17.6 M9 17.6V11.6 M2 20.6H22"/>
