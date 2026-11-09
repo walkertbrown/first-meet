@@ -1,6 +1,8 @@
-// The database (plan 3.2): one postgres.js pool per server process. Production and
-// staging share Render's one free Postgres until #render-staging-db, each in its own
-// schema (DB_SCHEMA: "public" for production, "staging" for staging).
+// The database (plan 3.2): one postgres.js pool per server process. Production and staging
+// each have their own Postgres (plan 2.1): production on first-meet-db, staging on
+// first-meet-db-staging. So the dispatcher's advisory lock and the fm_live channel are never
+// shared between them. DB_SCHEMA names the schema ("public" for production, "staging" for
+// staging), left from when the two shared one database.
 import postgres from 'postgres';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import * as schema from './schema';

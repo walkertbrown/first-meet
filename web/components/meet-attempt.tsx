@@ -53,7 +53,8 @@ const POLL_MS = 5000;
 const BUSY_REFRESH_MS = 30_000;
 
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-const wait = (ms: number) => sleep(reduced() ? Math.min(ms, 600) : ms);
+/** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
+const wait = (ms: number) => sleep(ms);
 const LIFT_NAMES: Record<string, { barbell: string; home: string }> = {
   squat: { barbell: 'SQUAT', home: 'GOBLET SQUAT' }, bench: { barbell: 'BENCH', home: 'FLOOR PRESS' }, deadlift: { barbell: 'DEADLIFT', home: 'DEADLIFT' },
 };
@@ -298,13 +299,17 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     setSlow(false); setPhase('spot');
 
     const declared = attempt.reps_declared ?? undefined;
-    const tal = new TryALift(d, { reps: declared });
+    const tal = new TryALift(d, { reps: declared, judgeLater: true });
     const deepest = new DeepestFrames(d);
     const recording = new Recording(home ? 1_500_000 : 2_500_000);
     const ct: Record<string, number> = {};
     const t0 = performance.now();
     let lastMedia = -1, recTimer: ReturnType<typeof setInterval> | null = null, squatAt = 0, rackAt = 0, noRep = false, spotDone = false;
-    const since = () => Math.round(performance.now() - recording.startedAt);
+    // command_times and the 1.5 s after "Rack!" run from the frame that earned each command
+    // (plan 3.4 piece 2, 3.10), not from after the pose model and the judge have run on it
+    const since = (frameAt: number) => Math.round(frameAt - recording.startedAt);
+    // "Rack!" goes on screen on its own frame; the judging waits for the next one, after the paint
+    const judgeNextFrame = (done: () => void) => requestAnimationFrame(() => { if (alive()) tal.finish(rackAt - t0); done(); });
 
     await new Promise<void>(resolve => {
       const done = () => { if (recTimer) clearInterval(recTimer); resolve(); };
@@ -328,23 +333,23 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             if (streamRef.current) recording.start(streamRef.current);
             ct.loaded = 0;
           } else if (ev.type === 'squat') {
-            squatAt = now; ct.squat = since();
+            squatAt = now; ct.squat = since(now);
             flushSync(() => { setPhase('lifting'); setCommand({ text: MEET_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
             voice.say('squat');
             recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - squatAt) / 1000)), 250);
           } else if (ev.type === 'rep') {
-            if (declared) { ct[`rep_${ev.k}`] = since(); setReps(ev.k); if (ev.k <= 20) voice.say(`count-${ev.k}` as VoiceKey); }
+            if (declared) { ct[`rep_${ev.k}`] = since(now); setReps(ev.k); if (ev.k <= 20) voice.say(`count-${ev.k}` as VoiceKey); }
           } else if (ev.type === 'rack') {
-            rackAt = now; ct.rack = since(); noRep = ev.noRep;
-            setCommand({ text: MEET_WORDS.rack, kind: 'on' }); voice.say('rack');
+            rackAt = now; ct.rack = since(now); noRep = ev.noRep;
+            flushSync(() => setCommand({ text: MEET_WORDS.rack, kind: 'on' })); voice.say('rack');
           } else if (ev.type === 'result') return done();
         }
+        if (tal.phase === 'racked') return judgeNextFrame(done);
         if (home && squatAt && now - squatAt > HOME_CAP_MS && tal.phase !== 'done') {
           // 90 s is the most a Home set can run: "Rack!" now, on what was seen
-          rackAt = now; ct.rack = since();
-          setCommand({ text: MEET_WORDS.rack, kind: 'on' }); voice.say('rack');
-          tal.finish(f.t);
-          return done();
+          rackAt = now; ct.rack = since(now);
+          flushSync(() => setCommand({ text: MEET_WORDS.rack, kind: 'on' })); voice.say('rack');
+          return judgeNextFrame(done);
         }
         requestAnimationFrame(tick);
       };

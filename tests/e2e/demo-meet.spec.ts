@@ -35,6 +35,32 @@ test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({
   else await expect(page.getByRole('button', { name: 'Lift it again' })).toBeVisible();
 });
 
+// LookieBot's look check on 23b1340: motion off drops the movement, never the reading time.
+// "Bar is loaded." holds its full 1.5 s before "SQUAT!" (look 7).
+test('motion off: "Bar is loaded." still holds 1.5 s before "SQUAT!"', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.addInitScript(() => {
+    const seen: Record<string, number> = {};
+    (window as unknown as { __cmd: typeof seen }).__cmd = seen;
+    new MutationObserver(() => {
+      for (const el of document.querySelectorAll('.command .c')) {
+        const t = el.textContent ?? '';
+        if (t && !(t in seen)) seen[t] = performance.now();
+      }
+    }).observe(document, { childList: true, subtree: true, characterData: true });
+  });
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.locator('.command .c', { hasText: 'SQUAT!' })).toBeAttached({ timeout: 90_000 });
+  const seen = await page.evaluate(() => (window as unknown as { __cmd: Record<string, number> }).__cmd);
+  expect(seen['SQUAT!'] - seen['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
+  expect(seen['Bar is loaded.'] - seen['Good spot.']).toBeGreaterThanOrEqual(1400);
+});
+
 // NerdCider's phase 2 check: a browser's own recording (a WebM with no length in its header)
 // must be judged, never left to run out its leases. On the way it goes offline after the lift:
 // "OK" closes the sheet and leaves her waiting on "Sending to the judges" (3.11).

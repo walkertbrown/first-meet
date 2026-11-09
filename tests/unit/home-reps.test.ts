@@ -42,3 +42,29 @@ describe('Home reps on the phone', () => {
     expect(checkCommandTimes(ct, 'squat', ct.rack + 1500)).toBeNull();
   });
 });
+
+// Plan 3.4 piece 2: each command shows within 300 ms of the frame that earned it. With
+// `judgeLater`, "Rack!" comes back on its own frame and the judging waits for finish(), so the
+// stage paints "Rack!" before the hundreds of ms judgeSquat takes on a phone.
+describe('"Rack!" before the judging', () => {
+  it('judgeLater: the rack frame gives "Rack!" alone; finish() gives the same result as before', () => {
+    const now = new TryALift({ w: raw.w, h: raw.h }, { skipFrameCheck: true });
+    const later = new TryALift({ w: raw.w, h: raw.h }, { skipFrameCheck: true, judgeLater: true });
+    let atRack: TryEvent[] = [];
+    for (const f of raw.frames) {
+      now.feed(f);
+      const evs = later.feed(f);
+      if (evs.some(e => e.type === 'rack')) { atRack = evs; break; }
+    }
+    expect(atRack.map(e => e.type)).not.toContain('result');
+    expect(later.phase).toBe('racked');
+    expect(later.result).toBeNull();
+    expect(later.feed(raw.frames[raw.frames.length - 1])).toEqual([]);
+    const rack = atRack.find(e => e.type === 'rack')!;
+    const ev = later.finish(rack.t);
+    expect(ev.type).toBe('result');
+    expect(later.phase).toBe('done');
+    expect(later.result).toEqual(now.result);
+    expect(now.result).not.toBeNull();
+  });
+});

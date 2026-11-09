@@ -17,7 +17,7 @@ export type TryEvent =
   | { type: 'rack'; t: number; noRep: boolean }
   | { type: 'result'; t: number; result: AttemptResult };
 
-export type TryPhase = 'spot' | 'good-spot' | 'stand-tall' | 'lifting' | 'done';
+export type TryPhase = 'spot' | 'good-spot' | 'stand-tall' | 'lifting' | 'racked' | 'done';
 
 export class TryALift {
   phase: TryPhase = 'spot';
@@ -35,8 +35,11 @@ export class TryALift {
    * `skipFrameCheck` treats the spot as right from the first frame (plan 3.4, piece 1: the
    * 3/4 test clips are judged with the check skipped). The check still runs, for the record.
    * `reps`: a Home attempt's declared reps; "Rack!" waits for them (3.8a).
+   * `judgeLater`: "Rack!" comes back alone and the caller calls `finish()` itself, once the word
+   * is on screen. Judging takes hundreds of ms on a phone, and each command shows within 300 ms
+   * of the frame that earned it (plan 3.4, piece 2).
    */
-  constructor(private d: Dims, private opts: { multiRep?: boolean; skipFrameCheck?: boolean; rules?: Rules; reps?: number } = {}) {
+  constructor(private d: Dims, private opts: { multiRep?: boolean; skipFrameCheck?: boolean; rules?: Rules; reps?: number; judgeLater?: boolean } = {}) {
     const rules = opts.rules ?? RULES;
     this.check = new FrameCheck(d, rules);
     this.caller = new SquatCaller(d, rules, !!opts.skipFrameCheck, opts.reps ?? 1);
@@ -46,7 +49,7 @@ export class TryALift {
 
   feed(f: Frame): TryEvent[] {
     const out: TryEvent[] = [];
-    if (this.phase === 'done') return out;
+    if (this.phase === 'done' || this.phase === 'racked') return out;
     if (this.phase !== 'spot') this.frames.push(f);
     if (this.phase === 'spot') {
       const spot = this.check.feed(f);
@@ -69,7 +72,8 @@ export class TryALift {
     if (c?.cmd === 'rack') {
       this.rackAt = c.t;
       out.push({ type: 'rack', t: c.t, noRep: !!c.noRep });
-      if (!this.opts.multiRep) out.push(this.finish(c.t));
+      if (this.opts.judgeLater && !this.opts.multiRep) this.phase = 'racked';
+      else if (!this.opts.multiRep) out.push(this.finish(c.t));
     }
     return out;
   }

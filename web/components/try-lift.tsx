@@ -37,8 +37,8 @@ const SAMPLE_END_HOLD_MS = 1500;
 
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = () => typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
-/** Look's waits, shortened with motion off (as in sample.html). */
-const wait = (ms: number) => sleep(reduced() ? Math.min(ms, 600) : ms);
+/** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
+const wait = (ms: number) => sleep(ms);
 
 function browserOf(): 'android' | 'ios' | 'other' {
   if (typeof navigator === 'undefined') return 'other';
@@ -215,7 +215,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
     setSlow(false);
     setPhase('spot');
 
-    const tal = new TryALift(d);
+    const tal = new TryALift(d, { judgeLater: true });
     const deepest = new DeepestFrames(d);
     const recording = new Recording();
     const t0 = performance.now();
@@ -297,12 +297,22 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
             recTimer = setInterval(() => setRecSec(Math.floor((performance.now() - squatAt) / 1000)), 250);
           } else if (ev.type === 'rack') {
             rackMedia = video.currentTime; rackShownAt = now;
-            setCommand({ text: STAGE_WORDS.rack, kind: 'on' }); voice.say('rack');
+            flushSync(() => setCommand({ text: STAGE_WORDS.rack, kind: 'on' })); voice.say('rack');
             noRep = ev.noRep;
           } else if (ev.type === 'result') {
             result = ev.result;
             return done();
           }
+        }
+        // "Rack!" goes on screen on its own frame, within 300 ms of it (plan 3.4, piece 2); the
+        // judging waits for the next frame, after the paint
+        if (tal.phase === 'racked') {
+          return void requestAnimationFrame(() => {
+            if (!alive()) return done();
+            const ev = tal.finish(t);
+            if (ev.type === 'result') result = ev.result;
+            done();
+          });
         }
         // A sample's last frame is held, as its first was, so a lifter who ends the clip
         // standing gets "Rack!" (rackStillMs of stillness). If no rack comes in 1.5 s, the

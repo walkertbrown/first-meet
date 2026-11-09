@@ -19,3 +19,19 @@ export async function checkHealth(parts: Record<string, PartCheck>, commit: stri
   }));
   return { ok: Object.values(out).every(v => v === 'ok'), commit: commit.slice(0, 7), parts: out };
 }
+
+/**
+ * A check whose answer is kept for `ms` (plan 2.4: the Workflow API is one list call, cached for
+ * 60 s). Calls inside the window, and calls while one is in flight, share its answer, up or down.
+ */
+export function cachedFor(ms: number, check: PartCheck, now: () => number = Date.now): PartCheck {
+  let kept: { at: number; run: Promise<void> } | null = null;
+  return () => {
+    if (!kept || now() - kept.at >= ms) {
+      const run = check();
+      run.catch(() => {});
+      kept = { at: now(), run };
+    }
+    return kept.run;
+  };
+}
