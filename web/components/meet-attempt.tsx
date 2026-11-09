@@ -113,6 +113,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
   const runRef = useRef(0);
   /** She tapped "OK" on the offline sheet: it stays closed while the clip keeps trying (3.11). */
   const offlineOkRef = useRef(false);
+  const waitLineRef = useRef<HTMLDivElement>(null);
   const soundRef = useRef(sound);
 
   voiceRef.current ??= new Voice(voicePack);
@@ -655,7 +656,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
             </button>
           </div>
           <Lamps states={lamps} />
-          <WaitLine text={waitLine} />
+          <WaitLine text={waitLine} lineRef={waitLineRef} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
           </div>
@@ -688,7 +689,12 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
                 <p className="sheet-title">{MEET_WORDS.offlineTitle}</p>
                 <p className="body">{MEET_WORDS.offlineBody}</p>
                 <div className="try-actions">
-                  <button className="btn" type="button" onClick={() => { offlineOkRef.current = true; setPhase('held'); setWaitLine(MEET_WORDS.sending); }}>OK</button>
+                  <button className="btn" type="button" onClick={() => {
+                    // 3.11 (item 59): the sheet closes and focus lands on "Sending to the judges", where she is
+                    offlineOkRef.current = true;
+                    flushSync(() => { setPhase('held'); setWaitLine(MEET_WORDS.sending); });
+                    waitLineRef.current?.focus();
+                  }}>OK</button>
                 </div>
               </div>
             )}

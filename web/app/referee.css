@@ -116,8 +116,9 @@
 }
 .ref-light.white { box-shadow: inset 0 0 0 2px var(--lamp-white), 0 0 0 1px var(--rule); }
 .ref-light.red { box-shadow: inset 0 0 0 2px var(--lamp-red); }
-.ref-light.white[aria-pressed="true"] { background: var(--lamp-white); color: #16181F; box-shadow: none; }
-.ref-light.red[aria-pressed="true"] { background: var(--lamp-red); color: #FFFFFF; box-shadow: none; }
+/* chosen: the fill, and a 2 px ink ring 2 px outside, in both themes (look 5.13, item 60) */
+.ref-light.white[aria-pressed="true"] { background: var(--lamp-white); color: #16181F; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.ref-light.red[aria-pressed="true"] { background: var(--lamp-red); color: #FFFFFF; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
 .ref-light:active { transform: scale(.97); }
 .ref-lamp .ref-reasons { padding-bottom: 16px; }
 .ref-all { display: flex; gap: 8px; }
@@ -127,6 +128,8 @@
   .ref-lamp-name { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 .ref-lamp-name .eyebrow { white-space: nowrap; }
+/* above 420 px the eyebrow is a fixed 56 px column, so the three mini lamps line up (look 5.13) */
+@media (min-width: 421px) { .ref-lamp-name .eyebrow { flex: none; width: 56px; } }
 
 .ref-reasons { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .choice { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 4px; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }

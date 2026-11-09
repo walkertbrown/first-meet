@@ -49,6 +49,8 @@
 .waitline { position: absolute; left: 0; right: 0; top: 198px; z-index: 3; text-align: center; font-size: 17px; line-height: 24px; color: var(--stage-ink-2); opacity: 0; transition: opacity 400ms var(--ease-out); }
 .waitline.on { opacity: 1; }
 /* one line crossfading into the next (look 5.25 step 8): the old one fades out on top */
+/* it takes focus after "OK" on the offline sheet, but it is not a control: no ring */
+.waitline:focus { outline: none; }
 .waitline > span { display: block; }
 .waitline > .wl-out { position: absolute; left: 0; right: 0; top: 0; animation: wl-out 400ms var(--ease-out) forwards; }
 .waitline > .wl-in { animation: wl-in 400ms var(--ease-out); }
