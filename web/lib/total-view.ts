@@ -55,11 +55,14 @@ export function totalWords(demo: boolean, item75 = PLAN_SWITCHES.item75): { body
   };
 }
 
-/** Bombed out (5.28). Its Primary is "See my lifts" in both copies of the plan. */
-export function bombedWords(lift: Lift, division: Division, demo: boolean, item75 = PLAN_SWITCHES.item75) {
+/**
+ * Bombed out (5.28). Its Primary is "See my lifts" in both copies of the plan. Item 77: a demo
+ * lifter has no account to add a meet to, so she reads what a real meet would do.
+ */
+export function bombedWords(lift: Lift, division: Division, demo: boolean, item75 = PLAN_SWITCHES.item75, item77 = PLAN_SWITCHES.item77) {
   return {
     body: `Bombed out happens to champions. You didn't get a good ${liftLower(lift, division)} this time, so there's no total, but every lift still counts in your training log.`,
-    free: 'Your next meet is free. We\'ve added it to your account.',
+    free: demo && item77 ? 'In a real meet, your next meet would be free.' : 'Your next meet is free. We\'ve added it to your account.',
     primary: { label: 'See my lifts', href: '/platform' },
     ghost: totalWords(demo, item75).ghost,
   };

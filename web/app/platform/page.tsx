@@ -20,7 +20,7 @@ import '../platform.css';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'The platform', robots: { index: false } };
 
-export default async function PlatformPage() {
+export default async function PlatformPage({ searchParams }: { searchParams: Promise<{ welcome?: string }> }) {
   if (!hasDb()) redirect('/demo');
   const v = await currentViewer(db());
   if (!v) redirect('/demo');
@@ -29,6 +29,8 @@ export default async function PlatformPage() {
   const [m] = await db().select().from(meets).where(eq(meets.id, l.meetId));
   if (!m) redirect('/');
   const view = await platformView(db(), l, m);
+  // 5.36: "Start the demo meet" lands here with the welcome sheet first
+  const welcome = l.isDemo && (await searchParams).welcome === '1' && l.cornerToken ? `/corner/${l.cornerToken}` : null;
   const strip = l.isDemo ? <DemoStrip /> : null;
 
   if (view.kind === 'done') {
@@ -83,7 +85,7 @@ export default async function PlatformPage() {
     <>{strip}
       <Platform
         meetName={view.meetName} closesAt={view.closesAt} row={view.row} current={view.current} because={view.because}
-        notJudged={view.notJudged} demo={view.demo} voicePack={process.env.VOICE_PACK || 'team'}
+        notJudged={view.notJudged} demo={view.demo} welcomeCorner={welcome} voicePack={process.env.VOICE_PACK || 'team'}
         lifter={{ cardName: l.cardName, ageGroup: l.ageGroup, division: l.division, units: l.units }}
       />
     </>

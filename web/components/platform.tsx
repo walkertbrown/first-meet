@@ -10,7 +10,7 @@ import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
 import type { DeclareSheet } from '@/lib/meet-flow';
 import {
-  DECLARE_WORDS, capLine, choiceWords, declareButton, liftWord, loadingLine, meetResult,
+  DECLARE_WORDS, WELCOME_WORDS, capLine, choiceWords, declareButton, liftWord, loadingLine, meetResult,
 } from '@/lib/stage/meet-words';
 
 type Lifter = { cardName: string; ageGroup: string | null; division: 'barbell' | 'home'; units: 'lb' | 'kg' };
@@ -57,9 +57,11 @@ export function NineRow({ row, division, item76 = PLAN_SWITCHES.item76 }: { row:
 /** 5.27's banner: a referee's lights on an earlier attempt landed while she was here. */
 type Banner = { id: string; text: string; call: 'white' | 'red'; lights: ('white' | 'red')[]; stays: boolean };
 
-export function Platform({ meetName, closesAt, row, current, because, notJudged, lifter, voicePack, demo }: {
+export function Platform({ meetName, closesAt, row, current, because, notJudged, lifter, voicePack, demo, welcomeCorner = null }: {
   meetName: string; closesAt: string | null; row: RowCell[]; current: CardAttempt; because: string; notJudged: boolean;
   lifter: Lifter; voicePack: string; demo: boolean;
+  /** The demo's welcome sheet (5.36), with her corner page's link; null when it's not shown. */
+  welcomeCorner?: string | null;
 }) {
   const router = useRouter();
   const [sheet, setSheet] = useState<Sheet | null>(null);
@@ -68,6 +70,9 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
   const [declared, setDeclared] = useState<Declared | null>(null);
   const [error, setError] = useState('');
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [welcome, setWelcome] = useState(!!welcomeCorner);
+  // closing it drops ?welcome=1, so a reload doesn't bring it back
+  const closeWelcome = useCallback(() => { setWelcome(false); router.replace('/platform', { scroll: false }); }, [router]);
   const rowRef = useRef(row);
   rowRef.current = row;
 
@@ -167,6 +172,7 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
           </span>
         </button>
       )}
+      {welcome && welcomeCorner && <WelcomeSheet corner={welcomeCorner} onClose={closeWelcome} />}
       {sheet && (
         <DeclareSheetView
           sheet={sheet} picked={picked} onPick={setPicked} declaring={declaring} declared={declared}
@@ -183,6 +189,31 @@ function untilLine(iso: string) {
   const et = d.toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }).replace(':00', '').replace(' AM', ' am').replace(' PM', ' pm');
   const local = d.toLocaleString('en-US', { weekday: 'long', hour: 'numeric', minute: '2-digit' }).replace(':00', '').replace(' AM', ' am').replace(' PM', ' pm');
   return `Until ${et} Eastern${local !== et ? ` (${local})` : ''}`;
+}
+
+/** The demo's welcome sheet (5.36, look 5.10): her corner page opens in a new tab; "Go to the platform" closes it. */
+export function WelcomeSheet({ corner, onClose }: { corner: string; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    addEventListener('keydown', onKey);
+    requestAnimationFrame(() => ref.current?.querySelector<HTMLElement>('button.btn')?.focus());
+    return () => removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="sheet-scrim" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="welcome-title" ref={ref}>
+        <span className="grab" aria-hidden="true" />
+        <h2 className="sheet-title" id="welcome-title">{WELCOME_WORDS.title}</h2>
+        <p className="body">{WELCOME_WORDS.body}</p>
+        <p className="body">{WELCOME_WORDS.corner}</p>
+        <div className="try-actions">
+          <button className="btn" type="button" onClick={onClose}>{WELCOME_WORDS.go}</button>
+          <a className="btn ghost" href={corner} target="_blank" rel="noopener">{WELCOME_WORDS.openCorner}</a>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** 5.26 as a bottom sheet (look 5.9, 5.10). */

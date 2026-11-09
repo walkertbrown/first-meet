@@ -53,12 +53,17 @@ describe('You totaled (5.28)', () => {
 
   it('bombed out: the lift she missed, the free meet, "See my lifts" in both copies', () => {
     for (const item75 of [false, true]) {
-      const b = bombedWords('bench', 'home', false, item75);
+      const b = bombedWords('bench', 'home', false, item75, false);
       expect(b.body).toBe("Bombed out happens to champions. You didn't get a good overhead press this time, so there's no total, but every lift still counts in your training log.");
       expect(b.free).toBe("Your next meet is free. We've added it to your account.");
       expect(b.primary).toEqual({ label: 'See my lifts', href: '/platform' });
     }
     expect(bombedWords('squat', 'barbell', true, true).ghost.href).toBe('/sample');
+    // item 77: a demo lifter reads what a real meet would do; a real lifter's line doesn't change
+    expect(bombedWords('squat', 'barbell', true, false, true).free).toBe('In a real meet, your next meet would be free.');
+    expect(bombedWords('squat', 'barbell', true, true, true).free).toBe('In a real meet, your next meet would be free.');
+    expect(bombedWords('squat', 'barbell', true, false, false).free).toBe("Your next meet is free. We've added it to your account.");
+    expect(bombedWords('squat', 'barbell', false, false, true).free).toBe("Your next meet is free. We've added it to your account.");
     expect(bombedWords('squat', 'barbell', true, false).ghost.href).toBe('/live');
   });
 

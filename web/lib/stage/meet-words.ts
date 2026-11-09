@@ -139,6 +139,15 @@ export const reasonFix = (reason: string | null, item75 = PLAN_SWITCHES.item75):
 export const standInLine = (shownLift: string, lift: string, division: 'barbell' | 'home') =>
   `This sample is a ${liftLower(shownLift, division)}, standing in for your ${liftLower(lift, division)}.`;
 
+/** The demo's welcome sheet (5.36), before her first look at the platform. */
+export const WELCOME_WORDS = {
+  title: 'Welcome to the demo meet',
+  body: 'You have three attempts at each lift. Your openers are already chosen from a made-up training history, so you can lift right away. No camera, or no weights? Use a sample lift on any attempt.',
+  corner: 'Friends can follow along and cheer on your corner page.',
+  openCorner: 'Open my corner page in a new tab',
+  go: 'Go to the platform',
+} as const;
+
 export const DECLARE_WORDS = {
   title: (lift: string, number: number, division: 'barbell' | 'home') => `Your ${ORDINAL[number - 1]} ${liftLower(lift, division)}`,
   bodyWhite: 'Pick one. Rest as long as you like before you lift it.',

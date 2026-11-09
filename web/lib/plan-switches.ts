@@ -17,4 +17,10 @@ export const PLAN_SWITCHES = {
    * under its group on the 9-attempt row, not inside the slot.
    */
   item76: process.env.NEXT_PUBLIC_PLAN_ITEM76 === '1',
+  /**
+   * Item 77: the total page's last gaps. On: a demo lifter who bombs out reads "In a real meet, your
+   * next meet would be free." and no free entry is set for her. (Its other part, the "<MEET> · YOUR
+   * NINE ATTEMPTS" eyebrow after the nine, is what's built in both copies.)
+   */
+  item77: process.env.NEXT_PUBLIC_PLAN_ITEM77 === '1',
 } as const;

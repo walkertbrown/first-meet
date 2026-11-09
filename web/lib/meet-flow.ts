@@ -10,6 +10,7 @@ import {
   type DeclareChoice, type JudgedSet, type LoggedSet, type MeetAttempt, type Slot, type Units,
 } from '@/lib/meet';
 import { DEMO_CAPS, demoCapAt } from '@/lib/demo';
+import { PLAN_SWITCHES } from '@/lib/plan-switches';
 
 export type LifterRow = typeof lifters.$inferSelect;
 export type AttemptRow = typeof attempts.$inferSelect;
@@ -154,11 +155,12 @@ export function asMeetAttempt(a: AttemptRow, l: Pick<LifterRow, 'homeWeights'>):
 }
 
 /**
- * Her total (5.28). Bombing out sets `free_entry_credit` (#bombout-free: yes), once.
+ * Her total (5.28). Bombing out sets `free_entry_credit` (#bombout-free: yes), once. Item 77: a
+ * demo lifter's bomb out sets nothing.
  */
-export async function totalFor(db: Db, l: LifterRow, list?: AttemptRow[]) {
+export async function totalFor(db: Db, l: LifterRow, list?: AttemptRow[], item77 = PLAN_SWITCHES.item77) {
   const rows = list ?? await meetAttempts(db, l);
   const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), l.division);
-  if (t.kind === 'bombed' && !l.freeEntryCredit) await db.update(lifters).set({ freeEntryCredit: true }).where(eq(lifters.id, l.id));
+  if (t.kind === 'bombed' && !l.freeEntryCredit && !(item77 && l.isDemo)) await db.update(lifters).set({ freeEntryCredit: true }).where(eq(lifters.id, l.id));
   return t;
 }
