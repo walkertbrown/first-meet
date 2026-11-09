@@ -138,6 +138,7 @@ def find_clip(ctx: TaskContext, clip: str, times_ms: list[int] | None = None, sp
     """One test clip from tests/clips/ (by name, no .webm), or a timing clip by its name in
     timing_clip.CLIPS. `fps` > 0 means that whole grid."""
     begun = time.monotonic()
+    process_secs = round(begun - STARTED, 2)  # time from this process starting to the task starting
     name = Path(clip).name.replace('.webm', '')
     path = ROOT / 'tests' / 'clips' / f'{name}.webm'
     make_secs = None
@@ -158,7 +159,7 @@ def find_clip(ctx: TaskContext, clip: str, times_ms: list[int] | None = None, sp
     raw = json.dumps({'w': info.w, 'h': info.h, 'duration': info.duration, 'frames': frames}, separators=(',', ':')).encode()
     return {
         'commit': COMMIT, 'clip': name, 'frames': len(frames),
-        'process_secs': round(begun - STARTED, 2),  # time from this process starting to the task starting
+        'process_secs': process_secs,
         'model_load_secs': round(ready - begun, 2),  # 0 when the pool was already warm
         'pose_secs': round(done - ready, 2),
         'make_secs': make_secs,  # making a timing clip, before any of the times above
