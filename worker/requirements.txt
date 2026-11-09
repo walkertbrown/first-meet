@@ -1,0 +1,4 @@
+render==1.8.0
+mediapipe==1.2.2
+av==19.0.2
+numpy==2.5.4

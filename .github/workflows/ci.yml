@@ -39,6 +39,29 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run test:judge -- tests/judge/judge.spec.ts
+  worker:
+    # The Workflow's pose finder (worker/, Python MediaPipe) on the test clips, in its two
+    # passes, through the one judge: the same calls as judge-web (plan 2.3, piece 6).
+    name: Worker tests (Python MediaPipe)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: worker/requirements.txt
+      - run: npm ci
+      - run: pip install -r worker/requirements.txt
+      - run: python -m unittest discover worker/tests
+      - run: npx vitest run -c tests/worker/vitest.config.ts --silent=false
+        env:
+          WORKER_PYTHON: python
   e2e:
     # On a pull request: CI moves `staging` to the PR's commit, waits until Render reports that
     # commit live on staging, then runs the end-to-end tests against the staging link (plan 2.1).

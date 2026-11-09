@@ -11,3 +11,5 @@ web/public/models/vision_bundle.mjs
 web/public/samples/
 test-results/
 playwright-report/
+__pycache__/
+*.pyc
