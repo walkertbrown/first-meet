@@ -3,11 +3,14 @@
 import { eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts } from '@/db/schema';
+import { judgedLift } from '@/lib/queue';
 
 export type AttemptState = {
   id: string;
   status: string;
   lift: string;
+  /** The lift the judge ran: a sample clip's own lift (5.36), else the attempt's. */
+  shown_lift: string;
   number: number;
   weight: number;
   reps_declared: number | null;
@@ -34,7 +37,7 @@ export async function attemptState(db: Db, id: string, lifterId: string, withWai
   return {
     status: 200,
     attempt: {
-      id: a.id, status: a.status, lift: a.lift, number: a.number, weight: a.weight, reps_declared: a.repsDeclared,
+      id: a.id, status: a.status, lift: a.lift, shown_lift: judgedLift(a), number: a.number, weight: a.weight, reps_declared: a.repsDeclared,
       call: a.call, lights: (a.lights as AttemptState['lights']) ?? null, reason: a.reason,
       red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip, judged_frame_ms: a.judgedFrameMs ?? null,
       wait_minutes: withWait && WAITING.includes(a.status) ? await waitMinutes(db, a.id) : null,

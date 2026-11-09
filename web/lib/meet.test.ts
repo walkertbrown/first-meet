@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   ORDER, barbellCap, barbellDeclareChoices, barbellOpener, barbellOpenerChoices, bestSoFar, bigStep, canDeclareAfter,
   countedReps, currentAttempt, declareAllowed, homeCap, homeDeclareChoices, homeLoad, homeOpener, homeOpenerChoices,
-  homeWeightChoices, meetTotal, nextSlot, openerAllowed, placeOrder, smallStep, type JudgedSet, type LoggedSet, type MeetAttempt,
+  homeWeightChoices, meetTotal, nextSlot, openerAllowed, platformState, placeOrder, smallStep, type JudgedSet, type LoggedSet, type MeetAttempt,
 } from './meet';
 import type { Lift } from '@/db/schema';
 
@@ -145,6 +145,23 @@ describe('3.8 order', () => {
     expect(nextSlot([{ lift: 'squat', number: 3 }])).toEqual({ lift: 'bench', number: 1 });
     expect(nextSlot([{ lift: 'deadlift', number: 3 }])).toBeNull();
     expect(currentAttempt([{ lift: 'bench', number: 1 }, { lift: 'squat', number: 3 }])).toEqual({ lift: 'bench', number: 1 });
+  });
+  it('the platform walks the nine in order: lift the one not yet sent, else declare the first empty slot', () => {
+    const at = (lift: 'squat' | 'bench' | 'deadlift', number: number, status: string) => ({ lift, number, status });
+    expect(platformState([])).toEqual({ current: null, toDeclare: { lift: 'squat', number: 1 }, done: false });
+    // her openers are saved in meet week (5.23): squat 1 is current, not deadlift 1
+    const openers = [at('squat', 1, 'declared'), at('bench', 1, 'declared'), at('deadlift', 1, 'declared')];
+    expect(platformState(openers)).toMatchObject({ current: openers[0], toDeclare: null });
+    // squat 1 judged: squat 2 is declared next, and the judged squat 1 stays on screen
+    const s1 = at('squat', 1, 'judged');
+    expect(platformState([s1, openers[1], openers[2]])).toMatchObject({ current: s1, toDeclare: { lift: 'squat', number: 2 } });
+    // a close call doesn't block; after squat 3, bench's saved opener is the one to lift
+    const three = [at('squat', 1, 'judged'), at('squat', 2, 'close_call'), at('squat', 3, 'judged'), openers[1]];
+    expect(platformState(three)).toMatchObject({ current: openers[1], toDeclare: null });
+    // without saved openers (the demo), bench 1 is declared next
+    expect(platformState(three.slice(0, 3))).toMatchObject({ toDeclare: { lift: 'bench', number: 1 } });
+    const nine = ORDER.map(o => at(o.lift, o.number, 'judged'));
+    expect(platformState(nine)).toMatchObject({ current: nine[8], toDeclare: null, done: true });
   });
   it('she declares each before lifting it; a close call does not block the next attempt', () => {
     expect(canDeclareAfter('declared')).toBe(false);

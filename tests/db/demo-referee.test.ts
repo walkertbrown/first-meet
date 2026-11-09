@@ -3,7 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, lifters, meets, reviews } from '../../web/db/schema';
-import { countDemoRun, demoLimitHit, DEMO_SAMPLES, liftAgain, sampleLift, startDemo } from '../../web/lib/demo';
+import { countDemoRun, demoLimitHit, DEMO_SAMPLES, sampleLift, startDemo } from '../../web/lib/demo';
+import { declareNext, declareSheet } from '../../web/lib/meet-flow';
 import { askAnother, closeCallQueue, saveLights } from '../../web/lib/referee';
 import { keys } from '../../web/lib/r2';
 import { freshDb, MemStore, URL_ } from './setup';
@@ -36,8 +37,18 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     expect(a).toMatchObject({ isSampleClip: true, status: 'queued', commandTimes: DEMO_SAMPLES[0].meet!.command_times });
     expect(store.objects.has(a.videoKey!)).toBe(true);
     expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, a.id))).toHaveLength(1);
-    const again = await liftAgain(db, lifter.id);
-    const r2 = await sampleLift(db, store, lifter.id, again!.id);
+    // once squat 1 has left the phone, the declare sheet opens for squat 2 (5.26)
+    const [l] = await db.select().from(lifters).where(eq(lifters.id, lifter.id));
+    const sheet = await declareSheet(db, l);
+    expect(sheet).toMatchObject({ kind: 'sheet', slot: { lift: 'squat', number: 2 } });
+    if (sheet.kind !== 'sheet') return;
+    const pick = sheet.choices.find(c => c.selected)!;
+    expect((await declareNext(db, l, pick.value + 0.5)).status).toBe(422); // not one of the cards
+    const d = await declareNext(db, l, pick.value);
+    expect(d).toMatchObject({ status: 200, attempt: { lift: 'squat', number: 2, weight: pick.value, status: 'declared' } });
+    expect(await declareNext(db, l, pick.value)).toMatchObject({ status: 409 }); // squat 2 is now hers to lift
+    if (d.status !== 200) return;
+    const r2 = await sampleLift(db, store, lifter.id, d.attempt.id);
     expect(r2).toMatchObject({ status: 200, sample: { kind: 'no' } });
   });
 

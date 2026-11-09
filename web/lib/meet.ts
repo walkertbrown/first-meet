@@ -209,6 +209,26 @@ export const currentAttempt = <T extends Pick<MeetAttempt, 'lift' | 'number'>>(l
  */
 export const canDeclareAfter = (status: string) => ['queued', 'judging', 'close_call', 'judged'].includes(status);
 
+/**
+ * Where she is on the platform (5.24), walking the nine in order. Her openers may already be on
+ * her card (5.23 saves attempt 1 of each lift), so "latest" isn't enough:
+ * - a slot with an attempt that hasn't left the phone is the one she lifts now (`current`);
+ * - the first slot with no attempt is the one she declares next (`toDeclare`), and `current` is
+ *   the attempt before it, whose lights (or wait) she's looking at;
+ * - with all nine gone from the phone, `done`.
+ */
+export function platformState<T extends Pick<MeetAttempt, 'lift' | 'number' | 'status'>>(list: T[]):
+  { current: T | null; toDeclare: Slot | null; done: boolean } {
+  let prev: T | null = null;
+  for (const slot of ORDER) {
+    const a = list.find(x => x.lift === slot.lift && x.number === slot.number);
+    if (!a) return { current: prev, toDeclare: slot, done: false };
+    if (!canDeclareAfter(a.status)) return { current: a, toDeclare: null, done: false };
+    prev = a;
+  }
+  return { current: prev, toDeclare: null, done: true };
+}
+
 // ---------- the total ----------
 
 /** A Barbell attempt's number is its weight; a Home attempt's is load × reps on a good lift (3.8a). */

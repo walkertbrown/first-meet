@@ -32,7 +32,7 @@ export default async function PlatformPage() {
         key={a.id}
         attempt={{ id: a.id, lift: a.lift, number: a.number, weight: a.weight, reps_declared: a.repsDeclared, status: a.status }}
         lifter={{ cardName: l.cardName, ageGroup: l.ageGroup, division: l.division, units: l.units }}
-        because={demoBecause(l.division, l.units)}
+        because={demoBecause(l.division, a.lift, l.units)}
         voicePack={process.env.VOICE_PACK || 'team'}
       />
     </>

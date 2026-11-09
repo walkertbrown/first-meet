@@ -116,7 +116,7 @@ export async function claimNext(db: Db, store: Store, workerId: string): Promise
   await publish(db, { kind: 'attempt', attempt_id: a.id, lifter_id: a.lifterId, status: 'judging' });
   return {
     attempt_id: a.id, video_url: await store.signedGet(a.videoKey!, LEASE_BASE_S + Number(row.clip_seconds)),
-    command_times: a.commandTimes, lift: a.lift, clip_seconds: Number(row.clip_seconds),
+    command_times: a.commandTimes, lift: judgedLift(a), clip_seconds: Number(row.clip_seconds),
   };
 }
 
@@ -138,6 +138,13 @@ export function parsePoses(body: unknown): PosesPost | null {
 const judgeLift = (lift: string): 'squat' | 'deadlift' => (lift === 'deadlift' ? 'deadlift' : 'squat');
 
 /**
+ * The lift the judge runs. A sample lift standing in for an attempt is judged as the lift the
+ * clip shows (5.36: a lift without its own clips uses the squat's), which its command times name.
+ */
+export const judgedLift = (a: { lift: string; isSampleClip: boolean; commandTimes: Record<string, number> | null }): string =>
+  a.isSampleClip && a.commandTimes && 'squat' in a.commandTimes ? 'squat' : a.lift;
+
+/**
  * Step 5: a worker's points. Pass 1 (5 fps, the whole clip) is kept and answered with where
  * pass 2 looks. Pass 2 is merged with it and judged. Points from a worker that no longer
  * holds the attempt (its lease ran out and it was requeued) are dropped.
@@ -153,12 +160,12 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
   const dims = { w: p.w, h: p.h, duration: p.duration };
   if (p.pass === 1) {
     await store.putJson(keys.firstPass(a.id), { ...dims, frames: p.frames });
-    const zoom = zoomWindows(p.frames, dims, judgeLift(a.lift), a.commandTimes ?? {});
+    const zoom = zoomWindows(p.frames, dims, judgeLift(judgedLift(a)), a.commandTimes ?? {});
     return { status: 200, windows: zoom.windows, split_ms: zoom.splitMs };
   }
   const first = await store.getJson<{ frames: Frame[] }>(keys.firstPass(a.id));
   const frames = mergePasses(first?.frames ?? [], p.frames);
-  const v = judgeAttempt(frames, dims, a.lift as MeetLift, a.commandTimes, undefined, a.repsDeclared);
+  const v = judgeAttempt(frames, dims, judgedLift(a) as MeetLift, a.commandTimes, undefined, a.repsDeclared);
   const posesKey = keys.poses(a.id);
   await store.putJson(posesKey, { ...dims, frames, commit: p.commit ?? null });
   const close = v.call.light === 'close';
