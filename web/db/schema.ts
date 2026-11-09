@@ -161,7 +161,7 @@ export const attempts = pgTable('attempts', {
 export const reviews = pgTable('reviews', {
   id: id(),
   attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),
-  // null for the demo referee: a demo lifter deciding her own close call (5.36)
+  // null for the demo referee: a demo lifter deciding their own close call (5.36)
   refereeId: uuid('referee_id').references(() => lifters.id),
   lights: jsonb('lights').$type<Light[]>(),
   reason: text('reason'),

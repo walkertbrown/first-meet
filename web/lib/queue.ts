@@ -19,9 +19,11 @@ export interface Store {
 export const LEASE_BASE_S = 120;
 export const LIVE_CHANNEL = 'fm_live';
 
-export type LiveEvent = { kind: 'attempt'; attempt_id: string; lifter_id: string; status: string };
+export type LiveEvent =
+  | { kind: 'attempt'; attempt_id: string; lifter_id: string; status: string }
+  | { kind: 'close_calls'; attempt_id: string };
 
-async function publish(db: Db, e: LiveEvent) {
+export async function publish(db: Db, e: LiveEvent) {
   await db.execute(sql`select pg_notify(${LIVE_CHANNEL}, ${JSON.stringify(e)})`);
 }
 
@@ -132,7 +134,7 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
   }
   const first = await store.getJson<{ frames: Frame[] }>(keys.firstPass(a.id));
   const frames = mergePasses(first?.frames ?? [], p.frames);
-  const v = judgeAttempt(frames, dims, a.lift as MeetLift, a.commandTimes);
+  const v = judgeAttempt(frames, dims, a.lift as MeetLift, a.commandTimes, undefined, a.repsDeclared);
   const posesKey = keys.poses(a.id);
   await store.putJson(posesKey, { ...dims, frames, commit: p.commit ?? null });
   const close = v.call.light === 'close';
@@ -145,7 +147,7 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
     if (!gone.length) return false;
     await tx.update(attempts).set({
       status, posesKey, judgedAt: sql`now()`,
-      call: v.call.light, lights: v.lights, reason: 'reason' in v.call ? v.call.reason : null,
+      call: v.call.light, lights: v.lights, repLights: v.repLights, reason: 'reason' in v.call ? v.call.reason : null,
       measures: { ...v.measures, commit: p.commit ?? null }, judgedFrameMs: v.judgedFrameMs,
     }).where(eq(attempts.id, a.id));
     await tx.update(judgeWorkers).set({ attemptsDone: sql`${judgeWorkers.attemptsDone} + 1`, lastSeenAt: sql`now()` })

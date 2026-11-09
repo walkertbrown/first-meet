@@ -6,6 +6,8 @@ import { DeadliftCaller } from './commands';
 import { RULES, type Rules } from './rules';
 import type { CommandTimes } from './zoom';
 
+export type RepLight = { call: 'white' | 'red' | 'close'; reason: string | null; frame_ms?: number };
+
 export type MeetLift = 'squat' | 'bench' | 'deadlift';
 
 /** The commands each lift's recording has, in the order they're called. Recording starts at the soft command. */
@@ -20,7 +22,7 @@ export type CommandProblem = 'missing_soft' | 'missing_start' | 'out_of_order' |
 /**
  * 2.3 step 3: the commands are in order, all inside the clip's length, and the start
  * command comes after the soft command. Anything else is a close call, never a white.
- * Home rep ends (`rep1`, `rep2`, …) must be inside the clip and in order too.
+ * Home rep ends (`rep_1`, `rep_2`, …, 3.8a) must be inside the clip and in order too.
  */
 export function checkCommandTimes(ct: CommandTimes | null | undefined, lift: MeetLift, durationMs: number): CommandProblem | null {
   if (!ct || typeof ct !== 'object') return 'missing_soft';
@@ -36,15 +38,18 @@ export function checkCommandTimes(ct: CommandTimes | null | undefined, lift: Mee
   }
   const seq = [soft, ...(o.start ? [ct[o.start]] : []), ...o.then.filter(k => k in ct).map(k => ct[k])];
   for (let i = 1; i < seq.length; i++) if (seq[i] <= seq[i - 1]) return 'out_of_order';
-  const reps = Object.keys(ct).filter(k => /^rep\d+$/.test(k)).sort((a, b) => +a.slice(3) - +b.slice(3)).map(k => ct[k]);
+  const repNo = (k: string) => Number(/^rep_?(\d+)$/.exec(k)?.[1] ?? NaN);
+  const reps = Object.keys(ct).filter(k => !Number.isNaN(repNo(k))).sort((a, b) => repNo(a) - repNo(b)).map(k => ct[k]);
   for (let i = 0; i < reps.length; i++) if (reps[i] <= (i ? reps[i - 1] : soft)) return 'out_of_order';
   return null;
 }
 
 export type AttemptVerdict = {
   /** The attempt's one call; a close call goes to a referee. */
-  call: Call | { light: 'close'; reason: 'judge_unavailable' };
+  call: Call | { light: 'close'; reason: 'judge_unavailable' | 'command_times' };
   lights: ('white' | 'red')[] | null;
+  /** Home (3.8a): every declared rep's call, in order. */
+  repLights: RepLight[] | null;
   judgedFrameMs: number | null;
   measures: Record<string, unknown>;
   result: AttemptResult | null;
@@ -52,11 +57,13 @@ export type AttemptVerdict = {
 
 const lightsOf = (c: Call): AttemptVerdict['lights'] => (c.light === 'close' ? null : [c.light, c.light, c.light]);
 
-export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, lift: MeetLift, ct: CommandTimes | null, rules: Rules = RULES): AttemptVerdict {
+/** `repsDeclared`: a Home attempt, reps at a weight (3.8a), where every declared rep is judged. */
+export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, lift: MeetLift, ct: CommandTimes | null,
+  rules: Rules = RULES, repsDeclared: number | null = null): AttemptVerdict {
   const durationMs = Math.round(d.duration * 1000);
   const problem = checkCommandTimes(ct, lift, durationMs);
   if (problem || !ct) {
-    return { call: { light: 'close', reason: 'judge_unavailable' }, lights: null, judgedFrameMs: null, measures: { command_times: problem ?? 'missing_soft' }, result: null };
+    return { call: { light: 'close', reason: 'command_times' }, lights: null, repLights: null, judgedFrameMs: null, measures: { command_times: problem ?? 'missing_soft' }, result: null };
   }
   const soft = ct.loaded ?? ct.ready;
   let result: AttemptResult;
@@ -82,7 +89,7 @@ export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, li
     }
   } else {
     // The press judge comes with the bench and floor press (phase 3); until then a referee decides.
-    return { call: { light: 'close', reason: 'judge_unavailable' }, lights: null, judgedFrameMs: null, measures: { lift: 'press not judged yet' }, result: null };
+    return { call: { light: 'close', reason: 'judge_unavailable' }, lights: null, repLights: null, judgedFrameMs: null, measures: { lift: 'press not judged yet' }, result: null };
   }
   const rep = result.reps[0];
   const measures: Record<string, unknown> = {
@@ -96,5 +103,35 @@ export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, li
   if (rep?.bottomKneeDeg !== undefined) measures.bottom_knee_deg = +rep.bottomKneeDeg.toFixed(1);
   if (rep?.lockoutHipDeg !== undefined) measures.lockout_hip_deg = +rep.lockoutHipDeg.toFixed(1);
   if (rep?.lockoutKneeDeg !== undefined) measures.lockout_knee_deg = +rep.lockoutKneeDeg.toFixed(1);
-  return { call: result.call, lights: lightsOf(result.call), judgedFrameMs: result.judgedFrameMs, measures, result };
+  if (repsDeclared) return homeVerdict(result, repsDeclared, measures);
+  return { call: result.call, lights: lightsOf(result.call), repLights: null, judgedFrameMs: result.judgedFrameMs, measures, result };
+}
+
+/**
+ * 3.8a, the call for a Home attempt: good lift when every declared rep is white; no lift when
+ * any rep is red (the first red rep's reason, and its frame); otherwise a close call. Fewer reps
+ * seen than declared, with none red, is a close call too ("Hard to see"): a referee counts them.
+ */
+function homeVerdict(result: AttemptResult, declared: number, measures: Record<string, unknown>): AttemptVerdict {
+  const reps = result.reps.slice(0, declared);
+  const repLights: RepLight[] = reps.map(r => ({ call: r.call.light, reason: 'reason' in r.call ? r.call.reason : null, frame_ms: r.judgedFrameMs }));
+  measures.reps_declared = declared;
+  measures.reps_seen = result.reps.length;
+  const red = reps.findIndex(r => r.call.light === 'red');
+  if (red >= 0) {
+    measures.red_rep = red + 1;
+    const call = reps[red].call;
+    return { call, lights: lightsOf(call), repLights, judgedFrameMs: reps[red].judgedFrameMs, measures, result };
+  }
+  if (result.call.light === 'close' && result.call.reason === 'visibility') {
+    return { call: result.call, lights: null, repLights, judgedFrameMs: result.judgedFrameMs, measures, result };
+  }
+  const close = reps.find(r => r.call.light === 'close');
+  if (close) return { call: close.call, lights: null, repLights, judgedFrameMs: close.judgedFrameMs, measures, result };
+  if (reps.length < declared) {
+    const call = { light: 'close', reason: 'visibility' } as const;
+    return { call, lights: null, repLights, judgedFrameMs: reps.at(-1)?.judgedFrameMs ?? null, measures, result };
+  }
+  const white = { light: 'white' } as const;
+  return { call: white, lights: lightsOf(white), repLights, judgedFrameMs: reps.at(-1)!.judgedFrameMs, measures, result };
 }

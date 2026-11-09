@@ -30,6 +30,10 @@ export class MemStore implements Store {
   async putJson(key: string, v: unknown) { this.objects.set(key, JSON.parse(JSON.stringify(v))); }
   async getJson<T>(key: string) { return (this.objects.get(key) as T) ?? null; }
   async signedGet(key: string) { return `https://r2.test/${key}?signed`; }
+  async copy(from: string, to: string) {
+    if (!this.objects.has(from)) throw new Error(`R2 copy 404 ${from}`);
+    this.objects.set(to, this.objects.get(from));
+  }
 }
 
 export async function seed(db: Db, store: MemStore, n: number, lift: 'squat' | 'deadlift' = 'squat') {

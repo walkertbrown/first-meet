@@ -66,7 +66,7 @@ describe.skipIf(!URL_)('the judge queue', () => {
     await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 1, ...dims, frames: racked.frames });
     await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 2, ...dims, frames: racked.frames });
     const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
-    expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'judge_unavailable', lights: null });
+    expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'command_times', lights: null });
   });
 
   it('an upload not in R2 is refused, and nothing is queued', async () => {

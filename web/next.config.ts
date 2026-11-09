@@ -16,7 +16,8 @@ const config: NextConfig = {
   poweredByHeader: false,
   env: { NEXT_PUBLIC_COMMIT: commit() },
   // the one judge reads ../shared/rules.json (plan 2.1)
-  experimental: { externalDir: true },
+  // authInterrupts: forbidden() answers a real 403 with each section's own page (plan 3.1)
+  experimental: { externalDir: true, authInterrupts: true },
   async headers() {
     return [
       {
