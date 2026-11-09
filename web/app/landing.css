@@ -9,6 +9,8 @@
 .landing-lamps .lamp::after { inset: -22px; }
 .hero-actions { display: flex; flex-direction: column; gap: 12px; }
 .hero-under { margin-top: 8px; text-align: left; }
+.hero-second { display: flex; flex-direction: column; align-items: stretch; }
+.hero-demo { align-self: center; min-height: 48px; display: inline-flex; align-items: center; margin-top: 4px; }
 .hero-stage { display: none; }
 
 .block { margin-top: 40px; }

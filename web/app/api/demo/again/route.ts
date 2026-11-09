@@ -10,5 +10,5 @@ export async function POST(req: Request) {
   if (!s || s.kind !== 'demo') return Response.json({ error: 'demo lifters only' }, { status: 401 });
   const a = await liftAgain(db(), s.lifterId);
   if (!a) return Response.json({ error: 'no demo lifter' }, { status: 404 });
-  return Response.json({ attempt: { id: a.id, status: a.status } });
+  return Response.json({ attempt: { id: a.id, lift: a.lift, number: a.number, weight: a.weight, repsDeclared: a.repsDeclared, status: a.status } });
 }

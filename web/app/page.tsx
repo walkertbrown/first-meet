@@ -64,7 +64,10 @@ export default function Landing() {
                 <Link className="btn" href="/try">Try a lift</Link>
                 <p className="small hero-under">60 seconds · no sign-up · your video stays on your phone</p>
               </div>
-              <Link className="btn ghost" href="/sample">Watch a meet night</Link>
+              <div className="hero-second">
+                <Link className="btn ghost" href="/sample">Watch a meet night</Link>
+                <Link className="link hero-demo" href="/demo">Try the demo meet</Link>
+              </div>
             </div>
           </div>
           <div className="hero-stage">

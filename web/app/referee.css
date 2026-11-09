@@ -109,16 +109,6 @@
 .ref-done { display: flex; flex-direction: column; gap: 16px; max-width: 480px; padding: 24px 0; }
 .ref-done .btn { align-self: flex-start; width: auto; min-width: 200px; }
 
-/* ---------- The demo strip (look 5.14a) ---------- */
-.demo-strip {
-  position: sticky; top: 0; z-index: 10; height: calc(32px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 20px 0;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  background: var(--ink); color: var(--on-ink);
-}
-.demo-strip .eyebrow { color: var(--on-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.demo-strip a { color: var(--on-ink); font-size: 15px; line-height: 20px; font-weight: 600; text-underline-offset: 3px; white-space: nowrap; }
-@media (min-width: 1024px) { .demo-strip { padding-left: 40px; padding-right: 40px; } }
-
 /* ---------- /ops ---------- */
 .ops-warn { color: var(--no-text); }
 .ops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 32px 40px; margin-top: 16px; }

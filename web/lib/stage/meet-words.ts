@@ -1,6 +1,7 @@
 // A meet attempt's words (plan 5.25, 3.5, 3.11, 5.36), exactly, and which ones an attempt's
 // state gets. The stage (meet-attempt.tsx) only draws these.
 import type { LampState } from '@/components/lamps';
+import { REASON_EYEBROW, reasonEyebrow, reasonSentence, type ReasonCode } from '@/lib/reason-words';
 
 export const MEET_WORDS = {
   soft: { barbell: 'Bar is loaded.', home: 'Weights ready.' },
@@ -24,17 +25,6 @@ export const MEET_WORDS = {
   refereeLink: "See the referee's side of this close call",
 } as const;
 
-/** 3.5, the reason card: the eyebrow and the meet's sentence. */
-export const REASONS: Record<string, { eyebrow: string; text: string }> = {
-  depth: { eyebrow: 'DEPTH', text: 'Almost. Your hips stopped just above your knees. Sit back a little further and take it again.' },
-  no_lockout: { eyebrow: 'LOCKOUT', text: "You didn't finish standing tall. Next time, stand all the way up and hold still for the command." },
-  no_pause: { eyebrow: 'PAUSE', text: "You pressed before the 'Press!' call. Next time, let it rest on your chest, wait for the call, then press." },
-  moved_feet: { eyebrow: 'FEET', text: 'Your feet moved during the lift. Keep them planted from the command to the finish.' },
-  downward: { eyebrow: 'HITCH', text: 'The weight went down partway up. Next time, pull in one smooth line to standing.' },
-  weight_not_shown: { eyebrow: 'WEIGHT', text: "We couldn't see the weight clearly. On your next attempt, turn the plates or dumbbells toward the phone before you start." },
-  not_whole_lift: { eyebrow: 'FRAME', text: "We couldn't see the whole lift. Check your spot before your next attempt." },
-};
-
 export type MeetResult = {
   title: 'Good lift' | 'No lift' | 'Close call';
   body?: string;
@@ -48,7 +38,7 @@ const RED_BODY = 'Red lights happen to everyone, even world champions. Most wome
 const CLOSE_BODY = 'A referee is looking at this one, usually within 15 minutes. You can take your next attempt while you wait.';
 
 /** 5.25 step 9: what a judged (or close-call) attempt shows. */
-export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null }): MeetResult | null {
+export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; lift?: string }): MeetResult | null {
   if (a.call === 'close') return { title: 'Close call', body: CLOSE_BODY, lamps: ['off', 'off', 'off'] };
   if (!a.call) return null;
   const lights = a.lights && a.lights.length === 3 ? a.lights : [a.call, a.call, a.call] as ('white' | 'red')[];
@@ -59,9 +49,10 @@ export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: 
     const body = a.reps_declared ? `All ${a.reps_declared} reps counted. A referee would pass that.` : SQUAT_WHITE;
     return { title: 'Good lift', body, small: split, lamps };
   }
-  const r = REASONS[a.reason ?? ''] ?? REASONS.depth;
-  const eyebrow = a.reps_declared && a.red_rep ? `REP ${a.red_rep} · ${r.eyebrow}` : r.eyebrow;
-  return { title: 'No lift', reason: { eyebrow, text: r.text }, body: RED_BODY, small: split, lamps };
+  const code = (a.reason && a.reason in REASON_EYEBROW ? a.reason : 'depth') as ReasonCode;
+  const home = !!a.reps_declared;
+  const reason = { eyebrow: reasonEyebrow(code, home ? a.red_rep : null), text: reasonSentence(code, a.lift ?? 'squat', home ? 'home' : 'barbell') };
+  return { title: 'No lift', reason, body: RED_BODY, small: split, lamps };
 }
 
 /** The HUD's second line (5.25 step 2): "<card_name> · <age group> · <Division>". */
@@ -77,14 +68,28 @@ export const loadingLine = (division: 'barbell' | 'home', weight: number, units:
  * greedy split of (weight − bar) / 2, biggest first, colour then number; 55s only above 405 lb;
  * the 5 and 2.5 (2.5 and 1.25 kg) have no colour word.
  */
-export function barLoading(weight: number, units: 'lb' | 'kg' = 'lb', bar = units === 'lb' ? 45 : 20) {
-  const plates: [number, string][] = units === 'lb'
-    ? [...(weight > 405 ? [[55, 'a red 55'] as [number, string]] : []), [45, 'a blue 45'], [35, 'a yellow 35'], [25, 'a green 25'], [10, 'a white 10'], [5, 'a 5'], [2.5, 'a 2½']]
-    : [[25, 'a red 25'], [20, 'a blue 20'], [15, 'a yellow 15'], [10, 'a green 10'], [5, 'a white 5'], [2.5, 'a 2½'], [1.25, 'a 1¼']];
+const PLATE_NAMES = {
+  lb: { 55: 'a red 55', 45: 'a blue 45', 35: 'a yellow 35', 25: 'a green 25', 10: 'a white 10', 5: 'a 5', 2.5: 'a 2½' } as Record<number, string>,
+  kg: { 25: 'a red 25', 20: 'a blue 20', 15: 'a yellow 15', 10: 'a green 10', 5: 'a white 5', 2.5: 'a 2½', 1.25: 'a 1¼' } as Record<number, string>,
+};
+export const barOf = (units: 'lb' | 'kg') => (units === 'lb' ? 45 : 20);
+
+/** The plates on each side, biggest first: the greedy split (55s only above 405 lb). */
+export function platesPerSide(weight: number, units: 'lb' | 'kg' = 'lb', bar = barOf(units)): number[] {
+  const sizes = units === 'lb' ? [...(weight > 405 ? [55] : []), 45, 35, 25, 10, 5, 2.5] : [25, 20, 15, 10, 5, 2.5, 1.25];
   let side = (weight - bar) / 2;
-  if (side <= 0) return `${bar} ${units} bar`;
-  const got: string[] = [];
-  for (const [w, name] of plates) while (side >= w - 1e-9) { got.push(name); side -= w; }
+  const got: number[] = [];
+  for (const w of sizes) while (side >= w - 1e-9) { got.push(w); side -= w; }
+  return got;
+}
+
+export function barLoading(weight: number, units: 'lb' | 'kg' = 'lb', bar = barOf(units)) {
+  const got = platesPerSide(weight, units, bar).map(w => PLATE_NAMES[units][w]);
+  if (!got.length) return `${bar} ${units} bar`;
   const list = got.length === 1 ? got[0] : `${got.slice(0, -1).join(', ')} and ${got.at(-1)}`;
   return `${bar} ${units} bar + ${list} on each side`;
 }
+
+/** Under "SAMPLE LIFT" on a Home attempt (5.36). */
+export const sampleRepsLine = (n: number) =>
+  n === 1 ? "This sample is one rep, so it's judged as one." : `This sample is ${n} reps, so it's judged as ${n}.`;

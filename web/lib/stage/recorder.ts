@@ -14,12 +14,17 @@ export class Recording {
   startedAt = 0;
   stoppedAt = 0;
 
+  /** The meet's 720p at 2.5 Mbps (Barbell) or 1.5 Mbps (Home) (3.10); Try a lift uses 2.5. */
+  constructor(private bitsPerSecond = 2_500_000) {}
+
+  get mimeType() { return this.rec?.mimeType ?? ''; }
+
   start(stream: MediaStream) {
     const mimeType = recorderMime('webm');
     if (!mimeType) return;
     this.chunks = [];
     try {
-      this.rec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2_500_000 });
+      this.rec = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: this.bitsPerSecond });
     } catch { this.rec = null; return; }
     this.rec.ondataavailable = e => { if (e.data.size) this.chunks.push(e.data); };
     this.rec.start(250);

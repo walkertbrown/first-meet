@@ -1,0 +1,57 @@
+/* The demo meet's platform and /demo (plan 5.25, 5.36; look 5.4–5.7, 5.14a, 5.14b, 9). The
+   stage itself is stage.css and try.css. */
+
+/* ---------- Chalk pages under the demo strip ---------- */
+.meet-page { min-height: calc(100dvh - 32px - env(safe-area-inset-top)); padding-top: 16px; }
+.meet-page .try-col { margin: 0 auto; }
+@media (min-width: 1024px) { .meet-page { padding-top: 40px; } }
+
+/* ---------- The attempt card (look 5.6, 5.14b) ---------- */
+.attempt-card { background: var(--surface); border-radius: 4px; box-shadow: 0 0 0 1px var(--rule); padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 12px; }
+.ac-row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lift-name { margin: 0; font-family: var(--font-display); font-weight: 800; font-stretch: 118%; font-size: 30px; line-height: 32px; letter-spacing: -.01em; text-transform: uppercase; }
+.ac-of { color: var(--ink-2); }
+.try-col .ac-of { color: var(--ink-2); }
+@media (max-width: 399px) { .ac-opener { display: none; } }
+.attempt-card { container-type: inline-size; }
+/* Weight XL (look 3): 132/118, 108/96 under 760 px tall. A 3-digit weight would run past a
+   phone's card, so it shrinks to fit the card's width (about .84em a digit, the unit 60 px). */
+.weight-xl { --xl: 132px; margin: 0; display: flex; align-items: baseline; white-space: nowrap; font-weight: 900; font-stretch: 125%; letter-spacing: -.035em;
+  font-size: min(var(--xl), calc((100cqi - 60px) / (var(--digits, 3) * .84))); line-height: .894; }
+.weight-xl .unit { font-family: var(--font-display); font-weight: 800; font-stretch: 105%; font-size: 28px; line-height: 28px; letter-spacing: 0; margin-left: 8px; color: var(--ink-2); }
+@media (max-height: 759px) { .weight-xl { --xl: 108px; } }
+.bar-diagram { display: block; max-width: 100%; }
+.attempt-card .small { margin: 0; }
+.ac-because { margin: 0; padding-top: 12px; border-top: 1px solid var(--rule); }
+
+/* ---------- The stage under the strip ---------- */
+.meet-app.try-app { height: calc(100dvh - 32px - env(safe-area-inset-top)); }
+.meet-app .hud { padding-top: 22px; }
+.meet-hud-text { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.meet-hud-text .caption { color: var(--stage-ink-2); margin: 0; }
+.meet-hud-text .try-what.boxed { margin-top: 2px; }
+.meet-hud-right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.meet-hud-weight { font-weight: 900; font-stretch: 118%; font-size: 24px; line-height: 26px; color: var(--stage-ink); white-space: nowrap; }
+/* Home's rep counter (look 5.14b): "3 / 8", ticking up on each counted rep. */
+.meet-reps { font-weight: 900; font-stretch: 118%; font-size: 44px; line-height: 44px; color: var(--stage-ink); animation: rep-tick 220ms var(--ease-lamp); }
+@keyframes rep-tick { from { transform: scale(1.18); } to { transform: none; } }
+.meet-app .hud .try-sound-toggle { margin-left: 4px; }
+
+/* ---------- /demo (look 5.14a): the join screens' layout ---------- */
+.demo-form { display: flex; flex-direction: column; gap: 20px; margin-top: 8px; }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field-label { font-weight: 700; font-size: 15px; line-height: 20px; }
+.input { height: 56px; padding: 0 16px; background: var(--surface); color: var(--ink); border: 0; border-radius: 4px; box-shadow: inset 0 0 0 1px var(--rule); font: inherit; font-size: 17px; }
+.input:hover { box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.input:focus { box-shadow: inset 0 0 0 2px var(--ink); outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* The segmented control (look 5.4). */
+.segments { display: flex; border: 0; padding: 0; margin: 0; border-radius: 4px; box-shadow: inset 0 0 0 1.5px var(--ink); overflow: hidden; }
+.segments legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.segments label { flex: 1; position: relative; min-height: 48px; display: grid; place-items: center; font-weight: 600; font-size: 15px; cursor: pointer; }
+.segments label + label { box-shadow: inset 1.5px 0 0 var(--ink); }
+.segments input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.segments label:hover { background: var(--surface-2); }
+.segments label:has(input:checked) { background: var(--ink); color: var(--on-ink); }
+.segments label:has(input:focus-visible) { box-shadow: inset 0 0 0 3px var(--focus); }
+.segments label:has(input:checked):has(input:focus-visible) { box-shadow: inset 0 0 0 3px var(--on-ink); }

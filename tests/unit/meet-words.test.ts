@@ -60,3 +60,24 @@ describe('live events reach only their lifter', () => {
     expect(isFor({ kind: 'close_calls', attempt_id: 'a1' }, 'L1', 'a1')).toBe(false);
   });
 });
+
+describe('the attempt card pieces', () => {
+  it('splits the plates per side, biggest first', async () => {
+    const { platesPerSide, barOf } = await import('../../web/lib/stage/meet-words');
+    expect(platesPerSide(100)).toEqual([25, 2.5]);
+    expect(platesPerSide(45)).toEqual([]);
+    expect(platesPerSide(415)).toEqual([55, 55, 55, 10, 10]);
+    expect(platesPerSide(405)).toEqual([45, 45, 45, 45]);
+    expect(platesPerSide(60, 'kg')).toEqual([20]);
+    expect(barOf('lb')).toBe(45);
+    expect(barOf('kg')).toBe(20);
+  });
+  it('says the HUD line and the sample reps line', async () => {
+    const { hudLine, sampleRepsLine, loadingLine } = await import('../../web/lib/stage/meet-words');
+    expect(hudLine('Demo lifter', null, 'barbell')).toBe('Demo lifter · Barbell');
+    expect(hudLine('June', '60–64', 'home')).toBe('June · 60–64 · Home');
+    expect(sampleRepsLine(1)).toBe("This sample is one rep, so it's judged as one.");
+    expect(sampleRepsLine(3)).toBe("This sample is 3 reps, so it's judged as 3.");
+    expect(loadingLine('home', 25)).toBe('One 25 lb dumbbell');
+  });
+});

@@ -109,6 +109,20 @@ export async function sampleLift(db: Db, store: Pick<R2, 'copy' | 'head' | 'putJ
   return { status: 200 as const, attempt: { id: a.id, status: r.attempt.status }, sample: { id: clip.id, kind: clip.kind, credit: clip.credit, reps: clip.meet!.reps } };
 }
 
-/** Under "SAMPLE LIFT" on a Home attempt (5.36). */
-export const sampleRepsLine = (n: number) =>
-  n === 1 ? "This sample is one rep, so it's judged as one." : `This sample is ${n} reps, so it's judged as ${n}.`;
+export { sampleRepsLine } from '@/lib/stage/meet-words';
+
+/** The demo's made-up history (5.36): the caps its openers come from. */
+export const DEMO_CAPS = { barbell: { squat: 115 }, home: { squat: { reps: 12, weight: 25 } } } as const;
+/** The day the made-up history's best set was judged: five days before today, Eastern. */
+export const demoCapDate = (now = new Date()) =>
+  new Date(now.getTime() - 5 * 86_400_000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' });
+
+/** The attempt card's because line (5.25 step 1, judged), from the demo's made-up caps. */
+export function demoBecause(division: Division, units: 'lb' | 'kg' = 'lb', now = new Date()) {
+  const date = demoCapDate(now);
+  if (division === 'home') {
+    const c = DEMO_CAPS.home.squat;
+    return `You did ${c.reps} at ${c.weight} ${units} with white lights on ${date}. This one is fewer, so it's already yours.`;
+  }
+  return `You squatted ${DEMO_CAPS.barbell.squat} for 3 with white lights on ${date}. This one is lighter, so it's already yours.`;
+}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Footer, Wordmark } from '@/components/chrome';
+import { DemoStrip } from '@/components/demo-strip';
 import { RefereeCall } from '@/components/referee-call';
 import { db, hasDb } from '@/db';
 import { hasR2, r2 } from '@/lib/r2';
@@ -27,10 +28,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <>
-      <div className="demo-strip">
-        <span className="eyebrow">DEMO MEET · NOTHING HERE COUNTS</span>
-        <Link href="/">Leave the demo</Link>
-      </div>
+      <DemoStrip />
       <div className="wrap page desk">
         <header className="topbar"><Wordmark /></header>
         <main className="ref-main">
