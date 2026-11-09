@@ -14,19 +14,6 @@ import { PLAN_SWITCHES } from '@/lib/plan-switches';
 export const NAME_COOKIE = 'fm_corner_name';
 type Live = Exclude<CornerView, { kind: 'gone' } | { kind: 'before' }>;
 
-/** Look 2: Lights down on meet weekend, unless Day was picked on this device. */
-export function LightsDown() {
-  useLayoutEffect(() => {
-    const el = document.documentElement;
-    const before = el.dataset.theme;
-    let picked: string | null = null;
-    try { picked = localStorage.getItem('fm-theme'); } catch { /* no storage */ }
-    if (picked !== 'light') el.dataset.theme = 'dark';
-    return () => { if (before) el.dataset.theme = before; else delete el.dataset.theme; };
-  }, []);
-  return null;
-}
-
 export function saveCornerName(name: string) {
   document.cookie = `${NAME_COOKIE}=${encodeURIComponent(name)}; path=/corner; max-age=${60 * 60 * 24 * 400}; samesite=lax`;
 }

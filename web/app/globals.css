@@ -57,7 +57,10 @@
     --plate-blue: #2E62DD; --plate-green: #24A05A; --plate-change: #4A4E5A;
   }
 }
-:root[data-theme="dark"] {
+/* Look 2: the platform screens go Lights down on meet weekend, and the corner page too, unless Day
+   was picked: the page carries a hidden .lights-down mark (components/lights-down.tsx). */
+:root[data-theme="dark"],
+:root:not([data-theme="light"]):has(.lights-down) {
   color-scheme: dark;
   --chalk: #0E0F14; --surface: #171920; --surface-2: #21242D; --ink: #F1EFE8; --ink-2: #A9ACB6; --ink-3: #8A8E9A;
   --rule: #2A2D37; --on-ink: #0E0F14; --press: #D9D6CC; --hover: #FFFFFF; --focus: #FFF4D8; --no-text: #FF8B7E;
