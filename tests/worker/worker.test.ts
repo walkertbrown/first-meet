@@ -122,6 +122,8 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
         for (const x of [v, w]) {
           const d = x.measures.depth!;
           expect(x.call.light, `the ${x.measures.side} side's call`).toBe('close');
+          // depth, not "hard to see": a `visibility` close call would show "Hard to see" on the referee's side
+          expect(x.call.reason, `the ${x.measures.side} side's reason`).toBe('borderline_depth');
           expect(d, `the close call's depth ${d} (${x.measures.side} side) is ${CLOSE_MARGIN} inside the band`).toBeGreaterThanOrEqual(RULES.squat.redDepthMax + CLOSE_MARGIN);
           expect(d).toBeLessThanOrEqual(RULES.squat.whiteDepthMin - CLOSE_MARGIN);
         }

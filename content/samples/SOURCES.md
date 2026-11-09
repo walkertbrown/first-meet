@@ -8,7 +8,7 @@ close call Nov 9, 2026). No one in them endorses First Meet.
 
 Our changes: each is trimmed to one lift, sound removed, and re-encoded as H.264. The
 good and no lifts are scaled from 1920×1080 to 1280×720; the close call is 1280×720 as
-downloaded, re-encoded from 23.98 to 29.97 frames a second (normal speed). No crop,
+downloaded, at the source's own 23.976 frames a second (no frames repeated). No crop,
 filter or grade.
 
 | File | Kind | Source | Author | Licence | Cut from the source |
