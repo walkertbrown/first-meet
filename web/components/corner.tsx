@@ -10,6 +10,7 @@ import { NineRow } from '@/components/platform';
 import type { CornerRow, CornerView } from '@/lib/corner-view';
 import { CHEERS, CHEER_KINDS, cheerEyebrow, cleanCornerName, type CheerKind } from '@/lib/cheer-words';
 import { notJudgedLine } from '@/lib/stage/meet-words';
+import { LightsBanner } from '@/components/banner-layer';
 
 export const NAME_COOKIE = 'fm_corner_name';
 type Live = Exclude<CornerView, { kind: 'gone' } | { kind: 'before' }>;
@@ -102,10 +103,7 @@ export function CornerLive({ view, token, savedName, children }: { view: Live; t
   return (
     <>
       {banner && (
-        <button type="button" className="banner" onClick={() => setBanner(null)}>
-          <span className="banner-lamps" aria-hidden="true">{banner.lights.map((l, i) => <i key={i} className={`mini-lamp ${l}`} />)}</span>
-          <span className="body">{banner.text}<strong>{banner.call === 'white' ? 'Good lift' : 'No lift'}</strong></span>
-        </button>
+        <LightsBanner lights={banner.lights} text={banner.text} call={banner.call} onDismiss={() => setBanner(null)} />
       )}
       <NineRow row={view.row} division={view.division} label="Her nine attempts" />
       {children}

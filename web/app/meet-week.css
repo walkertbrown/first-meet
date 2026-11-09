@@ -12,9 +12,22 @@
 .mw-hour { cursor: default; box-shadow: 0 0 0 2.5px var(--ink); }
 .mw-hour:hover { box-shadow: 0 0 0 2.5px var(--ink); }
 .mw-hour .eyebrow { color: var(--ink-2); }
-.mw-other summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
-.mw-other-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.mw-other-list li { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+/* look 5.9: "Other hours" is a row that opens: full width, 48 px, rules above and below, 16 px under the winner */
+.mw-other { margin-top: 4px; } /* + the block's 12 px gap = 16 px under the winner's card */
+.mw-other summary {
+  min-height: 48px; display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+}
+.mw-other summary::-webkit-details-marker { display: none; }
+.mw-other summary:active { background: var(--surface-2); }
+.mw-other summary:hover .mw-other-words { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1.5px; }
+.mw-other-words { color: var(--ink); font-weight: 400; }
+.mw-caret { flex: none; color: var(--ink-2); transition: transform 200ms var(--ease-out); }
+.mw-other[open] .mw-caret { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .mw-caret { transition: none; } }
+.mw-other-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.mw-other-list li { display: flex; flex-direction: column; gap: 2px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.mw-other-list li:last-child { border-bottom: 0; }
 .mw-other-list .small { color: var(--ink-2); }
 .mw-checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .mw-check { display: flex; align-items: flex-start; gap: 12px; min-height: 48px; padding: 12px 0; cursor: pointer; }

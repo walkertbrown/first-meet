@@ -3,6 +3,7 @@
 // /platform/total, held while she may be under a bar, and "YOUR CORNER" on her total.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { waitingParts, type HerCheer, type Part } from '@/lib/cheer-words';
+import { keepFocus, useBannerRoom } from '@/components/banner-layer';
 
 export type Corner = { line: Part[]; count: string };
 export type Shown<L> = { kind: 'lights'; b: L; k: number } | { kind: 'cheer'; list: HerCheer[]; k: number };
@@ -83,13 +84,14 @@ export const PartsText = ({ parts }: { parts: Part[] }) => <>{parts.map((p, i) =
  */
 export function CheerBanner({ list, k, onDismiss }: { list: HerCheer[]; k: number; onDismiss: () => void }) {
   const [layers, setLayers] = useState([{ k, list }]);
+  const room = useBannerRoom<HTMLDivElement>();
   useEffect(() => {
     setLayers(ls => (ls[ls.length - 1].k === k ? ls : [ls[ls.length - 1], { k, list }]));
     const t = setTimeout(() => setLayers(ls => ls.slice(-1)), 200);
     return () => clearTimeout(t);
   }, [k]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div className="banner cheer-banner" role="status" onClick={onDismiss}>
+    <div className="banner cheer-banner" role="status" ref={room} onMouseDown={keepFocus} onClick={onDismiss}>
       <span className="cheer-lines">
         {layers.map((l, i) => (
           <span key={l.k} className={`body cheer-line${layers.length > 1 ? (i === 0 ? ' leaving' : ' coming') : ''}`} aria-hidden={i < layers.length - 1 || undefined}>

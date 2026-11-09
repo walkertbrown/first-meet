@@ -2,6 +2,7 @@
 // Meet week (plan 5.23, look 5.9): her openers, the flight-time picker, her corner link, the
 // set-up checklist and "Test your spot". The rules and words for each are in web/lib/meet-week.
 import Link from 'next/link';
+import { CaretRight } from '@phosphor-icons/react';
 import { useEffect, useMemo, useState } from 'react';
 import { BarDiagram } from '@/components/bar-diagram';
 import type { Lift } from '@/db/schema';
@@ -21,6 +22,9 @@ export type MeetWeekProps = {
 
 const ET = 'America/New_York';
 const AGAIN = 'That didn\'t go through. Try again in a moment.';
+
+/** "Other hours (7)": the hours folded in under the flight's hour (5.23). */
+export const otherHoursLine = (n: number) => `Other hours (${n})`;
 
 export const MEET_WEEK_WORDS = {
   title: 'Choose your openers',
@@ -185,7 +189,7 @@ function useTimeZone() {
   return tz;
 }
 
-function FlightPicker(f: NonNullable<MeetWeekProps['flight']>) {
+export function FlightPicker(f: NonNullable<MeetWeekProps['flight']>) {
   const tz = useTimeZone();
   const [counts, setCounts] = useState(f.counts);
   const [mine, setMine] = useState(f.mine);
@@ -235,7 +239,11 @@ function FlightPicker(f: NonNullable<MeetWeekProps['flight']>) {
             </span>
           </div>
           <details className="mw-other">
-            <summary className="body">{MEET_WEEK_WORDS.otherHours}</summary>
+            {/* look 5.9: a row that opens; the browser's details/summary say "collapsed" */}
+            <summary>
+              <CaretRight className="mw-caret" size={24} weight="bold" aria-hidden="true" />
+              <span className="body mw-other-words">{otherHoursLine(f.starts.length - 1)}</span>
+            </summary>
             <ul className="mw-other-list">
               {f.starts.map((_, i) => (i === f.hour ? null : (
                 <li key={i}><span className="body">{label(i)}</span><span className="small">{pickedLine(counts[i])}</span></li>

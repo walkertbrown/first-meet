@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { CheerBanner, useBanners } from '@/components/cheer-banner';
 import { apiFetch } from '@/lib/stage/server-clock';
 import { liftWord, meetResult } from '@/lib/stage/meet-words';
+import { LightsBanner } from '@/components/banner-layer';
 
 type Banner = { id: string; text: string; call: 'white' | 'red'; lights: ('white' | 'red')[] };
 type Judged = { lift: string; number: number; weight: number; reps_declared: number | null; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null };
@@ -43,9 +44,6 @@ export function DoneLive({ waiting, division, units, pollMs = 30_000 }: {
   if (shown?.kind !== 'lights') return null;
   const b = shown.b;
   return (
-    <button type="button" className="banner" key={shown.k} onClick={() => { dismiss(); router.push(`/platform/attempt/${b.id}`); }}>
-      <span className="banner-lamps" aria-hidden="true">{b.lights.map((l, i) => <i key={i} className={`mini-lamp ${l}`} />)}</span>
-      <span className="body">{b.text}<strong>{b.call === 'white' ? 'Good lift' : 'No lift'}</strong></span>
-    </button>
+    <LightsBanner key={shown.k} lights={b.lights} text={b.text} call={b.call} onDismiss={dismiss} onOpen={() => router.push(`/platform/attempt/${b.id}`)} />
   );
 }

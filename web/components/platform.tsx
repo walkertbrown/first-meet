@@ -13,6 +13,7 @@ import { apiFetch } from '@/lib/stage/server-clock';
 import { notJudgedLabel } from '@/lib/stage/meet-words';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
 import type { DeclareSheet } from '@/lib/meet-flow';
+import { LightsBanner } from '@/components/banner-layer';
 import {
   DECLARE_WORDS, WELCOME_WORDS, capLine, choiceWords, declareButton, liftWord, loadingLine, meetResult,
 } from '@/lib/stage/meet-words';
@@ -179,13 +180,11 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
       {error && !sheet && <p className="platform-error small" role="alert">{error}</p>}
       {shown?.kind === 'cheer' && <CheerBanner list={shown.list} k={shown.k} onDismiss={dismiss} />}
       {shown?.kind === 'lights' && (() => { const banner = shown.b; return (
-        <button type="button" className="banner" key={shown.k} onClick={() => { dismiss(); router.push(`/platform/attempt/${banner.id}`); }}>
-          <span className="banner-lamps" aria-hidden="true">{banner.lights.map((l, i) => <i key={i} className={`mini-lamp ${l}`} />)}</span>
-          <span className="body">
-            {banner.text}<strong>{banner.call === 'white' ? 'Good lift' : 'No lift'}</strong>
-            {banner.stays && <span className="banner-more"> Your next attempt stays as declared.</span>}
-          </span>
-        </button>
+        <LightsBanner
+          key={shown.k} lights={banner.lights} text={banner.text} call={banner.call}
+          more={banner.stays ? 'Your next attempt stays as declared.' : null}
+          onDismiss={dismiss} onOpen={() => router.push(`/platform/attempt/${banner.id}`)}
+        />
       ); })()}
       {welcome && welcomeCorner && <WelcomeSheet corner={welcomeCorner} onClose={closeWelcome} />}
       {sheet && (
