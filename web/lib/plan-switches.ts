@@ -35,4 +35,11 @@ export const PLAN_SWITCHES = {
    * sheet, with no Eyebrow. The sheet itself, a tap and no long-press, is in both copies.
    */
   item79: process.env.NEXT_PUBLIC_PLAN_ITEM79 === '1',
+  /**
+   * Item 80: she sees her cheers on meet weekend (5.24, 5.27, 5.28; look 5.10). On: a cheer banner on
+   * /platform and /platform/total as each lands, any she missed when she comes back, no banner of any
+   * kind from "I'm ready" until her result panel has settled, and "YOUR CORNER" on her total. Off:
+   * the 1:12 AM copy, where cheers are kept but never shown to her, and a lights banner drops in at once.
+   */
+  item80: process.env.NEXT_PUBLIC_PLAN_ITEM80 === '1',
 } as const;

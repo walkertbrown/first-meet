@@ -50,6 +50,13 @@ export type MeetAttemptProps = {
   notJudged?: boolean;
   /** The demo meet's close call has "Be the referee" (5.36); a real meet's waits for a real referee. */
   demoReferee?: boolean;
+  /** Under the attempt card, during flight time: "Your flight is lifting" (5.24, look 5.8). */
+  strip?: React.ReactNode;
+  /**
+   * Item 80 (look 5.10, "Never while she lifts"): true from "I'm ready" until her result panel has
+   * settled (its 480 ms slide-in has ended), so the platform holds every banner while she may be under a bar.
+   */
+  onBusy?: (busy: boolean) => void;
 };
 
 type View = 'card' | 'stage' | 'denied' | 'nocamera' | 'limit';
@@ -91,7 +98,7 @@ async function getJson(path: string, init?: RequestInit) {
   return { status: r.status, body: await r.json().catch(() => ({})) as Record<string, unknown> };
 }
 
-export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true }: MeetAttemptProps) {
+export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = true, strip, onBusy }: MeetAttemptProps) {
   const first = attempt;
   const home = lifter.division === 'home';
   const startView: View = first.status === 'declared' ? 'card' : 'stage';
@@ -596,6 +603,18 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // busy from "I'm ready" until the result panel has slid in (480 ms; at once with motion off)
+  const resultIn = ['held', 'offline', 'lit', 'close', 'replay', 'hold', 'norep', 'refused'].includes(phase);
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    if (view !== 'stage' || !resultIn) { setSettled(false); return; }
+    const t = setTimeout(() => setSettled(true), reduced() ? 0 : 480);
+    return () => clearTimeout(t);
+  }, [view, resultIn]);
+  const underBar = view === 'stage' && !settled;
+  useEffect(() => { onBusy?.(underBar); }, [underBar, onBusy]);
+  useEffect(() => () => onBusy?.(false), [onBusy]);
+
   const toCard = () => { runRef.current++; stopCamera(); resetStage(); setView('card'); };
 
   const liftName = liftCaps(attempt.lift, lifter.division);
@@ -647,6 +666,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <p className="small">{loading}</p>
           <p className="body ac-because">{because}</p>
         </article>
+        {strip}
         <div className="try-actions">
           <button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button>
           <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>

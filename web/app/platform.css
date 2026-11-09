@@ -155,3 +155,45 @@
 .nine-list a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .nine-what { flex: 1; min-width: 0; }
 .nine-list .lamps-mini { display: flex; gap: 6px; }
+
+/* Item 80: the cheer banner (look 5.10): the lights banner with no lamps; a newer line crossfades in */
+.cheer-banner { cursor: default; }
+.cheer-lines { display: grid; flex: 1; min-width: 0; }
+.cheer-line { grid-area: 1 / 1; }
+.cheer-line.leaving { animation: cheer-out 200ms var(--ease-out) forwards; }
+.cheer-line.coming { animation: fade-in 200ms var(--ease-out); }
+@keyframes cheer-out { to { opacity: 0; } }
+
+/* "YOUR CORNER" on her total (5.28, look 5.10): a rule 24 px under the block above, the Eyebrow 16 px
+   under it, the names 8 px under that, the count 4 px under, then 32 px to the buttons */
+.your-corner { display: grid; grid-template-rows: 1fr; margin-top: 24px; border-top: 1px solid var(--rule); }
+.your-corner-in { overflow: hidden; min-height: 0; display: flex; flex-direction: column; padding-top: 16px; }
+.your-corner .eyebrow { color: var(--ink-2); }
+.your-corner-names { margin: 8px 0 0; color: var(--ink); }
+.your-corner-names strong { font-weight: 700; }
+.your-corner-count { margin: 4px 0 0; color: var(--ink-2); }
+.total-page .your-corner + .try-actions { margin-top: 32px; }
+.your-corner.opening { animation: corner-open 260ms var(--ease-out); }
+.your-corner.opening .your-corner-in > * { animation: fade-in 200ms var(--ease-out) 260ms both; }
+@keyframes corner-open { from { grid-template-rows: 0fr; margin-top: 0; border-top-color: transparent; } to { grid-template-rows: 1fr; } }
+
+/* "Your flight is lifting" (5.24, look 5.8): under her attempt card, newest first */
+.flight-strip { margin-top: 24px; }
+.flight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.flight-head .caption { color: var(--ink-3); }
+.flight-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.flight-row { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.flight-row .lamps-mini { display: flex; gap: 6px; flex: none; }
+/* a row that lands while she's here slides down 8 px and fades in; its lamps light 330 ms apart */
+.flight-row.arrive { animation: flight-in 260ms var(--ease-out); }
+.flight-row.arrive .mini-lamp { animation: lamp-wait calc(var(--i) * 330ms + 260ms) step-end; }
+@keyframes flight-in { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes lamp-wait { from { background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); } }
+/* a short phone keeps the card whole: one row, then none */
+@media (max-height: 759px) { .flight-row:not(:first-child) { display: none; } }
+@media (max-height: 689px) { .flight-list { display: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cheer-line.leaving { display: none; }
+  .cheer-line.coming, .your-corner.opening, .your-corner.opening .your-corner-in > *, .flight-row.arrive { animation: none; }
+}

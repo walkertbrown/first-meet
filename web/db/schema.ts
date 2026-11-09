@@ -181,6 +181,8 @@ export const cheers = pgTable('cheers', {
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }),
   sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
   createdAt: createdAt(),
+  /** when a banner showed it to her (5.24, item 80); empty ones show when she next opens the platform */
+  seenAt: at('seen_at'),
 }, t => [
   // one cheer per sender per attempt or session
   uniqueIndex('cheers_one_per_sender').on(t.toLifterId, sql`coalesce(${t.fromLifterId}::text, ${t.fromCornerName})`, sql`coalesce(${t.attemptId}, ${t.sessionId})`),

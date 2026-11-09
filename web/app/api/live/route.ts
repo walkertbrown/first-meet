@@ -5,6 +5,7 @@
 import { db } from '@/db';
 import { attemptState } from '@/lib/attempt-state';
 import { isFor, subscribe } from '@/lib/live';
+import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { sessionFrom } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,11 @@ export async function GET(req: Request) {
       const send = (text: string) => { try { ctl.enqueue(enc.encode(text)); } catch { stop(); } };
       send('retry: 3000\n\n');
       const unsub = subscribe(db(), e => {
+        // item 80: a cheer for her says only that one landed; the phone reads them from /api/meet/cheers
+        if (e.kind === 'cheer') {
+          if (PLAN_SWITCHES.item80 && e.lifter_id === s.lifterId) send(`id: ${++n}\nevent: cheer\ndata: {}\n\n`);
+          return;
+        }
         if (!isFor(e, s.lifterId, watch) || e.kind !== 'attempt') return;
         send(`id: ${++n}\nevent: attempt\ndata: ${JSON.stringify({ attempt_id: e.attempt_id, status: e.status })}\n\n`);
       });

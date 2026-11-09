@@ -14,6 +14,7 @@ import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import { ensureRealMeets, nextBlockStarts } from '@/lib/next-block';
 import '../try.css';
 import '../platform.css';
+import '../corner.css';
 
 // The platform (plan 5.24–5.27): before the window, during it (the nine, one attempt at a time,
 // each declared on the sheet), after all nine (5.28), and closed. The demo meet is always open.

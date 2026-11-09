@@ -36,8 +36,6 @@
 .cheer-eyebrow { white-space: normal; overflow-wrap: anywhere; }
 .cheer-choices { display: flex; flex-direction: column; gap: 8px; }
 .cheer-choice { width: 100%; min-height: 56px; }
-.fade-in { animation: fade-in 200ms var(--ease-out); }
-@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .sheet-scrim.leaving { animation: scrim-out 320ms var(--ease-sheet) forwards; }
 .sheet-scrim.leaving .bottom-sheet { animation: sheet-down 320ms var(--ease-sheet) forwards; }
 @keyframes scrim-out { to { opacity: 0; } }
@@ -50,5 +48,5 @@
 .corner-player-close:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .fade-in, .sheet-scrim.leaving, .sheet-scrim.leaving .bottom-sheet { animation: none; }
+  .sheet-scrim.leaving, .sheet-scrim.leaving .bottom-sheet { animation: none; }
 }

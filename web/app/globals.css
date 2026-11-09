@@ -181,3 +181,8 @@ h1, h2, h3, p, ul, ol { margin: 0; }
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; animation-iteration-count: 1 !important; }
   .lamp.white::after, .lamp.red::after { animation: none; opacity: .75; transform: none; }
 }
+
+/* a 200 ms fade (look 5.10's crossfades) */
+.fade-in { animation: fade-in 200ms var(--ease-out); }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }

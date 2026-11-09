@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { X } from '@phosphor-icons/react';
 import { NineRow } from '@/components/platform';
 import type { CornerRow, CornerView } from '@/lib/corner-view';
-import { CHEERS, CHEER_KINDS, cheerEyebrow, cleanCornerName, type CheerKind } from '@/lib/cheers';
+import { CHEERS, CHEER_KINDS, cheerEyebrow, cleanCornerName, type CheerKind } from '@/lib/cheer-words';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
 
 export const NAME_COOKIE = 'fm_corner_name';

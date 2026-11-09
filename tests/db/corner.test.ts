@@ -4,10 +4,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
-import { attempts, cheers, lifters, meets } from '../../web/db/schema';
+import { attempts, cheers, flights, lifters, meets } from '../../web/db/schema';
 import { ORDER } from '../../web/lib/meet';
 import { cornerView } from '../../web/lib/corner-view';
-import { sendCheer } from '../../web/lib/cheers';
+import { cornerBlock, herCheers, markSeen, partsText, sendCheer, sendFlightCheer, waitingParts } from '../../web/lib/cheers';
 import { subscribe } from '../../web/lib/live';
 import type { LiveEvent } from '../../web/lib/queue';
 import { freshDb, URL_ } from './setup';
@@ -118,5 +118,50 @@ describe.skipIf(!URL_)('the corner page', () => {
     expect((await sendCheer(db, one.token, { attempt_id: hers.id, kind: 'strong', name: '123' })).status).toBe(400);
     await db.update(lifters).set({ deletedAt: NOW }).where(eq(lifters.id, one.l.id));
     expect((await sendCheer(db, one.token, { attempt_id: hers.id, kind: 'strong' })).status).toBe(404);
+  });
+
+  it('item 80: her cheers this meet, each person once, and a banner marks them seen', async () => {
+    const { l, m, token } = await lifter();
+    const [mate] = await db.insert(lifters).values({ cardName: 'Dee Rivers', division: 'barbell', meetId: m.id }).returning();
+    const [f] = await db.insert(flights).values({ meetId: m.id, division: 'barbell', number: 1 }).returning();
+    await db.update(lifters).set({ flightId: f.id }).where(eq(lifters.id, l.id));
+    const a0 = await lift(l, 0, 'white'), a1 = await lift(l, 1, 'white');
+    await sendCheer(db, token, { attempt_id: a0.id, kind: 'strong', name: 'Mom' });
+    await sendCheer(db, token, { attempt_id: a0.id, kind: 'strong' });
+    expect((await sendFlightCheer(db, { ...mate, flightId: f.id }, { attempt_id: a0.id, kind: 'white_lights' })).status).toBe(200);
+    await sendCheer(db, token, { attempt_id: a1.id, kind: 'got_this', name: 'MOM' });
+    const all = await herCheers(db, l.id, m.id);
+    expect(all.map(c => `${c.name ?? '-'} ${c.kind}`)).toEqual(['Mom strong', '- strong', 'Dee white_lights', 'MOM got_this']);
+    expect(all[0].who).toBe(all[3].who); // Mom, ignoring case
+    expect(all[2].who).not.toContain(mate.id); // an opaque key, never a lifter's id
+    expect(partsText(waitingParts(all))).toBe('Mom and Dee cheered you on.');
+    expect(partsText(cornerBlock(all)!.line)).toBe('Mom and Dee cheered you on this weekend.');
+    expect(cornerBlock(all)!.count).toBe('4 cheers');
+    expect(await markSeen(db, l.id, [all[0].id, all[1].id])).toBe(2);
+    expect(await markSeen(db, l.id, [all[0].id])).toBe(0); // already seen
+    expect((await herCheers(db, l.id, m.id, true)).map(c => c.id)).toEqual([all[2].id, all[3].id]);
+    // someone else can't mark hers
+    expect(await markSeen(db, mate.id, [all[2].id])).toBe(0);
+  });
+
+  it('a flight cheer: only a flightmate\'s sent attempt, never her own, once; the demo flight keeps nothing', async () => {
+    const { l, m } = await lifter();
+    const [f] = await db.insert(flights).values({ meetId: m.id, division: 'barbell', number: 2 }).returning();
+    const [g] = await db.insert(flights).values({ meetId: m.id, division: 'barbell', number: 3 }).returning();
+    await db.update(lifters).set({ flightId: f.id }).where(eq(lifters.id, l.id));
+    const [mate] = await db.insert(lifters).values({ cardName: 'Ada', division: 'barbell', meetId: m.id, flightId: f.id }).returning();
+    const [other] = await db.insert(lifters).values({ cardName: 'Rhea', division: 'barbell', meetId: m.id, flightId: g.id }).returning();
+    const a = await lift(l, 0, 'white');
+    const notSent = await lift(l, 1, null, 'declared');
+    const from = (x: typeof mate) => ({ id: x.id, cardName: x.cardName, flightId: x.flightId, isDemo: false });
+    expect((await sendFlightCheer(db, from(other), { attempt_id: a.id, kind: 'strong' })).status).toBe(404);
+    expect((await sendFlightCheer(db, { ...from(mate), id: l.id }, { attempt_id: a.id, kind: 'strong' })).status).toBe(404);
+    expect((await sendFlightCheer(db, from(mate), { attempt_id: notSent.id, kind: 'strong' })).status).toBe(404);
+    expect((await sendFlightCheer(db, from(mate), { attempt_id: a.id, kind: 'boo' })).status).toBe(400);
+    expect((await sendFlightCheer(db, from(mate), { attempt_id: a.id, kind: 'strong' })).status).toBe(200);
+    expect((await sendFlightCheer(db, from(mate), { attempt_id: a.id, kind: 'see_you' })).status).toBe(409);
+    expect((await sendFlightCheer(db, from(mate), { attempt_id: 'flight-1-2', kind: 'strong' })).status).toBe(404);
+    expect((await sendFlightCheer(db, { ...from(mate), isDemo: true }, { attempt_id: 'flight-1-2', kind: 'strong' })).status).toBe(200);
+    expect((await db.select().from(cheers).where(eq(cheers.toLifterId, l.id))).map(c => c.fromLifterId)).toEqual([mate.id]);
   });
 });

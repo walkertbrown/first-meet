@@ -15,6 +15,13 @@
       "when": 1794221903402,
       "tag": "0001_block_starts_on",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794223915158,
+      "tag": "0002_cheers_seen_at",
+      "breakpoints": true
     }
   ]
 }

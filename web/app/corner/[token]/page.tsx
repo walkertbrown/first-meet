@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { db, hasDb } from '@/db';
 import { CornerLive, CornerNameForm, LightsDown, NAME_COOKIE } from '@/components/corner';
 import { cornerView, juneView, type CornerView } from '@/lib/corner-view';
-import { cleanCornerName } from '@/lib/cheers';
+import { cleanCornerName } from '@/lib/cheer-words';
 import { hasR2, r2 } from '@/lib/r2';
 import { DEMO_LINE } from '@/lib/total-view';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';

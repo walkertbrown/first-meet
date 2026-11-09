@@ -124,3 +124,11 @@ describe("cheers on June's page", () => {
     expect(r.status).toBe(200);
   });
 });
+
+describe('item 80 off: the 1:12 AM copy shows her no cheers', () => {
+  it('/api/meet/cheers is not there', async () => {
+    const { GET, POST } = await import('../../web/app/api/meet/cheers/route');
+    expect((await GET(new Request('http://x/api/meet/cheers'))).status).toBe(404);
+    expect((await POST(new Request('http://x/api/meet/cheers', { method: 'POST', body: '{"ids":[]}' }))).status).toBe(404);
+  });
+});

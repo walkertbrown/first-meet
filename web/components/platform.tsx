@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowUpRight } from '@phosphor-icons/react';
 import { MeetAttempt } from '@/components/meet-attempt';
 import { BarDiagram } from '@/components/bar-diagram';
+import { CheerBanner, useBanners } from '@/components/cheer-banner';
+import { DemoFlightStrip } from '@/components/flight-strip';
 import { PLAN_SWITCHES } from '@/lib/plan-switches';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
 import type { DeclareSheet } from '@/lib/meet-flow';
@@ -70,7 +72,9 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
   const [declaring, setDeclaring] = useState(false);
   const [declared, setDeclared] = useState<Declared | null>(null);
   const [error, setError] = useState('');
-  const [banner, setBanner] = useState<Banner | null>(null);
+  // item 80: every banner waits while she may be under a bar, and her cheers show here
+  const [busy, setBusy] = useState(false);
+  const { shown, pushLights, dismiss } = useBanners<Banner>(PLAN_SWITCHES.item80, busy);
   const [welcome, setWelcome] = useState(!!welcomeCorner);
   // closing it drops ?welcome=1, so a reload doesn't bring it back
   const closeWelcome = useCallback(() => { setWelcome(false); router.replace('/platform', { scroll: false }); }, [router]);
@@ -129,17 +133,11 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
       const what = lifter.division === 'home' ? `${a.reps_declared} reps` : `${a.weight} ${lifter.units}`;
       // a red after she declared a heavier next attempt: it stands (5.27)
       const stays = a.call === 'red' && rowRef.current.some(c => c.lift === a.lift && c.number === a.number + 1 && c.state !== 'empty');
-      setBanner({ id, text: `${liftWord(a.lift, lifter.division)} ${a.number} · ${what} · `, call: a.call, lights: res.lamps.filter((l): l is 'white' | 'red' => l === 'white' || l === 'red'), stays });
+      pushLights({ id, text: `${liftWord(a.lift, lifter.division)} ${a.number} · ${what} · `, call: a.call, lights: res.lamps.filter((l): l is 'white' | 'red' => l === 'white' || l === 'red'), stays });
       router.refresh();
     });
     return () => es.close();
-  }, [current.id, lifter.division, lifter.units, router]);
-
-  useEffect(() => {
-    if (!banner) return;
-    const t = setTimeout(() => setBanner(null), 8000);
-    return () => clearTimeout(t);
-  }, [banner]);
+  }, [current.id, lifter.division, lifter.units, router, pushLights]);
 
   const closesLine = closesAt ? untilLine(closesAt) : null;
   const top = (
@@ -162,17 +160,20 @@ export function Platform({ meetName, closesAt, row, current, because, notJudged,
         onNext={() => void onNext()}
         top={top}
         demoReferee={demo}
+        onBusy={PLAN_SWITCHES.item80 ? setBusy : undefined}
+        strip={demo ? <DemoFlightStrip division={lifter.division} units={lifter.units} cardName={lifter.cardName} /> : null}
       />
       {error && !sheet && <p className="platform-error small" role="alert">{error}</p>}
-      {banner && (
-        <button type="button" className="banner" onClick={() => { setBanner(null); router.push(`/platform/attempt/${banner.id}`); }}>
+      {shown?.kind === 'cheer' && <CheerBanner list={shown.list} k={shown.k} onDismiss={dismiss} />}
+      {shown?.kind === 'lights' && (() => { const banner = shown.b; return (
+        <button type="button" className="banner" key={shown.k} onClick={() => { dismiss(); router.push(`/platform/attempt/${banner.id}`); }}>
           <span className="banner-lamps" aria-hidden="true">{banner.lights.map((l, i) => <i key={i} className={`mini-lamp ${l}`} />)}</span>
           <span className="body">
             {banner.text}<strong>{banner.call === 'white' ? 'Good lift' : 'No lift'}</strong>
             {banner.stays && <span className="banner-more"> Your next attempt stays as declared.</span>}
           </span>
         </button>
-      )}
+      ); })()}
       {welcome && welcomeCorner && <WelcomeSheet corner={welcomeCorner} onClose={closeWelcome} />}
       {sheet && (
         <DeclareSheetView
