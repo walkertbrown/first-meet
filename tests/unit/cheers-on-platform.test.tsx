@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { cheerCount, cheeredYouOn, cornerBlock, namesOf, oneCheerParts, partsText, waitingParts, type HerCheer } from '../../web/lib/cheer-words';
 import { CheerBanner, YourCorner, step, type Shown } from '../../web/components/cheer-banner';
-import { DEMO_FLIGHT_CYCLE_S, DEMO_FLIGHT_NAMES, demoFlightAt, isDemoFlightId } from '../../web/lib/demo-flight';
+import { DEMO_FLIGHT_CYCLE_S, DEMO_FLIGHT_NAMES, demoFlightAt, isDemoFlightId, rowsThatFit } from '../../web/lib/demo-flight';
 
 const c = (id: string, name: string | null, kind: HerCheer['kind'] = 'strong'): HerCheer => ({ id, kind, who: name ? name.toLowerCase() : null, name });
 const momx3 = [c('1', 'Mom'), c('2', null), c('3', 'Mom'), c('4', 'Dee'), c('5', 'Mom'), c('6', 'Ana'), c('7', null)];
@@ -115,5 +115,26 @@ describe('the demo flight (5.36)', () => {
     expect(isDemoFlightId('flight-123-5')).toBe(true);
     expect(isDemoFlightId('june-5-1')).toBe(false);
     expect(isDemoFlightId('00000000-0000-4000-8000-000000000001')).toBe(false);
+  });
+});
+
+describe('the strip\'s height (look 5.8): as many rows as leave "I\'m ready" on the visible screen', () => {
+  // the 844 px phone LookieBot's note was about: three rows put the button's bottom at 956
+  const at844 = { max: 3, screen: 844, rowH: 65 };
+  it('drops rows until the button ends 16 px above the bottom, down to the header alone', () => {
+    expect(rowsThatFit({ ...at844, shown: 3, bottom: 956 })).toBe(1); // 956 − 130 = 826 ≤ 828
+    expect(rowsThatFit({ ...at844, shown: 3, bottom: 1100 })).toBe(0); // even one row is too many
+    expect(rowsThatFit({ ...at844, shown: 3, bottom: 700 })).toBe(3);
+  });
+  it('a row comes back only with 24 px to spare, so the toolbar sliding never flickers it', () => {
+    expect(rowsThatFit({ ...at844, shown: 1, bottom: 826 })).toBe(1);
+    // the toolbar goes and the screen grows 56 px: room for a row with 24 to spare is 89, not yet
+    expect(rowsThatFit({ ...at844, screen: 900, shown: 1, bottom: 826 })).toBe(1);
+    expect(rowsThatFit({ ...at844, screen: 931, shown: 1, bottom: 826 })).toBe(2);
+    // the toolbar back: 2 rows at 891 don't fit 828, so one goes at once
+    expect(rowsThatFit({ ...at844, shown: 2, bottom: 891 })).toBe(1);
+    // from the header alone, the first row brings the list's own 9 px with it
+    expect(rowsThatFit({ ...at844, shown: 0, bottom: 731 })).toBe(0); // 731 + 74 + 24 = 829 > 828
+    expect(rowsThatFit({ ...at844, shown: 0, bottom: 730 })).toBe(1);
   });
 });

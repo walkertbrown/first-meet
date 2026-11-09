@@ -179,6 +179,7 @@
 
 /* "Your flight is lifting" (5.24, look 5.8): under her attempt card, newest first */
 .flight-strip { margin-top: 24px; }
+.safe-probe { position: fixed; bottom: 0; height: 0; padding-bottom: env(safe-area-inset-bottom); visibility: hidden; pointer-events: none; }
 .flight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .flight-head .caption { color: var(--ink-3); }
 .flight-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--rule); }
@@ -190,8 +191,6 @@
 @keyframes flight-in { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes lamp-wait { from { background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); } }
 /* a short phone keeps the card whole: one row, then none */
-@media (max-height: 759px) { .flight-row:not(:first-child) { display: none; } }
-@media (max-height: 689px) { .flight-list { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   .cheer-line.leaving { display: none; }
