@@ -12,6 +12,13 @@ async function joinDemo(page: Page) {
   await expect(page.getByRole('heading', { name: 'The demo meet' })).toBeVisible();
   await page.getByLabel('Name on your card').fill('E2E lifter');
   await page.getByRole('button', { name: 'Start the demo meet' }).click();
+  // the welcome sheet (5.36) opens over the platform; "Go to the platform" closes it and drops ?welcome=1
+  await expect(page).toHaveURL(/\/platform\?welcome=1$/);
+  const welcome = page.getByRole('dialog', { name: 'Welcome to the demo meet' });
+  await expect(welcome).toBeVisible();
+  await expect(welcome.getByRole('link', { name: /Open my corner page/ })).toHaveAttribute('href', /^\/corner\/[\w-]{16}$/);
+  await welcome.getByRole('button', { name: 'Go to the platform' }).click();
+  await expect(welcome).toBeHidden();
   await expect(page).toHaveURL(/\/platform$/);
 }
 
