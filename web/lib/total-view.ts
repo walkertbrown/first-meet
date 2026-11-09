@@ -38,8 +38,8 @@ export const unitLine = (units: Units, division: Division) => `${units.toUpperCa
 
 export const formatTotal = num;
 
-const SOO_LINE = 'That\'s your first total. Soo is live at 8 pm Eastern tonight. Every woman who totaled is on her screen. Watch for your name.';
-const DEMO_LINE = 'That\'s your first total. On a real meet night, every woman who totaled is on the host\'s screen.';
+export const SOO_LINE = 'That\'s your first total. Soo is live at 8 pm Eastern tonight. Every woman who totaled is on her screen. Watch for your name.';
+export const DEMO_LINE = 'That\'s your first total. On a real meet night, every woman who totaled is on the host\'s screen.';
 
 /**
  * The words that differ between the 1:12 AM plan and item 75 (5.28): a demo lifter isn't in a real

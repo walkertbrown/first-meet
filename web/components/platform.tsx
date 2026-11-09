@@ -25,9 +25,9 @@ const GROUPS: Record<'barbell' | 'home', string[]> = { barbell: ['Squat', 'Bench
  * A close call (5.27): the 1:12 AM copy puts "Waiting" in the slot; item 76 keeps the slot 34 px with
  * only its pulsing unlit lamp and puts "WAITING" under the group, once (look 4, "Waiting on a referee").
  */
-export function NineRow({ row, division, item76 = PLAN_SWITCHES.item76 }: { row: RowCell[]; division: 'barbell' | 'home'; item76?: boolean }) {
+export function NineRow({ row, division, label = 'Your nine attempts', item76 = PLAN_SWITCHES.item76 }: { row: RowCell[]; division: 'barbell' | 'home'; label?: string; item76?: boolean }) {
   return (
-    <div className={item76 ? 'nine wait-below' : 'nine'} aria-label="Your nine attempts">
+    <div className={item76 ? 'nine wait-below' : 'nine'} aria-label={label}>
       {[0, 1, 2].map(g => {
         const cells = row.slice(g * 3, g * 3 + 3);
         return (

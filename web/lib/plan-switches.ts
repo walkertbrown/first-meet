@@ -29,4 +29,10 @@ export const PLAN_SWITCHES = {
    * new tab". Off: the 1:12 AM copy's "Open my corner page in a new tab".
    */
   item78: process.env.NEXT_PUBLIC_PLAN_ITEM78 === '1',
+  /**
+   * Item 79: the cheer sheet's Eyebrow (5.4). On: "Cheer <card_name> · <Lift> <n>" over the four
+   * cheers ("Cheer <first name> · today's session" for a training session). Off: the 1:12 AM copy's
+   * sheet, with no Eyebrow. The sheet itself, a tap and no long-press, is in both copies.
+   */
+  item79: process.env.NEXT_PUBLIC_PLAN_ITEM79 === '1',
 } as const;

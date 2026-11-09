@@ -21,7 +21,9 @@ export const LIVE_CHANNEL = 'fm_live';
 
 export type LiveEvent =
   | { kind: 'attempt'; attempt_id: string; lifter_id: string; status: string }
-  | { kind: 'close_calls'; attempt_id: string };
+  | { kind: 'close_calls'; attempt_id: string }
+  /** a corner's cheer for her (5.4) */
+  | { kind: 'cheer'; lifter_id: string; attempt_id: string; cheer: string; name: string | null };
 
 export async function publish(db: Db, e: LiveEvent) {
   await db.execute(sql`select pg_notify(${LIVE_CHANNEL}, ${JSON.stringify(e)})`);
