@@ -35,31 +35,59 @@ test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({
   else await expect(page.getByRole('button', { name: 'Lift it again' })).toBeVisible();
 });
 
-// LookieBot's look check on 23b1340: motion off drops the movement, never the reading time.
-// "Bar is loaded." holds its full 1.5 s before "SQUAT!" (look 7).
-test('motion off: "Bar is loaded." still holds 1.5 s before "SQUAT!"', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' });
+// The stage's beats on a sample lift, timed in the page (MutationObserver, never timers): when
+// each command first shows, when "RACK!" clears, and when the frozen (judged) frame shows.
+type Beats = { cmd: Record<string, number>; rackOff?: number; frozenAt?: number };
+async function watchBeats(page: Page) {
   await page.addInitScript(() => {
-    const seen: Record<string, number> = {};
-    (window as unknown as { __cmd: typeof seen }).__cmd = seen;
+    const b: { cmd: Record<string, number>; rackOff?: number; frozenAt?: number } = { cmd: {} };
+    (window as unknown as { __beats: typeof b }).__beats = b;
     new MutationObserver(() => {
-      for (const el of document.querySelectorAll('.command .c')) {
-        const t = el.textContent ?? '';
-        if (t && !(t in seen)) seen[t] = performance.now();
-      }
-    }).observe(document, { childList: true, subtree: true, characterData: true });
+      const now = performance.now();
+      const words = [...document.querySelectorAll('.command .c')].map(el => el.textContent ?? '');
+      for (const t of words) if (t && !(t in b.cmd)) b.cmd[t] = now;
+      if ('RACK!' in b.cmd && b.rackOff === undefined && !words.includes('RACK!')) b.rackOff = now;
+      const frozen = document.querySelector('canvas.feed');
+      if (b.frozenAt === undefined && frozen && !frozen.hasAttribute('hidden')) b.frozenAt = now;
+    }).observe(document, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
   });
+}
+async function liftSample(page: Page): Promise<Beats> {
   await joinDemo(page);
   await expect(async () => {
     const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
     if (await btn.isVisible()) await btn.click({ timeout: 2000 });
     await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
-  await expect(page.locator('.command .c', { hasText: 'SQUAT!' })).toBeAttached({ timeout: 90_000 });
-  const seen = await page.evaluate(() => (window as unknown as { __cmd: Record<string, number> }).__cmd);
-  expect(seen['SQUAT!'] - seen['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
-  expect(seen['Bar is loaded.'] - seen['Good spot.']).toBeGreaterThanOrEqual(1400);
-});
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __beats: Beats }).__beats.rackOff), { timeout: 90_000 }).toBeDefined();
+  await expect(page.getByText('Sending to the judges')).toBeVisible();
+  return page.evaluate(() => (window as unknown as { __beats: Beats }).__beats);
+}
+
+// Look 9, plan 5.25 and 3.10 on the sample (LookieBot's checks on 23b1340 and 5d5ccb5):
+// - "Good spot." and "Bar is loaded." hold 1.5 s each, with motion on and off: motion off drops
+//   movement, never reading time.
+// - "RACK!" stays up 1.5 s and the frozen frame comes no sooner, even though the clips end 0.17 s
+//   and 0.67 s after their "Rack!": the stage holds the last frame, as on a camera lift.
+// "model blocked" runs the stage at frame rate, as on a phone (headless runs the pose model at
+// about a frame a second, which hides short beats); "model loaded" is the stage as it ships.
+for (const motion of ['on', 'off'] as const) {
+  for (const model of ['loaded', 'blocked'] as const) {
+    test(`a sample lift's beats, motion ${motion}, pose model ${model}: 1.5 s holds and "RACK!" to the freeze`, async ({ page }) => {
+      if (motion === 'off') await page.emulateMedia({ reducedMotion: 'reduce' });
+      if (model === 'blocked') await page.route('**/models/**', r => r.abort());
+      await watchBeats(page);
+      const b = await liftSample(page);
+      const ms = (x?: number) => Math.round(x ?? NaN);
+      console.log(`beats motion ${motion} model ${model}: good spot→loaded ${ms(b.cmd['Bar is loaded.'] - b.cmd['Good spot.'])}, loaded→SQUAT ${ms(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.'])}, RACK up ${ms(b.rackOff! - b.cmd['RACK!'])}, RACK→frozen ${ms(b.frozenAt! - b.cmd['RACK!'])}`);
+      expect(b.cmd['Bar is loaded.'] - b.cmd['Good spot.']).toBeGreaterThanOrEqual(1400);
+      expect(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
+      expect(b.rackOff! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
+      expect(b.frozenAt, 'the judged frame shows').toBeDefined();
+      expect(b.frozenAt! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
+    });
+  }
+}
 
 // NerdCider's phase 2 check: a browser's own recording (a WebM with no length in its header)
 // must be judged, never left to run out its leases. On the way it goes offline after the lift:

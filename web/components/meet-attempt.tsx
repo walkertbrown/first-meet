@@ -452,7 +452,7 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     flushSync(() => { setPhase('lifting'); setCommand({ text: MEET_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
     voice.say('squat');
     void video.play();
-    let said = { squat: true, rack: false }, lastMedia = -1;
+    let said = { squat: true, rack: false }, lastMedia = -1, rackShownAt = 0;
     await new Promise<void>(resolve => {
       const tick = () => {
         if (!alive()) return resolve();
@@ -464,9 +464,13 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
         }
         if (!said.rack && (ms >= ct.rack || video.ended)) {
           said = { ...said, rack: true };
-          setCommand({ text: MEET_WORDS.rack, kind: 'on' }); voice.say('rack');
+          flushSync(() => setCommand({ text: MEET_WORDS.rack, kind: 'on' })); voice.say('rack');
+          rackShownAt = performance.now();
         }
-        if (said.rack && (video.ended || ms >= ct.rack + AFTER_RACK_MS)) return resolve();
+        // 3.10, as on a camera lift: the stage runs to 1.5 s after "RACK!". A clip that ends sooner
+        // holds its last frame, with "RACK!" up and REC counting, so the word plays out whole
+        // (look §6 item 3) before the freeze.
+        if (said.rack && performance.now() - rackShownAt >= AFTER_RACK_MS) return resolve();
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
