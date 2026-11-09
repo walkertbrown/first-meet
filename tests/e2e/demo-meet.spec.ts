@@ -229,7 +229,9 @@ test('after the demo referee saves, "Back to the platform" shows squat 3\'s ligh
   await liftOneSample(page);
   await expect(page.getByRole('heading', { name: 'Close call' })).toBeVisible();
   await page.getByRole('link', { name: "See the referee's side of this close call" }).click();
-  await expect(page.getByRole('heading', { name: 'Close call', level: 1 })).toBeVisible({ timeout: 30_000 });
+  // the referee's close call: its h1 is the lift ("Squat 3 · …"), the tab title "Close call"
+  await expect(page.getByRole('heading', { name: /^Squat 3 · /, level: 1 })).toBeVisible({ timeout: 30_000 });
+  await expect(page).toHaveTitle(/Close call/);
   const whites = page.getByRole('button', { name: 'White light' });
   for (let i = 0; i < 3; i++) await whites.nth(i).click();
   await page.getByRole('button', { name: 'Save the lights' }).click();
