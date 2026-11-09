@@ -6,15 +6,18 @@ import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { CLIPS_DIR, EXPECTED, checkClip, verdictOf } from '../clips/check';
 import { mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
 
 const PY = process.env.WORKER_PYTHON;
 const CLI = join(__dirname, '../../worker/cli.py');
+const MAKE = join(__dirname, '../../worker/timing_clip.py');
 type Raw = { w: number; h: number; duration: number; secs: number; frames: Frame[] };
 
-const run = (clip: string, args: string[]): Raw =>
-  JSON.parse(execFileSync(PY!, [CLI, join(CLIPS_DIR, `${clip}.webm`), ...args], { maxBuffer: 64 << 20, encoding: 'utf8' }));
+const runFile = (file: string, args: string[]): Raw =>
+  JSON.parse(execFileSync(PY!, [CLI, file, ...args], { maxBuffer: 64 << 20, encoding: 'utf8' }));
+const run = (clip: string, args: string[]) => runFile(join(CLIPS_DIR, `${clip}.webm`), args);
 
 const grid15 = (duration: number, [a, b]: [number, number]) => {
   const out: number[] = [];
@@ -62,6 +65,23 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
         onlyPython: onlyPy, onlyChromium: onlyWeb, sameCalls: JSON.stringify(e.skipped ? v.skipped : v.reps) === JSON.stringify(e.skipped ? w.skipped : w.reps),
         calls: e.skipped ? v.skipped : v.reps,
       };
+    }, 600_000);
+  }
+  // The speed target's two clips (plan 2.3, piece 6): a 30 s Barbell clip and a 20-rep,
+  // 90 s Home clip, made by worker/timing_clip.py the way a phone records. Timing only.
+  for (const name of ['timing-barbell-30s', 'timing-home-90s']) {
+    it(`${name}: two passes, for timing`, () => {
+      const file = join(tmpdir(), `${name}.mp4`);
+      const t0 = Date.now();
+      execFileSync(PY!, [MAKE, name, file]);
+      const makeSecs = (Date.now() - t0) / 1000;
+      const first = runFile(file, ['--fps', '5']);
+      const zoom = zoomWindows(first.frames, first, 'squat');
+      const times = [...new Set(zoom.windows.flatMap(w => grid15(first.duration, w)))].sort((a, b) => a - b);
+      const second = times.length ? runFile(file, ['--times', times.join(','), ...(zoom.splitMs !== null ? ['--split', String(zoom.splitMs)] : [])]) : { frames: [], secs: 0 };
+      const v = verdictOf({ ...first, frames: mergePasses(first.frames, second.frames) }, { lift: 'squat', frameCheck: 'pass', skipped: [] } as never);
+      timings[name] = { makeSecs, pass1Frames: first.frames.length, pass1: first.secs, pass2Frames: second.frames.length, pass2: second.secs, windows: zoom.windows.length, reps: v.skipped.length };
+      expect(first.duration).toBeGreaterThan(29);
     }, 600_000);
   }
   it('writes the timings', () => {

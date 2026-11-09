@@ -36,6 +36,23 @@ class VendorGl(unittest.TestCase):
         self.assertTrue(all(len(h) == 64 for h in vendor_gl.DEBS.values()))
 
 
+class TimingClip(unittest.TestCase):
+    def test_made_like_a_phone_clip(self):
+        import tempfile
+        import av
+        import timing_clip
+        with tempfile.TemporaryDirectory() as d:
+            out = timing_clip.make('t', Path(d) / 't.mp4', {'t': ('half-squat', 2, 1.0)})
+            with av.open(str(out)) as c:
+                s = c.streams.video[0]
+                frames = sum(1 for _ in c.decode(s))
+                self.assertEqual((s.codec_context.name, s.width, s.height, frames), ('h264', 960, 720, 30))
+
+    def test_names(self):
+        import timing_clip
+        self.assertEqual(set(timing_clip.CLIPS), {'timing-barbell-30s', 'timing-home-90s'})
+
+
 class Grid(unittest.TestCase):
     def test_five_a_second(self):
         self.assertEqual(poses.grid(1.0, 5), [0, 200, 400, 600, 800])

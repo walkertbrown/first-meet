@@ -5,9 +5,10 @@ attempt, finds its poses in two passes, posts the points back, and asks again. I
 judges: the one judge (web/lib/judge/) runs in the web service, which also tells it
 where the second pass looks.
 
-`find_clip(clip, times_ms, split_ms)` finds poses in one of the repo's test clips at the
-times given. It proves the pose finder on Render (piece 6) and measures it; its points
-come back gzipped in the result, well under Render's 4 MB cap.
+`find_clip(clip, times_ms, split_ms, fps)` finds poses in one of the repo's test clips at
+the times given, or in a timing clip made from one (worker/timing_clip.py). It proves the
+pose finder on Render (piece 6) and measures it; its points come back gzipped in the
+result, well under Render's 4 MB cap.
 
 Build: pip install -r worker/requirements.txt && python worker/vendor_gl.py
 Start: python worker/main.py
@@ -32,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from render import Retry, TaskContext, Workflows  # noqa: E402
 
 import poses  # noqa: E402
+import timing_clip  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 COMMIT = (os.environ.get('RENDER_GIT_COMMIT') or 'unknown')[:7]
@@ -133,10 +135,18 @@ def find_poses(ctx: TaskContext, worker_id: str) -> dict:
 
 @app.task(timeout_seconds=900)
 def find_clip(ctx: TaskContext, clip: str, times_ms: list[int] | None = None, split_ms: int | None = None, fps: int = 0) -> dict:
-    """One test clip from tests/clips/ (by name, no .webm). `fps` > 0 means that whole grid."""
+    """One test clip from tests/clips/ (by name, no .webm), or a timing clip by its name in
+    timing_clip.CLIPS. `fps` > 0 means that whole grid."""
     begun = time.monotonic()
     name = Path(clip).name.replace('.webm', '')
     path = ROOT / 'tests' / 'clips' / f'{name}.webm'
+    make_secs = None
+    if name in timing_clip.CLIPS:
+        path = Path(tempfile.gettempdir()) / f'{name}.mp4'
+        if not path.is_file():
+            timing_clip.make(name, path)
+        make_secs = round(time.monotonic() - begun, 2)
+        begun = time.monotonic()
     if not path.is_file():
         raise ValueError(f'no test clip called {name}')
     poses.pool()
@@ -151,6 +161,7 @@ def find_clip(ctx: TaskContext, clip: str, times_ms: list[int] | None = None, sp
         'process_secs': round(begun - STARTED, 2),  # time from this process starting to the task starting
         'model_load_secs': round(ready - begun, 2),  # 0 when the pool was already warm
         'pose_secs': round(done - ready, 2),
+        'make_secs': make_secs,  # making a timing clip, before any of the times above
         'cpus': os.cpu_count(), 'affinity': len(os.sched_getaffinity(0)),
         'points_gz_b64': base64.b64encode(gzip.compress(raw)).decode(),
     }
