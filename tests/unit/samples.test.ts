@@ -4,12 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CLIPS_DIR } from '../clips/check';
-import { SAMPLES, SAMPLES_DIR, checkSample, runSample } from '../clips/sample-flow';
+import { KIND_CALL, SAMPLES, SAMPLES_DIR, checkSample, runSample } from '../clips/sample-flow';
 
 describe('the sample lifts', () => {
-  it('there is a good lift and a no lift, each with its file and a credit', () => {
+  it('there is a good lift, a no lift and a close call (5.36), each with its file and a credit', () => {
     expect(SAMPLES.filter(s => s.kind === 'good')).toHaveLength(1);
     expect(SAMPLES.filter(s => s.kind === 'no')).toHaveLength(1);
+    expect(SAMPLES.filter(s => s.kind === 'close')).toHaveLength(1);
     const sources = readFileSync(join(SAMPLES_DIR, 'SOURCES.md'), 'utf8');
     for (const s of SAMPLES) {
       expect(existsSync(join(SAMPLES_DIR, s.file)), s.file).toBe(true);
@@ -28,7 +29,7 @@ describe('the sample lifts', () => {
       expect(run.squatCalled).toBe(true);
       expect(run.rackAt, '"Rack!" is called').not.toBeNull();
       expect(run.noRep).toBe(false);
-      expect(run.call).toBe(s.kind === 'good' ? 'white' : 'red:depth');
+      expect(run.call).toBe(KIND_CALL[s.kind]);
     });
   }
 });

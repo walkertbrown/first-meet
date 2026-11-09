@@ -1,12 +1,13 @@
 // The demo meet's sample lifts (5.36) go through the real server path, so their stored command
-// times must give the server's judge the same call the clip shows: a good lift and a no lift.
+// times must give the server's judge the same call the clip shows: a good lift, a no lift and a close call.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { checkCommandTimes, judgeAttempt } from '../../web/lib/judge';
 import samples from '../../content/samples/samples.json';
 
-const POSES: Record<string, string> = { 'good-lift': 'sample-good-lift', 'no-lift': 'sample-no-lift' };
+const POSES: Record<string, string> = { 'good-lift': 'sample-good-lift', 'no-lift': 'sample-no-lift', 'close-call': 'sample-close-call' };
+const LIGHT = { good: 'white', no: 'red', close: 'close' } as Record<string, string>;
 
 describe('demo sample lifts', () => {
   for (const c of samples.clips) {
@@ -15,7 +16,8 @@ describe('demo sample lifts', () => {
       const ct = c.meet.command_times;
       expect(checkCommandTimes(ct, 'squat', Math.round(raw.duration * 1000))).toBeNull();
       const v = judgeAttempt(raw.frames, raw, 'squat', ct);
-      expect(v.call.light).toBe(c.kind === 'good' ? 'white' : 'red');
+      expect(v.call.light).toBe(LIGHT[c.kind]);
+      if (c.kind === 'close') expect(v.call).toEqual({ light: 'close', reason: 'borderline_depth' });
     });
   }
 });

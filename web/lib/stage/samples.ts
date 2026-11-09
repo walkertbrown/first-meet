@@ -5,8 +5,9 @@ import samples from '../../../content/samples/samples.json';
 
 export type Sample = {
   id: string;
-  /** "good" is a good lift; "no" is a no lift, only from a clip made to demonstrate that fault. */
-  kind: 'good' | 'no';
+  /** "good" is a good lift; "no" is a no lift, only from a clip made to demonstrate that fault;
+   * "close" is the demo meet's close call (5.36), never played by Try a lift. */
+  kind: 'good' | 'no' | 'close';
   file: string;
   /** "This is a sample lift from <credit>." */
   credit: string;

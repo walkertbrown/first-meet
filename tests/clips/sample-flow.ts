@@ -8,7 +8,9 @@ import { join } from 'node:path';
 import { RULES, TryALift, measure, nearSide, type AttemptResult, type Frame } from '../../web/lib/judge';
 import { callName } from './check';
 
-export type Sample = { id: string; kind: 'good' | 'no'; file: string; credit: string };
+export type Sample = { id: string; kind: 'good' | 'no' | 'close'; file: string; credit: string };
+/** The call each kind of sample must get. */
+export const KIND_CALL = { good: 'white', no: 'red:depth', close: 'close:borderline_depth' } as const;
 export const SAMPLES_DIR = join(__dirname, '../../content/samples');
 export const SAMPLES = (JSON.parse(readFileSync(join(SAMPLES_DIR, 'samples.json'), 'utf8')) as { clips: Sample[] }).clips;
 
@@ -77,6 +79,5 @@ export function checkSample(expect: (v: unknown, msg?: string) => any, s: Sample
   expect(run.rackAt, `${s.id}: "Rack!" is called`).not.toBeNull();
   expect(run.noRep, `${s.id}: a rep is seen`).toBe(false);
   expect(run.clipEnd - run.rackAt!, `${s.id}: the clip ends within 1 s of "Rack!"`).toBeLessThanOrEqual(1);
-  if (s.kind === 'good') expect(run.call, `${s.id}: a good lift`).toBe('white');
-  else expect(run.call, `${s.id}: a no lift for depth (a half squat)`).toBe('red:depth');
+  expect(run.call, `${s.id}: judged as its kind, ${s.kind}`).toBe(KIND_CALL[s.kind]);
 }

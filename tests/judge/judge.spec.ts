@@ -18,7 +18,7 @@ for (const [name, e] of EXPECTED) {
 
 // The sample lifts (plan 5.2), as shipped, through the stage's own sample timeline.
 for (const s of SAMPLES) {
-  test(`sample ${s.id}: judged as a ${s.kind === 'good' ? 'good lift' : 'no lift'}, trimmed to look 7`, async ({ page }) => {
+  test(`sample ${s.id}: judged as ${{ good: 'a good lift', no: 'a no lift', close: 'a close call' }[s.kind]}, trimmed to look 7`, async ({ page }) => {
     await openPosePage(page);
     const raw = await findPoses(page, `/samples/${s.file}`);
     checkSample(expect, s, runSample(raw as never));
