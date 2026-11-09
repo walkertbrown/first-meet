@@ -40,6 +40,8 @@ const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
 const NO_PARTS: Record<Part, boolean> = { head: false, hips: false, knees: false, feet: false };
 /** "Bar is loaded." is held for 1.5 s on a sample's first frame (look 9 step 4). */
 const SOFT_HOLD_MS = 1500;
+/** On a sample, the spot segments light one by one, this far apart (look 9 step 3; as on /try). */
+const PART_STEP_MS = 180;
 /** Recording stops this long after "Rack!" (3.10). */
 const AFTER_RACK_MS = 1500;
 /** A Home set is cut off at 90 s (3.10). */
@@ -395,25 +397,48 @@ export function MeetAttempt({ attempt: first, lifter, because, voicePack }: Meet
     video.pause(); await seekTo(video, 0).catch(() => {});
     const d: Dims = { w: video.videoWidth || 720, h: video.videoHeight || 1280 };
     setDims(d);
-    // the phone finds the deepest frame for the frozen picture, if its judge is ready in time
-    const pose = await within(loadPoseModel(), 4000).then(m => new LivePose(m), () => null);
+    // The phone's judge finds the deepest frame and draws the marks, so it is waited for, as on
+    // the camera path: without it the first sample of a session froze with no marks (look 9
+    // step 10). Over 4 s, the slow line shows under the stage (3.11).
+    const slowTimer = setTimeout(() => alive() && setSlow(true), 4000);
+    const pose = await loadPoseModel().then(m => new LivePose(m), () => null);
+    clearTimeout(slowTimer);
     if (!alive()) return;
+    setSlow(false);
     const deepest = new DeepestFrames(d);
+    // 5.25 step 3, look 9 step 3: find your spot on the clip's first frame, as on /try. The
+    // segments light head to feet PART_STEP_MS apart, then "Good spot.", then the soft command.
+    setPhase('spot');
+    let lit: Record<Part, boolean> = NO_PARTS;
+    for (const k of PARTS) {
+      await sleep(PART_STEP_MS);
+      if (!alive()) return;
+      lit = { ...lit, [k]: true };
+      const l = lit;
+      flushSync(() => setParts(l));
+    }
+    await sleep(PART_STEP_MS);
+    if (!alive()) return;
+    setPhase('good-spot'); setLine(null);
+    setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');
+    await wait(RULES.tryALift.goodSpotToStandTallMs);
+    if (!alive()) return;
     setPhase('loaded'); setCommand({ text: home ? MEET_WORDS.soft.home : MEET_WORDS.soft.barbell, kind: 'soft' });
     voice.say(home ? 'weights-ready' : 'bar-loaded');
     await wait(SOFT_HOLD_MS);
     if (!alive()) return;
+    // "SQUAT!", REC, the voice and the clip all start on the same frame (look 7, look 9 step 5):
+    // the clip plays from its first frame on the word. The server judges on the clip's own
+    // command times, so where the word lands on the phone doesn't change the call.
+    const startAt = performance.now();
+    flushSync(() => { setPhase('lifting'); setCommand({ text: MEET_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
+    voice.say('squat');
     void video.play();
-    let said = { squat: false, rack: false }, startAt = performance.now(), lastMedia = -1;
+    let said = { squat: true, rack: false }, lastMedia = -1;
     await new Promise<void>(resolve => {
       const tick = () => {
         if (!alive()) return resolve();
         const ms = video.currentTime * 1000;
-        if (!said.squat && ms >= ct.squat) {
-          said = { ...said, squat: true }; startAt = performance.now();
-          flushSync(() => { setPhase('lifting'); setCommand({ text: MEET_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
-          voice.say('squat');
-        }
         if (said.squat) setRecSec(Math.floor((performance.now() - startAt) / 1000));
         if (pose && said.squat && !said.rack && video.currentTime !== lastMedia) {
           lastMedia = video.currentTime;

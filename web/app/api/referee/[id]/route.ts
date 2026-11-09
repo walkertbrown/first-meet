@@ -1,5 +1,5 @@
 // A referee's close call (plan 5.33):
-//   POST {action: 'save', lights: [l, head, r], reason?, rep?, note?}  → {call, lights, next}
+//   POST {action: 'save', lights: [l, head, r], reasons?: [l, head, r], rep?, note?}  → {call, lights, next}
 //   POST {action: 'ask', note?}                                         → {next}  ("Ask another referee")
 // Only a referee (3.1); a lifter without the role gets a 403.
 import { db, hasDb } from '@/db';
@@ -25,7 +25,7 @@ export async function POST(req: Request, { params }: Ctx) {
   const note = typeof body.note === 'string' ? body.note : null;
   const r = body.action === 'ask'
     ? await askAnother(db(), id, v!.id, note)
-    : await saveLights(db(), id, { kind: 'referee', id: v!.id }, { lights: body.lights, reason: body.reason ?? null, rep: body.rep ?? null, note });
+    : await saveLights(db(), id, { kind: 'referee', id: v!.id }, { lights: body.lights, reasons: Array.isArray(body.reasons) ? body.reasons : null, reason: body.reason ?? null, rep: body.rep ?? null, note });
   const { status, ...rest } = r;
   if (status !== 200) return Response.json(rest, { status });
   const next = await nextCloseCall(db(), v!.id);

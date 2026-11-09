@@ -4,6 +4,9 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, lifters, meets, reviews, type Light } from '@/db/schema';
 import { logEvent, publish } from '@/lib/queue';
+import { attemptReason, callOf, redLamps } from '@/lib/lights';
+
+export { callOf };
 
 /** "Why it was sent" (5.33; command_times from plan item 53). */
 export const WHY: Record<string, string> = {
@@ -66,10 +69,11 @@ export async function closeCall(db: Db, attemptId: string) {
   return { ...row, secondOpinion: asked[0] ?? null };
 }
 
-/** Two whites is a good lift (5.25). */
-export const callOf = (lights: Light[]) => (lights.filter(l => l === 'white').length >= 2 ? 'white' : 'red');
-
-export type SaveInput = { lights: Light[]; reason?: string | null; rep?: number | null; note?: string | null };
+/**
+ * `reasons` is one per lamp (Left, Head, Right): every red light has its own (5.33). A single
+ * `reason` stands for every red lamp that has none.
+ */
+export type SaveInput = { lights: Light[]; reasons?: (string | null)[] | null; reason?: string | null; rep?: number | null; note?: string | null };
 type Who = { kind: 'referee'; id: string } | { kind: 'demo'; lifterId: string };
 
 export async function saveLights(db: Db, attemptId: string, who: Who, input: SaveInput) {
@@ -81,17 +85,20 @@ export async function saveLights(db: Db, attemptId: string, who: Who, input: Sav
   const lights = input.lights;
   if (!Array.isArray(lights) || lights.length !== 3 || lights.some(l => l !== 'white' && l !== 'red')) return { status: 400 as const, error: 'three lamps, white or red' };
   const call = callOf(lights);
-  const reason = call === 'red' ? input.reason : null;
-  if (call === 'red' && !REFEREE_REASONS.includes(reason as RefereeReason)) return { status: 400 as const, error: 'a red needs a reason card' };
+  const reds = redLamps(lights);
+  const reasons = lights.map((l, i) => (l === 'red' ? (input.reasons?.[i] ?? input.reason ?? null) : null));
+  if (reds.some(i => !REFEREE_REASONS.includes(reasons[i] as RefereeReason))) return { status: 400 as const, error: 'every red needs a reason card' };
+  const reason = call === 'red' ? attemptReason(lights, reasons) : null;
   const home = !!c.a.repsDeclared;
-  if (call === 'red' && home && !(Number.isInteger(input.rep) && input.rep! >= 1 && input.rep! <= c.a.repsDeclared!)) return { status: 400 as const, error: 'a red needs the rep' };
+  const anyRed = reds.length > 0;
+  if (anyRed && home && !(Number.isInteger(input.rep) && input.rep! >= 1 && input.rep! <= c.a.repsDeclared!)) return { status: 400 as const, error: 'a red needs the rep' };
   const saved = await db.transaction(async tx => {
     const [u] = await tx.update(attempts).set({
       status: 'judged', call, lights, reason, refereeId: who.kind === 'referee' ? who.id : null,
-      measures: sql`coalesce(${attempts.measures}, '{}'::jsonb) || ${JSON.stringify({ referee: true, close_reason: c.a.reason, ...(home && call === 'red' ? { red_rep: input.rep } : {}) })}::jsonb`,
+      measures: sql`coalesce(${attempts.measures}, '{}'::jsonb) || ${JSON.stringify({ referee: true, close_reason: c.a.reason, ...(anyRed ? { light_reasons: reasons } : {}), ...(home && anyRed ? { red_rep: input.rep } : {}) })}::jsonb`,
     }).where(and(eq(attempts.id, attemptId), eq(attempts.status, 'close_call'))).returning();
     if (!u) return null;
-    await tx.insert(reviews).values({ attemptId, refereeId: who.kind === 'referee' ? who.id : null, lights, reason, note: input.note?.slice(0, 500) ?? null, kind: 'close_call' });
+    await tx.insert(reviews).values({ attemptId, refereeId: who.kind === 'referee' ? who.id : null, lights, reason: reason ?? attemptReason(lights, reasons), note: input.note?.slice(0, 500) ?? null, kind: 'close_call' });
     return u;
   });
   if (!saved) return { status: 409 as const, error: 'already decided' };

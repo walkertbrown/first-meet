@@ -28,7 +28,7 @@
 /* ---------- One close call ---------- */
 .ref-main { gap: 8px; }
 .ref-second { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-radius: 4px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), inset 4px 0 0 var(--ink); }
-.ref-call { display: grid; grid-template-columns: minmax(0, 800px) minmax(300px, 1fr); gap: 32px; align-items: start; margin-top: 16px; }
+.ref-call { display: grid; grid-template-columns: minmax(0, 800px) minmax(360px, 1fr); gap: 32px; align-items: start; margin-top: 16px; }
 @media (max-width: 1100px) { .ref-call { grid-template-columns: minmax(0, 1fr); } }
 
 .ref-clip { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -40,9 +40,28 @@
 .ref-marks { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; pointer-events: none; }
 .ref-noclip { position: absolute; inset: 0; display: grid; place-items: center; color: var(--stage-ink-2); }
 
-.ref-scrub { position: relative; height: 24px; }
-.ref-scrub input { width: 100%; height: 24px; margin: 0; accent-color: var(--ink); }
-.ref-tick { position: absolute; top: 7px; width: 2px; height: 10px; margin-left: -1px; background: var(--stage-ink-2); pointer-events: none; }
+/* The scrub bar (look 5.13): never the browser's own. A 4 px track, the played part in ink, a
+   10 x 24 playhead (only lights are round), a 44 px hit area, the focus outline round the thumb. */
+.ref-scrub { --track: var(--rule); --fill: var(--ink); position: relative; height: 44px; }
+.ref-scrub input {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; margin: 0; padding: 0;
+  background: transparent; cursor: pointer; outline: none;
+}
+.ref-scrub input::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 4px;
+  background: linear-gradient(to right, var(--fill) var(--played, 0%), var(--track) var(--played, 0%));
+}
+.ref-scrub input::-moz-range-track { height: 4px; border-radius: 4px; background: var(--track); }
+.ref-scrub input::-moz-range-progress { height: 4px; border-radius: 4px; background: var(--fill); }
+.ref-scrub input::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 10px; height: 24px; margin-top: -10px; border: 0; border-radius: 2px; background: var(--fill);
+}
+.ref-scrub input::-moz-range-thumb { width: 10px; height: 24px; border: 0; border-radius: 2px; background: var(--fill); }
+.ref-scrub input:focus-visible::-webkit-slider-thumb { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ref-scrub input:focus-visible::-moz-range-thumb { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ref-scrub.on-stage { --track: #2A2D37; --fill: var(--stage-ink); }
+/* A rep's judged frame: a 2 x 10 tick, placed where the thumb's centre would be. */
+.ref-tick { position: absolute; top: 17px; left: calc(5px + (100% - 10px) * var(--at, 0)); width: 2px; height: 10px; margin-left: -1px; background: var(--stage-ink-2); pointer-events: none; }
 
 .ref-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ref-controls .btn { width: auto; padding: 0 16px; }
@@ -69,6 +88,10 @@
 .mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
 .mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
 .mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
+.mini-lamp.lg { width: 24px; height: 24px; flex: none; box-shadow: 0 0 0 2px var(--lamp-bezel); }
+.mini-lamp.lg.white { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-white-glow) / .6); animation: mini-bloom 180ms var(--ease-lamp); }
+.mini-lamp.lg.red { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-red-glow) / .5); animation: mini-bloom 180ms var(--ease-lamp); }
+@keyframes mini-bloom { from { transform: scale(.55); opacity: .5; } to { transform: scale(1); opacity: 1; } }
 .mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
 @keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
 
@@ -76,23 +99,34 @@
 .ref-side { display: flex; flex-direction: column; gap: 20px; }
 .ref-measured { display: flex; flex-direction: column; gap: 4px; }
 .ref-measured .eyebrow { margin-bottom: 4px; }
-.ref-lamps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 20px 12px; border-radius: 4px; background: var(--stage); }
-.ref-lamp { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.ref-lamp .eyebrow { color: var(--stage-ink-2); }
-.ref-lamp .lamp { width: 48px; height: 48px; margin: 6px 0 10px; }
-/* The only coloured buttons in the product: pressing one is a light (look 5.13). */
+/* The three lamps (look 5.13): three stacked 64 px rows with a rule between, the eyebrow and a
+   24 px mini lamp on the left, "White light" and "Red light" on the right. */
+.ref-lamps { display: flex; flex-direction: column; }
+.ref-lamp + .ref-lamp { border-top: 1px solid var(--rule); }
+.ref-lamp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; }
+.ref-lamp-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ref-lamp-buttons { display: flex; gap: 8px; flex: none; }
+/* The only coloured buttons in the product: pressing one is a light. At rest, a 2 px ring in its
+   colour on the surface; chosen, the fill. */
 .ref-light {
-  width: 100%; min-height: 48px; padding: 0 6px; border: 0; border-radius: 4px; cursor: pointer;
+  min-width: 132px; height: 48px; padding: 0 12px; border: 0; border-radius: 4px; cursor: pointer; white-space: nowrap;
   font-family: var(--font-display); font-weight: 800; font-stretch: 100%; font-size: 16px; line-height: 20px;
+  background: var(--surface); color: var(--ink);
   transition: transform 120ms var(--ease-out);
 }
-.ref-light.white { background: var(--lamp-white); color: #16181F; }
-.ref-light.red { background: var(--lamp-red); color: #FFFFFF; }
-.ref-light[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--stage), 0 0 0 5px var(--stage-ink); }
+.ref-light.white { box-shadow: inset 0 0 0 2px var(--lamp-white), 0 0 0 1px var(--rule); }
+.ref-light.red { box-shadow: inset 0 0 0 2px var(--lamp-red); }
+.ref-light.white[aria-pressed="true"] { background: var(--lamp-white); color: #16181F; box-shadow: none; }
+.ref-light.red[aria-pressed="true"] { background: var(--lamp-red); color: #FFFFFF; box-shadow: none; }
 .ref-light:active { transform: scale(.97); }
-.ref-light:focus-visible { outline-color: var(--stage-ink); }
+.ref-lamp .ref-reasons { padding-bottom: 16px; }
 .ref-all { display: flex; gap: 8px; }
-.ref-all .btn { flex: 1; }
+.ref-all .btn { flex: 1 1 0; width: auto; }
+@media (max-width: 420px) {
+  .ref-lamp-row { gap: 8px; }
+  .ref-lamp-name { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+.ref-lamp-name .eyebrow { white-space: nowrap; }
 
 .ref-reasons { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .choice { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 4px; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
@@ -103,6 +137,9 @@
 .choice-label { color: var(--no-text); }
 
 .ref-actions { display: flex; flex-direction: column; gap: 12px; }
+/* The line naming what's missing sits directly above "Save the lights" (5.1), and goes at once. */
+.ref-save { display: flex; flex-direction: column; gap: 8px; }
+.ref-missing { margin: 0; }
 .ref-note { display: flex; flex-direction: column; gap: 6px; }
 .ref-note textarea { width: 100%; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink-3); font-size: 17px; line-height: 25px; resize: vertical; }
 .ref-note textarea:focus { box-shadow: inset 0 0 0 2px var(--ink); outline: none; }
@@ -122,4 +159,4 @@
 .ops-errors .ops-row > .small:first-child { flex: none; width: 190px; }
 @media (max-width: 640px) { .ops-grid { grid-template-columns: minmax(0, 1fr); } .ops-errors .ops-row { flex-direction: column; gap: 2px; } }
 
-@media (prefers-reduced-motion: reduce) { .mini-lamp.pulse { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .mini-lamp.pulse, .mini-lamp.lg { animation: none; } }

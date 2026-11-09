@@ -1,14 +1,14 @@
 'use client';
 // One close call, the referee's side (plan 5.33, look 5.13): the clip with slow motion, frame
 // stepping and the judge's marks; on a Home attempt the rep strip; three lamps set by "White
-// light" and "Red light"; a reason card for a red; "Save the lights" and "Ask another referee".
+// light" and "Red light"; a reason card under each red; the line naming what's missing, "Save the
+// lights" and "Ask another referee".
 // The demo referee (5.36) is the same screen deciding the demo lifter's own close call.
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { MarkFrame, Track } from '@/lib/referee-view';
 import { reasonEyebrow, reasonSentence, refereeReasons, type ReasonCode } from '@/lib/reason-words';
-
-type Light = 'white' | 'red';
+import { saveLine, type Light } from '@/lib/lights';
 type RepLight = { call: 'white' | 'red' | 'close'; reason: string | null; frame_ms?: number };
 
 export type RefereeCallProps = {
@@ -73,7 +73,6 @@ function Marks({ m, track, scale }: { m: MarkFrame; track: Track; scale: number 
   );
 }
 
-const lampClass = (l: Light | null) => `lamp${l ? ' ' + l + ' settled' : ''}`;
 const miniClass = (c: RepLight['call']) => `mini-lamp ${c === 'close' ? 'pulse' : c}`;
 
 export function RefereeCall(p: RefereeCallProps) {
@@ -86,7 +85,7 @@ export function RefereeCall(p: RefereeCallProps) {
   const [showMarks, setShowMarks] = useState(true);
   const [scale, setScale] = useState(1);
   const [lights, setLights] = useState<(Light | null)[]>([null, null, null]);
-  const [reason, setReason] = useState<ReasonCode | null>(null);
+  const [reasons, setReasons] = useState<(ReasonCode | null)[]>([null, null, null]);
   const reps = useMemo(() => (p.repsDeclared ? (p.repLights ?? []).slice(0, p.repsDeclared) : []), [p.repLights, p.repsDeclared]);
   const home = !!p.repsDeclared;
   const [rep, setRep] = useState<number | null>(null);
@@ -96,10 +95,11 @@ export function RefereeCall(p: RefereeCallProps) {
   const [done, setDone] = useState<null | { kind: 'saved' | 'asked' | 'taken'; next: string | null }>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const reds = lights.filter(l => l === 'red').length;
-  const set = lights.every(Boolean);
-  const red = set && reds >= 2;
-  const canSave = set && !busy && (!red || (!!reason && (!home || rep !== null)));
+  const missing = saveLine(lights, reasons, home, rep);
+  const canSave = !missing && !busy;
+  const anyRed = lights.includes('red');
+  const setLamp = (i: number, l: Light) => setLights(ls => ls.map((x, j) => (j === i ? l : x)));
+  const setAll = (l: Light) => setLights([l, l, l]);
 
   const seek = useCallback((s: number) => {
     const v = videoRef.current;
@@ -134,6 +134,12 @@ export function RefereeCall(p: RefereeCallProps) {
   }, [playing]);
 
   useEffect(() => { if (videoRef.current) videoRef.current.playbackRate = speed; }, [speed]);
+
+  // A cached clip can load before the page is ready, so its loadedmetadata is never heard.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v && v.readyState >= 1 && v.duration) { setDuration(v.duration); v.currentTime = (p.judgedFrameMs ?? 0) / 1000; }
+  }, [p.judgedFrameMs]);
 
   // The marks keep their size in screen pixels whatever size the clip is drawn at.
   useEffect(() => {
@@ -189,7 +195,9 @@ export function RefereeCall(p: RefereeCallProps) {
     }
   }
 
-  const save = () => canSave && send({ action: 'save', lights, reason: red ? reason : null, rep: red && home ? rep : null }, p.saveUrl, 'saved');
+  const save = () => canSave && send({
+    action: 'save', lights, reasons: lights.map((l, i) => (l === 'red' ? reasons[i] : null)), rep: anyRed && home ? rep : null,
+  }, p.saveUrl, 'saved');
   const ask = () => {
     if (!p.askUrl) return;
     if (!asking) { setAsking(true); return; }
@@ -237,14 +245,14 @@ export function RefereeCall(p: RefereeCallProps) {
           {mark && p.track && <Marks m={mark} track={p.track} scale={scale} />}
         </div>
 
-        <div className="ref-scrub">
+        <div className="ref-scrub" style={{ ['--played' as string]: `${duration > 0 ? Math.min(100, (now / duration) * 100) : 0}%` }}>
           <input
             type="range" min={0} max={duration || 1} step={0.001} value={Math.min(now, duration || 1)}
-            aria-label="Position in the clip"
+            aria-label="Position in the clip" aria-valuetext={`${now.toFixed(2)} seconds`}
             onChange={e => { videoRef.current?.pause(); seek(Number(e.target.value)); }}
           />
           {duration > 0 && reps.map((r, i) => typeof r.frame_ms === 'number' && (
-            <span key={i} className="ref-tick" style={{ left: `${Math.min(100, (r.frame_ms / 1000 / duration) * 100)}%` }} aria-hidden="true" />
+            <span key={i} className="ref-tick" style={{ ['--at' as string]: Math.min(1, r.frame_ms / 1000 / duration) }} aria-hidden="true" />
           ))}
         </div>
 
@@ -293,38 +301,44 @@ export function RefereeCall(p: RefereeCallProps) {
         <section className="ref-lamps" aria-label="Your lights">
           {LAMPS.map((name, i) => (
             <div key={name} className="ref-lamp" role="group" aria-label={name}>
-              <span className="eyebrow">{name}</span>
-              <div className={lampClass(lights[i])} aria-hidden="true" />
-              <button type="button" className="ref-light white" aria-pressed={lights[i] === 'white'}
-                onClick={() => setLights(ls => ls.map((l, j) => (j === i ? 'white' : l)))}>White light</button>
-              <button type="button" className="ref-light red" aria-pressed={lights[i] === 'red'}
-                onClick={() => setLights(ls => ls.map((l, j) => (j === i ? 'red' : l)))}>Red light</button>
+              <div className="ref-lamp-row">
+                <div className="ref-lamp-name">
+                  <span className="eyebrow">{name}</span>
+                  <i key={lights[i] ?? 'off'} className={`mini-lamp lg${lights[i] ? ' ' + lights[i] : ''}`} aria-hidden="true" />
+                </div>
+                <div className="ref-lamp-buttons">
+                  <button type="button" className="ref-light white" aria-pressed={lights[i] === 'white'} onClick={() => setLamp(i, 'white')}>White light</button>
+                  <button type="button" className="ref-light red" aria-pressed={lights[i] === 'red'} onClick={() => setLamp(i, 'red')}>Red light</button>
+                </div>
+              </div>
+              {lights[i] === 'red' && (
+                <fieldset className="ref-reasons">
+                  <legend className="sr">{`The reason for the ${name.toLowerCase()} red light`}</legend>
+                  {refereeReasons(p.lift).map(code => (
+                    <label key={code} className="choice">
+                      <input type="radio" name={`reason-${i}`} value={code} checked={reasons[i] === code}
+                        onChange={() => setReasons(rs => rs.map((x, j) => (j === i ? code : x)))} />
+                      <span className="choice-label eyebrow">{reasonEyebrow(code, home ? rep : null)}</span>
+                      <span className="small">{reasonSentence(code, p.lift, p.division)}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              )}
             </div>
           ))}
         </section>
         <div className="ref-all">
-          <button type="button" className="btn ghost small" onClick={() => setLights(['white', 'white', 'white'])}>All white</button>
-          <button type="button" className="btn ghost small" onClick={() => setLights(['red', 'red', 'red'])}>All red</button>
+          <button type="button" className="btn ghost small" onClick={() => setAll('white')}>All white</button>
+          <button type="button" className="btn ghost small" onClick={() => setAll('red')}>All red</button>
         </div>
-
-        {red && (
-          <fieldset className="ref-reasons">
-            <legend className="sr">The reason for the red</legend>
-            {home && rep === null && <p className="small">Tap the rep that missed.</p>}
-            {refereeReasons(p.lift).map(code => (
-              <label key={code} className="choice">
-                <input type="radio" name="reason" value={code} checked={reason === code} onChange={() => setReason(code)} />
-                <span className="choice-label eyebrow">{reasonEyebrow(code, home ? rep : null)}</span>
-                <span className="small">{reasonSentence(code, p.lift, p.division)}</span>
-              </label>
-            ))}
-          </fieldset>
-        )}
 
         {error && <p className="small" role="alert">{error}</p>}
 
         <div className="ref-actions">
-          <button type="button" className="btn" disabled={!canSave} aria-busy={busy} onClick={save}>Save the lights</button>
+          <div className="ref-save">
+            {missing && <p className="small ref-missing" id="ref-missing">{missing}</p>}
+            <button type="button" className="btn" disabled={!canSave} aria-busy={busy} aria-describedby={missing ? 'ref-missing' : undefined} onClick={save}>Save the lights</button>
+          </div>
           {p.askUrl && (
             <>
               {asking && (

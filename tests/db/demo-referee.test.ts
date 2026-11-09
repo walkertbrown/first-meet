@@ -88,11 +88,16 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     expect(q.map(r => r.attemptId)).not.toContain(demo.id);
     expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'red'] as never })).status).toBe(400);
     expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'red', 'red'] })).status).toBe(400); // red needs a reason
-    const r = await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'white', 'red'] });
+    expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'white', 'red'] })).status).toBe(400); // so does a single red
+    expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'red', 'red'], reasons: [null, 'depth', null] })).status).toBe(400); // every red
+    const r = await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'white', 'red'], reasons: [null, null, 'moved_feet'] });
     expect(r).toMatchObject({ status: 200, call: 'white' });
     const [saved] = await db.select().from(attempts).where(eq(attempts.id, a.id));
     expect(saved).toMatchObject({ status: 'judged', call: 'white', refereeId: ref.id, reason: null });
-    expect(await db.select().from(reviews).where(eq(reviews.attemptId, a.id))).toHaveLength(1);
+    expect(saved.measures).toMatchObject({ light_reasons: [null, null, 'moved_feet'] });
+    const rv = await db.select().from(reviews).where(eq(reviews.attemptId, a.id));
+    expect(rv).toHaveLength(1);
+    expect(rv[0].reason).toBe('moved_feet');
     expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'white', 'white'] })).status).toBe(409);
   });
 
@@ -100,10 +105,18 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     const [ref] = await db.insert(lifters).values({ cardName: 'Ref2', isReferee: true }).returning();
     const { a } = await closeCallIn('real', 10);
     expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['red', 'red', 'white'], reason: 'depth' })).status).toBe(400);
-    const r = await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['red', 'red', 'white'], reason: 'depth', rep: 4 });
+    const r = await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['red', 'red', 'white'], reasons: ['depth', 'no_lockout', null], rep: 4 });
     expect(r).toMatchObject({ status: 200, call: 'red' });
     const [saved] = await db.select().from(attempts).where(eq(attempts.id, a.id));
-    expect(saved.measures).toMatchObject({ red_rep: 4, referee: true });
+    expect(saved.measures).toMatchObject({ red_rep: 4, referee: true, light_reasons: ['depth', 'no_lockout', null] });
+    expect(saved.reason).toBe('no_lockout'); // a tie goes to the head referee
+  });
+
+  it('a Home single red needs its rep too', async () => {
+    const [ref] = await db.insert(lifters).values({ cardName: 'Ref2b', isReferee: true }).returning();
+    const { a } = await closeCallIn('real', 8);
+    expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'red', 'white'], reasons: [null, 'depth', null] })).status).toBe(400);
+    expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'red', 'white'], reasons: [null, 'depth', null], rep: 2 })).status).toBe(200);
   });
 
   it('"Ask another referee": back in the queue for others, once, and the asker can\'t decide it', async () => {
@@ -125,7 +138,7 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     const [stranger] = await db.insert(lifters).values({ cardName: 'D2', isDemo: true }).returning();
     expect((await saveLights(db, a.id, { kind: 'referee', id: ref.id }, { lights: ['white', 'white', 'white'] })).status).toBe(403);
     expect((await saveLights(db, a.id, { kind: 'demo', lifterId: stranger.id }, { lights: ['white', 'white', 'white'] })).status).toBe(403);
-    expect((await saveLights(db, a.id, { kind: 'demo', lifterId: l.id }, { lights: ['white', 'red', 'white'] })).status).toBe(200);
+    expect((await saveLights(db, a.id, { kind: 'demo', lifterId: l.id }, { lights: ['white', 'red', 'white'], reasons: [null, 'depth', null] })).status).toBe(200);
     const [rv] = await db.select().from(reviews).where(eq(reviews.attemptId, a.id));
     expect(rv.refereeId).toBeNull();
   });

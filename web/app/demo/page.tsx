@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { X } from '@phosphor-icons/react/dist/ssr';
+import { DemoStrip } from '@/components/demo-strip';
 import { DEMO_DEFAULT_NAME } from '@/lib/demo';
 import '../try.css';
 import '../platform.css';
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
 
 export default function DemoPage() {
   return (
-    <div className="try-page">
+    <>
+    <DemoStrip joined={false} />
+    <div className="try-page under-strip">
       <div className="try-top"><Link className="try-close" href="/" aria-label="Back to First Meet"><X weight="bold" /></Link></div>
       <main className="try-col demo-col">
         <h1 className="page-title">The demo meet</h1>
@@ -34,5 +37,6 @@ export default function DemoPage() {
         </form>
       </main>
     </div>
+    </>
   );
 }
