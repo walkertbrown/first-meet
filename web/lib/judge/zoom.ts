@@ -93,3 +93,13 @@ export function splitAt(windows: [number, number][], reps: RepResult[], startCmd
   if (!ok.length) return null;
   return ok.sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle))[0];
 }
+
+/**
+ * The two passes as one clip: pass 2's point wherever both passes have a frame (pass 2
+ * found its windows in one unbroken run, as the phone does), pass 1's everywhere else.
+ */
+export function mergePasses(first: Frame[], second: Frame[]): Frame[] {
+  const byT = new Map(first.map(f => [f.t, f]));
+  for (const f of second) byT.set(f.t, f);
+  return [...byT.values()].sort((a, b) => a.t - b.t);
+}

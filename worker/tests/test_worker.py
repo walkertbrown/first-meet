@@ -72,10 +72,10 @@ class Signing(unittest.TestCase):
         want = hmac.new(b'secret', b'1700000000.{"a":1}', hashlib.sha256).hexdigest()
         self.assertEqual(h, {'x-fm-time': '1700000000', 'x-fm-signature': want})
 
-    def test_zoom_times_skip_first_pass_frames(self):
+    def test_zoom_times_are_every_frame_in_the_windows(self):
         import main
-        got = main.zoom_times(3.0, [[0, 700]], set(poses.grid(3.0, 5)))
-        self.assertEqual(got, [67, 133, 267, 333, 467, 533, 667])
+        got = main.zoom_times(3.0, [[0, 700], [600, 800], [2900, 3100]])
+        self.assertEqual(got, [0, 67, 133, 200, 267, 333, 400, 467, 533, 600, 667, 733, 800, 2933])
 
     def test_no_retries(self):
         import main

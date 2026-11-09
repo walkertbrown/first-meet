@@ -66,12 +66,18 @@ def post(path: str, payload: dict, timeout: float = 30) -> tuple[int, dict | Non
         return e.code, None
 
 
-def zoom_times(duration: float, windows: list[list[int]], have: set[int]) -> list[int]:
-    """The 15-a-second grid inside each window, less the frames the first pass found."""
+def zoom_times(duration: float, windows: list[list[int]]) -> list[int]:
+    """Every frame of the 15-a-second grid inside each window, the first pass's included.
+
+    The landmarker tracks the body from frame to frame (VIDEO mode, as on the phone and in
+    Chromium), so a point depends on the frames before it. Found again inside a window, in
+    one unbroken run, the frames near the calls match an unbroken 15-a-second pass; the
+    web service keeps pass 2's point wherever both passes have a frame.
+    """
     out: set[int] = set()
     for a, b in windows:
         out.update(poses.grid(duration, ZOOM_FPS, max(0, a), b))
-    return sorted(out - have)
+    return sorted(out)
 
 
 def one_attempt(job: dict) -> dict:
@@ -90,7 +96,7 @@ def one_attempt(job: dict) -> dict:
         })
         if status != 200 or not zoom:
             return {'attempt_id': job['attempt_id'], 'error': f'pass 1 post: {status}'}
-        second = zoom_times(info.duration, zoom.get('windows', []), set(first))  # the web service's zoomWindows()
+        second = zoom_times(info.duration, zoom.get('windows', []))  # the web service's zoomWindows()
         f2 = poses.find_split(path, second, zoom.get('split_ms'))
         secs = time.monotonic() - t0
         status, _ = post('/api/internal/poses', {

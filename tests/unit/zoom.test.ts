@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CLIPS_DIR, EXPECTED, checkClip } from '../clips/check';
-import { ZOOM_MS, splitAt, zoomWindows, type Frame, type RepResult } from '../../web/lib/judge';
+import { ZOOM_MS, mergePasses, splitAt, zoomWindows, type Frame, type RepResult } from '../../web/lib/judge';
 
 type Raw = { w: number; h: number; duration: number; frames: Frame[] };
 const load = (name: string): Raw => JSON.parse(readFileSync(join(CLIPS_DIR, 'poses', `${name}.json`), 'utf8'));
@@ -45,5 +45,13 @@ describe('where the second pass splits', () => {
     const s = splitAt([[0, 6000]], [rep(3000, 4400, 5200)], 3800);
     expect(s === null || Math.abs(s - 4400) >= ZOOM_MS).toBe(true);
     expect(s).toBeNull();
+  });
+});
+
+describe('merging the two passes', () => {
+  it("keeps pass 2's point where both have a frame", () => {
+    const p = (x: number) => [[x, x, 1, 0]];
+    const got = mergePasses([{ t: 0, p: p(1) }, { t: 200, p: p(1) }, { t: 400, p: p(1) }], [{ t: 133, p: p(2) }, { t: 200, p: p(2) }]);
+    expect(got.map(f => [f.t, f.p?.[0][0]])).toEqual([[0, 1], [133, 2], [200, 2], [400, 1]]);
   });
 });
