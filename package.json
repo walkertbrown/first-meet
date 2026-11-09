@@ -11,17 +11,21 @@
     "dev": "next dev web",
     "prebuild": "node scripts/copy-content.mjs",
     "build": "next build web",
-    "start": "next start web -p ${PORT:-3000}",
+    "start": "node scripts/migrate.mjs && next start web -p ${PORT:-3000}",
     "typecheck": "tsc -p web --noEmit",
     "lint": "eslint web tests scripts",
     "test": "vitest run",
     "test:judge": "playwright test -c tests/judge.config.ts",
     "test:e2e": "playwright test -c tests/e2e.config.ts",
-    "postinstall": "node scripts/copy-mediapipe.mjs && node scripts/copy-content.mjs"
+    "postinstall": "node scripts/copy-mediapipe.mjs && node scripts/copy-content.mjs",
+    "db:generate": "node scripts/db-generate.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "test:db": "vitest run -c tests/db/vitest.config.ts"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "1.2.2",
     "@phosphor-icons/react": "2.1.10",
+    "aws4fetch": "1.0.20",
     "drizzle-orm": "0.45.4",
     "next": "15.5.29",
     "postgres": "4.1.0",

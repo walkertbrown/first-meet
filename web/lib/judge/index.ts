@@ -8,3 +8,4 @@ export * from './call';
 export * from './try-a-lift';
 export * from './clip';
 export * from './zoom';
+export * from './attempt';
