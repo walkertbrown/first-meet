@@ -27,6 +27,15 @@ const grid15 = (duration: number, [a, b]: [number, number]) => {
 };
 
 const timings: Record<string, unknown> = {};
+// The other side made the near one: each left/right landmark pair swaps its visibility, so the
+// judge's nearSide (the higher summed visibility) picks the far side and measures from it.
+const PAIRS = [[1, 4], [2, 5], [3, 6], [7, 8], [9, 10], ...Array.from({ length: 11 }, (_, i) => [11 + 2 * i, 12 + 2 * i])];
+const otherSide = (f: Frame): Frame => {
+  if (!f.p) return f;
+  const p = f.p.map(q => [...q]) as typeof f.p;
+  for (const [a, b] of PAIRS) { p[a][2] = f.p[b][2]; p[b][2] = f.p[a][2]; }
+  return { ...f, p };
+};
 
 // The six test clips of piece 1 are checked. half-squat-whole is the whole video one of
 // them is cut from, kept so a change to the judge shows up; its dark last minute is where
@@ -101,13 +110,21 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const zoom = zoomWindows(first.frames, first, 'squat', ct);
       const times = [...new Set(zoom.windows.flatMap(w => grid15(first.duration, w)))].sort((a, b) => a - b);
       const second = times.length ? runFile(file, ['--times', times.join(','), ...(zoom.splitMs !== null ? ['--split', String(zoom.splitMs)] : [])]) : { frames: [], secs: 0 };
-      const v = judgeAttempt(mergePasses(first.frames, second.frames), first, 'squat', ct, undefined, s.meet.reps);
+      const frames = mergePasses(first.frames, second.frames);
+      const v = judgeAttempt(frames, first, 'squat', ct, undefined, s.meet.reps);
       timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
       expect(v.call.light).toBe(({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind]);
       if (s.kind === 'close') {
-        const d = v.measures.depth!;
-        expect(d, `the close call's depth ${d} is ${CLOSE_MARGIN} inside the band`).toBeGreaterThanOrEqual(RULES.squat.redDepthMax + CLOSE_MARGIN);
-        expect(d).toBeLessThanOrEqual(RULES.squat.whiteDepthMin - CLOSE_MARGIN);
+        // and from both sides: the 8837221 cut's sides were nearly tied, and its far side read a white
+        const w = judgeAttempt(frames.map(otherSide), first, 'squat', ct, undefined, s.meet.reps);
+        timings[`sample ${s.id}, other side`] = { call: w.call, measures: w.measures };
+        expect(w.measures.side).not.toBe(v.measures.side);
+        for (const x of [v, w]) {
+          const d = x.measures.depth!;
+          expect(x.call.light, `the ${x.measures.side} side's call`).toBe('close');
+          expect(d, `the close call's depth ${d} (${x.measures.side} side) is ${CLOSE_MARGIN} inside the band`).toBeGreaterThanOrEqual(RULES.squat.redDepthMax + CLOSE_MARGIN);
+          expect(d).toBeLessThanOrEqual(RULES.squat.whiteDepthMin - CLOSE_MARGIN);
+        }
       }
     }, 600_000);
   }
