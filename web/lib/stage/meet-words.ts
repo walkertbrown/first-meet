@@ -25,10 +25,23 @@ export const MEET_WORDS = {
     everyone: 'The demo judge is resting until midnight Eastern. You can still watch a meet night and see the referee\'s side.',
   },
   refereeLink: "See the referee's side of this close call",
+  /** The Barbell bench (3.4b, look 5.14c): the tap, the lost bar, the void sheet, and "To a referee". */
+  bench: {
+    tap: 'Tap the end of the bar on your screen.',
+    tapSmall: 'So the phone can follow the bar.',
+    lost: 'We lost the bar.',
+    lostSmall: 'Tap the end of the bar again.',
+    voidTitle: 'We lost the bar',
+    voidBody: "So we couldn't give you the start. This one doesn't count against you.",
+    filmAgain: 'Film again',
+    sending: 'Sending to the referee',
+    looking: 'A referee is looking at this one',
+    refereeLink: "See the referee's side of this bench",
+  },
 } as const;
 
 export type MeetResult = {
-  title: 'Good lift' | 'No lift' | 'Close call';
+  title: 'Good lift' | 'No lift' | 'Close call' | 'To a referee';
   body?: string;
   small?: string;
   reason?: { eyebrow: string; text: string };
@@ -45,11 +58,14 @@ export const WHITE_SENTENCE: Record<string, string> = {
 export const HOME_PRESS_WHITE = "Your arms pressed up overhead, nearly straight, and you held them there. That's a good lift at First Meet.";
 const RED_BODY = 'Red lights happen to everyone, even world champions. Most women take it again.';
 const CLOSE_BODY = 'A referee is looking at this one, usually within 15 minutes. You can take your next attempt while you wait.';
+/** 5.25 step 9, every Barbell bench (3.4b): it goes to a referee, judged or not by the phone. */
+export const BENCH_REFEREE_BODY = 'A referee judges every bench from your video, usually within 15 minutes. You can take your next attempt while you wait.';
 
 /** 5.25 step 9: what a judged (or close-call) attempt shows. */
 export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; lift?: string; shown_lift?: string }): MeetResult | null {
   // a sample lift's words are for the lift the clip shows (5.36)
   const lift = a.shown_lift ?? a.lift ?? 'squat';
+  if (a.call === 'close' && a.reason === 'bench_referee') return { title: 'To a referee', body: BENCH_REFEREE_BODY, lamps: ['off', 'off', 'off'] };
   if (a.call === 'close') return { title: 'Close call', body: CLOSE_BODY, lamps: ['off', 'off', 'off'] };
   if (!a.call) return null;
   const lights = a.lights && a.lights.length === 3 ? a.lights : [a.call, a.call, a.call] as ('white' | 'red')[];

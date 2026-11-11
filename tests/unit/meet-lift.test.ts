@@ -9,7 +9,7 @@ import { liftCommands } from '@/lib/stage/meet-words';
 import { CLIPS_DIR } from '../clips/check';
 import { extrasOk } from '@/lib/judge/bar-measure';
 import { BENCH, DIMS, RACK, frame, run as runBar, type Seg } from './bar-frames';
-import { d, hold, arm, move, UP, DOWN, front, moveFront, F_RACKED, F_LOCKED } from './press-poses';
+import { d, hold, front, moveFront, F_RACKED, F_LOCKED } from './press-poses';
 
 const poses = (name: string) => JSON.parse(readFileSync(join(CLIPS_DIR, 'poses', `${name}.json`), 'utf8')) as { w: number; h: number; frames: Frame[] };
 
@@ -72,10 +72,8 @@ describe('a meet attempt on the phone', () => {
     expect(ct.down - ct.rep_2).toBeGreaterThanOrEqual(RULES.deadlift.homeNoRepMs);
   });
 
-  const still = (t0: number, ms: number, a: [number, number]) => hold(t0, ms, t => arm(a[0], a[1], { jitter: 2, t }));
   // the stage waits this long after "Good spot." for the soft command: she stands there first
   const LEAD = RULES.tryALift.goodSpotToStandTallMs + 200;
-  const lead = (pose: [number, number], frames: Frame[]) => [...still(0, LEAD, pose), ...frames.map(f => ({ ...f, t: f.t + LEAD }))];
 
   it('Barbell bench (3.4b): "Tap the end of the bar", her tap, "Bar is loaded.", then the bar\'s "Start!", "Press!", "Rack!"', () => {
     const m = new MeetLift(DIMS, 'bench', { skipFrameCheck: true });

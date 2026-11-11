@@ -8,6 +8,7 @@ import type { Dims, Part } from '@/lib/judge';
 import { FrameCheck, type SpotLine } from '@/lib/judge/frame-check';
 import { loadPoseModel, LivePose } from '@/lib/stage/pose-live';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
+import { useLand } from '@/lib/stage/land';
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
 const NO_PARTS: Record<Part, boolean> = { head: false, hips: false, knees: false, feet: false };
@@ -24,6 +25,7 @@ type Phase = 'loading' | 'spot' | 'good-spot' | 'done';
 
 export function SpotCheck({ back }: { back: { href: string; label: string } }) {
   const [view, setView] = useState<View>('stage');
+  const land = useLand();
   const [phase, setPhase] = useState<Phase>('loading');
   const [parts, setParts] = useState(NO_PARTS);
   const [line, setLine] = useState<SpotLine | null>(null);
@@ -126,7 +128,7 @@ export function SpotCheck({ back }: { back: { href: string; label: string } }) {
   const box = containBox(stageSize, dims);
   const panelOpen = phase === 'done' || slow;
   return (
-    <div className="try-app meet-app">
+    <div className={`try-app meet-app${land ? ' land' : ''}`}>
       <section className={`try-stagecol${panelOpen ? '' : ' full'}`} aria-label="Test your spot">
         <div className={`stage${phase === 'spot' || phase === 'good-spot' ? ' spotting' : ''}`} ref={stageRef}>
           <div className="footage mirror" style={box}>

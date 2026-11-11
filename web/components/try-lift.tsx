@@ -19,6 +19,7 @@ import { makeClip, shareOrDownload } from '@/lib/stage/clip-maker';
 import { RESULT_WORDS, STAGE_WORDS, lampsOf, markColour, outcomeOf, type Outcome } from '@/lib/stage/try-words';
 import { WaitLine } from '@/components/wait-line';
 import { deviceOf } from '@/lib/device';
+import { useLand } from '@/lib/stage/land';
 
 type Step = 'choose' | 'setup' | 'stage' | 'denied' | 'nocamera';
 type Source = { kind: 'camera' } | { kind: 'sample'; sample: Sample };
@@ -74,6 +75,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const [sound, setSound] = useState(true);
 
   // the stage
+  const land = useLand();
   const [phase, setPhase] = useState<Phase>('loading');
   const [slow, setSlow] = useState(false);
   const [parts, setParts] = useState<Record<Part, boolean>>(NO_PARTS);
@@ -536,7 +538,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const recLabel = `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}`;
 
   return (
-    <div className="try-app">
+    <div className={`try-app${land ? ' land' : ''}`}>
       <section className={`try-stagecol${panelOpen ? '' : ' full'}`} aria-label={isSample ? 'Sample lift' : 'Your lift'}>
         <div className={stageClass} ref={stageRef}>
           <div className={`footage${mirror ? ' mirror' : ''}`} style={box}>

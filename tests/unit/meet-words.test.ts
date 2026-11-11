@@ -27,6 +27,30 @@ describe('meet words', () => {
     expect(meetResult(a({ call: 'red', reason: 'depth', reps_declared: 10, red_rep: 6 }))!.reason!.eyebrow).toBe('REP 6 · DEPTH');
   });
 
+  it('a Barbell bench goes to a referee (3.4b): "To a referee", unlit lamps, the plan\'s sentence', () => {
+    expect(meetResult(a({ call: 'close', reason: 'bench_referee', lift: 'bench' }))).toEqual({
+      title: 'To a referee',
+      body: 'A referee judges every bench from your video, usually within 15 minutes. You can take your next attempt while you wait.',
+      lamps: ['off', 'off', 'off'],
+    });
+    // any other close call keeps its own words
+    expect(meetResult(a({ call: 'close', reason: 'depth', lift: 'bench' }))!.title).toBe('Close call');
+  });
+
+  it('the bench\'s tap, lost bar and void sheet use the plan\'s words (3.4b)', () => {
+    expect(MEET_WORDS.bench).toMatchObject({
+      tap: 'Tap the end of the bar on your screen.',
+      tapSmall: 'So the phone can follow the bar.',
+      lost: 'We lost the bar.',
+      lostSmall: 'Tap the end of the bar again.',
+      voidTitle: 'We lost the bar',
+      voidBody: "So we couldn't give you the start. This one doesn't count against you.",
+      filmAgain: 'Film again',
+      sending: 'Sending to the referee',
+      looking: 'A referee is looking at this one',
+    });
+  });
+
   it('the loading line', () => {
     expect(barLoading(100)).toBe('45 lb bar + a green 25 and a 2½ on each side');
     expect(barLoading(185)).toBe('45 lb bar + a blue 45 and a green 25 on each side');
