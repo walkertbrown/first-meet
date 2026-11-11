@@ -7,6 +7,8 @@ import { MeetLift, type MeetEvent, type MeetLiftName } from '@/lib/judge/meet-li
 import { checkCommandTimes, RULES, type Frame } from '@/lib/judge';
 import { liftCommands } from '@/lib/stage/meet-words';
 import { CLIPS_DIR } from '../clips/check';
+import { extrasOk } from '@/lib/judge/bar-measure';
+import { BENCH, DIMS, RACK, frame, run as runBar, type Seg } from './bar-frames';
 import { d, hold, arm, move, UP, DOWN, front, moveFront, F_RACKED, F_LOCKED } from './press-poses';
 
 const poses = (name: string) => JSON.parse(readFileSync(join(CLIPS_DIR, 'poses', `${name}.json`), 'utf8')) as { w: number; h: number; frames: Frame[] };
@@ -75,12 +77,67 @@ describe('a meet attempt on the phone', () => {
   const LEAD = RULES.tryALift.goodSpotToStandTallMs + 200;
   const lead = (pose: [number, number], frames: Frame[]) => [...still(0, LEAD, pose), ...frames.map(f => ({ ...f, t: f.t + LEAD }))];
 
-  it('bench: "Start!", "Press!" on the pause, "Rack!"', () => {
-    const frames = [...still(0, 1000, UP), ...move(1000, 1000, UP, DOWN), ...still(2000, 900, DOWN), ...move(2900, 800, DOWN, UP), ...still(3700, 1500, UP)];
-    const { said, ct } = run(lead(UP, frames), d, 'bench');
+  it('Barbell bench (3.4b): "Tap the end of the bar", her tap, "Bar is loaded.", then the bar\'s "Start!", "Press!", "Rack!"', () => {
+    const m = new MeetLift(DIMS, 'bench', { skipFrameCheck: true });
+    expect(m.byBar).toBe(true);
+    // the spot, then "Good spot." held, then the tap is asked for; poses stop counting there
+    const evs: MeetEvent[] = [];
+    for (let t = 0; t <= RULES.tryALift.goodSpotToStandTallMs + 100; t += 100) evs.push(...m.feed({ t, p: null }));
+    expect(evs.map(e => e.type)).toEqual(['spot', 'good-spot', 'tap-ask']);
+    expect(m.phase).toBe('tap');
+    expect(m.feed({ t: 5000, p: null })).toEqual([]);
+    // no frames do anything until she taps
+    expect(m.feedBar(frame(...RACK, 0), 0)).toEqual([]);
+    expect(m.tapBar(frame(...RACK, 0), ...RACK)).toBe(true);
+    expect(m.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08 });
+    const { evs: bar } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, BENCH);
+    // "Bar is loaded." on the first frame after the tap, then the mark, then the commands
+    expect(bar[0].type).toBe('loaded');
+    const said = bar.flatMap(e => (e.type === 'call' ? [e.key] : e.type === 'end' ? [e.key] : []));
     expect(said).toEqual(['start', 'press', 'rack']);
-    expect(ct.press).toBeGreaterThan(ct.start);
-    expect(ok(ct, 'bench')).toBeNull();
+    const start = bar.findIndex(e => e.type === 'call');
+    expect(bar.slice(1, start).filter(e => e.type === 'mark').length).toBeGreaterThan(30);
+    expect(bar.slice(start).some(e => e.type === 'mark')).toBe(false);
+    expect(m.phase).toBe('done');
+    const end = bar.at(-1)!;
+    expect(end).toMatchObject({ type: 'end', key: 'rack', noRep: false });
+    expect('void' in end).toBe(false);
+    // command_times as the stage writes them, with plate_tap: the server takes them
+    const soft = bar[0].t;
+    const ct: Record<string, unknown> = { loaded: 0, plate_tap: m.plateTap };
+    for (const e of bar) if (e.type === 'call' || e.type === 'end') ct[e.key] = Math.round(e.t - soft);
+    expect(ok(ct as Record<string, number>, 'bench')).toBeNull();
+    expect(extrasOk(ct as Record<string, number>)).toBe(true);
+  });
+
+  it('Barbell bench: lost on the hooks says so and asks for a new tap, with no second "Bar is loaded."', () => {
+    const m = new MeetLift(DIMS, 'bench', { atTap: true });
+    expect(m.phase).toBe('tap');
+    m.tapBar(frame(...RACK, 0), ...RACK);
+    const a = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, [{ ms: 500 }, { ms: 1500, plate: false }]);
+    expect(a.evs.filter(e => e.type === 'lost')).toHaveLength(1);
+    expect(m.plateTap).toBeNull();
+    expect(m.tapBar(frame(...RACK, 99), ...RACK)).toBe(true);
+    const b = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, BENCH, a.t);
+    expect(b.evs.some(e => e.type === 'loaded')).toBe(false);
+    expect(b.evs.flatMap(e => (e.type === 'call' || e.type === 'end' ? [e.key] : []))).toEqual(['start', 'press', 'rack']);
+  });
+
+  it('Barbell bench: no "Start!" out of the rack is a void "Rack!"', () => {
+    const m = new MeetLift(DIMS, 'bench', { atTap: true });
+    m.tapBar(frame(...RACK, 0), ...RACK);
+    const wander: Seg[] = [{ ms: 1000 }, { ms: 600, to: [0.55, 0.22] }];
+    for (let i = 0; i < 12; i++) wander.push({ ms: 500, to: i % 2 ? [0.55, 0.22] : [0.5, 0.27] });
+    const { evs } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, wander);
+    expect(evs.at(-1)).toMatchObject({ type: 'end', key: 'rack', void: true });
+    expect(evs.some(e => e.type === 'call')).toBe(false);
+  });
+
+  it('Barbell bench: a late "Press!" after the track is lost says why, for press_late_why', () => {
+    const m = new MeetLift(DIMS, 'bench', { atTap: true });
+    m.tapBar(frame(...RACK, 0), ...RACK);
+    const { evs } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, [...BENCH.slice(0, 3), { ms: 500, to: [0.55, 0.3] }, { ms: 2600, plate: false }, { ms: 3200, plate: false }]);
+    expect(evs.find(e => e.type === 'call' && e.word === 'press')).toMatchObject({ key: 'press_late', why: 'lost' });
   });
 
   it('Home overhead press: "Start!", each rep counted, "Rack!" at the declared reps, no "Press!"', () => {
