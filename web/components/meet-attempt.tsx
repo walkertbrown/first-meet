@@ -115,6 +115,10 @@ const BUSY_REFRESH_MS = 30_000;
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
 const wait = (ms: number) => sleep(ms);
+/** how often the 1.5 s after "Rack!" looks for a turn (3.10) */
+const TURN_POLL_MS = 50;
+/** the screen is wider than tall, read now (not on the next render) */
+const screenSideNow = () => typeof matchMedia === 'function' && matchMedia('(orientation: landscape)').matches;
 const asLift = (l: string): MeetLiftName => (l === 'bench' || l === 'deadlift' ? l : 'squat');
 
 function containBox(stage: { w: number; h: number }, d: Dims | null) {
@@ -197,7 +201,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const drawn = useDrawnTurn(wantTurn, view === 'stage' && (phase === 'loaded' || phase === 'lifting' || phase === 'held'));
   const land = landScreen || drawn !== 0;
   // look 4a (item 93): the turning phone fades out over 200 ms; the segments and the set-up line wait for it
-  const turnUp = useLinger(turnShown && (phase === 'spot' || phase === 'good-spot' || phase === 'tap'), 200);
+  // F-G: also while the pose model loads ('loading'), from the camera's first frame
+  const turnUp = useLinger(turnShown && (phase === 'loading' || phase === 'spot' || phase === 'good-spot' || phase === 'tap'), 200);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLVideoElement>(null);
@@ -260,15 +265,19 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
    * then "The judges are looking"; 45 s and 90 s lines; the lights from the live stream (with a
    * 5 s poll behind it), lit 330 ms apart. A close call waits, pulsing, for the referee's lights.
    */
-  const awaitLights = useCallback(async (alive: () => boolean, attemptId: string, sent: Promise<boolean>, snap: SideSnap | null, replay: (keepPhase?: boolean) => Promise<void>, snapAt?: (ms: number) => Promise<SideSnap | null>, path?: BenchPath | null) => {
+  const awaitLights = useCallback(async (alive: () => boolean, attemptId: string, sent: Promise<boolean>, snap: SideSnap | null, replay: (keepPhase?: boolean) => Promise<void>, snapAt?: (ms: number) => Promise<SideSnap | null>, path?: BenchPath | null, closeNow = false) => {
     const t0 = performance.now();
+    // F-E: a reload of a close call already open, settled (closeNow): no "Sending", no looking wait, no
+    // 45 s or 90 s lines; it waits, pulsing, for the referee's lights
+    let lookingAt = closeNow ? -Infinity : t0;
+    if (!closeNow) {
     // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee", with no panel
     setPhase('held'); setCommand(null); setWaitLine(bench ? MEET_WORDS.bench.sending : MEET_WORDS.sending);
     const ok = await sent;
     if (!ok || !alive()) return;
     await sleep(Math.max(0, SENDING_MIN_MS - (performance.now() - t0)));
     if (!alive()) return;
-    const lookingAt = performance.now();
+    lookingAt = performance.now();
     if (bench) {
       // once it's sent: the close call's pulse and line, and "To a referee" in the panel, with no
       // thock, spill or total drop (nothing was judged). Then her clip: the last 2 s, and the
@@ -283,6 +292,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       if (snap) freeze(snap);
       setBenchPath(path ?? null);
     } else setWaitLine(MEET_WORDS.looking);
+    }
 
     let state: State | null = null;
     let wake: (() => void) | null = null;
@@ -295,7 +305,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     es?.addEventListener('attempt', () => void check());
     const poll = setInterval(() => void check(), POLL_MS);
     // the bench's line is the referee's from the upload on: no 45 s or 90 s lines (look 5.14c)
-    const t45 = bench ? undefined : setTimeout(() => alive() && setWaitLine(MEET_WORDS.still45), Math.max(0, 45_000 - (performance.now() - t0)));
+    const t45 = bench || closeNow ? undefined : setTimeout(() => alive() && setWaitLine(MEET_WORDS.still45), Math.max(0, 45_000 - (performance.now() - t0)));
     // from 90 s, the estimate (3.9 step 8) is asked again every 30 s, and once she has waited
     // past what it said, it goes up a minute: it never says "about 1 minute" for 3
     let shown = 0, dueAt = 0, every: ReturnType<typeof setInterval> | undefined;
@@ -310,14 +320,14 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       if (n !== shown) { shown = n; dueAt = performance.now() + n * 60_000; }
       setWaitLine(MEET_WORDS.busy90(shown)); setBusy(true);
     };
-    const t90 = bench ? undefined : setTimeout(() => { void estimate(); every = setInterval(() => void estimate(), BUSY_REFRESH_MS); },
+    const t90 = bench || closeNow ? undefined : setTimeout(() => { void estimate(); every = setInterval(() => void estimate(), BUSY_REFRESH_MS); },
       Math.max(0, 90_000 - (performance.now() - t0)));
     const stop = () => { es?.close(); clearInterval(poll); clearTimeout(t45); clearTimeout(t90); clearInterval(every); };
     const next = () => new Promise<void>(res => { wake = res; });
 
     try {
       await check();
-      let pulsing = false;
+      let pulsing = closeNow;
       for (;;) {
         if (!alive()) return;
         const s = state as State | null;
@@ -341,6 +351,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       const res = meetResult({ ...s, lift: attempt.lift })!;
       const shown = s.shown_lift ?? attempt.lift;
       setShownLift(shown);
+      // a close call that opened settled lights its lamps, spill and result as any other (F-E)
+      setSettledOpen(false);
       setResult(res); setResultOn(false); setWaitLine(''); setBusy(false);
       // the lights: left, head, right, 330 ms apart, then the spill, then the result 420 ms later
       setPhase('lit');
@@ -446,8 +458,20 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     };
 
     const slowTimer = setTimeout(() => alive() && setSlow(true), 4000);
+    // 3.10, item 93: the turning phone shows once the camera is on, not once the pose model is ready. While
+    // the model loads, the drawing follows which way the phone faces; the frame check takes over after.
+    let modelIn = false, preUp = false;
+    const preTurn = () => {
+      if (!alive() || modelIn) return;
+      const o = orientRef.current;
+      const wrong = o.way !== null && o.way !== needWay;
+      if (wrong !== preUp) { preUp = wrong; setTurnShown(wrong); }
+      requestAnimationFrame(preTurn);
+    };
+    requestAnimationFrame(preTurn);
     let pose: LivePose;
-    try { pose = new LivePose(await loadPoseModel()); } catch { clearTimeout(slowTimer); if (alive()) setSlow(true); return; }
+    try { pose = new LivePose(await loadPoseModel()); } catch { modelIn = true; clearTimeout(slowTimer); if (alive()) setSlow(true); return; }
+    modelIn = true;
     clearTimeout(slowTimer);
     if (!alive()) return;
     setSlow(false);
@@ -513,9 +537,20 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // waits for the turn, and the turning phone comes back if she turns it wrong again before "Bar is
     // loaded.". With only the screen to go by (no sensor, or "Not now"), the drawing keeps its rotation-lock
     // line and gives way once the frame check sees her, as the set-up line does: she can go on (look 4b).
-    let turnUp = false, turnGone = false, loaded = false, turned = false;
+    let turnUp = preUp, turnGone = false, loaded = false, turned = false;
     let settled: Quarter | null = null;
+    /** with no gravity at "Bar is loaded." (no sensor, or "Not now"): the screen's shape then, on a touch phone */
+    let screenAt: boolean | null = null;
     let turnSnap: SideSnap | null = null;
+    /**
+     * 3.10: from "Bar is loaded." until the recording ends, has the phone turned? Gravity past 60° for 500 ms
+     * when there is gravity; with none, the screen turning (a touch phone only: a desktop window never turns).
+     */
+    const turnedSinceLoaded = () => {
+      if (!loaded) return false;
+      if (settled !== null) return orientRef.current.watch.quarter !== settled;
+      return screenAt !== null && screenSideNow() !== screenAt;
+    };
     /** before "Bar is loaded.", the phone turned so the frames need turning another way (or the screen
      * turned and changed their shape): the frame check starts again on the new frames */
     let reTurn = false;
@@ -540,7 +575,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         }
         // a phone that turns during the attempt (gravity past 60° for 500 ms, from "Bar is loaded." on) is
         // void, never judged: "Your phone turned during the lift" (3.10)
-        if (loaded && settled !== null && o.watch.quarter !== settled) {
+        if (turnedSinceLoaded()) {
           turned = true; turnSnap = grab(video, d);
           // item 93: the end word at once, even before the start command: a squat or bench may already be
           // out of the rack
@@ -578,6 +613,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             // 5.25 step 4: the soft command; the recording starts here, so it is 0 in command_times
             setPhase('loaded'); softCommand();
             loaded = true; settled = o.watch.quarter;
+            screenAt = settled === null && o.touch ? screenSideNow() : null;
             if (turnUp) { turnUp = false; setTurnShown(false); }
             recording.start(filmed);
             ct.loaded = 0;
@@ -623,6 +659,16 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       stopCamera(); setCommand(null); setPhase('spot-done');
       return;
     }
+    // 3.10: recording stops 1.5 s after "Rack!" / "Down!". The phone has to stay the way it lay until then:
+    // a turn in those 1.5 s voids it too ("RACK!" or "DOWN!" has already been called).
+    if (!turned && !voided) {
+      const until = endAt + AFTER_RACK_MS;
+      while (performance.now() < until) {
+        if (!alive()) return;
+        if (turnedSinceLoaded()) { turned = true; turnSnap = grab(video, d); break; }
+        await sleep(Math.min(TURN_POLL_MS, Math.max(0, until - performance.now())));
+      }
+    }
     if (turned) {
       // 3.10: nothing was judged and nothing is kept. "Rack!" (or "Down!") ran first, so she is never left
       // holding the bar with no command; then the sheet, frozen on the turn.
@@ -650,8 +696,6 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       void apiFetch(`/api/attempts/${attempt.id}/bar-void`, { method: 'POST' }).catch(() => {});
       return;
     }
-    // 3.10: recording stops 1.5 s after "Rack!" / "Down!"
-    await sleep(Math.max(0, endAt + AFTER_RACK_MS - performance.now()));
     const last = grab(video, d);
     const blob = await recording.stop();
     setRecOn(false);
@@ -877,12 +921,24 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       if (judged?.p.length) setMarks(liftMarks(shown, judged.p, { w: judged.canvas.width, h: judged.canvas.height }, judged.side));
       return;
     }
+    // F-E: a close call opens settled, pulsing, with "To a referee" in the panel at once, not the judging wait
+    if (st?.call === 'close') {
+      setShownLift(st.shown_lift ?? attempt.lift); setSettledOpen(true);
+      setLamps(['pulse', 'pulse', 'pulse']); setCommand(null);
+      setWaitLine(bench ? MEET_WORDS.bench.looking : 'A referee is looking at this one');
+      setResult(meetResult({ ...st, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+      const snap = await held().catch(() => null);
+      if (!alive()) return;
+      freeze(snap);
+      await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt, null, true);
+      return;
+    }
     setPhase(p => (p === 'hold' ? 'held' : p));
     const snap = await held().catch(() => null);
     if (!alive()) return;
     freeze(snap);
     await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt);
-  }, [attempt.id, attempt.lift, send, awaitLights]);
+  }, [attempt.id, attempt.lift, bench, send, awaitLights]);
 
   const start = (m: Mode) => {
     // her tap: an iPhone that allowed motion before gets it back with no question (look 4b)

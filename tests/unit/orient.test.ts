@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { apart, drawnInsets, frameTurn, GravityWatch, nearestQuarter, ORIENT_WORDS, phoneKind, screenTurn, tiltDeg, wayFor, wayOf } from '../../web/lib/stage/orient';
+import { apart, drawnInsets, frameTurn, GravityWatch, isApplePhone, nearestQuarter, ORIENT_WORDS, phoneKind, screenTurn, tiltDeg, wayFor, wayOf } from '../../web/lib/stage/orient';
 
 const G = 9.81;
 const rad = (d: number) => (d * Math.PI) / 180;
@@ -105,6 +105,18 @@ describe('look 4b: the screen turns the other way to the phone', () => {
     expect(phoneKind('Mozilla/5.0 (Linux; Android 14; Pixel 8)', true)).toBe('android');
     expect(phoneKind('Mozilla/5.0 (X11; Linux x86_64)', false)).toBeNull();
   });
+  it('F-F: only an iPhone or iPad gets the motion step; a desktop takes the no-sensor path', () => {
+    const chromeMac = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    const chromeWin = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    expect(isApplePhone('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', 5)).toBe(true);
+    expect(isApplePhone('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15', 5)).toBe(true); // iPad
+    expect(isApplePhone(chromeMac, 0)).toBe(false);
+    expect(isApplePhone(chromeWin, 0)).toBe(false);
+    expect(isApplePhone('Mozilla/5.0 (Linux; Android 14; Pixel 8)', 5)).toBe(false);
+    // with no motion step asked, a desktop has no rotation-lock words either
+    expect(phoneKind(chromeMac, isApplePhone(chromeMac, 0))).toBeNull();
+    expect(phoneKind(chromeWin, isApplePhone(chromeWin, 0))).toBeNull();
+  });
 });
 
 describe("the plan's words (3.10)", () => {
@@ -133,7 +145,8 @@ describe('on the meet stage', () => {
     expect(meet).toContain('if (wrong && o.quarter !== null) return void requestAnimationFrame(tick);');
   });
   it('a turn from "Bar is loaded." on voids the attempt, and "Film again" goes back to the frame check', () => {
-    expect(meet).toContain('if (loaded && settled !== null && o.watch.quarter !== settled) {');
+    expect(meet).toContain('if (settled !== null) return orientRef.current.watch.quarter !== settled;');
+    expect(meet).toContain('if (turnedSinceLoaded()) {');
     expect(meet).toContain("go(voidWhy === 'turned' ? 'lift' : 'refilm')");
     expect(meet).toContain('/turned-void');
   });
@@ -153,7 +166,29 @@ describe('on the meet stage', () => {
     expect(css).toContain('.turnphone { position: absolute; inset: 0; z-index: 2; padding: 0 20px; background: rgb(0 0 0 / .38);');
     expect(css).toContain('margin-bottom: 16px; animation: phone-turn');
     expect(css).toContain('.turnphone.out { opacity: 0; transition: opacity 200ms var(--ease-out); }');
-    expect(meet).toContain("const turnUp = useLinger(turnShown && (phase === 'spot' || phase === 'good-spot' || phase === 'tap'), 200);");
+    expect(meet).toContain("const turnUp = useLinger(turnShown && (phase === 'loading' || phase === 'spot' || phase === 'good-spot' || phase === 'tap'), 200);");
+  });
+  it('F-A: a turn in the 1.5 s after Rack! is still a turn, watched until the recording ends', () => {
+    expect(meet).toContain('const until = endAt + AFTER_RACK_MS;');
+    expect(meet).toContain('if (turnedSinceLoaded()) { turned = true; turnSnap = grab(video, d); break; }');
+    expect(meet).not.toContain('await sleep(Math.max(0, endAt + AFTER_RACK_MS');
+  });
+  it('F-B: with no gravity, a touch phone whose screen turns after "Bar is loaded." is void; a desktop window never is', () => {
+    expect(meet).toContain('screenAt = settled === null && o.touch ? screenSideNow() : null;');
+    expect(meet).toContain('return screenAt !== null && screenSideNow() !== screenAt;');
+  });
+  it('F-G: the turning phone follows the phone from the camera on, before the pose model is ready', () => {
+    const pre = meet.indexOf('requestAnimationFrame(preTurn);'), model = meet.indexOf('await loadPoseModel()');
+    expect(pre).toBeGreaterThan(0);
+    expect(pre).toBeLessThan(model);
+    expect(meet).toContain('let turnUp = preUp,');
+  });
+  it('F-E: a reloaded close call opens settled and pulsing, with no sending or looking wait', () => {
+    expect(meet).toContain("if (st?.call === 'close') {");
+    expect(meet).toContain('await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt, null, true);');
+    expect(meet).toContain('const t45 = bench || closeNow ? undefined');
+    expect(meet).toContain('const t90 = bench || closeNow ? undefined');
+    expect(meet).toContain('let pulsing = closeNow;');
   });
   it('look 4a: the segments and the set-up line wait for the drawing, then fade in over 200 ms', () => {
     expect(css).toContain('.stage.turning .spotparts { opacity: 0;');

@@ -22,6 +22,8 @@ export type OpsNumbers = {
   bench: {
     decided: number; agree: number; whiteOnRed: number; redOnWhite: number;
     filmings: number; pressWhileSinking: number; lostAfterStart: number; noStartVoids: number;
+    /** 3.4c: real meet Home press sets decided or waiting, and those that went to a referee (a close call). */
+    homePressSets: number; homePressReferee: number;
   };
   render: {
     workersLive: number; startedHour: number; failedHour: number; attemptsPerWorker: number | null; requeuedHour: number;
@@ -80,13 +82,19 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       and detail->>'poseMs' is not null and (detail->>'frames')::float > 0
     group by 1 order by n desc, device limit 20`);
 
-  // 2.4, 3.4b "Bench, phone and referees". Real meet bench attempts only (never demo).
+  // 2.4, 3.4b "Bench, phone and referees". Real meet Barbell bench attempts only (never demo; a Home `bench`
+  // is the overhead press, 3.4c, and is never a bench here).
   // Decided: a referee gave the lights. The bar's call is `shadow_lights` (three of one colour, or none when it
   // called a close call, which agrees with neither colour and is never a wrong light).
   // The last three are over every filming of a bench attempt: one that uploaded, or one voided with no Start!.
   const [b] = await db.execute<Record<string, unknown>>(sql`
     with b as (
-      select a.* from attempts a join meets m on m.id = a.meet_id where a.lift = 'bench' and m.kind <> 'demo'
+      select a.* from attempts a join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
+      where a.lift = 'bench' and m.kind <> 'demo' and l.division <> 'home'
+    ), press as (
+      -- 3.4c: real meet Home press sets the phone or a referee has decided, or that wait for a referee
+      select a.status, a.measures from attempts a join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
+      where a.lift = 'bench' and m.kind <> 'demo' and l.division = 'home' and a.status in ('judged', 'close_call')
     ), decided as (
       select call, shadow_lights->>0 as shadow from b
       where status = 'judged' and (measures->>'referee')::boolean is true
@@ -99,7 +107,9 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       (select count(*) from b where uploaded_at is not null) as uploaded,
       (select count(*) from b where (measures->>'press_while_sinking')::boolean is true) as sinking,
       (select count(*) from b where (measures->>'lost_after_start')::boolean is true) as lost,
-      (select count(*) from events e join b r on r.id = e.attempt_id where e.kind = 'lost_bar_void') as voids`);
+      (select count(*) from events e join b r on r.id = e.attempt_id where e.kind = 'lost_bar_void') as voids,
+      (select count(*) from press) as press_sets,
+      (select count(*) from press where status = 'close_call' or (measures->>'referee')::boolean is true) as press_referee`);
 
   // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device.
   // An upload tried is a started upload, or one the phone turned down before it began (too big).
@@ -158,6 +168,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     bench: {
       decided: num(b?.decided), agree: num(b?.agree), whiteOnRed: num(b?.white_on_red), redOnWhite: num(b?.red_on_white),
       filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids),
+      homePressSets: num(b?.press_sets), homePressReferee: num(b?.press_referee),
     },
     render: {
       workersLive: num(r.live), startedHour: num(r.started_hour), failedHour: num(r.failed_hour),
@@ -230,6 +241,8 @@ export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
     { label: 'Press! while sinking', value: failedOf(b.pressWhileSinking, b.filmings) },
     { label: 'Lost the bar after Start!', value: failedOf(b.lostAfterStart, b.filmings) },
     { label: 'No Start!, filmed again', value: failedOf(b.noStartVoids, b.filmings) },
+    // 3.4c: "Home press sets to a referee · <x>%"
+    { label: 'Home press sets to a referee', value: b.homePressSets ? `${Math.round((b.homePressReferee / b.homePressSets) * 100)}%` : '—' },
   ];
 }
 

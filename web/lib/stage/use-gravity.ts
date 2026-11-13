@@ -3,7 +3,7 @@
 // so rotation lock can't break it; where there is none (no sensor, or she said "Not now" on an iPhone),
 // the screen's own shape on a touch phone; on a desktop, nothing (no turning, no gating).
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GravityWatch, phoneKind, wayOf, type PhoneKind, type Quarter, type Way } from './orient';
+import { GravityWatch, isApplePhone, phoneKind, wayOf, type PhoneKind, type Quarter, type Way } from './orient';
 
 type AskFn = () => Promise<'granted' | 'denied' | 'default'>;
 const asker = (): AskFn | null => {
@@ -11,11 +11,13 @@ const asker = (): AskFn | null => {
   return typeof D?.requestPermission === 'function' ? D.requestPermission.bind(D) : null;
 };
 const android = () => typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent);
+const apple = () => typeof navigator !== 'undefined' && isApplePhone(navigator.userAgent, navigator.maxTouchPoints ?? 0);
 /**
- * The motion step is the iPhone's (3.10). A newer Chrome on Android may also carry `requestPermission`; there
- * it gets no step and no iPhone words, and is asked quietly on her "I'm ready" tap instead (renew).
+ * The motion step is the iPhone's (3.10). A newer Chrome on Android, or on a desktop, may also carry
+ * `requestPermission`; there it gets no step and no iPhone words. Android is asked quietly on her "I'm ready"
+ * tap instead (renew); a desktop takes the no-sensor path.
  */
-const stepAsker = (): AskFn | null => (android() ? null : asker());
+const stepAsker = (): AskFn | null => (apple() ? asker() : null);
 
 const KEY = 'fm-motion';
 export type MotionAnswer = 'granted' | 'not-now';

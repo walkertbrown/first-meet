@@ -108,6 +108,14 @@ export function drawnInsets(turn: 0 | 90 | -90): [string, string, string, string
 }
 
 export type PhoneKind = 'iphone' | 'android' | null;
+/**
+ * An iPhone or iPad (3.10's motion step is the iPhone's). iPadOS says "Macintosh", so a Mac UA with touch counts.
+ * A desktop Chrome can carry DeviceMotionEvent.requestPermission too, so that alone never means iPhone.
+ */
+export function isApplePhone(ua: string, touchPoints: number): boolean {
+  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1);
+}
+
 export function phoneKind(ua: string, motionAsks: boolean): PhoneKind {
   if (/Android/.test(ua)) return 'android';
   if (motionAsks || /iPhone|iPad|iPod/.test(ua)) return 'iphone';
