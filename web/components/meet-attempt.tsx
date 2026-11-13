@@ -362,8 +362,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       const res = meetResult({ ...s, lift: attempt.lift })!;
       const shown = s.shown_lift ?? attempt.lift;
       setShownLift(shown);
-      // a close call that opened settled lights its lamps, spill and result as any other (F-E)
-      setSettledOpen(false); setMarks(null);
+      // a close call that opened settled lights its lamps, spill and result as any other (F-E); its
+      // judged frame keeps its marks, which turn from grey to the lights' colour (look step 10, plan 5.27)
+      setSettledOpen(false);
       setResult(res); setResultOn(false); setWaitLine(''); setBusy(false);
       // the lights: left, head, right, 330 ms apart, then the spill, then the result 420 ms later
       setPhase('lit');
@@ -380,7 +381,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // her clip (step 10): the last 2 s in real time, then the judged frame with the marks
       await wait(900);
       if (!alive()) return;
-      if (!reduced()) { await replay().catch(() => {}); if (!alive()) return; }
+      // the 2 s replay plays without marks; they come back on the judged frame after it
+      if (!reduced()) { setMarks(null); await replay().catch(() => {}); if (!alive()) return; }
       setReplaying(false);
       // a sample's frozen frame is the server's judged moment, when it says which
       let judged = snap;

@@ -18,8 +18,10 @@ describe('phase 3 look fixes', () => {
     // reload during a close call: the same frame and marks
     expect(meet).toContain('const judged = bench ? null : await snapAt().catch(() => null);');
     expect(meet).toContain('if (judged?.p.length) setMarks(liftMarks(st.shown_lift ?? attempt.lift, judged.p,');
-    // the marks give way when the lamps light
-    expect(meet).toContain('setSettledOpen(false); setMarks(null);');
+    // when the lights land the marks stay and take the lights' colour; only the replay hides them
+    expect(meet).not.toContain('setSettledOpen(false); setMarks(null);');
+    expect(meet).toContain("if (!reduced()) { setMarks(null); await replay().catch(() => {}); if (!alive()) return; }");
+    expect(meet).toContain("const colour = phase === 'close' ? 'var(--stage-ink-2)' : result?.title === 'Good lift' ? 'var(--lamp-white)' : 'var(--lamp-red)';");
   });
   it('LookieBot 2: the demo sample\'s first frame is dimmed while she gets ready', () => {
     expect(meet).toContain("isSample && (phase === 'spot' || phase === 'good-spot' || phase === 'loaded') ? 'held' : ''");
