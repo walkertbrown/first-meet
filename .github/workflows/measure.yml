@@ -1,0 +1,27 @@
+# Measuring only, on measure/** branches: the close-call candidates on the worker, both sides.
+name: Measure
+on:
+  push:
+    branches: ['measure/**']
+permissions:
+  contents: read
+jobs:
+  sides:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: worker/requirements.txt
+      - run: npm ci
+      - run: pip install -r worker/requirements.txt && python worker/vendor_gl.py
+      - run: npx vitest run -c tests/worker/vitest.config.ts --silent=false tests/worker/sides.test.ts
+        env:
+          WORKER_PYTHON: python
