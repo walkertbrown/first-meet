@@ -38,6 +38,7 @@
 }
 .ref-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; }
 .ref-marks { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; pointer-events: none; }
+.ref-tick-label { font-family: var(--font-display); font-weight: 700; font-stretch: 88%; letter-spacing: .09em; text-transform: uppercase; }
 .ref-noclip { position: absolute; inset: 0; display: grid; place-items: center; color: var(--stage-ink-2); }
 
 /* The scrub bar (look 5.13): never the browser's own. A 4 px track, the played part in ink, a

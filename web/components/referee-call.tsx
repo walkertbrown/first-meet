@@ -6,7 +6,7 @@
 // The demo referee (5.36) is the same screen deciding the demo lifter's own close call.
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { MarkFrame, Track } from '@/lib/referee-view';
+import type { BarTrack, MarkFrame, Track } from '@/lib/referee-view';
 import { reasonEyebrow, reasonSentence, refereeReasons, type ReasonCode } from '@/lib/reason-words';
 import { saveLine, type Light } from '@/lib/lights';
 import { readyToSeek } from '@/lib/stage/recorder';
@@ -20,6 +20,8 @@ export type RefereeCallProps = {
   division: string;
   videoUrl: string | null;
   track: Track | null;
+  /** A Barbell bench (3.4b): the plate's path and the commands' ticks, in place of `track`. */
+  bar?: BarTrack | null;
   judgedFrameMs: number | null;
   repLights: RepLight[] | null;
   repsDeclared: number | null;
@@ -70,6 +72,35 @@ function Marks({ m, track, scale }: { m: MarkFrame; track: Track; scale: number 
       <line x1={m.h[0]} y1={m.h[1]} x2={m.s[0]} y2={m.s[1]} stroke={c} strokeOpacity={0.45} strokeWidth={1.5 / k} />
       <circle cx={m.h[0]} cy={m.h[1]} r={6 / k} fill={c} />
       <circle cx={m.k[0]} cy={m.k[1]} r={6 / k} fill={c} />
+    </svg>
+  );
+}
+
+/**
+ * Look 5.13's bench marks: the plate's path (2.5 px dashed, 6/5) in --stage-ink, broken where the bar
+ * wasn't seen, and a 2 x 12 px tick across it for each of Start!, Press! and Rack!, labelled in Eyebrow
+ * type. Press! while sinking makes its tick 4 px wide. Never red: the phone made that mistake, not her.
+ */
+function BarMarks({ bar, scale }: { bar: BarTrack; scale: number }) {
+  const k = scale || 1;
+  const c = 'var(--stage-ink)';
+  return (
+    <svg className="ref-marks" viewBox={`0 0 ${bar.w} ${bar.h}`} aria-hidden="true">
+      {bar.segs.map((sg, i) => (
+        <polyline key={i} points={sg.map(p => p.join(',')).join(' ')} fill="none" stroke={c} strokeWidth={2.5 / k}
+          strokeDasharray={`${6 / k} ${5 / k}`} strokeLinejoin="round" strokeLinecap="round" />
+      ))}
+      {bar.ticks.map(t => {
+        // Start! is labelled on the left; Press! and Rack! on the right, so Start! and Rack! never sit on each other
+        const left = t.cmd === 'start';
+        return (
+          <g key={t.cmd} data-cmd={t.cmd} data-wide={t.wide || undefined}>
+            <line x1={t.x - 6 / k} y1={t.y} x2={t.x + 6 / k} y2={t.y} stroke={c} strokeWidth={(t.wide ? 4 : 2) / k} />
+            <text className="ref-tick-label" x={t.x + (left ? -12 : 12) / k} y={t.y} fill={c} dominantBaseline="central"
+              textAnchor={left ? 'end' : 'start'} style={{ fontSize: `${13 / k}px` }}>{t.label}</text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -162,11 +193,12 @@ export function RefereeCall(p: RefereeCallProps) {
   // The marks keep their size in screen pixels whatever size the clip is drawn at.
   useEffect(() => {
     const el = boxRef.current;
-    if (!el || !p.track) return;
-    const ro = new ResizeObserver(() => setScale(el.clientWidth / p.track!.w));
+    const w = p.track?.w ?? p.bar?.w;
+    if (!el || !w) return;
+    const ro = new ResizeObserver(() => setScale(el.clientWidth / w));
     ro.observe(el);
     return () => ro.disconnect();
-  }, [p.track]);
+  }, [p.track, p.bar]);
 
   // Keys: ← and → step a frame; [ and ] move between reps; space plays.
   useEffect(() => {
@@ -223,7 +255,8 @@ export function RefereeCall(p: RefereeCallProps) {
   };
 
   const mark = showMarks ? frameAt(p.track, now * 1000) : null;
-  const ar = p.track ? p.track.w / p.track.h : 16 / 9;
+  const dims = p.track ?? p.bar ?? null;
+  const ar = dims ? dims.w / dims.h : 16 / 9;
 
   if (done) {
     const nextHref = p.demoDoneHref ?? (done.next ? `/referee/${done.next}` : '/referee');
@@ -267,6 +300,7 @@ export function RefereeCall(p: RefereeCallProps) {
             <p className="ref-noclip small">The clip isn&apos;t available.</p>
           )}
           {mark && p.track && <Marks m={mark} track={p.track} scale={scale} />}
+          {showMarks && p.bar && <BarMarks bar={p.bar} scale={scale} />}
         </div>
 
         <div className="ref-scrub" style={{ ['--played' as string]: `${duration > 0 ? Math.min(100, (now / duration) * 100) : 0}%` }}>
@@ -290,7 +324,7 @@ export function RefereeCall(p: RefereeCallProps) {
           <button type="button" className="btn ghost small" onClick={() => step(-1)} disabled={!p.videoUrl}>← frame</button>
           <button type="button" className="btn ghost small" onClick={() => step(1)} disabled={!p.videoUrl}>frame →</button>
           <label className="ref-switch">
-            <input type="checkbox" checked={showMarks} onChange={e => setShowMarks(e.target.checked)} disabled={!p.track} />
+            <input type="checkbox" checked={showMarks} onChange={e => setShowMarks(e.target.checked)} disabled={!p.track && !p.bar} />
             <span aria-hidden="true" />
             Show the judge&apos;s marks
           </label>

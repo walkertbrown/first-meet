@@ -95,9 +95,13 @@ export function sinkAfter(s: Pt[], from: number, rise: number): number | null {
  * Measures one bench attempt from the server's plate path and the phone's command times.
  * `dims` is the clip's shown size (the caller needs its shape for sideways speed).
  */
-export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES): BarMeasures {
+/**
+ * The server's own caller run on the path: what it called, and which points were the bar. A point
+ * wasn't the bar when the tracker scored it lost or its stuck-track rule froze it (look 5.13: the
+ * referee's path breaks there).
+ */
+export function callPath(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES) {
   const tap = plateTap(ct);
-  // The server's own caller, on the same path: its stuck-track rule marks the frames that weren't the bar.
   const caller = new BarCaller(tap ?? { x: path[0]?.[1] ?? 0, y: path[0]?.[2] ?? 0 }, dims, r);
   const server: BarMeasures['server_commands'] = [];
   for (const [t, x, y, score] of path) {
@@ -106,7 +110,13 @@ export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number
   }
   const frozen = new Set<number>();
   for (const f of caller.frozeAt) for (const [t] of path) if (t >= f - r.freezeMs && t <= f) frozen.add(t);
-  const pts: Pt[] = path.map(([t, , y, score]) => ({ t, y, ok: score >= r.lostScore && !frozen.has(t) }));
+  const seen = path.map(([t, , , score]) => score >= r.lostScore && !frozen.has(t));
+  return { server, seen };
+}
+
+export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES): BarMeasures {
+  const { server, seen } = callPath(path, ct, dims, r);
+  const pts: Pt[] = path.map(([t, , y], i) => ({ t, y, ok: seen[i] }));
   const s = smooth(pts);
 
   const start = ct.start ?? null;
