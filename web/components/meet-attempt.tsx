@@ -788,15 +788,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     video.pause(); await seekTo(video, 0).catch(() => {});
     const d: Dims = { w: video.videoWidth || 720, h: video.videoHeight || 1280 };
     setDims(d);
-    // The phone's judge finds the deepest frame and draws the marks, so it is waited for, as on
-    // the camera path: without it the first sample of a session froze with no marks (look 9
-    // step 10). Over 4 s, the slow line shows under the stage (3.11).
-    const slowTimer = setTimeout(() => alive() && setSlow(true), 4000);
-    const pose = await loadPoseModel().then(m => new LivePose(m), () => null);
-    clearTimeout(slowTimer);
-    if (!alive()) return;
-    setSlow(false);
-    const deepest = new DeepestFrames(d);
+    // 5.2 (item 94): a sample is judged on the server (5.36), so the phone never loads the pose model
+    // or its wasm for it. The frozen frame is the clip's own, and its marks are the server's points at
+    // the judged moment (/api/attempts/:id/frame), as after a reload.
     // 5.25 step 3, look 9 step 3: find your spot on the clip's first frame, as on /try. The
     // segments light head to feet PART_STEP_MS apart, then "Good spot.", then the soft command.
     setPhase('spot');
@@ -825,16 +819,12 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     flushSync(() => { setPhase('lifting'); setCommand({ text: MEET_WORDS.squat, kind: 'on' }); setRecSec(0); setRecOn(true); });
     voice.say('squat');
     void video.play();
-    let said = { squat: true, rack: false }, lastMedia = -1, rackShownAt = 0;
+    let said = { squat: true, rack: false }, rackShownAt = 0;
     await new Promise<void>(resolve => {
       const tick = () => {
         if (!alive()) return resolve();
         const ms = video.currentTime * 1000;
         if (said.squat) setRecSec(Math.floor((performance.now() - startAt) / 1000));
-        if (pose && said.squat && !said.rack && video.currentTime !== lastMedia) {
-          lastMedia = video.currentTime;
-          deepest.offer({ t: ms, p: pose.detect(video) }, video);
-        }
         if (!said.rack && (ms >= ct.rack || video.ended)) {
           said = { ...said, rack: true };
           flushSync(() => setCommand({ text: MEET_WORDS.rack, kind: 'on' })); voice.say('rack');
@@ -850,12 +840,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     });
     if (!alive()) return;
     video.pause(); setRecOn(false);
-    // without the judge, the frame halfway from "Squat!" to "Rack!" stands in for the deepest
-    let snap = deeperOf(deepest);
-    if (!snap) {
-      await seekTo(video, (ct.squat + ct.rack) / 2000).catch(() => {});
-      snap = grab(video, d);
-    }
+    // until the server says which frame it judged, the one halfway from "Squat!" to "Rack!" is held
+    await seekTo(video, (ct.squat + ct.rack) / 2000).catch(() => {});
+    const snap: SideSnap = grab(video, d);
     freeze(snap);
     const replay = async () => {
       await within(seekTo(video, Math.max(0, ct.rack / 1000 - 2)), 2000);
@@ -864,12 +851,13 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await new Promise<void>(res => { const c = () => (!alive() || video.ended || video.currentTime >= ct.rack / 1000 ? res() : requestAnimationFrame(c)); requestAnimationFrame(c); });
       video.pause();
     };
-    const snapAt = async (ms: number) => {
-      await within(seekTo(video, ms / 1000), 2000);
-      if (!pose) return grab(video, d);
-      const one = new DeepestFrames(d);
-      one.offer({ t: ms, p: pose.detect(video) }, video);
-      return deeperOf(one) ?? grab(video, d);
+    // the judged frame from the clip on the phone, with the server's pose at it for the marks
+    const snapAt = async (ms: number): Promise<SideSnap | null> => {
+      const r = await getJson(`/api/attempts/${attempt.id}/frame`).catch(() => null);
+      const f = r?.status === 200 ? (r.body as unknown as { ms: number; p: Pt[]; side: 'left' | 'right' }) : null;
+      await within(seekTo(video, (f?.ms ?? ms) / 1000), 2000);
+      const shot = grab(video, d);
+      return f ? { ...shot, t: f.ms, p: f.p, side: f.side } : shot;
     };
     await awaitLights(alive, attempt.id, Promise.resolve(true), snap, replay, snapAt);
   }, [attempt.id, home, stopCamera, awaitLights]);

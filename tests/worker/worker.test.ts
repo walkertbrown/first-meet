@@ -53,6 +53,14 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const v = verdictOf({ ...first, frames }, e);
       timings[name] = { duration: +first.duration.toFixed(1), frames: first.frames.length + second.frames.length, pass1: first.secs, pass2: second.secs, calls: e.skipped ? v.skipped : v.reps };
       if (!LOGGED_ONLY.has(name)) checkClip(expect, { ...first, frames }, e);
+      // piece 6 (item 94): a clip that passes the frame check's side-on part gives the same calls
+      // from both sides, the far side forced. 2.3 has no tie rule; this is what holds it.
+      if (e.frameCheck === 'pass') {
+        const w = verdictOf({ ...first, frames: frames.map(otherSide) }, e);
+        timings[`${name}, other side`] = { calls: w.reps };
+        expect(w.reps, `${name}: the far side's calls`).toEqual(v.reps);
+        expect(w.reps).toEqual(e.reps);
+      }
     }, 600_000);
   }
   // What the two passes add to any difference: one unbroken 15 fps pass, set against the
@@ -113,12 +121,15 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const frames = mergePasses(first.frames, second.frames);
       const v = judgeAttempt(frames, first, 'squat', ct, undefined, s.meet.reps);
       timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
-      expect(v.call.light).toBe(({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind]);
+      const light = ({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind];
+      expect(v.call.light).toBe(light);
+      // and from both sides, the far side forced (piece 6, item 94): the same call, its `kind`. The
+      // 8837221 cut's sides were nearly tied, and its far side read a white.
+      const w = judgeAttempt(frames.map(otherSide), first, 'squat', ct, undefined, s.meet.reps);
+      timings[`sample ${s.id}, other side`] = { call: w.call, measures: w.measures };
+      expect(w.measures.side).not.toBe(v.measures.side);
+      expect(w.call.light, `sample ${s.id}: the ${w.measures.side} side's call`).toBe(light);
       if (s.kind === 'close') {
-        // and from both sides: the 8837221 cut's sides were nearly tied, and its far side read a white
-        const w = judgeAttempt(frames.map(otherSide), first, 'squat', ct, undefined, s.meet.reps);
-        timings[`sample ${s.id}, other side`] = { call: w.call, measures: w.measures };
-        expect(w.measures.side).not.toBe(v.measures.side);
         for (const x of [v, w]) {
           const d = x.measures.depth!;
           expect(x.call.light, `the ${x.measures.side} side's call`).toBe('close');

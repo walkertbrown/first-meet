@@ -40,21 +40,32 @@ export type OpsNumbers = {
 const num = (v: unknown) => Number(v ?? 0);
 const numOrNull = (v: unknown) => (v === null || v === undefined ? null : Number(v));
 
+// 2.2 "Which attempts count" (item 94). Lines about lights, calls and referees count real meets only: the demo
+// referee isn't a referee and a sample's call is known. Lines about phones count every filming from a real phone,
+// the demo and test meets included, never a sample (it isn't filmed on her phone). Lines about the server count
+// every run, samples included.
+/** Lights, calls and referees: a real meet's own filming. Needs `a` (attempts) and `m` (meets). */
+export const REAL_MEET = sql`(m.kind = 'real' and not a.is_sample_clip)`;
+/** The phone's own lines: any filming from a real phone, never a sample. Needs `a` and `m`. */
+export const REAL_PHONE = sql`(m.kind in ('real', 'demo', 'test') and not a.is_sample_clip)`;
+
 /** An attempt is "on the platform" while it's being recorded, sent or judged, or was declared in the last 10 minutes. */
 const ON_PLATFORM = sql`(a.status in ('recording', 'uploading', 'queued', 'judging') or (a.status = 'declared' and a.created_at > now() - interval '10 minutes'))`;
 
 export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.env.NEXT_PUBLIC_COMMIT ?? null): Promise<OpsNumbers> {
   const [q] = await db.execute<Record<string, unknown>>(sql`
     select
-      count(*) filter (where m.kind <> 'demo') as waiting,
-      extract(epoch from now() - min(q.enqueued_at) filter (where m.kind <> 'demo'))::int as oldest_s,
+      -- the server: every run waits in the same queue, samples included
+      count(*) as waiting,
+      extract(epoch from now() - min(q.enqueued_at))::int as oldest_s,
       count(*) filter (where m.kind = 'demo') as demo_waiting
     from judge_queue q join attempts a on a.id = q.attempt_id join meets m on m.id = a.meet_id
     where q.kind = 'poses'`);
   const [cc] = await db.execute<Record<string, unknown>>(sql`
-    select count(*) filter (where m.kind <> 'demo') as real, count(*) filter (where m.kind = 'demo') as demo
+    select count(*) filter (where ${REAL_MEET}) as real, count(*) filter (where m.kind = 'demo') as demo
     from attempts a join meets m on m.id = a.meet_id where a.status = 'close_call'`);
 
+  // upload to lights is the server's: every run, samples included; the demo's own line is its part
   const lights = (since: string, demo: boolean) => db.execute<Record<string, unknown>>(sql`
     select
       percentile_cont(0.5) within group (order by (e.detail->>'upload_to_lights_s')::float) as median,
@@ -62,7 +73,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       count(*) as n
     from events e join attempts a on a.id = e.attempt_id join meets m on m.id = a.meet_id
     where e.kind = 'judged' and e.at > now() - ${since}::interval and e.detail->>'upload_to_lights_s' is not null
-      and ${demo ? sql`m.kind = 'demo'` : sql`m.kind <> 'demo'`}`);
+      and ${demo ? sql`m.kind = 'demo'` : sql`true`}`);
   const [l15] = await lights('15 minutes', false);
   const [l24] = await lights('24 hours', false);
   const [d15] = await lights('15 minutes', true);
@@ -73,31 +84,33 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
   const phone = await db.execute<Record<string, unknown>>(sql`
     select detail->>'device' as device, percentile_cont(0.5) within group (order by (detail->>'poseMs')::float) as median, count(*) as n
     from events where kind = 'phone_judge_time' and at > now() - interval '30 days' and detail->>'poseMs' is not null
+      and detail->>'source' = 'camera'
     group by 1 order by n desc, device limit 20`);
 
   const poseRun = await db.execute<Record<string, unknown>>(sql`
     select detail->>'device' as device,
       percentile_cont(0.5) within group (order by (detail->>'poseMs')::float / (detail->>'frames')::float) as median, count(*) as n
-    from events where kind = 'phone_judge_time' and at > now() - interval '30 days'
+    from events where kind = 'phone_judge_time' and at > now() - interval '30 days' and detail->>'source' = 'camera'
       and detail->>'poseMs' is not null and (detail->>'frames')::float > 0
     group by 1 order by n desc, device limit 20`);
 
-  // 2.4, 3.4b "Bench, phone and referees". Real meet Barbell bench attempts only (never demo; a Home `bench`
-  // is the overhead press, 3.4c, and is never a bench here).
+  // 2.4, 3.4b "Bench, phone and referees". Barbell bench attempts only (a Home `bench` is the overhead press,
+  // 3.4c, and is never a bench here). The referee lines count real meets only; the tracker's three rates are the
+  // phone's, so they count every bench filmed on a real phone, the demo and test meets included, never a sample.
   // Decided: a referee gave the lights. The bar's call is `shadow_lights` (three of one colour, or none when it
   // called a close call, which agrees with neither colour and is never a wrong light).
   // The last three are over every filming of a bench attempt: one that uploaded, or one voided with no Start!.
   const [b] = await db.execute<Record<string, unknown>>(sql`
     with b as (
-      select a.* from attempts a join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
-      where a.lift = 'bench' and m.kind <> 'demo' and l.division <> 'home'
+      select a.*, ${REAL_MEET} as real_meet from attempts a join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
+      where a.lift = 'bench' and ${REAL_PHONE} and l.division <> 'home'
     ), press as (
       -- 3.4c: real meet Home press sets the phone or a referee has decided, or that wait for a referee
       select a.status, a.measures from attempts a join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
-      where a.lift = 'bench' and m.kind <> 'demo' and l.division = 'home' and a.status in ('judged', 'close_call')
+      where a.lift = 'bench' and ${REAL_MEET} and l.division = 'home' and a.status in ('judged', 'close_call')
     ), decided as (
       select call, shadow_lights->>0 as shadow from b
-      where status = 'judged' and (measures->>'referee')::boolean is true
+      where real_meet and status = 'judged' and (measures->>'referee')::boolean is true
     )
     select
       (select count(*) from decided) as decided,
@@ -111,7 +124,8 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       (select count(*) from press) as press_sets,
       (select count(*) from press where status = 'close_call' or (measures->>'referee')::boolean is true) as press_referee`);
 
-  // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device.
+  // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device: every real
+  // phone's, the demo and test meets included, never a sample (none is uploaded from a phone).
   // An upload tried is a started upload, or one the phone turned down before it began (too big).
   // A failure's device is its own, or else its upload's.
   const up = await db.execute<Record<string, unknown>>(sql`
@@ -119,11 +133,13 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       select coalesce(detail->>'device', 'unknown') as device from events
       where at > now() - interval '24 hours'
         and (kind = 'upload_started' or (kind = 'upload_failed' and (detail->>'before_start')::boolean))
+        and not exists (select 1 from attempts x where x.id = attempt_id and x.is_sample_clip)
     ), failed as (
       select coalesce(e.detail->>'device',
         (select s.detail->>'device' from events s where s.kind = 'upload_started' and s.attempt_id = e.attempt_id and s.at <= e.at order by s.at desc limit 1),
         'unknown') as device
       from events e where e.kind in ('upload_refused', 'upload_failed') and e.at > now() - interval '24 hours'
+        and not exists (select 1 from attempts x where x.id = e.attempt_id and x.is_sample_clip)
     )
     select device, sum(t)::int as tried, sum(f)::int as failed from (
       select device, 1 as t, 0 as f from tried union all select device, 0, 1 from failed

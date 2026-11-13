@@ -28,6 +28,9 @@ async function joinDemo(page: Page) {
 const LIGHTS = /^(Good lift|No lift|Close call)$/;
 
 test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({ page }) => {
+  // 5.2 (item 94): the sample is judged on the server, so the pose model and its wasm never download
+  const models: string[] = [];
+  page.on('request', r => { if (new URL(r.url()).pathname.startsWith('/models/')) models.push(r.url()); });
   await joinDemo(page);
   await expect(page.getByText('Demo meet · Nothing here counts', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'SQUAT' })).toBeVisible();
@@ -41,6 +44,9 @@ test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({
   // the judge on Render Workflows, then the lights (a close call waits for a referee instead)
   await expect(page.getByRole('heading', { name: /^(Good lift|No lift|Close call)$/ })).toBeVisible({ timeout: 4 * 60_000 });
   const title = await page.getByRole('heading', { name: /^(Good lift|No lift|Close call)$/ }).textContent();
+  // the judged frame's marks are the server's pose (look step 10), on the lights and on a close call
+  await expect(page.locator('svg.marks:not(.bench-path) circle').first()).toBeAttached({ timeout: 20_000 });
+  expect(models, 'no pose model on a demo sample').toEqual([]);
   if (title === 'Close call') await expect(page.getByRole('link', { name: "See the referee's side of this close call" })).toBeVisible();
   // 5.25 step 11: the first squat's lights lead to the next attempt
   else await expect(page.getByRole('button', { name: 'Declare your next attempt' })).toBeVisible();
@@ -80,24 +86,24 @@ async function liftSample(page: Page): Promise<Beats> {
 //   movement, never reading time.
 // - "RACK!" stays up 1.5 s and the frozen frame comes no sooner, even though the clips end 0.17 s
 //   and 0.67 s after their "Rack!": the stage holds the last frame, as on a camera lift.
-// "model blocked" runs the stage at frame rate, as on a phone (headless runs the pose model at
-// about a frame a second, which hides short beats); "model loaded" is the stage as it ships.
+// Since item 94 the sample never runs the pose model on the phone (5.2), so the stage runs at frame
+// rate, as on a phone, and no request goes to /models/.
 for (const motion of ['on', 'off'] as const) {
-  for (const model of ['loaded', 'blocked'] as const) {
-    test(`a sample lift's beats, motion ${motion}, pose model ${model}: 1.5 s holds and "RACK!" to the freeze`, async ({ page }) => {
-      if (motion === 'off') await page.emulateMedia({ reducedMotion: 'reduce' });
-      if (model === 'blocked') await page.route('**/models/**', r => r.abort());
-      await watchBeats(page);
-      const b = await liftSample(page);
-      const ms = (x?: number) => Math.round(x ?? NaN);
-      console.log(`beats motion ${motion} model ${model}: good spot→loaded ${ms(b.cmd['Bar is loaded.'] - b.cmd['Good spot.'])}, loaded→SQUAT ${ms(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.'])}, RACK up ${ms(b.rackOff! - b.cmd['RACK!'])}, RACK→frozen ${ms(b.frozenAt! - b.cmd['RACK!'])}`);
-      expect(b.cmd['Bar is loaded.'] - b.cmd['Good spot.']).toBeGreaterThanOrEqual(1400);
-      expect(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
-      expect(b.rackOff! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
-      expect(b.frozenAt, 'the judged frame shows').toBeDefined();
-      expect(b.frozenAt! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
-    });
-  }
+  test(`a sample lift's beats, motion ${motion}: 1.5 s holds and "RACK!" to the freeze, with no pose model`, async ({ page }) => {
+    if (motion === 'off') await page.emulateMedia({ reducedMotion: 'reduce' });
+    const models: string[] = [];
+    page.on('request', r => { if (new URL(r.url()).pathname.startsWith('/models/')) models.push(r.url()); });
+    await watchBeats(page);
+    const b = await liftSample(page);
+    expect(models, 'no pose model on a demo sample').toEqual([]);
+    const ms = (x?: number) => Math.round(x ?? NaN);
+    console.log(`beats motion ${motion}: good spot→loaded ${ms(b.cmd['Bar is loaded.'] - b.cmd['Good spot.'])}, loaded→SQUAT ${ms(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.'])}, RACK up ${ms(b.rackOff! - b.cmd['RACK!'])}, RACK→frozen ${ms(b.frozenAt! - b.cmd['RACK!'])}`);
+    expect(b.cmd['Bar is loaded.'] - b.cmd['Good spot.']).toBeGreaterThanOrEqual(1400);
+    expect(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
+    expect(b.rackOff! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
+    expect(b.frozenAt, 'the judged frame shows').toBeDefined();
+    expect(b.frozenAt! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
+  });
 }
 
 // NerdCider's phase 2 check: a browser's own recording (a WebM with no length in its header)
