@@ -1,0 +1,7 @@
+held-reload attempts/f880190e-7104-479c-9001-57e0c259b8c1/frame ms=3000 side=left
+live attempts/f880190e-7104-479c-9001-57e0c259b8c1/frame ms=3000 side=left
+live attempts/8361aba5-b9c0-4928-85a9-e7e91339858f/frame ms=2400 side=left
+live attempts/d67c0e1d-b2f3-4a41-a5a6-1e832d38365e/frame ms=1000 side=left
+cc-reload attempts/d67c0e1d-b2f3-4a41-a5a6-1e832d38365e/frame ms=1000 side=left
+REF /referee/demo/d67c0e1d-b2f3-4a41-a5a6-1e832d38365e
+cc-reload attempts/d67c0e1d-b2f3-4a41-a5a6-1e832d38365e/frame ms=1000 side=left

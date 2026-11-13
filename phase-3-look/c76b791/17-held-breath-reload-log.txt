@@ -1,0 +1,4 @@
+183 -,-,- | nomarks | s0.00p/h0.00p |  | hd0.00 | h:- | SL | X67
+799 white,white,white | nomarks | s0.00p/h0.00p |  | hd0.00 | h:Good lift@1.00 | SL | X67
+1575 white,white,white | nomarks | s0.00p/h2.80p |  | hd0.00 | h:Good lift@1.00 | SL | X67
+1807 white,white,white | 255.244.216 | s0.00p/h2.80p | fz? | hd0.00 | h:Good lift@1.00 | SL | X67

@@ -1,0 +1,31 @@
+457 -,-,- | nomarks | s0.00p/h0.00p |  | hd0.00 | h:- | SL | X67
+1139 pulse,pulse,pulse | nomarks | s0.00p/h0.00p |  | hd0.00 | h:Close call@1.00 | SL | X67
+1681 pulse,pulse,pulse | nomarks | s0.00p/h1.00p |  | hd0.00 | h:Close call@1.00 | SL | X67
+1751 pulse,pulse,pulse | 166.169.179 | s0.00p/h1.00p | fz? | hd0.00 | h:Close call@1.00 | SL | X67
+8932 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@1.00 | SL | X67
+8948 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.73 | SL | X67
+8963 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.51 | SL | X67
+8980 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.34 | SL | X67
+8996 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.23 | SL | X67
+9013 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.15 | SL | X67
+9030 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.09 | SL | X67
+9046 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.06 | SL | X67
+9063 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.03 | SL | X67
+9080 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.02 | SL | X67
+9096 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.01 | SL | X67
+9129 white,-,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.00 | SL | X67
+9263 white,white,- | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.00 | SL | X67
+9596 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.00 | SL | X67
+10030 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.27 | SL | X67
+10048 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.49 | SL | X67
+10063 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.66 | SL | X67
+10079 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.78 | SL | X67
+10096 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.85 | SL | X67
+10113 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.91 | SL | X67
+10129 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.94 | SL | X67
+10146 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.97 | SL | X67
+10165 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.98 | SL | X67
+10188 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@0.99 | SL | X67
+10231 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@1.00 | SL | X67
+11163 white,white,white | 255.244.216 | s0.00p/h0.00p | fz? | hd0.00 | h:Good lift@1.00 | SL | X67
+11263 white,white,white | 255.244.216 | s0.00p/h1.00p | fz? | hd0.00 | h:Good lift@1.00 | SL | X67
