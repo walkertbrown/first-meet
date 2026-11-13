@@ -219,6 +219,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const soundRef = useRef(sound);
   const footageRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
+  // an alert dialog takes focus when it opens, so a screen reader lands in the void sheet (The Playner, 13 Nov)
+  const voidRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (phase === 'void') voidRef.current?.focus(); }, [phase]);
   /** The bench's tap, while the bar stage takes one (set by runCamera). */
   const tapRef = useRef<((x: number, y: number) => void) | null>(null);
 
@@ -337,8 +340,16 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           if (!alive()) return;
           clearTimeout(t45); clearTimeout(t90); clearInterval(every);
           setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
-          setShownLift(s.shown_lift ?? attempt.lift);
+          const shownC = s.shown_lift ?? attempt.lift;
+          setShownLift(shownC);
           setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+          // look step 10 (LookieBot 1): while a referee looks, the stage holds the judged frame with its marks,
+          // as after the lights: the server's judged moment when it says which, else the phone's own
+          let judged = snap;
+          if (snapAt && typeof s.judged_frame_ms === 'number') judged = (await snapAt(s.judged_frame_ms).catch(() => null)) ?? snap;
+          if (!alive()) return;
+          setFrozen(!!freeze(judged));
+          if (judged?.p.length) setMarks(liftMarks(shownC, judged.p, { w: judged.canvas.width, h: judged.canvas.height }, judged.side));
         }
         if (s && (s.call === 'white' || s.call === 'red')) break;
         await next();
@@ -352,7 +363,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       const shown = s.shown_lift ?? attempt.lift;
       setShownLift(shown);
       // a close call that opened settled lights its lamps, spill and result as any other (F-E)
-      setSettledOpen(false);
+      setSettledOpen(false); setMarks(null);
       setResult(res); setResultOn(false); setWaitLine(''); setBusy(false);
       // the lights: left, head, right, 330 ms apart, then the spill, then the result 420 ms later
       setPhase('lit');
@@ -927,9 +938,13 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       setLamps(['pulse', 'pulse', 'pulse']); setCommand(null);
       setWaitLine(bench ? MEET_WORDS.bench.looking : 'A referee is looking at this one');
       setResult(meetResult({ ...st, lift: attempt.lift })); setPhase('close'); setResultOn(true);
-      const snap = await held().catch(() => null);
+      // the judged frame and its marks (LookieBot 1), else the held frame
+      const judged = bench ? null : await snapAt().catch(() => null);
+      if (!alive()) return;
+      const snap = judged ?? await held().catch(() => null);
       if (!alive()) return;
       freeze(snap);
+      if (judged?.p.length) setMarks(liftMarks(st.shown_lift ?? attempt.lift, judged.p, { w: judged.canvas.width, h: judged.canvas.height }, judged.side));
       await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt, null, true);
       return;
     }
@@ -1119,6 +1134,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     bench && benchPath && phase === 'close' ? 'benchclip' : '',
     phase === 'lit' || phase === 'replay' || phase === 'hold' ? 'lit' : '',
     frozen ? 'frozen' : '',
+    // look, the held first frame (LookieBot 2): a sample's first frame is dimmed 24% from the frame check until "Squat!"
+    isSample && (phase === 'spot' || phase === 'good-spot' || phase === 'loaded') ? 'held' : '',
   ].filter(Boolean).join(' ');
   const k = dims ? box.width / dims.w : 1;
   const colour = phase === 'close' ? 'var(--stage-ink-2)' : result?.title === 'Good lift' ? 'var(--lamp-white)' : 'var(--lamp-red)';
@@ -1135,6 +1152,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             <video ref={feedRef} className="feed" playsInline muted aria-hidden="true" hidden={replaying && !isSample} />
             <video ref={replayRef} className="feed replay" playsInline muted aria-hidden="true" hidden={!replaying || isSample} />
             <canvas ref={frozenRef} className="feed" aria-hidden="true" hidden={!frozen} />
+            {isSample && <div className="held-dim" />}
             {marks && dims && (
               <svg className="marks" viewBox={`0 0 ${dims.w} ${dims.h}`} aria-hidden="true">
                 <polyline points={marks.pts.map(q => `${q.x},${q.y}`).join(' ')} fill="none" stroke={colour} strokeWidth={2.5 / k} strokeDasharray={`${6 / k} ${5 / k}`} />
@@ -1252,9 +1270,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               // 3.4b, look 5.14c: the bench's void sheet. "Film again" is the only way on.
               // 3.10: a phone that turned during the lift gets the same sheet with its own words, and films the
               // attempt again from the frame check, since the phone has moved.
-              <div className="void-sheet" role="alertdialog" aria-labelledby="void-title">
+              <div className="void-sheet" role="alertdialog" aria-labelledby="void-title" aria-describedby="void-body" tabIndex={-1} ref={voidRef}>
                 <p className="sheet-title" id="void-title">{voidWhy === 'turned' ? ORIENT_WORDS.turned.title : MEET_WORDS.bench.voidTitle}</p>
-                <p className="body">{voidWhy === 'turned' ? ORIENT_WORDS.turned.body : MEET_WORDS.bench.voidBody}</p>
+                <p className="body" id="void-body">{voidWhy === 'turned' ? ORIENT_WORDS.turned.body : MEET_WORDS.bench.voidBody}</p>
                 <div className="try-actions"><button className="btn" type="button" onClick={() => go(voidWhy === 'turned' ? 'lift' : 'refilm')}>{voidWhy === 'turned' ? ORIENT_WORDS.turned.filmAgain : MEET_WORDS.bench.filmAgain}</button></div>
               </div>
             )}

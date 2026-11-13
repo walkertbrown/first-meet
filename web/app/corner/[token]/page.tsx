@@ -36,16 +36,17 @@ export default async function CornerPage({ params }: { params: Promise<{ token: 
 
   if (view.kind === 'gone') {
     return (
-      <div className="try-page"><main className="try-col corner-col">
+      <div className="try-page meet-page"><main className="try-col corner-col">
         <h1 className="page-title">This corner page has closed.</h1>
         <div className="try-actions"><Link className="btn ghost" href="/">What is First Meet?</Link></div>
       </main></div>
     );
   }
 
+  // the before and closed states keep the live page's top, as gone does (LookieBot 4)
   if (view.kind === 'before') {
     return (
-      <div className="try-page"><main className="try-col corner-col">
+      <div className="try-page meet-page"><main className="try-col corner-col">
         <span className="eyebrow">{`First Meet · ${view.meetName}`}</span>
         <h1 className="page-title">{view.title}</h1>
         <p className="body-l">You&apos;re in her corner. On meet weekend, her lifts and their referee lights show up here as they&apos;re judged, and you can cheer each one.</p>
@@ -59,7 +60,7 @@ export default async function CornerPage({ params }: { params: Promise<{ token: 
   if (view.kind === 'closed') {
     // not LIVE: the meet has closed. No row, no list, no "Cheer" (5.4, item 90)
     return (
-      <div className="try-page"><main className="try-col corner-col">
+      <div className="try-page meet-page"><main className="try-col corner-col">
         <span className="eyebrow">{`First Meet · ${view.meetName}`}</span>
         <h1 className="page-title">{view.title}</h1>
         <p className="body-l">{CLOSED_BODY}</p>

@@ -97,10 +97,15 @@
   .result h2, .result p, .result .why, .result p + .why { transition: none; }
   .after { animation: none; }
   .try-stagecol .panel { transition: none; }
+  /* the held first frame's dim lifts at once with motion off */
+  .footage .held-dim { transition: none; }
 }
 
 /* The result's live region is always there, so the result is announced; empty, it takes no gap. */
 .panel-in > .live:empty { margin-top: -16px; }
+/* the side panel's gap is 12 px: the empty live region takes back exactly that, so the last button sits
+   16 px from the sheet's bottom (LookieBot 5) */
+.try-app.land .panel-in > .live:empty { margin-top: -12px; }
 
 /* ---------- The Barbell bench on the stage (look 5.14c) ---------- */
 /* 1. The tap. The words sit bottom left, where the spot segments were, over a 160 px scrim; in over
@@ -136,6 +141,7 @@
 /* Her bench clip holds on the "Press!" frame under the close call's dim. */
 .stage.benchclip .dim { opacity: .18; transition: opacity 500ms var(--ease-out); }
 .void-sheet { display: flex; flex-direction: column; flex: 1; }
+.void-sheet:focus { outline: none; }
 .void-sheet .sheet-title { margin: 0; }
 .void-sheet .body { margin: 8px 0 0; color: var(--ink-2); }
 .void-sheet .try-actions { margin-top: auto; padding-top: 24px; }

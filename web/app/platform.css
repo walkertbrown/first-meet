@@ -50,6 +50,10 @@
 /* ---------- The stage under the strip ---------- */
 .meet-app.try-app { height: calc(var(--vh) - 32px - var(--sa-t)); }
 .meet-app .hud { padding-top: 22px; }
+/* look 5.14c (LookieBot 3): a tap anywhere on the camera view marks the plate. Only the close and sound
+   buttons take a tap; the HUD band, the lamps, the wait line and the spot segments let it through. */
+.meet-app .hud, .meet-app .stage .lamps, .meet-app .waitline, .meet-app .spotparts, .meet-app .spotline { pointer-events: none; }
+.meet-app .hud button { pointer-events: auto; }
 /* The meet HUD is three lines deep, so the lamps and the wait line sit under it. */
 .meet-app .stage .lamps { top: 132px; }
 .meet-app .waitline { top: 222px; text-shadow: 0 1px 10px rgb(10 11 14 / .85), 0 0 2px rgb(10 11 14 / .6); }
