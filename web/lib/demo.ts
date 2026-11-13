@@ -90,8 +90,10 @@ export async function demoLimitHit(db: Db, lifterId: string, env = process.env):
 export const countDemoRun = (db: Db, lifterId: string, attemptId: string, sample: boolean, lift?: Lift, clip?: string) =>
   logEvent(db, 'demo_run', { lifter_id: lifterId, sample, ...(lift ? { lift } : {}), ...(clip ? { clip } : {}) }, attemptId);
 
-type SampleClip = { id: string; kind: 'good' | 'no' | 'close'; file: string; credit: string; meet?: { lift: Lift; reps: number; command_times: Record<string, number> } };
+type SampleClip = { id: string; kind: 'good' | 'no' | 'close'; file: string; credit: string; judged_frame_ms?: number; meet?: { lift: Lift; reps: number; command_times: Record<string, number> } };
 const CLIPS = samples.clips as SampleClip[];
+/** A sample's known judged frame (samples.json), by its id. */
+export const sampleJudgedMs = (id: string) => CLIPS.find(c => c.id === id)?.judged_frame_ms ?? null;
 /** The squat's sample lifts for the demo, in the order they cycle (5.36). */
 export const DEMO_SAMPLES = CLIPS.filter(c => c.meet?.lift === 'squat');
 /**

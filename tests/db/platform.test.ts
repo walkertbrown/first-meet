@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, lifters, meets } from '../../web/db/schema';
-import { startDemo } from '../../web/lib/demo';
+import { DEMO_SAMPLES, startDemo } from '../../web/lib/demo';
 import { declareNext, declareSheet } from '../../web/lib/meet-flow';
 import { platformView } from '../../web/lib/platform-view';
 import { heldFrame, judgedFrame } from '../../web/lib/attempt-state';
@@ -115,5 +115,14 @@ describe.skipIf(!URL_)('the platform', () => {
     expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toEqual({ status: 200, frame: { clip_url: 'https://r2.test/meet/h.webm?signed', ms: 3000 } });
     await db.update(attempts).set({ status: 'judged', call: 'white', judgedFrameMs: 2600 }).where(eq(attempts.id, d.attempt.id));
     expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toMatchObject({ frame: { ms: 2600 } });
+  });
+
+  it('a sample holds its known judged frame from before the call (samples.json), not the lift\'s middle', async () => {
+    const d = await startDemo(db, {});
+    const good = DEMO_SAMPLES.find(c => c.id === 'good-lift')!;
+    await db.update(attempts).set({ status: 'uploaded', isSampleClip: true, videoKey: 'meet/s.mp4', commandTimes: good.meet!.command_times }).where(eq(attempts.id, d.attempt.id));
+    expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toMatchObject({ status: 200, frame: { ms: 3800 } });
+    await db.update(attempts).set({ status: 'judged', call: 'white', judgedFrameMs: 3733 }).where(eq(attempts.id, d.attempt.id));
+    expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toMatchObject({ frame: { ms: 3733 } });
   });
 });

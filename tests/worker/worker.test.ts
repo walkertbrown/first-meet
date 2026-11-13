@@ -123,6 +123,11 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
       const light = ({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind];
       expect(v.call.light).toBe(light);
+      // the stage holds the sample's saved judged frame before the call (samples.json): it must be the
+      // worker's, within one frame of the second pass's 15 fps grid, so a re-cut sample can't drift
+      const saved = (s as { judged_frame_ms?: number }).judged_frame_ms;
+      expect(saved, `sample ${s.id}: judged_frame_ms in samples.json`).toBeTypeOf('number');
+      expect(Math.abs(v.measures.judged_frame_ms! - saved!), `sample ${s.id}: saved ${saved} ms, the worker's ${v.measures.judged_frame_ms} ms`).toBeLessThanOrEqual(Math.ceil(1000 / 15));
       // and from both sides, the far side forced (piece 6, item 94): the same call, its `kind`. The
       // 8837221 cut's sides were nearly tied, and its far side read a white.
       const w = judgeAttempt(frames.map(otherSide), first, 'squat', ct, undefined, s.meet.reps);

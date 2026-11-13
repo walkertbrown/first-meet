@@ -95,7 +95,7 @@ type BarMark = { x: number; y: number; size: number; n: number; on: boolean };
 type BenchPath = { pieces: { x: number; y: number }[][]; press: { x: number; y: number } | null };
 type Command = { text: string; kind: 'soft' | 'on' } | null;
 type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null; sample?: boolean; sample_clip?: { credit: string; reps: number } | null };
-type SampleClip = { id: string; file: string; credit: string; meet?: { reps: number; command_times: Record<string, number> } };
+type SampleClip = { id: string; file: string; credit: string; judged_frame_ms?: number; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
 const NO_PARTS: Record<Part, boolean> = { head: false, hips: false, knees: false, feet: false };
@@ -840,8 +840,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     });
     if (!alive()) return;
     video.pause(); setRecOn(false);
-    // until the server says which frame it judged, the one halfway from "Squat!" to "Rack!" is held
-    await seekTo(video, (ct.squat + ct.rack) / 2000).catch(() => {});
+    // a sample's judged frame is known (samples.json, checked by the worker test): held from "Sending to
+    // the judges", so the dimmed wait is on the bottom of the squat and the frame doesn't jump at the lights
+    // (The Playner, 13 Nov). A clip without one holds the frame halfway from "Squat!" to "Rack!".
+    await seekTo(video, (clip?.judged_frame_ms ?? (ct.squat + ct.rack) / 2) / 1000).catch(() => {});
     const snap: SideSnap = grab(video, d);
     freeze(snap);
     const replay = async () => {

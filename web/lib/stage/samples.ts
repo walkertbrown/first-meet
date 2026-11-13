@@ -11,6 +11,8 @@ export type Sample = {
   file: string;
   /** "This is a sample lift from <credit>." */
   credit: string;
+  /** The frame the worker judges, in ms (piece 6 checks it): held from "Sending to the judges". */
+  judged_frame_ms?: number;
 };
 
 export const SAMPLES = samples.clips as Sample[];

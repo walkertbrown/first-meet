@@ -4,7 +4,7 @@ import { eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts } from '@/db/schema';
 import { judgedLift } from '@/lib/queue';
-import { sampleOfAttempt } from '@/lib/demo';
+import { sampleJudgedMs, sampleOfAttempt } from '@/lib/demo';
 import { nearSide, type Frame, type Pt, type Side } from '@/lib/judge/pose';
 import type { R2 } from '@/lib/r2';
 import { heldFrameMs } from '@/lib/stage/held-frame';
@@ -177,5 +177,7 @@ export async function heldFrame(db: Db, store: Pick<R2, 'signedGet'>, id: string
   if (!a) return { status: 404, error: 'no such attempt' };
   if (a.lifterId !== lifterId) return { status: 403, error: 'not your attempt' };
   if (!a.videoKey) return { status: 404, error: 'no clip yet' };
-  return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms: heldFrameMs(a.commandTimes, a.judgedFrameMs) } };
+  // a sample's judged frame is known before the call, so it is held from the start (samples.json)
+  const known = a.judgedFrameMs ?? (a.isSampleClip ? await sampleOfAttempt(db, a.id, a.commandTimes).then(s => (s ? sampleJudgedMs(s.id) : null)) : null);
+  return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms: heldFrameMs(a.commandTimes, known) } };
 }
