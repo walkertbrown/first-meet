@@ -1,0 +1,50 @@
+68538 stage | hd- | dim0.00 | v0@0.0p |  | lamp |  |  | 
+69271 stage | hd- | dim0.00 | v0@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+69371 stage | hd- | dim0.00 | v1@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+69388 stage spotting | hd- | dim0.00 | v4@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+70289 stage spotting | hd- | dim0.00 | v4@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | Good spot.
+71789 stage | hd- | dim0.00 | v4@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | Bar is loaded.
+73291 stage recording | hd- | dim0.00 | v4@0.0 |  | lamp |  | Amanda King on YouTube (CC BY)@1 | SQUAT!
+74565 stage recording | hd- | dim0.00 | v4@1.3 |  | lamp |  | Amanda King on YouTube (CC BY)@1 | SQUAT!
+75719 stage recording | hd- | dim0.00 | v4@2.3p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | SQUAT!
+76855 stage recording | hd- | dim0.00 | v4@2.3p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | RACK!
+78373 stage judging frozen | hd- | dim0.00 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78438 stage judging frozen | hd- | dim0.01 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78504 stage judging frozen | hd- | dim0.02 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78571 stage judging frozen | hd- | dim0.03 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78637 stage judging frozen | hd- | dim0.04 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78704 stage judging frozen | hd- | dim0.05 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78770 stage judging frozen | hd- | dim0.06 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78837 stage judging frozen | hd- | dim0.07 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78903 stage judging frozen | hd- | dim0.08 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+78970 stage judging frozen | hd- | dim0.09 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79054 stage judging frozen | hd- | dim0.10 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79120 stage judging frozen | hd- | dim0.11 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79187 stage judging frozen | hd- | dim0.12 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79254 stage judging frozen | hd- | dim0.13 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79320 stage judging frozen | hd- | dim0.14 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79387 stage judging frozen | hd- | dim0.15 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79454 stage judging frozen | hd- | dim0.16 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79520 stage judging frozen | hd- | dim0.17 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79587 stage judging frozen | hd- | dim0.18 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79653 stage judging frozen | hd- | dim0.19 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79737 stage judging frozen | hd- | dim0.20 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79803 stage judging frozen | hd- | dim0.21 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79870 stage judging frozen | hd- | dim0.22 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+79937 stage judging frozen | hd- | dim0.23 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80003 stage judging frozen | hd- | dim0.24 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80071 stage judging frozen | hd- | dim0.25 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80137 stage judging frozen | hd- | dim0.26 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80204 stage judging frozen | hd- | dim0.27 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80270 stage judging frozen | hd- | dim0.28 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80354 stage judging frozen | hd- | dim0.29 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80420 stage judging frozen | hd- | dim0.30 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80487 stage judging frozen | hd- | dim0.31 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80553 stage judging frozen | hd- | dim0.32 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80620 stage judging frozen | hd- | dim0.33 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80687 stage judging frozen | hd- | dim0.34 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80754 stage judging frozen | hd- | dim0.35 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80820 stage judging frozen | hd- | dim0.36 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+80872 stage judging frozen | hd- | dim0.36 | v4@2.3p | FROZEN | lamp pulse |  | Amanda King on YouTube (CC BY)@1 | 
+80898 stage judging frozen | hd- | dim0.37 | v4@2.3p | FROZEN | lamp pulse |  | Amanda King on YouTube (CC BY)@1 | 
+80954 stage judging frozen | hd- | dim0.38 | v4@2.3p | FROZEN | lamp pulse |  | Amanda King on YouTube (CC BY)@1 | 

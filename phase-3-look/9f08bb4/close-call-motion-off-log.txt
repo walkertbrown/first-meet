@@ -1,0 +1,12 @@
+73421 stage | hd- | dim0.00 | v0@0.0p |  | lamp |  |  | 
+74140 stage | hd- | dim0.00 | v0@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+74254 stage | hd- | dim0.00 | v1@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+74385 stage spotting | hd- | dim0.00 | v4@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+75222 stage spotting | hd- | dim0.00 | v4@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | Good spot.
+76721 stage | hd- | dim0.00 | v4@0.0p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | Bar is loaded.
+78222 stage recording | hd- | dim0.00 | v4@0.1 |  | lamp |  | Amanda King on YouTube (CC BY)@1 | SQUAT!
+79421 stage recording | hd- | dim0.00 | v4@1.3 |  | lamp |  | Amanda King on YouTube (CC BY)@1 | SQUAT!
+80634 stage recording | hd- | dim0.00 | v4@2.3p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | SQUAT!
+81880 stage recording | hd- | dim0.00 | v4@2.3p |  | lamp |  | Amanda King on YouTube (CC BY)@1 | RACK!
+83406 stage judging frozen | hd- | dim0.38 | v4@2.3p | FROZEN | lamp |  | Amanda King on YouTube (CC BY)@1 | 
+85909 stage judging frozen | hd- | dim0.38 | v4@2.3p | FROZEN | lamp pulse |  | Amanda King on YouTube (CC BY)@1 | 
