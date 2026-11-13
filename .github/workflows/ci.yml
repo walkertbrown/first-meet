@@ -54,7 +54,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # The runner's apt mirrors drop out at times (Nov 11, twice): try again, then Chromium alone, since the
+      # image carries most of its libraries. A missing one still fails the tests themselves, plainly.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium || (sleep 45 && npx playwright install --with-deps chromium) || npx playwright install chromium
       - run: npm run test:judge -- tests/judge/judge.spec.ts
   worker:
     # The Workflow's pose finder (worker/, Python MediaPipe) on the test clips, in its two
@@ -109,7 +112,10 @@ jobs:
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: git push --force origin HEAD:refs/heads/staging
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # The runner's apt mirrors drop out at times (Nov 11, twice): try again, then Chromium alone, since the
+      # image carries most of its libraries. A missing one still fails the tests themselves, plainly.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium || (sleep 45 && npx playwright install --with-deps chromium) || npx playwright install chromium
       - name: Wait for staging to run this commit
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         run: node scripts/wait-for-staging.mjs "$STAGING_URL/healthz" "${{ github.event.pull_request.head.sha }}" 20
