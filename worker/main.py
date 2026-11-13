@@ -45,8 +45,9 @@ COMMIT = (os.environ.get('RENDER_GIT_COMMIT') or 'unknown')[:7]
 APP_URL = os.environ.get('APP_URL', '').rstrip('/')
 WORKER_IDLE_S = float(os.environ.get('WORKER_IDLE_S', 20))
 WORKER_MAX_S = float(os.environ.get('WORKER_MAX_S', 15 * 60))
-ZOOM_FPS = 15
-FIRST_FPS = 5
+ZOOM_FPS = poses.ZOOM_FPS
+FIRST_FPS = poses.FIRST_FPS
+zoom_times = poses.zoom_times
 
 # Render retries a task 3 times by default; the web service owns retrying, through the lease (3.9).
 NO_RETRY = Retry(max_retries=0, wait_duration_ms=1000)
@@ -75,20 +76,6 @@ def post(path: str, payload: dict, timeout: float = 30) -> tuple[int, dict | Non
         return 0, None
 
 
-def zoom_times(duration: float, windows: list[list[int]]) -> list[int]:
-    """Every frame of the 15-a-second grid inside each window, the first pass's included.
-
-    The landmarker tracks the body from frame to frame (VIDEO mode, as on the phone and in
-    Chromium), so a point depends on the frames before it. Found again inside a window, in
-    one unbroken run, the frames near the calls match an unbroken 15-a-second pass; the
-    web service keeps pass 2's point wherever both passes have a frame.
-    """
-    out: set[int] = set()
-    for a, b in windows:
-        out.update(poses.grid(duration, ZOOM_FPS, max(0, a), b))
-    return sorted(out)
-
-
 def one_attempt(job: dict) -> dict:
     """Two passes on one attempt (plan 2.3). The web service judges after pass 2."""
     t0 = time.monotonic()
@@ -97,16 +84,14 @@ def one_attempt(job: dict) -> dict:
         urllib.request.urlretrieve(job['video_url'], path)
         got = time.monotonic()
         info = poses.clip_info(path)
-        first = poses.grid(info.duration, FIRST_FPS)
-        f1 = poses.find_split(path, first, poses.middle(first))
+        f1 = poses.first_pass(path, info.duration)
         status, zoom = post('/api/internal/poses', {
             'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'), 'pass': 1,
             'w': info.w, 'h': info.h, 'duration': info.duration, 'frames': f1,
         })
         if status != 200 or not zoom:
             return {'attempt_id': job['attempt_id'], 'error': f'pass 1 post: {status}'}
-        second = zoom_times(info.duration, zoom.get('windows', []))  # the web service's zoomWindows()
-        f2 = poses.find_split(path, second, zoom.get('split_ms'))
+        f2 = poses.second_pass(path, info.duration, zoom.get('windows', []), zoom.get('split_ms'))  # its zoomWindows()
         secs = time.monotonic() - t0
         status, _ = post('/api/internal/poses', {
             'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'), 'pass': 2,

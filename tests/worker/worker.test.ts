@@ -114,10 +114,12 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
     it(`demo sample ${s.id}: on the worker's points it is a ${s.kind === 'good' ? 'good lift' : s.kind === 'no' ? 'no lift' : 'close call'}`, () => {
       const file = join(__dirname, '../../content/samples', s.file);
       const ct = s.meet.command_times;
-      const first = runFile(file, ['--fps', '5']);
+      // fed exactly as the live server feeds it (worker/main.py's two passes, through poses.first_pass and
+      // poses.second_pass): pass 1 split halfway, as staging does. Run unsplit, the close call's deepest frame
+      // came out 1200 ms here and 1000 ms on all 40 of staging's runs (The Playner, 13 Nov).
+      const first = runFile(file, ['--pass1']);
       const zoom = zoomWindows(first.frames, first, 'squat', ct);
-      const times = [...new Set(zoom.windows.flatMap(w => grid15(first.duration, w)))].sort((a, b) => a - b);
-      const second = times.length ? runFile(file, ['--times', times.join(','), ...(zoom.splitMs !== null ? ['--split', String(zoom.splitMs)] : [])]) : { frames: [], secs: 0 };
+      const second = zoom.windows.length ? runFile(file, ['--windows', JSON.stringify(zoom.windows), ...(zoom.splitMs !== null ? ['--split', String(zoom.splitMs)] : [])]) : { frames: [], secs: 0 };
       const frames = mergePasses(first.frames, second.frames);
       const v = judgeAttempt(frames, first, 'squat', ct, undefined, s.meet.reps);
       timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
