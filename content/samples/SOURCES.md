@@ -15,7 +15,7 @@ filter or grade.
 |---|---|---|---|---|---|
 | `good-lift-wabba.mp4` | good lift | "Supported Squats", https://www.youtube.com/watch?v=4_MDTbRIO0I (July 5, 2018) | WABBA (@WabbaQualifications) | CC BY 3.0 | 20.8 s to 26.6 s |
 | `no-lift-half-squat-motion.mp4` | no lift | "Mini Squats", https://www.youtube.com/watch?v=wqCvuhfRXRU (June 17, 2019) | Motion (@motion2067) | CC BY 3.0 | 13.9 s to 19.1 s |
-| `close-call-box-squat-king.mp4` | close call | "Body Weight Box Squat", https://www.youtube.com/watch?v=tvu_4C-bDqU (Jan 20, 2020) | Amanda King (@amandak_bestie) | CC BY 3.0 | 22.7 s to 25.0 s |
+| `close-call-box-squat-king-18s.mp4` | close call | "Body Weight Box Squat", https://www.youtube.com/watch?v=tvu_4C-bDqU (Jan 20, 2020) | Amanda King (@amandak_bestie) | CC BY 3.0 | 18.7 s to 21.3 s |
 
 - **The good lift:** a woman in a plain studio with a wooden floor, side-on,
   holding a chair back for balance, squats with her hip crease below her knee

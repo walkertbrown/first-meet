@@ -109,11 +109,11 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
   // And it must sit well inside the band: staging's judge read the Pexels 8837118 cut at -0.087
   // and -0.121 on two runs of the same file (GitHub's worker: -0.073), so a close call within
   // CLOSE_MARGIN of the band's edges is a red or a white on some machine.
-  // The margin is the clip's own spread across machines, with room. The Amanda King box squat, fed as
-  // the live server feeds it, read -0.067 here (65f8dc5) and -0.063 to -0.084 on 40 staging runs, all
-  // close calls: at most 0.017 from CI's reading. 0.04 came from the 8837118 cut's 0.034 over two runs,
-  // a different clip; this one sits 0.033 inside the red edge (The Playner told, 13 Nov).
-  const CLOSE_MARGIN = 0.03;
+  // The close call is Amanda King's box squat at 18.7 s, picked because fed as the live server feeds
+  // it, both sides read at least 0.04 inside the band (-0.052 and -0.032 on a measuring run). The rep
+  // at 22.7 s read -0.067 here and -0.063 to -0.084 over 40 staging runs: up to 0.017 from CI's reading
+  // (The Playner, 13 Nov: the guard back at 0.04 once a rep clears it).
+  const CLOSE_MARGIN = 0.04;
   for (const s of samples.clips) {
     it(`demo sample ${s.id}: on the worker's points it is a ${s.kind === 'good' ? 'good lift' : s.kind === 'no' ? 'no lift' : 'close call'}`, () => {
       const file = join(__dirname, '../../content/samples', s.file);

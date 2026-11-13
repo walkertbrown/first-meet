@@ -1,5 +1,5 @@
 {
-  "$comment": "The sample lifts (plan 5.2). Each clip's source, licence and credit are in SOURCES.md. LookieBot checks them before phase 1 merges. `meet`: the stored command times the demo meet uses when a sample lift stands in for a filmed attempt (5.36), and `reps`, the reps in the clip: a sample standing in for a Home attempt is judged on them. The good and no lifts start on \"Squat!\"; the close call 0.3 s before it. tests/unit/samples-meet.test.ts checks the server's judge calls each one as its kind. `judged_frame_ms`: the frame the worker judges, which the stage holds from \"Sending to the judges\" until the lights (and after a reload); tests/worker/worker.test.ts checks it within one frame, on the worker fed exactly as the live server feeds it (pass 1 split halfway).",
+  "$comment": "The sample lifts (plan 5.2). Each clip's source, licence and credit are in SOURCES.md. LookieBot checks them before phase 1 merges. `meet`: the stored command times the demo meet uses when a sample lift stands in for a filmed attempt (5.36), and `reps`, the reps in the clip: a sample standing in for a Home attempt is judged on them. The good and no lifts start on \"Squat!\"; the close call 0.13 s before it. tests/unit/samples-meet.test.ts checks the server's judge calls each one as its kind. `judged_frame_ms`: the frame the worker judges, which the stage holds from \"Sending to the judges\" until the lights (and after a reload); tests/worker/worker.test.ts checks it within one frame, on the worker fed exactly as the live server feeds it (pass 1 split halfway).",
   "clips": [
     {
       "id": "good-lift",
@@ -36,16 +36,16 @@
     {
       "id": "close-call",
       "kind": "close",
-      "file": "close-call-box-squat-king.mp4",
+      "file": "close-call-box-squat-king-18s.mp4",
       "credit": "Amanda King on YouTube (CC BY)",
-      "judged_frame_ms": 1000,
+      "judged_frame_ms": 1400,
       "meet": {
         "lift": "squat",
         "reps": 1,
         "command_times": {
           "loaded": 0,
-          "squat": 300,
-          "rack": 2050
+          "squat": 133,
+          "rack": 2349
         }
       }
     }
