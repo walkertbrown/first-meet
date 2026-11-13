@@ -83,10 +83,34 @@ export function screenTurn(q: Quarter): 0 | 90 | -90 {
   return q === 90 ? 90 : q === -90 ? -90 : 0;
 }
 
+/**
+ * Look 4b: which way to turn the camera frames before judging. With rotation lock on the browser still
+ * delivers portrait frames, so on a phone on its side she lies across them; turned by this, she's upright.
+ * Only when the frames' shape doesn't match the phone's: a screen that did turn gives landscape frames.
+ * The front camera's frames aren't mirrored: with the phone's top to her left (q = 90) her head is at the
+ * frame's left, so a clockwise quarter turn (+90) stands her up. To check on a real iPhone and Android.
+ */
+export function frameTurn(q: Quarter | null, w: number, h: number): 0 | 90 | -90 {
+  if (q !== 90 && q !== -90) return 0;
+  return h > w ? q : 0;
+}
+
+/**
+ * Look 4b's safe areas once the screen is drawn turned: `env()` still reports portrait. The side the phone's
+ * top has turned to carries the notch, the side its bottom turned to the home bar; the visual top and
+ * bottom get the portrait left and right. As [top, right, bottom, left] of the drawn screen.
+ */
+export function drawnInsets(turn: 0 | 90 | -90): [string, string, string, string] {
+  const e = (s: string) => `env(safe-area-inset-${s})`;
+  if (turn === 90) return [e('right'), e('bottom'), e('left'), e('top')];
+  if (turn === -90) return [e('left'), e('top'), e('right'), e('bottom')];
+  return [e('top'), e('right'), e('bottom'), e('left')];
+}
+
 export type PhoneKind = 'iphone' | 'android' | null;
 export function phoneKind(ua: string, motionAsks: boolean): PhoneKind {
-  if (motionAsks || /iPhone|iPad|iPod/.test(ua)) return 'iphone';
   if (/Android/.test(ua)) return 'android';
+  if (motionAsks || /iPhone|iPad|iPod/.test(ua)) return 'iphone';
   return null;
 }
 

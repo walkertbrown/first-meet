@@ -34,7 +34,7 @@ export const pastDeadline = (m: MeetTimes, now = new Date()) => {
  * Whether this upload is refused (3.8): a `recorded_at` at or after `closes_at` is `after_close`;
  * any upload step after the clip deadline is `upload_late`. Null: carry on.
  */
-export function windowRefusal(m: MeetTimes, recordedAt: Date | null, now = new Date()): Exclude<VoidReason, 'turned' | 'lost_bar'> | null {
+export function windowRefusal(m: MeetTimes, recordedAt: Date | null, now = new Date()): VoidReason | null {
   if (!closes(m) || !m.closesAt) return null;
   if (recordedAt && recordedAt >= m.closesAt) return 'after_close';
   if (pastDeadline(m, now)) return 'upload_late';

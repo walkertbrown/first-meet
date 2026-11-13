@@ -2,7 +2,7 @@
    stage itself is stage.css and try.css. */
 
 /* ---------- Chalk pages under the demo strip ---------- */
-.meet-page { min-height: calc(100dvh - 32px - env(safe-area-inset-top)); padding-top: 16px; }
+.meet-page { min-height: calc(var(--vh) - 32px - var(--sa-t)); padding-top: 16px; }
 @media (min-width: 1024px) { .meet-page { padding-top: 40px; } }
 
 /* ---------- The attempt card (look 5.6, 5.14b) ---------- */
@@ -28,7 +28,7 @@
    short screens), as when it led the actions group; the links follow it 12 px apart. */
 .look-56 { overflow-x: clip; }
 .look-56 .attempt-card { margin-bottom: 24px; }
-.ready-dock { position: sticky; z-index: 1; bottom: calc(16px + env(safe-area-inset-bottom)); margin-top: auto; display: flex; flex-direction: column; }
+.ready-dock { position: sticky; z-index: 1; bottom: calc(16px + var(--sa-b)); margin-top: auto; display: flex; flex-direction: column; }
 /* 1 px, straight after the button, taking no space: its top is the button's own bottom edge
    (-16 cancels the column's gap), and -1 below gives its pixel back. Edge to edge with the
    observer's line counts as on screen, so docked starts the same pixel sticky lifts. */
@@ -37,7 +37,7 @@
 /* docked: a --chalk band, full width, from 12 px above the button to the bottom edge, a 1 px rule
    along its top. No shadow, no blur, no motion. */
 .ready-dock[data-docked]::before { content: ''; position: absolute; z-index: -1; top: -12px; left: -100vmax; right: -100vmax;
-  bottom: calc(-16px - env(safe-area-inset-bottom)); background: var(--chalk); border-top: 1px solid var(--rule); }
+  bottom: calc(-16px - var(--sa-b)); background: var(--chalk); border-top: 1px solid var(--rule); }
 @media (min-width: 1024px) { .ready-dock { margin-top: 16px; } }
 @media (max-height: 700px) {
   .look-56 .platform-top { margin-bottom: 8px; }
@@ -48,7 +48,7 @@
 }
 
 /* ---------- The stage under the strip ---------- */
-.meet-app.try-app { height: calc(100dvh - 32px - env(safe-area-inset-top)); }
+.meet-app.try-app { height: calc(var(--vh) - 32px - var(--sa-t)); }
 .meet-app .hud { padding-top: 22px; }
 /* The meet HUD is three lines deep, so the lamps and the wait line sit under it. */
 .meet-app .stage .lamps { top: 132px; }
@@ -129,14 +129,21 @@
 
 /* Bottom sheet (look 5.10) */
 .sheet-scrim { position: fixed; inset: 0; z-index: 50; background: rgb(5 6 10 / .5); display: flex; align-items: flex-end; justify-content: center; animation: scrim-in 320ms var(--ease-out); }
-.bottom-sheet { width: 100%; max-width: 560px; max-height: calc(100dvh - 24px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent;
+.bottom-sheet { width: 100%; max-width: 560px; max-height: calc(var(--vh) - 24px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent;
   background: var(--chalk); color: var(--ink); border-radius: 12px 12px 0 0; box-shadow: var(--sheet-shadow);
-  padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; animation: sheet-up 480ms var(--ease-sheet); }
+  padding: 10px 20px calc(20px + var(--sa-b)); display: flex; flex-direction: column; gap: 12px; animation: sheet-up 480ms var(--ease-sheet); }
 .bottom-sheet .grab { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--rule); margin-bottom: 8px; }
 .bottom-sheet .try-actions { margin-top: 8px; padding-top: 0; }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .sheet-scrim, .bottom-sheet { animation: none; } }
+/* Look 4a: on a phone on its side the sheet comes in from the right instead: 400 px wide and full height, with
+   a 12 px radius on its left corners, the same 480 ms and --ease-sheet. Drawn turned (4b), from her right. */
+:root:has(.try-app.land) .sheet-scrim { align-items: stretch; justify-content: flex-end; }
+:root:has(.try-app.land) .bottom-sheet { width: 400px; max-width: 400px; max-height: none; height: 100%; border-radius: 12px 0 0 12px;
+  padding: max(16px, var(--sa-t)) calc(20px + var(--sa-r)) calc(20px + var(--sa-b)) 20px; animation-name: sheet-left; }
+:root:has(.try-app.land) .bottom-sheet .grab { display: none; }
+@keyframes sheet-left { from { transform: translateX(100%); } to { transform: none; } }
 
 /* Choices (look 5.9): whole cards that are radios; the ring is the selection. */
 .choices { border: 0; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -156,7 +163,7 @@
 .choice .weight-m .unit { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 16px; letter-spacing: 0; margin-left: 4px; color: var(--ink-2); }
 
 /* Banner (look 5.10): referee lights in */
-.banner { position: fixed; z-index: 100; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; max-width: 536px; margin: 0 auto;
+.banner { position: fixed; z-index: 100; top: calc(12px + var(--sa-t)); left: 12px; right: 12px; max-width: 536px; margin: 0 auto;
   display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; border-radius: 4px; text-align: left; cursor: pointer;
   background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--rule), 0 18px 40px -18px rgb(0 0 0 / .5); font: inherit; animation: banner-in 420ms var(--ease-sheet); }
 .banner-lamps { display: flex; gap: 6px; flex: none; }
@@ -165,7 +172,7 @@
 @media (prefers-reduced-motion: reduce) { .banner { animation: none; } }
 /* A banner is above everything, sheets included (look 5.10, item 92): the page, the scrim, the sheet,
    then the banner, the highest layer the page has. An open sheet's top edge stays under its bottom edge. */
-:root:has(.banner) .bottom-sheet { max-height: calc(100dvh - var(--banner-bottom, 24px) - 8px); }
+:root:has(.banner) .bottom-sheet { max-height: calc(var(--vh) - var(--banner-bottom, 24px) - 8px); }
 
 /* ---------- "You totaled" (plan 5.28; type from look's scale, parts from the meet card) ---------- */
 .total-page { gap: 0; }

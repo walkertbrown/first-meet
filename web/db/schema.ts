@@ -133,7 +133,9 @@ export const judgedSets = pgTable('judged_sets', {
 
 export type AttemptStatus = 'declared' | 'recording' | 'uploading' | 'queued' | 'judging' | 'close_call' | 'judged' | 'void';
 /** Why a `void` attempt isn't judged (plan 3.2, 3.8): it's never a red, and it's never lifted again. */
-export type VoidReason = 'turned' | 'lost_bar' | 'after_close' | 'upload_late';
+// item 93: a turn or a lost bar never voids the attempt (it stays declared, with a `turned_void` or
+// `lost_bar_void` event); only the final cases do (3.8)
+export type VoidReason = 'after_close' | 'upload_late';
 
 export const attempts = pgTable('attempts', {
   id: id(),

@@ -1,6 +1,6 @@
 // A phone that turned during the lift (plan 3.10): gravity past 60° for 500 ms from "Bar is loaded." on.
 // The attempt is void, never judged, and "Film again" re-films the same attempt, so, like the bench's lost
-// bar (bench-void.ts), it stays declared and the server only counts it, for /ops "Bench, phone and
+// bar (lost-bar-void.ts), it stays declared and the server only counts it, for /ops "Bench, phone and
 // referees" (2.4).
 import { eq } from 'drizzle-orm';
 import type { Db } from '@/db';

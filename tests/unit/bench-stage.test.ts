@@ -17,15 +17,17 @@ describe('look 4a: a phone on its side', () => {
   it('every stage takes the land layout', () => {
     for (const f of ['meet-attempt', 'try-lift', 'spot-check']) {
       const s = src(`web/components/${f}.tsx`);
-      expect(s, f).toContain('const land = useLand();');
+      // the meet stage is also land when it draws the turn itself (look 4b, rotation lock on)
+      expect(s, f).toContain(f === 'meet-attempt' ? 'const landScreen = useLand();' : 'const land = useLand();');
       expect(s, f).toContain("${land ? ' land' : ''}");
+      if (f === 'meet-attempt') expect(s).toContain('const land = landScreen || drawn !== 0;');
     }
   });
   it('the panel is a 340 px right column with a 56 px primary; the lamps are 56 px, 20 px apart, 16 px under the top', () => {
     expect(css).toContain('.try-app.land .try-stagecol { flex-direction: row; }');
     expect(css).toMatch(/\.try-app\.land \.try-stagecol \.panel \{ width: 340px;/);
     expect(css).toContain('.try-app.land .panel-in .btn { min-height: 56px; }');
-    expect(css).toContain('.try-app.land .stage .lamps { top: calc(16px + env(safe-area-inset-top)); gap: 20px; }');
+    expect(css).toContain('.try-app.land .stage .lamps { top: calc(16px + var(--sa-t)); gap: 20px; }');
     expect(css).toContain('.try-app.land .stage .lamp { width: 56px; height: 56px; }');
     expect(css).toContain('.try-app.land .waitline { top: 88px; }');
   });

@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { apart, GravityWatch, nearestQuarter, ORIENT_WORDS, phoneKind, screenTurn, tiltDeg, wayFor, wayOf } from '../../web/lib/stage/orient';
+import { apart, drawnInsets, frameTurn, GravityWatch, nearestQuarter, ORIENT_WORDS, phoneKind, screenTurn, tiltDeg, wayFor, wayOf } from '../../web/lib/stage/orient';
 
 const G = 9.81;
 const rad = (d: number) => (d * Math.PI) / 180;
@@ -101,6 +101,8 @@ describe('look 4b: the screen turns the other way to the phone', () => {
     expect(phoneKind('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)', false)).toBe('iphone');
     expect(phoneKind('Mozilla/5.0 (Macintosh)', true)).toBe('iphone'); // an iPad that asks for motion
     expect(phoneKind('Mozilla/5.0 (Linux; Android 14; Pixel 8)', false)).toBe('android');
+    // a newer Chrome on Android may carry requestPermission too: still Android, never the iPhone's words
+    expect(phoneKind('Mozilla/5.0 (Linux; Android 14; Pixel 8)', true)).toBe('android');
     expect(phoneKind('Mozilla/5.0 (X11; Linux x86_64)', false)).toBeNull();
   });
 });
@@ -142,5 +144,59 @@ describe('on the meet stage', () => {
     expect(css).toMatch(/\.phone-draw \{ width: 56px; height: 96px; border: 2px solid var\(--stage-ink\); border-radius: 4px;/);
     expect(css).toContain('animation: phone-turn 1400ms var(--ease-in-out) 3 both;');
     expect(600 / 1400).toBeCloseTo(0.42857, 4);
+  });
+  it('item 93: on a turn, the end word plays at once with its voice, even before the start command', () => {
+    expect(meet).toContain("show(endWord); voice.say(lift === 'deadlift' ? 'down' : 'rack');\n          return done();");
+    expect(meet).not.toContain("if (liftAt) { show(endWord)");
+  });
+  it('look 4a (item 93): the 38% dim, the line 16 px under the drawing, a 200 ms fade out', () => {
+    expect(css).toContain('.turnphone { position: absolute; inset: 0; z-index: 2; padding: 0 20px; background: rgb(0 0 0 / .38);');
+    expect(css).toContain('margin-bottom: 16px; animation: phone-turn');
+    expect(css).toContain('.turnphone.out { opacity: 0; transition: opacity 200ms var(--ease-out); }');
+    expect(meet).toContain("const turnUp = useLinger(turnShown && (phase === 'spot' || phase === 'good-spot' || phase === 'tap'), 200);");
+  });
+  it('look 4a: the segments and the set-up line wait for the drawing, then fade in over 200 ms', () => {
+    expect(css).toContain('.stage.turning .spotparts { opacity: 0;');
+    expect(css).toContain('.stage.spotting.turned-once:not(.turning) .spotparts { transition-duration: 200ms; }');
+    expect(css).toContain('.stage.turned-once .spotline { animation: tw-in 200ms var(--ease-out); }');
+    expect(meet).toContain("phase === 'spot' && line && !turnUp.on && <p className=\"spotline\"");
+  });
+  it('look 4a: "Not now" or no sensor dims the drawing to 40%, still and already turned', () => {
+    expect(css).toContain('.turnphone.dimmed .phone-draw { opacity: .4; animation: none; transform: rotate(-90deg); }');
+    expect(meet).toContain("orient.noMotion ? ' dimmed' : ''");
+  });
+});
+
+describe('look 4b with rotation lock on: the frames and the page are turned for her', () => {
+  it('portrait frames from a phone on its side are turned the way the phone turned; landscape frames are not', () => {
+    expect(frameTurn(90, 720, 1280)).toBe(90);
+    expect(frameTurn(-90, 720, 1280)).toBe(-90);
+    expect(frameTurn(90, 1280, 720)).toBe(0);
+    expect(frameTurn(0, 720, 1280)).toBe(0);
+    expect(frameTurn(180, 720, 1280)).toBe(0);
+    expect(frameTurn(null, 720, 1280)).toBe(0);
+  });
+  it('the drawn page takes its safe areas from the edge that is now that side', () => {
+    expect(drawnInsets(0)).toEqual(['top', 'right', 'bottom', 'left'].map(e => `env(safe-area-inset-${e})`));
+    // turned clockwise, her top is the phone's right edge
+    expect(drawnInsets(90)).toEqual(['right', 'bottom', 'left', 'top'].map(e => `env(safe-area-inset-${e})`));
+    expect(drawnInsets(-90)).toEqual(['left', 'top', 'right', 'bottom'].map(e => `env(safe-area-inset-${e})`));
+  });
+  it('the body is the turned wrapper, 100dvh wide and 100vw tall, and the layout reads --vw, --vh and --sa-*', () => {
+    const g = readFileSync(join(__dirname, '../../web/app/globals.css'), 'utf8');
+    expect(g).toContain('html.rot body');
+    expect(g).toMatch(/transform: translate\(-50%, ?-50%\) rotate\(90deg\)/);
+    expect(g).toMatch(/\[data-turn="-90"\][^{]*\{[^}]*rotate\(-90deg\)/);
+    for (const f of ['try.css', 'platform.css', 'stage.css', 'demo.css']) {
+      const c = readFileSync(join(__dirname, '../../web/app', f), 'utf8');
+      expect(c, f).not.toMatch(/env\(safe-area-inset-/);
+      expect(c, f).not.toMatch(/100dvh/);
+    }
+  });
+  it('the stage only draws the turn on a touch phone whose screen stayed tall, and holds it through the lift', () => {
+    const meet = readFileSync(join(__dirname, '../../web/components/meet-attempt.tsx'), 'utf8');
+    expect(meet).toContain("view === 'stage' && orient.touch && !orient.screenSide && sideways ? screenTurn(orient.quarter!) : 0");
+    expect(meet).toContain("useDrawnTurn(wantTurn, view === 'stage' && (phase === 'loaded' || phase === 'lifting' || phase === 'held'))");
+    expect(meet).toContain('if (reTurn) { await runCameraRef.current?.(spotOnly, atTap); return; }');
   });
 });

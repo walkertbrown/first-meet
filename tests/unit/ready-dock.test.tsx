@@ -48,8 +48,8 @@ describe('"I\'m ready" docks (look 5.6)', () => {
   });
 
   it('the CSS: sticky 16 px plus the safe area; the chalk band from 12 px above to the bottom edge, ruled; no motion', () => {
-    expect(css).toMatch(/\.ready-dock \{ position: sticky; z-index: 1; bottom: calc\(16px \+ env\(safe-area-inset-bottom\)\);/);
-    expect(css).toMatch(/\.ready-dock\[data-docked\]::before \{[^}]*top: -12px;[^}]*bottom: calc\(-16px - env\(safe-area-inset-bottom\)\); background: var\(--chalk\); border-top: 1px solid var\(--rule\); \}/);
+    expect(css).toMatch(/\.ready-dock \{ position: sticky; z-index: 1; bottom: calc\(16px \+ var\(--sa-b\)\);/);
+    expect(css).toMatch(/\.ready-dock\[data-docked\]::before \{[^}]*top: -12px;[^}]*bottom: calc\(-16px - var\(--sa-b\)\); background: var\(--chalk\); border-top: 1px solid var\(--rule\); \}/);
     const dockRules = css.split('\n').filter(l => /ready-/.test(l)).join('\n');
     expect(dockRules).not.toMatch(/transition|animation|box-shadow|blur/);
     expect(css).toMatch(/\.ready-sentinel \{ display: block; height: 1px; margin: -16px 0 -1px;/);

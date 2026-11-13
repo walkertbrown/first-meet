@@ -64,9 +64,9 @@
 .credit { position: absolute; left: 20px; bottom: 18px; z-index: 3; font-size: 14px; line-height: 18px; color: rgb(241 239 232 / .7); }
 
 @media (max-width: 760px) {
-  .hud { padding-top: calc(18px + env(safe-area-inset-top)); }
-  .stage .lamps { top: calc(76px + env(safe-area-inset-top)); }
-  .waitline { top: calc(166px + env(safe-area-inset-top)); }
+  .hud { padding-top: calc(18px + var(--sa-t)); }
+  .stage .lamps { top: calc(76px + var(--sa-t)); }
+  .waitline { top: calc(166px + var(--sa-t)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .stage.recording .rec b { animation: none; }

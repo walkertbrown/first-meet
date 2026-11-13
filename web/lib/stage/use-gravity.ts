@@ -10,6 +10,12 @@ const asker = (): AskFn | null => {
   const D = typeof window !== 'undefined' ? (window as unknown as { DeviceMotionEvent?: { requestPermission?: AskFn } }).DeviceMotionEvent : undefined;
   return typeof D?.requestPermission === 'function' ? D.requestPermission.bind(D) : null;
 };
+const android = () => typeof navigator !== 'undefined' && /Android/.test(navigator.userAgent);
+/**
+ * The motion step is the iPhone's (3.10). A newer Chrome on Android may also carry `requestPermission`; there
+ * it gets no step and no iPhone words, and is asked quietly on her "I'm ready" tap instead (renew).
+ */
+const stepAsker = (): AskFn | null => (android() ? null : asker());
 
 const KEY = 'fm-motion';
 export type MotionAnswer = 'granted' | 'not-now';
@@ -25,6 +31,8 @@ export type Orientation = {
   quarter: Quarter | null;
   /** the screen itself is wider than tall */
   screenSide: boolean;
+  /** a touch phone (pointer: coarse): a desktop never turns or draws turned */
+  touch: boolean;
   kind: PhoneKind;
   /** an iPhone that hasn't been asked: the motion step shows before the first bench's camera (look 4b) */
   needsAsk: boolean;
@@ -42,7 +50,7 @@ export type Orientation = {
 export function useOrientation(): Orientation {
   const watchRef = useRef<GravityWatch | null>(null);
   // iPhones can report the axes the other way round; the watch learns the real sign from upright samples
-  watchRef.current ??= new GravityWatch(asker() ? -1 : 1);
+  watchRef.current ??= new GravityWatch(stepAsker() ? -1 : 1);
   const [quarter, setQuarter] = useState<Quarter | null>(null);
   const [screenSide, setScreenSide] = useState(false);
   const [coarse, setCoarse] = useState(false);
@@ -55,8 +63,8 @@ export function useOrientation(): Orientation {
 
   useEffect(() => {
     setAnswer(readAnswer());
-    setAsks(asker() !== null);
-    setKind(phoneKind(navigator.userAgent, asker() !== null));
+    setAsks(stepAsker() !== null);
+    setKind(phoneKind(navigator.userAgent, stepAsker() !== null));
     const land = window.matchMedia('(orientation: landscape)');
     const touch = window.matchMedia('(pointer: coarse)');
     const on = () => { setScreenSide(land.matches); setCoarse(touch.matches); };
@@ -91,6 +99,7 @@ export function useOrientation(): Orientation {
   const notNow = useCallback(() => { saveAnswer('not-now'); setAnswer('not-now'); }, []);
   const renew = useCallback(() => {
     const ask = asker();
+    if (ask && android()) { void ask().catch(() => {}); return; }
     if (ask && readAnswer() === 'granted') void ask().then(r => { if (r !== 'granted') setDenied(true); }).catch(() => {});
   }, []);
 
@@ -99,6 +108,7 @@ export function useOrientation(): Orientation {
     way: gravityWay ?? (coarse ? (screenSide ? 'side' : 'tall') : null),
     quarter,
     screenSide,
+    touch: coarse,
     kind,
     needsAsk: asks && answer === null,
     noMotion: quarter === null && coarse && (asks ? denied || answer === 'not-now' : silent),

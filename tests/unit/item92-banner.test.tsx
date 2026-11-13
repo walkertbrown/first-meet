@@ -54,7 +54,7 @@ describe('item 92: the banner over a sheet', () => {
     const banner = zOf(p, '.banner');
     expect(banner).toBeGreaterThan(zOf(p, '.sheet-scrim'));
     expect(banner).toBeGreaterThan(zOf(c, '.corner-player'));
-    expect(p).toContain(':root:has(.banner) .bottom-sheet { max-height: calc(100dvh - var(--banner-bottom, 24px) - 8px); }');
+    expect(p).toContain(':root:has(.banner) .bottom-sheet { max-height: calc(var(--vh) - var(--banner-bottom, 24px) - 8px); }');
   });
 
   it('every banner uses the shared layer: its room on the root, and the press that keeps focus', () => {

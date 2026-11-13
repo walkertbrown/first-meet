@@ -36,8 +36,11 @@ import samples from '../../content/samples/samples.json';
 import { WaitLine } from '@/components/wait-line';
 import { useLand } from '@/lib/stage/land';
 import { LiftIcon } from '@/components/chrome';
-import { ORIENT_WORDS, wayFor, type Quarter } from '@/lib/stage/orient';
+import { frameTurn, ORIENT_WORDS, screenTurn, wayFor, type Quarter } from '@/lib/stage/orient';
 import { useOrientation } from '@/lib/stage/use-gravity';
+import { useDrawnTurn } from '@/lib/stage/drawn-turn';
+import { useLinger } from '@/lib/stage/linger';
+import { FrameTurner } from '@/lib/stage/frame-turn';
 
 export type MeetAttemptProps = {
   attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string; kind?: 'pair' | 'bell' | null };
@@ -139,7 +142,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const [limit, setLimit] = useState<'lifter' | 'everyone'>('lifter');
 
   // a decided attempt opens settled (item 91): never the held breath again
-  const land = useLand();
+  const landScreen = useLand();
   const [phase, setPhase] = useState<Phase>(startView === 'stage' ? (first.status === 'judged' ? 'hold' : 'held') : 'loading');
   const [slow, setSlow] = useState(false);
   const [parts, setParts] = useState<Record<Part, boolean>>(NO_PARTS);
@@ -180,16 +183,29 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const needWay = wayFor(attempt.lift, lifter.division);
   /** the turning phone at Find your spot, while the phone faces the wrong way for this lift */
   const [turnShown, setTurnShown] = useState(false);
+  // once the turning phone has shown, what it gives way to fades in over 200 ms (look 4a)
+  const [turnedOnce, setTurnedOnce] = useState(false);
+  if (turnShown && !turnedOnce) setTurnedOnce(true);
   /** which void sheet: the bench's lost bar (3.4b) or a phone that turned during the lift (3.10) */
   const [voidWhy, setVoidWhy] = useState<'bar' | 'turned'>('bar');
   /** the motion step (look 4b) waits for her answer, then films this */
   const [askFor, setAskFor] = useState<Mode | null>(null);
+  // Look 4b: rotation lock kept the screen portrait while gravity says the phone is on its side, so the page
+  // draws look 4a's landscape itself. It settles from "Bar is loaded." until the result is in.
+  const sideways = orient.quarter === 90 || orient.quarter === -90;
+  const wantTurn = view === 'stage' && orient.touch && !orient.screenSide && sideways ? screenTurn(orient.quarter!) : 0;
+  const drawn = useDrawnTurn(wantTurn, view === 'stage' && (phase === 'loaded' || phase === 'lifting' || phase === 'held'));
+  const land = landScreen || drawn !== 0;
+  // look 4a (item 93): the turning phone fades out over 200 ms; the segments and the set-up line wait for it
+  const turnUp = useLinger(turnShown && (phase === 'spot' || phase === 'good-spot' || phase === 'tap'), 200);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const feedRef = useRef<HTMLVideoElement>(null);
   const replayRef = useRef<HTMLVideoElement>(null);
   const frozenRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  /** look 4b: the camera frames turned upright before anything sees them, when rotation lock is on */
+  const turnerRef = useRef<FrameTurner | null>(null);
   const voiceRef = useRef<Voice | null>(null);
   const runRef = useRef(0);
   /** She tapped "OK" on the offline sheet: it stays closed while the clip keeps trying (3.11). */
@@ -199,7 +215,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const footageRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<HTMLDivElement>(null);
   /** The bench's tap, while the bar stage takes one (set by runCamera). */
-  const tapRef = useRef<((clientX: number, clientY: number) => void) | null>(null);
+  const tapRef = useRef<((x: number, y: number) => void) | null>(null);
 
   voiceRef.current ??= new Voice(voicePack);
   useEffect(() => { voiceRef.current!.on = sound; soundRef.current = sound; }, [sound]);
@@ -213,6 +229,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   }, [view]);
 
   const stopCamera = useCallback(() => {
+    turnerRef.current?.stop();
+    turnerRef.current = null;
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
   }, []);
@@ -380,7 +398,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   }, [stopCamera]);
 
   /** Her own lift, or "Test your spot first" (the frame check alone, 5.23). */
-  const runCamera = useCallback(async (spotOnly: boolean, atTap = false) => {
+  const runCamera = useCallback(async (spotOnly: boolean, atTap = false): Promise<void> => {
     const my = ++runRef.current;
     const alive = () => runRef.current === my;
     const voice = voiceRef.current!;
@@ -396,14 +414,36 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       }
     }
     if (!alive()) return;
-    video.removeAttribute('src');
-    video.srcObject = streamRef.current;
-    video.muted = true; video.playsInline = true;
-    if (video.readyState < 2) await new Promise(r => video.addEventListener('loadeddata', r, { once: true }));
+    turnerRef.current?.stop();
+    turnerRef.current = null;
+    setTurnShown(false);
+    const playFrom = async (src: MediaStream) => {
+      video.removeAttribute('src');
+      video.srcObject = src;
+      video.muted = true; video.playsInline = true;
+      if (video.readyState < 2) await new Promise(r => video.addEventListener('loadeddata', r, { once: true }));
+      await video.play().catch(() => {});
+    };
+    await playFrom(streamRef.current);
     if (!alive()) return;
-    await video.play().catch(() => {});
-    const d: Dims = { w: video.videoWidth, h: video.videoHeight };
+    // the camera's own frames, before any turn
+    const raw: Dims = { w: video.videoWidth, h: video.videoHeight };
+    // look 4b: a phone on its side whose screen didn't turn still gets portrait frames: turn them upright,
+    // so the judge, the grey frames, the frozen frame and the recording all see her standing (or lying) right
+    const turnNow = frameTurn(orientRef.current.watch.quarter, raw.w, raw.h);
+    if (turnNow) {
+      turnerRef.current = new FrameTurner(streamRef.current, turnNow, raw.w, raw.h);
+      await playFrom(turnerRef.current.stream);
+      if (!alive()) return;
+    }
+    const filmed = turnerRef.current?.stream ?? streamRef.current;
+    const d: Dims = turnNow ? { w: raw.h, h: raw.w } : raw;
     setDims(d);
+    /** the camera's frames now: a screen that turns changes their shape */
+    const rawNow = (): Dims => {
+      const t = turnerRef.current;
+      return t ? t.rawDims : { w: video.videoWidth, h: video.videoHeight };
+    };
 
     const slowTimer = setTimeout(() => alive() && setSlow(true), 4000);
     let pose: LivePose;
@@ -459,7 +499,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       const el = footageRef.current;
       const g = el && grey();
       if (!el || !g) return;
-      const p = tapToFrame(el.getBoundingClientRect(), cx, cy, true);
+      // in the stage's own px (the tap target fills the stage), so it holds when the page is drawn turned (4b)
+      const p = tapToFrame({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }, cx, cy, true);
       const again = ml.phase === 'loaded';
       if (!ml.tapBar(g, p.x, p.y)) return;
       flushSync(() => { setTapWords(w => w && { ...w, on: false }); setBarMark({ x: p.x, y: p.y, size: ml.plateTap?.size ?? 0.08, n: ++marks, on: true }); });
@@ -475,6 +516,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     let turnUp = false, turnGone = false, loaded = false, turned = false;
     let settled: Quarter | null = null;
     let turnSnap: SideSnap | null = null;
+    /** before "Bar is loaded.", the phone turned so the frames need turning another way (or the screen
+     * turned and changed their shape): the frame check starts again on the new frames */
+    let reTurn = false;
 
     await new Promise<void>(resolve => {
       const done = () => { if (recTimer) clearInterval(recTimer); resolve(); };
@@ -484,6 +528,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         if (video.currentTime === lastMedia) return void requestAnimationFrame(tick);
         lastMedia = video.currentTime;
         const o = orientRef.current;
+        if (!loaded) {
+          const r = rawNow();
+          if (r.w && r.h && (frameTurn(o.watch.quarter, r.w, r.h) !== turnNow || (r.w > r.h) !== (raw.w > raw.h))) { reTurn = true; return done(); }
+        }
         if (!loaded && !turnGone) {
           const wrong = o.way !== null && o.way !== needWay;
           if (wrong !== turnUp) { turnUp = wrong; setTurnShown(wrong); }
@@ -494,7 +542,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         // void, never judged: "Your phone turned during the lift" (3.10)
         if (loaded && settled !== null && o.watch.quarter !== settled) {
           turned = true; turnSnap = grab(video, d);
-          if (liftAt) { show(endWord); voice.say(lift === 'deadlift' ? 'down' : 'rack'); }
+          // item 93: the end word at once, even before the start command: a squat or bench may already be
+          // out of the rack
+          show(endWord); voice.say(lift === 'deadlift' ? 'down' : 'rack');
           return done();
         }
         let evs;
@@ -529,7 +579,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             setPhase('loaded'); softCommand();
             loaded = true; settled = o.watch.quarter;
             if (turnUp) { turnUp = false; setTurnShown(false); }
-            if (streamRef.current) recording.start(streamRef.current);
+            recording.start(filmed);
             ct.loaded = 0;
             if (lift === 'deadlift') startRec(now);
           } else if (ev.type === 'call') {
@@ -566,6 +616,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     });
     if (!alive()) return;
     tapRef.current = null;
+    if (reTurn) { await runCameraRef.current?.(spotOnly, atTap); return; }
     if (spotDone) {
       await wait(900);
       if (!alive()) return;
@@ -573,12 +624,12 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       return;
     }
     if (turned) {
-      // 3.10: nothing was judged and nothing is kept. If she was under the bar, "Rack!" (or "Down!") ran
-      // first, so she is never left holding it with no command; then the sheet, frozen on the turn.
+      // 3.10: nothing was judged and nothing is kept. "Rack!" (or "Down!") ran first, so she is never left
+      // holding the bar with no command; then the sheet, frozen on the turn.
       void recording.stop().catch(() => null);
       if (recTimer) clearInterval(recTimer);
       setRecOn(false);
-      if (liftAt) await wait(900);
+      await wait(900);
       if (!alive()) return;
       freeze(turnSnap);
       flushSync(() => { setCommand(null); setBarMark(null); setTapWords(null); setVoidWhy('turned'); setPhase('void'); });
@@ -651,6 +702,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     };
     await awaitLights(alive, attempt.id, send(alive, attempt.id), heldSnap, replay, ml.byBar ? undefined : snapAt, path);
   }, [attempt.id, attempt.lift, attempt.reps_declared, home, lifter.division, needWay, stopCamera, awaitLights, send]);
+  const runCameraRef = useRef(runCamera);
+  useEffect(() => { runCameraRef.current = runCamera; }, [runCamera]);
 
   /** "Use a sample lift instead" (5.36): the server copies and queues the clip; the phone plays it. */
   const runSample = useCallback(async () => {
@@ -1000,6 +1053,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   // the bench: no panel while it sends (look 5.14c), so the stage keeps the full width
   const panelOpen = !lifting && !(phase === 'loading' && !slow && !error) && !(bench && phase === 'held');
   const stageClass = ['stage',
+    turnUp.on ? 'turning' : '',
+    turnedOnce ? 'turned-once' : '',
     phase === 'spot' || phase === 'good-spot' ? 'spotting' : '',
     recOn ? 'recording' : '',
     phase === 'held' || phase === 'offline' || phase === 'close' ? 'judging' : '',
@@ -1055,8 +1110,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           {bench && (phase === 'tap' || phase === 'loaded') && (
             // her tap: the whole camera view is the target (look 5.14c)
             <button className="tap-target" type="button" aria-label={MEET_WORDS.bench.tap}
-              onPointerDown={e => tapRef.current?.(e.clientX, e.clientY)}
-              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { const r = footageRef.current?.getBoundingClientRect(); if (r) tapRef.current?.(r.left + r.width / 2, r.top + r.height / 2); } }} />
+              onPointerDown={e => tapRef.current?.(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { const f = footageRef.current; if (f) tapRef.current?.(f.offsetLeft + f.offsetWidth / 2, f.offsetTop + f.offsetHeight / 2); } }} />
           )}
           <div className="vignette" />
           <div className="dim" />
@@ -1083,10 +1138,11 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
           </div>
-          {phase === 'spot' && line && !turnShown && <p className="spotline" aria-live="polite">{line}</p>}
-          {turnShown && (phase === 'spot' || phase === 'good-spot' || phase === 'tap') && (
-            // 3.10, look 4a: the turning phone and its line; with no gravity, the rotation-lock line under it
-            <div className="turnphone" aria-live="polite">
+          {phase === 'spot' && line && !turnUp.on && <p className="spotline" aria-live="polite">{line}</p>}
+          {turnUp.on && (
+            // 3.10, look 4a: the turning phone and its line; with no gravity ("Not now" or no sensor) the drawing
+            // is dimmed and still, with the rotation-lock line under it at full strength
+            <div className={`turnphone${orient.noMotion ? ' dimmed' : ''}${turnUp.out ? ' out' : ''}`} aria-live="polite">
               <div className={`phone-draw to-${needWay}`} aria-hidden="true" />
               <p className="body">{ORIENT_WORDS.turn[needWay]}</p>
               {orient.noMotion && orient.kind && <p className="body">{ORIENT_WORDS.lock[orient.kind]}</p>}
