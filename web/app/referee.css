@@ -152,6 +152,7 @@
 .ops-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
 .ops-row dt { font-size: 15px; line-height: 22px; color: var(--ink-2); }
 .ops-row dd { margin: 0; font-weight: 800; font-stretch: 105%; font-size: 20px; line-height: 24px; text-align: right; white-space: nowrap; }
+.ops-row dd.ops-over { color: var(--no-text); font-weight: 700; }
 .ops-errors { grid-column: 1 / -1; }
 .ops-errors .ops-row { justify-content: flex-start; font-size: 15px; line-height: 22px; }
 .ops-errors .ops-row > .small:first-child { flex: none; width: 190px; }

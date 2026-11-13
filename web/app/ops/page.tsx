@@ -26,13 +26,13 @@ export default async function Page() {
         {commitsDiffer(n.commits) && <p className="ops-warn strong" role="alert">Judge and web are on different commits</p>}
         <div className="ops-grid">
           {sections.map(s => (
-            <section key={s.eyebrow} className="ops-section" aria-labelledby={`ops-${s.eyebrow}`}>
-              <h2 className="eyebrow" id={`ops-${s.eyebrow}`}>{s.eyebrow}</h2>
+            <section key={s.eyebrow} className="ops-section" aria-labelledby={`ops-${s.eyebrow.replace(/\W+/g, '-')}`}>
+              <h2 className="eyebrow" id={`ops-${s.eyebrow.replace(/\W+/g, '-')}`}>{s.eyebrow}</h2>
               <dl>
                 {s.rows.map(r => (
                   <div key={r.label} className="ops-row">
                     <dt>{r.label}</dt>
-                    <dd className="num">{r.value}</dd>
+                    <dd className={r.over ? 'num ops-over' : 'num'}>{r.value}{r.over ? ' over' : null}</dd>
                   </div>
                 ))}
               </dl>

@@ -15,6 +15,13 @@ export type OpsNumbers = {
     lights24h: { median: number | null; p95: number | null; n: number };
     poseSecsMedian: number | null;
     phoneByDevice: { device: string; medianMs: number; clips: number }[];
+    /** 2.4: the phone's pose time ÷ frames judged, median by device (look 5.14: "over" past 220 ms). */
+    poseRunByDevice: { device: string; medianMs: number; clips: number }[];
+  };
+  /** 2.4, 3.4b: the bar's own call next to the referees' on real meet bench attempts, and how often the bench went wrong. */
+  bench: {
+    decided: number; agree: number; whiteOnRed: number; redOnWhite: number;
+    filmings: number; pressWhileSinking: number; lostAfterStart: number; noStartVoids: number;
   };
   render: {
     workersLive: number; startedHour: number; failedHour: number; attemptsPerWorker: number | null; requeuedHour: number;
@@ -65,6 +72,34 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     select detail->>'device' as device, percentile_cont(0.5) within group (order by (detail->>'poseMs')::float) as median, count(*) as n
     from events where kind = 'phone_judge_time' and at > now() - interval '30 days' and detail->>'poseMs' is not null
     group by 1 order by n desc, device limit 20`);
+
+  const poseRun = await db.execute<Record<string, unknown>>(sql`
+    select detail->>'device' as device,
+      percentile_cont(0.5) within group (order by (detail->>'poseMs')::float / (detail->>'frames')::float) as median, count(*) as n
+    from events where kind = 'phone_judge_time' and at > now() - interval '30 days'
+      and detail->>'poseMs' is not null and (detail->>'frames')::float > 0
+    group by 1 order by n desc, device limit 20`);
+
+  // 2.4, 3.4b "Bench, phone and referees". Real meet bench attempts only (never demo).
+  // Decided: a referee gave the lights. The bar's call is `shadow_lights` (three of one colour, or none when it
+  // called a close call, which agrees with neither colour and is never a wrong light).
+  // The last three are over every filming of a bench attempt: one that uploaded, or one voided with no Start!.
+  const [b] = await db.execute<Record<string, unknown>>(sql`
+    with b as (
+      select a.* from attempts a join meets m on m.id = a.meet_id where a.lift = 'bench' and m.kind <> 'demo'
+    ), decided as (
+      select call, shadow_lights->>0 as shadow from b
+      where status = 'judged' and (measures->>'referee')::boolean is true
+    )
+    select
+      (select count(*) from decided) as decided,
+      (select count(*) from decided where shadow = call) as agree,
+      (select count(*) from decided where shadow = 'white' and call = 'red') as white_on_red,
+      (select count(*) from decided where shadow = 'red' and call = 'white') as red_on_white,
+      (select count(*) from b where uploaded_at is not null) as uploaded,
+      (select count(*) from b where (measures->>'press_while_sinking')::boolean is true) as sinking,
+      (select count(*) from b where (measures->>'lost_after_start')::boolean is true) as lost,
+      (select count(*) from events e join b r on r.id = e.attempt_id where e.kind = 'lost_bar_void') as voids`);
 
   // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device.
   // An upload tried is a started upload, or one the phone turned down before it began (too big).
@@ -118,6 +153,11 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       lights24h: { median: numOrNull(l24?.median), p95: numOrNull(l24?.p95), n: num(l24?.n) },
       poseSecsMedian: numOrNull(pose?.median),
       phoneByDevice: phone.map(x => ({ device: String(x.device ?? 'unknown'), medianMs: num(x.median), clips: num(x.n) })),
+      poseRunByDevice: poseRun.map(x => ({ device: String(x.device ?? 'unknown'), medianMs: num(x.median), clips: num(x.n) })),
+    },
+    bench: {
+      decided: num(b?.decided), agree: num(b?.agree), whiteOnRed: num(b?.white_on_red), redOnWhite: num(b?.red_on_white),
+      filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids),
     },
     render: {
       workersLive: num(r.live), startedHour: num(r.started_hour), failedHour: num(r.failed_hour),
@@ -156,16 +196,45 @@ const mins = (s: number | null) => (s === null ? '—' : `${Math.max(1, Math.rou
 export const failedOf = (failed: number, tried: number) =>
   `${failed} of ${tried}${tried ? ` · ${Math.round((failed / Math.max(tried, failed)) * 100)}%` : ''}`;
 
+/** Section 9: uploads failing more than 5% of the time are "over" (look 5.14). */
+export const UPLOADS_OVER = 0.05;
+/** Piece 2: a phone's pose run past 220 ms is "over" (look 5.14). */
+export const POSE_RUN_OVER_MS = 220;
+
 /** 2.4: failed or refused uploads in the last 24 hours, all devices, then each device. */
 export function uploadRows(u: OpsNumbers['uploads']): OpsRow[] {
   const tried = u.reduce((a, x) => a + x.tried, 0), failed = u.reduce((a, x) => a + x.failed, 0);
+  const over = (f: number, t: number) => t > 0 && f / Math.max(t, f) > UPLOADS_OVER;
   return [
-    { label: 'Uploads failed or refused, 24 h', value: failedOf(failed, tried) },
-    ...u.map(x => ({ label: `Failed or refused · ${x.device}`, value: failedOf(x.failed, x.tried) })),
+    { label: 'Uploads failed or refused, 24 h', value: failedOf(failed, tried), over: over(failed, tried) },
+    ...u.map(x => ({ label: `Failed or refused · ${x.device}`, value: failedOf(x.failed, x.tried), over: over(x.failed, x.tried) })),
   ];
 }
 
-export type OpsRow = { label: string; value: string };
+/** 2.4: "Pose run per frame", median by device, "over" past 220 ms. */
+export function poseRunRows(p: OpsNumbers['speed']['poseRunByDevice']): OpsRow[] {
+  if (!p.length) return [{ label: 'Pose run per frame', value: '—' }];
+  return p.map(d => ({
+    label: `Pose run per frame · ${d.device} (${d.clips} ${d.clips === 1 ? 'clip' : 'clips'})`,
+    value: `${Math.round(d.medianMs)} ms`, over: d.medianMs > POSE_RUN_OVER_MS,
+  }));
+}
+
+/** 2.4, 3.4b: "Bench, phone and referees". */
+export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
+  return [
+    { label: 'Decided', value: String(b.decided) },
+    { label: 'Agree', value: String(b.agree) },
+    { label: 'White on a red', value: String(b.whiteOnRed) },
+    { label: 'Red on a white', value: String(b.redOnWhite) },
+    { label: 'Press! while sinking', value: failedOf(b.pressWhileSinking, b.filmings) },
+    { label: 'Lost the bar after Start!', value: failedOf(b.lostAfterStart, b.filmings) },
+    { label: 'No Start!, filmed again', value: failedOf(b.noStartVoids, b.filmings) },
+  ];
+}
+
+/** `over`: the figure is past its line (look 5.14: `--no-text` at 700, then the word "over"; never lamp red). */
+export type OpsRow = { label: string; value: string; over?: boolean };
 export type OpsSection = { eyebrow: string; rows: OpsRow[] };
 
 /** The sections, each row a label and a number ("Waiting · 12", "Oldest · 3 min"). */
@@ -184,6 +253,7 @@ export function opsSections(n: OpsNumbers, budgets: Budgets): OpsSection[] {
       { label: 'Upload to lights, 95th percentile, 24 h', value: secs(n.speed.lights24h.p95) },
       { label: 'Pose time per clip, median', value: secs(n.speed.poseSecsMedian) },
       ...n.speed.phoneByDevice.map(d => ({ label: `Phone judge time · ${d.device} (${d.clips} ${d.clips === 1 ? 'clip' : 'clips'})`, value: secs(d.medianMs / 1000) })),
+      ...poseRunRows(n.speed.poseRunByDevice),
     ] },
     { eyebrow: 'RENDER', rows: [
       { label: 'Workers live', value: String(n.render.workersLive) },
@@ -203,6 +273,7 @@ export function opsSections(n: OpsNumbers, budgets: Budgets): OpsSection[] {
       { label: 'On the platform now', value: String(n.meet.onPlatform) },
     ] },
     { eyebrow: 'UPLOADS', rows: uploadRows(n.uploads) },
+    { eyebrow: 'BENCH, PHONE AND REFEREES', rows: benchRows(n.bench) },
     { eyebrow: 'DEMO', rows: [
       { label: 'Demo runs today', value: `${n.demo.runsToday} of ${n.demo.runsLimit}` },
       { label: 'On the platform now', value: String(n.demo.onPlatform) },
