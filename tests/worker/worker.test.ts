@@ -152,6 +152,15 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       }
     }, 600_000);
   }
+  // A warm worker judges the same clip as a fresh one: each run of frames gets a fresh tracker. Kept for
+  // the process, the tracker carried the last clip in: staging's warm workers read the good-lift sample's
+  // 3000 ms frame at depth 0.145 and a fresh one at 0.039, and judged 3000 ms instead of 3800 (13 Nov).
+  it('a warm worker finds the same points as a fresh one', () => {
+    const good = join(__dirname, '../../content/samples', samples.clips.find(c => c.id === 'good-lift')!.file);
+    const fresh = runFile(good, ['--pass1']);
+    const warm = runFile(good, ['--pass1', '--after', join(CLIPS_DIR, 'racked-squats-side.webm')]);
+    expect(warm.frames).toEqual(fresh.frames);
+  }, 600_000);
   it('writes the timings', () => {
     const out = process.env.WORKER_TIMINGS;
     if (out) writeFileSync(out, JSON.stringify(timings, null, 2));
