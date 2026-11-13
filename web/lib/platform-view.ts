@@ -22,6 +22,8 @@ export type RowCell = {
 export type CardAttempt = {
   id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string;
   kind: 'pair' | 'bell' | null;
+  /** A demo sample's attempt: the stage shows its SAMPLE LIFT box from the first paint (LookieBot B, 13 Nov). */
+  sample?: true;
 };
 
 /** One of her nine after the meet, as "See my lifts" lists it. */
@@ -152,6 +154,7 @@ export async function platformView(db: Db, l: LifterRow, meet: { id?: string; ki
     current: {
       id: cur.id, lift: cur.lift, number: cur.number, weight: cur.weight, reps_declared: cur.repsDeclared, status: cur.status,
       kind: l.division === 'home' ? homeKind(lift, cur.weight, l.homeWeights) : null,
+      ...(cur.isSampleClip ? { sample: true as const } : {}),
     },
     because: l.isDemo
       ? demoBecause(l.division, lift, units, now, l.division === 'home' ? cur.repsDeclared : cur.weight)

@@ -15,7 +15,8 @@ describe('5.2: a demo sample never loads the pose model', () => {
     for (const s of ['loadPoseModel', 'LivePose', 'DeepestFrames', '.detect(', 'deeperOf(']) expect(runSample).not.toContain(s);
   });
   it('the judged frame\'s marks are the server\'s pose at the judged moment', () => {
-    expect(runSample).toContain('await getJson(`/api/attempts/${attempt.id}/frame`)');
+    expect(runSample).toContain('getJson(`/api/attempts/${attempt.id}/frame`)');
+    expect(runSample).toContain('const f = await frame();');
     expect(runSample).toContain('return f ? { ...shot, t: f.ms, p: f.p, side: f.side } : shot;');
   });
   it('before the call, a sample holds its known judged frame from samples.json (The Playner, 13 Nov)', () => {

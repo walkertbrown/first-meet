@@ -125,4 +125,18 @@ describe.skipIf(!URL_)('the platform', () => {
     await db.update(attempts).set({ status: 'judged', call: 'white', judgedFrameMs: 3733 }).where(eq(attempts.id, d.attempt.id));
     expect(await heldFrame(db, store, d.attempt.id, d.lifter.id)).toMatchObject({ frame: { ms: 3733 } });
   });
+
+  it('the platform says which attempt is a sample, so SAMPLE LIFT is there from the first paint (LookieBot B, 13 Nov)', async () => {
+    const d = await startDemo(db, {});
+    const meet = await meetOf(d.meet.id);
+    const l = await lifterOf(d.lifter.id);
+    let v = await platformView(db, l, meet);
+    if (v.kind !== 'open') throw new Error(v.kind);
+    expect(v.current?.id).toBe(d.attempt.id);
+    expect(v.current).not.toHaveProperty('sample');
+    await db.update(attempts).set({ status: 'close_call', isSampleClip: true }).where(eq(attempts.id, d.attempt.id));
+    v = await platformView(db, l, meet);
+    if (v.kind !== 'open') throw new Error(v.kind);
+    expect(v.current).toMatchObject({ id: d.attempt.id, status: 'close_call', sample: true });
+  });
 });

@@ -43,7 +43,7 @@ import { useLinger } from '@/lib/stage/linger';
 import { FrameTurner } from '@/lib/stage/frame-turn';
 
 export type MeetAttemptProps = {
-  attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string; kind?: 'pair' | 'bell' | null };
+  attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string; kind?: 'pair' | 'bell' | null; sample?: boolean };
   lifter: { cardName: string; ageGroup: string | null; division: 'barbell' | 'home'; units: 'lb' | 'kg' };
   /** The because line (5.25 step 1), worked out on the server. */
   because: string;
@@ -145,9 +145,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const [sound, setSound] = useState(true);
   const [limit, setLimit] = useState<'lifter' | 'everyone'>('lifter');
 
-  // a decided attempt opens settled (item 91): never the held breath again
+  // a decided attempt opens settled (item 91): never the held breath again. Nor does a close call (F-E):
+  // until its state is in, the panel is empty, as on a decided reload, never "Breathe" (LookieBot B, 13 Nov)
   const landScreen = useLand();
-  const [phase, setPhase] = useState<Phase>(startView === 'stage' ? (first.status === 'judged' ? 'hold' : 'held') : 'loading');
+  const [phase, setPhase] = useState<Phase>(startView === 'stage' ? (first.status === 'judged' || first.status === 'close_call' ? 'hold' : 'held') : 'loading');
   const [slow, setSlow] = useState(false);
   const [parts, setParts] = useState<Record<Part, boolean>>(NO_PARTS);
   const [line, setLine] = useState<string | null>(null);
@@ -171,7 +172,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const [stageSize, setStageSize] = useState({ w: 0, h: 0 });
   const [sample, setSample] = useState<{ credit: string; reps: number } | null>(null);
   /** Reopened on a sample's attempt (a reload, "Back to the platform"): it keeps its SAMPLE LIFT box and credit. */
-  const [resumedSample, setResumedSample] = useState(false);
+  // known from the platform's first paint, so the HUD doesn't drop when the state comes in (LookieBot B)
+  const [resumedSample, setResumedSample] = useState(!!first.sample);
   /** Reopened on a decided attempt: the lamps lit with no bloom and no thock, the result up at once (item 91). */
   const [settledOpen, setSettledOpen] = useState(false);
   const [error, setError] = useState('');
@@ -848,7 +850,14 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     await seekTo(video, (clip?.judged_frame_ms ?? (ct.squat + ct.rack) / 2) / 1000).catch(() => {});
     const snap: SideSnap = grab(video, d);
     freeze(snap);
+    // the server's frame, asked for once the lights are in and the replay starts, so its marks are ready
+    // when the replay ends rather than a fetch later (LookieBot A, 13 Nov). Only a good answer is kept.
+    type Frame = { ms: number; p: Pt[]; side: 'left' | 'right' };
+    let framed: Promise<Frame | null> | null = null;
+    const frame = () => (framed ??= getJson(`/api/attempts/${attempt.id}/frame`).catch(() => null)
+      .then(r => (r?.status === 200 ? (r.body as unknown as Frame) : ((framed = null), null))));
     const replay = async () => {
+      void frame();
       await within(seekTo(video, Math.max(0, ct.rack / 1000 - 2)), 2000);
       setPhase('replay'); setReplaying(true); setFrozen(false); setMarks(null);
       await video.play();
@@ -857,8 +866,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     };
     // the judged frame from the clip on the phone, with the server's pose at it for the marks
     const snapAt = async (ms: number): Promise<SideSnap | null> => {
-      const r = await getJson(`/api/attempts/${attempt.id}/frame`).catch(() => null);
-      const f = r?.status === 200 ? (r.body as unknown as { ms: number; p: Pt[]; side: 'left' | 'right' }) : null;
+      const f = await frame();
       await within(seekTo(video, (f?.ms ?? ms) / 1000), 2000);
       const shot = grab(video, d);
       return f ? { ...shot, t: f.ms, p: f.p, side: f.side } : shot;

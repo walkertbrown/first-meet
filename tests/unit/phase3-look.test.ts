@@ -27,6 +27,18 @@ describe('phase 3 look fixes', () => {
     expect(meet).toContain('await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt');
     expect(meet).toContain("const colour = phase === 'close' ? 'var(--stage-ink-2)' : result?.title === 'Good lift' ? 'var(--lamp-white)' : 'var(--lamp-red)';");
   });
+  it('LookieBot A (13 Nov): a sample\'s judged frame is asked for as its replay starts, so its marks come with the last frame', () => {
+    const run = meet.slice(meet.indexOf('const runSample = useCallback('), meet.indexOf('const runResume = useCallback('));
+    expect(run).toContain('const replay = async () => {\n      void frame();');
+    // asked for once; a failed answer is dropped so the next ask tries again
+    expect(run).toContain('framed ??= getJson(');
+    expect(run).toContain("(r?.status === 200 ? (r.body as unknown as Frame) : ((framed = null), null))");
+  });
+  it('LookieBot B (13 Nov): a close call reloads on an empty panel, with SAMPLE LIFT from the first paint', () => {
+    expect(meet).toContain("first.status === 'judged' || first.status === 'close_call' ? 'hold' : 'held'");
+    expect(meet).toContain('const [resumedSample, setResumedSample] = useState(!!first.sample);');
+    expect(readFileSync(join(__dirname, '../../web/lib/platform-view.ts'), 'utf8')).toContain('...(cur.isSampleClip ? { sample: true as const } : {}),');
+  });
   it('LookieBot 2: the demo sample\'s first frame is dimmed while she gets ready', () => {
     expect(meet).toContain("isSample && (phase === 'spot' || phase === 'good-spot' || phase === 'loaded') ? 'held' : ''");
     expect(meet).toContain('{isSample && <div className="held-dim" />}');
