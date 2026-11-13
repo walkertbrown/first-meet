@@ -1,0 +1,11 @@
+229 -,-,- | nomarks | s0.00p/h0.00p |  | 
+802 pulse settled,pulse settled,pulse settled | nomarks | s0.00p/h0.00p |  | Close call
+1285 pulse settled,pulse settled,pulse settled | nomarks | s0.00p/h1.00p |  | Close call
+1361 pulse settled,pulse settled,pulse settled | rgb(166, 169, 179) | s0.00p/h1.00p | FROZEN | Close call
+11589 white,-,- | rgb(255, 244, 216) | s0.00p/h1.00p | FROZEN | Good lift
+11919 white,white,- | rgb(255, 244, 216) | s0.00p/h1.00p | FROZEN | Good lift
+12252 white,white,white | rgb(255, 244, 216) | s0.00p/h1.00p | FROZEN | Good lift
+13584 white,white,white | nomarks | s0.00p/h1.00p | FROZEN | Good lift
+14101 white,white,white | nomarks | s0.00p/h0.00p | FROZEN | Good lift
+14201 white,white,white | nomarks | s0.00p/h1.00p | FROZEN | Good lift
+14268 white,white,white | rgb(255, 244, 216) | s0.00p/h1.00p | FROZEN | Good lift
