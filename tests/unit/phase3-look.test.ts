@@ -25,7 +25,7 @@ describe('phase 3 look fixes', () => {
     expect(meet).toContain('setReplaying(true); setFrozen(false); setMarks(null); setBenchPath(null);');
     expect(meet).toContain("setPhase('replay'); setReplaying(true); setFrozen(false); setMarks(null);");
     expect(meet).toContain('await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt');
-    expect(meet).toContain("const colour = phase === 'close' ? 'var(--stage-ink-2)' : result?.title === 'Good lift' ? 'var(--lamp-white)' : 'var(--lamp-red)';");
+    expect(meet).toContain("const colour = phase === 'close' ? 'var(--stage-ink-2)' : (litCall ? litCall === 'white' : result?.title === 'Good lift') ? 'var(--lamp-white)' : 'var(--lamp-red)';");
   });
   it('LookieBot A (13 Nov): a sample\'s judged frame is asked for as its replay starts, so its marks come with the last frame', () => {
     const run = meet.slice(meet.indexOf('const runSample = useCallback('), meet.indexOf('const runResume = useCallback('));
@@ -38,6 +38,22 @@ describe('phase 3 look fixes', () => {
     expect(meet).toContain("first.status === 'judged' || first.status === 'close_call' ? 'hold' : 'held'");
     expect(meet).toContain('const [resumedSample, setResumedSample] = useState(!!first.sample);');
     expect(readFileSync(join(__dirname, '../../web/lib/platform-view.ts'), 'utf8')).toContain('...(cur.isSampleClip ? { sample: true as const } : {}),');
+  });
+  it('LookieBot C (13 Nov): the verdict is swapped in only after the last lamp, while the panel is faded out', () => {
+    const lights = meet.slice(meet.indexOf('(LookieBot C, 13 Nov; look step 10'), meet.indexOf('// her clip (step 10)'));
+    // the marks take the lights' colour with the first lamp, from the call, not the panel's words
+    const off = lights.indexOf("setResultOn(false); setLitCall(s.call === 'white' ? 'white' : 'red'); setWaitLine(''); setBusy(false);");
+    const loop = lights.indexOf('for (let k = 0; k < 3; k++) {');
+    const swap = lights.indexOf('setResult(res);');
+    const spill = lights.indexOf("setSpill(s.call === 'white' ? 'white' : 'red');");
+    const on = lights.indexOf('setResultOn(true);');
+    expect([off, loop, swap, spill, on].every(i => i >= 0)).toBe(true);
+    // "Close call" fades out as the lamps start; the verdict comes in after them, then fades in 420 ms later
+    expect(off).toBeLessThan(loop);
+    expect(loop).toBeLessThan(swap);
+    expect(swap).toBeLessThan(spill);
+    expect(spill).toBeLessThan(on);
+    expect(lights).not.toContain('setResult(res); setResultOn(false);');
   });
   it('LookieBot 2: the demo sample\'s first frame is dimmed while she gets ready', () => {
     expect(meet).toContain("isSample && (phase === 'spot' || phase === 'good-spot' || phase === 'loaded') ? 'held' : ''");

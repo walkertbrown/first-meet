@@ -163,6 +163,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   const [spill, setSpill] = useState<'' | 'white' | 'red'>('');
   const [result, setResult] = useState<MeetResult | null>(null);
   const [resultOn, setResultOn] = useState(false);
+  // the lights' call while they light: the marks take its colour with the first lamp, before the
+  // verdict's words are swapped in (LookieBot C, 13 Nov)
+  const [litCall, setLitCall] = useState<'white' | 'red' | null>(null);
   const [frozen, setFrozen] = useState(false);
   const [marks, setMarks] = useState<LiftMarks | null>(null);
   /** The lift the judge ran: a squat sample can stand in for another lift (5.36). */
@@ -248,7 +251,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
 
   const resetStage = () => {
     setPhase('loading'); setSlow(false); setParts(NO_PARTS); setLine(null); setCommand(null); setRecOn(false); setReps(0);
-    setLamps(['off', 'off', 'off']); setWaitLine(''); setBusy(false); setSlowUpload(false); setSpill(''); setResult(null); setResultOn(false);
+    setLamps(['off', 'off', 'off']); setWaitLine(''); setBusy(false); setSlowUpload(false); setSpill(''); setResult(null); setResultOn(false); setLitCall(null);
     setFrozen(false); setMarks(null); setReplaying(false); setSample(null); setError(''); setShownLift(attempt.lift);
     setResumedSample(false); setSettledOpen(false);
     setTapWords(null); setBarMark(null); setBenchPath(null); tapRef.current = null;
@@ -367,7 +370,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // a close call that opened settled lights its lamps, spill and result as any other (F-E); its
       // judged frame keeps its marks, which turn from grey to the lights' colour (look step 10, plan 5.27)
       setSettledOpen(false);
-      setResult(res); setResultOn(false); setWaitLine(''); setBusy(false);
+      // "Close call" (when it was up) fades out with the first lamp; the verdict is swapped in only after
+      // the last lamp, while the panel is invisible, so it never reads before the lights give it
+      // (LookieBot C, 13 Nov; look step 10, plan 5.27)
+      setResultOn(false); setLitCall(s.call === 'white' ? 'white' : 'red'); setWaitLine(''); setBusy(false);
       // the lights: left, head, right, 330 ms apart, then the spill, then the result 420 ms later
       setPhase('lit');
       for (let k = 0; k < 3; k++) {
@@ -376,6 +382,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         if (k < 2) await wait(330);
         if (!alive()) return;
       }
+      setResult(res);
       setSpill(s.call === 'white' ? 'white' : 'red');
       await wait(420);
       if (!alive()) return;
@@ -1140,7 +1147,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     isSample && (phase === 'spot' || phase === 'good-spot' || phase === 'loaded') ? 'held' : '',
   ].filter(Boolean).join(' ');
   const k = dims ? box.width / dims.w : 1;
-  const colour = phase === 'close' ? 'var(--stage-ink-2)' : result?.title === 'Good lift' ? 'var(--lamp-white)' : 'var(--lamp-red)';
+  const colour = phase === 'close' ? 'var(--stage-ink-2)' : (litCall ? litCall === 'white' : result?.title === 'Good lift') ? 'var(--lamp-white)' : 'var(--lamp-red)';
   const recLabel = `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}`;
   const waiting = phase === 'held' || phase === 'offline';
   const judged = phase === 'lit' || phase === 'replay' || phase === 'hold';

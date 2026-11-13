@@ -267,21 +267,41 @@ test('after the demo referee saves, "Back to the platform" shows squat 3\'s ligh
   }
   await liftOneSample(page);
   await expect(page.getByRole('heading', { name: 'Close call' })).toBeVisible();
-  await page.getByRole('link', { name: "See the referee's side of this close call" }).click();
+  // LookieBot C (13 Nov): her tab stays open while the referee saves in another, and the verdict's words
+  // must never be on screen before the last lamp: "Close call" fades out, then "Good lift" comes after
+  await page.evaluate(() => {
+    const w = window as unknown as { __lights: { lit: number; title: string | null; on: boolean }[] };
+    w.__lights = [];
+    const rec = () => {
+      const r = document.querySelector('.result');
+      w.__lights.push({ lit: document.querySelectorAll('.stage .lamps .lamp.white, .stage .lamps .lamp.red').length, title: r?.querySelector('h2')?.textContent ?? null, on: !!r?.classList.contains('on') });
+    };
+    new MutationObserver(rec).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+    rec();
+  });
+  const href = await page.getByRole('link', { name: "See the referee's side of this close call" }).getAttribute('href');
+  const ref = await page.context().newPage();
+  await ref.goto(href!);
   // the referee's close call: its h1 is the lift ("Squat 3 · …"), the tab title "Close call"
-  await expect(page.getByRole('heading', { name: /^Squat 3 · /, level: 1 })).toBeVisible({ timeout: 30_000 });
-  await expect(page).toHaveTitle(/Close call/);
-  const whites = page.getByRole('button', { name: 'White light' });
+  await expect(ref.getByRole('heading', { name: /^Squat 3 · /, level: 1 })).toBeVisible({ timeout: 30_000 });
+  await expect(ref).toHaveTitle(/Close call/);
+  const whites = ref.getByRole('button', { name: 'White light' });
   for (let i = 0; i < 3; i++) await whites.nth(i).click();
-  await page.getByRole('button', { name: 'Save the lights' }).click();
-  await page.getByRole('link', { name: 'Back to the platform' }).click();
-  await expect(page).toHaveURL(/\/platform$/);
-  await expect(page.getByRole('heading', { name: 'Good lift' })).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByRole('button', { name: "I'm ready" })).toHaveCount(0);
+  await ref.getByRole('button', { name: 'Save the lights' }).click();
+  // her open tab lights the lamps one by one, and only then says "Good lift"
+  await expect(page.locator('.result.on h2', { hasText: 'Good lift' })).toBeVisible({ timeout: 60_000 });
+  const seen = await page.evaluate(() => (window as unknown as { __lights: { lit: number; title: string | null; on: boolean }[] }).__lights);
+  expect(seen.some(x => x.lit === 1), 'the first lamp lit on its own').toBe(true);
+  expect(seen.filter(x => x.lit < 3 && x.title === 'Good lift'), 'no "Good lift" before the last lamp').toEqual([]);
+  expect(seen.filter(x => x.lit >= 1 && x.on && x.title !== 'Good lift'), '"Close call" faded out with the first lamp').toEqual([]);
+  await ref.getByRole('link', { name: 'Back to the platform' }).click();
+  await expect(ref).toHaveURL(/\/platform$/);
+  await expect(ref.getByRole('heading', { name: 'Good lift' })).toBeVisible({ timeout: 30_000 });
+  await expect(ref.getByRole('button', { name: "I'm ready" })).toHaveCount(0);
   // item 91: settled, and still the sample, with its box and credit
-  await expect(page.locator('.stage .lamps .lamp.settled')).toHaveCount(3);
-  await expect(page.getByText('Sample lift', { exact: true })).toBeVisible();
-  await expect(page.locator('.stage .credit')).toHaveText(/\S/);
-  await page.getByRole('button', { name: /^(Declare your next attempt|Next: Bench press)$/ }).click();
-  await expect(page.getByRole('article', { name: /^Bench press, Attempt 1 of 3/i })).toBeVisible({ timeout: 30_000 });
+  await expect(ref.locator('.stage .lamps .lamp.settled')).toHaveCount(3);
+  await expect(ref.getByText('Sample lift', { exact: true })).toBeVisible();
+  await expect(ref.locator('.stage .credit')).toHaveText(/\S/);
+  await ref.getByRole('button', { name: /^(Declare your next attempt|Next: Bench press)$/ }).click();
+  await expect(ref.getByRole('article', { name: /^Bench press, Attempt 1 of 3/i })).toBeVisible({ timeout: 30_000 });
 });
