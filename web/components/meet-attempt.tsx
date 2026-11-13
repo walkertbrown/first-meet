@@ -381,8 +381,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // her clip (step 10): the last 2 s in real time, then the judged frame with the marks
       await wait(900);
       if (!alive()) return;
-      // the 2 s replay plays without marks; they come back on the judged frame after it
-      if (!reduced()) { setMarks(null); await replay().catch(() => {}); if (!alive()) return; }
+      // the 2 s replay plays without marks (each replay clears them as it starts); they come back on the
+      // judged frame after it. A reload has no clip to replay, so its marks stay up until the judged frame's
+      // redraw replaces them, with no blink (NerdCider's note on 1b78e8e)
+      if (!reduced()) { await replay().catch(() => {}); if (!alive()) return; }
       setReplaying(false);
       // a sample's frozen frame is the server's judged moment, when it says which
       let judged = snap;
@@ -742,7 +744,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await within(readyToSeek(rv), 3000);
       await within(seekTo(rv, Math.max(0, rv.duration - 2)), 2000);
       if (!keepPhase) setPhase('replay');
-      setReplaying(true); setFrozen(false); setBenchPath(null);
+      setReplaying(true); setFrozen(false); setMarks(null); setBenchPath(null);
       await rv.play();
       await new Promise<void>(res => { const c = () => (!alive() || rv.ended ? res() : requestAnimationFrame(c)); requestAnimationFrame(c); });
       rv.pause();
@@ -848,7 +850,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     freeze(snap);
     const replay = async () => {
       await within(seekTo(video, Math.max(0, ct.rack / 1000 - 2)), 2000);
-      setPhase('replay'); setReplaying(true); setFrozen(false);
+      setPhase('replay'); setReplaying(true); setFrozen(false); setMarks(null);
       await video.play();
       await new Promise<void>(res => { const c = () => (!alive() || video.ended || video.currentTime >= ct.rack / 1000 ? res() : requestAnimationFrame(c)); requestAnimationFrame(c); });
       video.pause();
