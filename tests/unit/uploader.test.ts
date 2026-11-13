@@ -7,13 +7,14 @@ import { MAX_CLIP_BYTES, PART_BYTES, Retry, Stop, sendOnce, type Net, type Pendi
 function fakeServer(opts: { failPart?: number; limit?: boolean } = {}) {
   const r2 = new Map<number, string>();
   const calls: string[] = [];
-  let uploaded: unknown = null, failOnce = opts.failPart;
+  let uploaded: unknown = null, started: unknown = null, failOnce = opts.failPart;
   const net: Net = {
     async api(path, init = {}) {
       calls.push(`${init.method ?? 'GET'} ${path}`);
       const body = init.body as Record<string, unknown> | undefined;
       if (path.endsWith('/uploaded')) { uploaded = body; return { status: 200, body: { attempt: { status: 'queued' } } }; }
       if (path.includes('/upload?')) return { status: 200, body: { done: false, parts: [...r2].map(([part, etag]) => ({ part, etag })) } };
+      if (path.endsWith('/upload') && body?.type) started = body;
       if (path.endsWith('/upload') && body?.type) return opts.limit ? { status: 429, body: { error: 'limit', limit: 'lifter' } } : { status: 200, body: { upload_id: 'u1' } };
       if (path.endsWith('/upload') && body?.parts) return { status: 200, body: { urls: Object.fromEntries((body.parts as number[]).map(n => [n, `put:${n}`])) } };
       return { status: 404, body: {} };
@@ -26,7 +27,7 @@ function fakeServer(opts: { failPart?: number; limit?: boolean } = {}) {
       return true;
     },
   };
-  return { net, r2, calls, get uploaded() { return uploaded as { parts: { part: number }[]; command_times: unknown } | null; } };
+  return { net, r2, calls, get uploaded() { return uploaded as { parts: { part: number }[]; command_times: unknown } | null; }, get started() { return started as Record<string, unknown> | null; } };
 }
 
 const pending = (): Pending => ({
@@ -43,6 +44,15 @@ describe('the meet video uploader', () => {
     expect([...s.r2.keys()].sort()).toEqual([1, 2, 3]);
     expect(s.uploaded!.parts.map(x => x.part)).toEqual([1, 2, 3]);
     expect(s.uploaded!.command_times).toEqual(p.commandTimes);
+  });
+
+  it('starts with the phone\'s recording time as recorded_at (3.4), or when it was saved if that is all it has', async () => {
+    const s = fakeServer();
+    await sendOnce({ ...pending(), savedAt: Date.UTC(2026, 10, 14, 23, 1), recordedAt: Date.UTC(2026, 10, 14, 22, 59, 30) }, s.net, () => {}, noSave);
+    expect(s.started).toEqual({ type: 'video/webm;codecs=vp9', recorded_at: '2026-11-14T22:59:30.000Z' });
+    const t = fakeServer();
+    await sendOnce({ ...pending(), savedAt: Date.UTC(2026, 10, 14, 23, 1) }, t.net, () => {}, noSave);
+    expect(t.started?.recorded_at).toBe('2026-11-14T23:01:00.000Z');
   });
 
   it('a part that fails is retried later, and the next try sends only what R2 is missing', async () => {

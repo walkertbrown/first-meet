@@ -1,12 +1,12 @@
 /* Try a lift (plan 5.2; look 4 layout, 5.14, 9). The stage itself is stage.css. */
 
 /* ---------- Choose, set up, and the camera errors: chalk pages ---------- */
-.try-page { min-height: 100dvh; display: flex; flex-direction: column; background: var(--chalk); color: var(--ink);
-  padding: 0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left)); }
-.try-top { display: flex; align-items: center; min-height: 64px; padding-top: env(safe-area-inset-top); }
+.try-page { min-height: var(--vh); display: flex; flex-direction: column; background: var(--chalk); color: var(--ink);
+  padding: 0 max(20px, var(--sa-r)) 0 max(20px, var(--sa-l)); }
+.try-top { display: flex; align-items: center; min-height: 64px; padding-top: var(--sa-t); }
 .try-close { width: 48px; height: 48px; margin-left: -12px; display: grid; place-items: center; color: var(--ink); border-radius: 4px; }
 .try-close svg { width: 24px; height: 24px; }
-.try-col { flex: 1; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 560px; padding: 8px 0 calc(24px + env(safe-area-inset-bottom)); }
+.try-col { flex: 1; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 560px; padding: 8px 0 calc(24px + var(--sa-b)); }
 .try-col .body { color: var(--ink); }
 .try-actions { margin-top: auto; padding-top: 24px; display: flex; flex-direction: column; gap: 12px; }
 .try-actions .link { align-self: center; min-height: 48px; }
@@ -28,7 +28,7 @@
 .switch input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 3px; }
 
 /* ---------- The stage over the panel ---------- */
-.try-app { height: 100dvh; background: var(--chalk); }
+.try-app { height: var(--vh); background: var(--chalk); }
 .try-stagecol { height: 100%; display: flex; flex-direction: column; }
 .try-stagecol .stage { flex: 1; min-height: 0; container-type: size; }
 /* A stage wider than tall (a phone on its side, look 4a): the command also fits the height. */
@@ -53,7 +53,7 @@
 .try-what.boxed { padding: 3px 7px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px var(--stage-ink); }
 
 /* A sample's credit (look 7): Caption, stage-ink at 70%, 12 px in, inside the safe areas, for the whole clip. */
-.try-stagecol .credit { left: calc(12px + env(safe-area-inset-left)); bottom: calc(12px + env(safe-area-inset-bottom)); right: 12px; font-size: 14px; line-height: 18px; }
+.try-stagecol .credit { left: calc(12px + var(--sa-l)); bottom: calc(12px + var(--sa-b)); right: 12px; font-size: 14px; line-height: 18px; }
 .try-stagecol .stage:has(.credit) .spotparts { bottom: 44px; }
 .try-stagecol .stage:has(.credit) .spotline { bottom: 100px; }
 .try-stagecol .stage:has(.credit) .rec { bottom: 44px; }
@@ -61,7 +61,7 @@
 /* The panel (look 4): chalk, 20 px in, at most 400 px; it folds away while she lifts. */
 .try-stagecol .panel { flex: none; background: var(--chalk); color: var(--ink); max-height: 400px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent; transition: max-height 480ms var(--ease-sheet); }
 .try-stagecol.full .panel { max-height: 0; overflow: hidden; }
-.panel-in { padding: 20px 20px calc(30px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 16px; }
+.panel-in { padding: 20px 20px calc(30px + var(--sa-b)); display: flex; flex-direction: column; gap: 16px; }
 .panel-in .try-actions { margin-top: 0; padding-top: 0; }
 
 /* The held breath (look 9 step 8): "Breathe." in ink-3 Sheet title type. */
@@ -81,6 +81,8 @@
 .result .why { margin-top: 12px; border-radius: 4px; background: var(--surface); box-shadow: 0 0 0 1px var(--rule), inset 5px 0 0 var(--lamp-red); padding: 12px 14px 12px 20px; }
 .result .why b { display: block; font-family: var(--font-display); font-weight: 800; font-stretch: 110%; font-size: 14px; line-height: 18px; letter-spacing: .1em; text-transform: uppercase; color: var(--no-text); margin-bottom: 2px; }
 .result .why span { font-size: 17px; line-height: 25px; }
+/* Item 91: a decided attempt reopened (a reload, "Back to the platform") is already settled. */
+.settled-open .spill, .settled-open .stage .dim, .settled-open .result h2, .settled-open .result p, .settled-open .result .why { transition: none; }
 
 /* ---------- Desktop: a single 560 px column on the left (look 4) ---------- */
 @media (min-width: 1024px) {
@@ -95,7 +97,118 @@
   .result h2, .result p, .result .why, .result p + .why { transition: none; }
   .after { animation: none; }
   .try-stagecol .panel { transition: none; }
+  /* the held first frame's dim lifts at once with motion off */
+  .footage .held-dim { transition: none; }
 }
 
 /* The result's live region is always there, so the result is announced; empty, it takes no gap. */
 .panel-in > .live:empty { margin-top: -16px; }
+/* the side panel's gap is 12 px: the empty live region takes back exactly that, so the last button sits
+   16 px from the sheet's bottom (LookieBot 5) */
+.try-app.land .panel-in > .live:empty { margin-top: -12px; }
+
+/* ---------- The Barbell bench on the stage (look 5.14c) ---------- */
+/* 1. The tap. The words sit bottom left, where the spot segments were, over a 160 px scrim; in over
+   200 ms, out over 160 ms on her tap. Sized for arm's length: she comes to the phone to tap. */
+.tapwords { position: absolute; left: 0; right: 0; bottom: 0; min-height: 160px; z-index: 3; pointer-events: none;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 0 24px calc(24px + var(--sa-b)) calc(24px + var(--sa-l));
+  background: linear-gradient(to top, rgb(13 14 19 / .72), transparent); animation: tw-in 200ms var(--ease-out); transition: opacity 160ms var(--ease-out); }
+.tapwords.out { opacity: 0; }
+.tapwords > * { max-width: 520px; margin: 0; }
+.tapwords .sheet-title { color: var(--stage-ink); }
+.tapwords .small { margin-top: 6px; color: var(--stage-ink-2); }
+@keyframes tw-in { from { opacity: 0; } }
+/* The whole camera view is the target: no snapping, no hit box to miss. Under the HUD and the words. */
+.tap-target { position: absolute; inset: 0; z-index: 2; margin: 0; padding: 0; border: 0; background: transparent; cursor: crosshair; -webkit-tap-highlight-color: transparent; }
+.tap-target:focus-visible { outline: 3px solid var(--stage-ink); outline-offset: -6px; }
+/* The bar mark: four corner brackets, never a ring (only lights are round). Each corner is two 10 px
+   arms, a 3 px --lamp-white stroke with square caps. It follows the tracker with no easing; it locks on
+   from 1.25x over 180 ms, and fades over 160 ms when lost or at "Start!". */
+.barmark-layer { position: absolute; z-index: 2; pointer-events: none; }
+.barmark { position: absolute; transform: translate(-50%, -50%); filter: drop-shadow(0 0 1px rgb(13 14 19 / .8)); animation: bm-lock 180ms var(--ease-out); transition: opacity 160ms var(--ease-out); }
+.barmark.off { opacity: 0; }
+.barmark i { position: absolute; width: 10px; height: 10px; border: 0 solid var(--lamp-white); }
+.barmark i:nth-child(1) { left: 0; top: 0; border-width: 3px 0 0 3px; }
+.barmark i:nth-child(2) { right: 0; top: 0; border-width: 3px 3px 0 0; }
+.barmark i:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 3px 3px; }
+.barmark i:nth-child(4) { right: 0; bottom: 0; border-width: 0 3px 3px 0; }
+@keyframes bm-lock { from { opacity: 0; transform: translate(-50%, -50%) scale(1.25); } }
+/* 3. The void: frozen where the lift was lost, dimmed to 38% over 320 ms. No lamps, lit or unlit. */
+.stage.voided .dim { opacity: .38; transition: opacity 320ms var(--ease-out); }
+.stage.voided .lamps { opacity: 0; }
+.stage.voided .vignette { opacity: 1; }
+/* Her bench clip holds on the "Press!" frame under the close call's dim. */
+.stage.benchclip .dim { opacity: .18; transition: opacity 500ms var(--ease-out); }
+.void-sheet { display: flex; flex-direction: column; flex: 1; }
+.void-sheet:focus { outline: none; }
+.void-sheet .sheet-title { margin: 0; }
+.void-sheet .body { margin: 8px 0 0; color: var(--ink-2); }
+.void-sheet .try-actions { margin-top: auto; padding-top: 24px; }
+@media (prefers-reduced-motion: reduce) {
+  .tapwords, .barmark { animation: none; transition: none; }
+  .stage.voided .dim { transition: none; }
+}
+
+/* ---------- Which way the phone stands (plan 3.10, look 4a and 4b) ---------- */
+/* The turning phone at Find your spot: a 56 x 96 px phone in a 2 px --stage-ink outline, 4 px radius. It
+   turns 90° over 600 ms (--ease-in-out), holds 800 ms, and repeats twice. Under it one Body line in
+   stage-ink; with no gravity, the rotation-lock line 12 px under that. With motion off it is shown turned. */
+/* The footage dims under it, as under the void sheet's words, so a white outline reads on a bright room. */
+/* Look 4a (item 93): over the live camera, under the stage's usual 38% black dim; the line 16 px under the
+   drawing. In over 200 ms, out over 200 ms (--ease-out), then the segments and the set-up line fade in. */
+.turnphone { position: absolute; inset: 0; z-index: 2; padding: 0 20px; background: rgb(0 0 0 / .38);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; pointer-events: none;
+  animation: tw-in 200ms var(--ease-out); }
+.turnphone .phone-draw { width: 56px; height: 96px; border: 2px solid var(--stage-ink); border-radius: 4px; box-sizing: border-box;
+  margin-bottom: 16px; animation: phone-turn 1400ms var(--ease-in-out) 3 both; }
+.turnphone .phone-draw.to-tall { animation-name: phone-stand; }
+.turnphone .body { max-width: 440px; margin: 0; color: var(--stage-ink); text-wrap: balance; }
+.turnphone .body + .body { margin-top: 12px; }
+.turnphone.out { opacity: 0; transition: opacity 200ms var(--ease-out); }
+/* "Not now", or no motion sensor: 40%, still, drawn already turned; the lines stay at full strength */
+.turnphone.dimmed .phone-draw { opacity: .4; animation: none; transform: rotate(-90deg); }
+.turnphone.dimmed .phone-draw.to-tall { transform: none; }
+.stage.turning .spotparts { opacity: 0; transform: translateY(8px); transition: none; }
+.stage.spotting.turned-once:not(.turning) .spotparts { transition-duration: 200ms; }
+.stage.turned-once .spotline { animation: tw-in 200ms var(--ease-out); }
+@keyframes phone-turn { 0% { transform: rotate(0deg); } 42.857%, 100% { transform: rotate(-90deg); } }
+@keyframes phone-stand { 0% { transform: rotate(-90deg); } 42.857%, 100% { transform: rotate(0deg); } }
+/* The motion step (look 4b): one step on --chalk, the lift icon at 32 px, the Body line in ink-2. */
+.motion-step .icon { color: var(--ink); }
+.motion-step .body { color: var(--ink-2); }
+@media (prefers-reduced-motion: reduce) {
+  .turnphone, .turnphone .phone-draw, .stage.turned-once .spotline { animation: none; }
+  .stage.spotting.turned-once:not(.turning) .spotparts { transition: none; }
+  .turnphone .phone-draw { transform: rotate(-90deg); }
+  .turnphone .phone-draw.to-tall { transform: none; }
+}
+
+/* ---------- Look 4a: a phone on its side ---------- */
+/* The stage on the left, full screen while she lifts; from the held breath on, the panel is a 340 px
+   right column, --chalk, 16 px in, with its own scroll and a 56 px primary pinned 16 px from the bottom.
+   It slides in from the right over 480 ms and out over 320 ms (--ease-sheet). */
+.try-app.land .try-stagecol { flex-direction: row; }
+.try-app.land .try-stagecol .stage { flex: 1; min-width: 0; height: 100%; }
+.try-app.land .try-stagecol .panel { width: 340px; max-height: none; height: 100%; overflow-x: hidden; overflow-y: auto;
+  transition: width 480ms var(--ease-sheet); }
+.try-app.land .try-stagecol.full .panel { width: 0; max-height: none; transition-duration: 320ms; }
+.try-app.land .panel-in { width: 340px; min-height: 100%; gap: 12px;
+  padding: max(16px, var(--sa-t)) calc(16px + var(--sa-r)) calc(16px + var(--sa-b)) 16px; }
+.try-app.land .panel-in .btn { min-height: 56px; }
+.try-app.land .panel-in > .after, .try-app.land .panel-in > .try-actions:last-child { margin-top: auto; }
+.try-app.land .void-sheet .try-actions { padding-top: 16px; }
+.try-app.land .stage .lamps { top: calc(16px + var(--sa-t)); gap: 20px; }
+.try-app.land .stage .lamp { width: 56px; height: 56px; }
+.try-app.land .waitline { top: 88px; }
+.try-app.land .hud { padding-left: calc(20px + var(--sa-l)); padding-right: calc(20px + var(--sa-r)); }
+.try-app.land .spotparts { left: calc(20px + var(--sa-l)); right: calc(20px + var(--sa-r)); }
+/* The lamps never land on words (look 5.14a, plan item 91). With the panel open the landscape stage is about 500 px
+   wide, so the lamps, 16 px under the top, sit on the HUD's line: its words fade out over the lamps' own 320 ms.
+   The close and the sound toggle stay; the panel carries the result. */
+.try-app.land .hud > :not(.close) { transition: opacity 320ms var(--ease-out); }
+.try-app.land .stage:is(.judging, .lit, .norep) .hud > :not(.close) { opacity: 0; }
+.try-app.land .settled-open .hud > :not(.close) { transition: none; }
+/* A 308 px button: the panel's 56 px primary takes the small button's 17 px type, so "Declare your next attempt" fits. */
+.try-app.land .panel-in .btn { font-size: 17px; }
+@media (prefers-reduced-motion: reduce) { .try-app.land .try-stagecol .panel, .try-app.land .hud > :not(.close) { transition: none; } }

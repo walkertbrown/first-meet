@@ -7,7 +7,7 @@
 import { audio } from './thock';
 
 export const VOICE_KEYS = [
-  'squat', 'rack', 'start', 'press', 'down', 'good-spot', 'bar-loaded', 'weights-ready', 'good-lift',
+  'squat', 'rack', 'start', 'press', 'down', 'good-spot', 'bar-loaded', 'weights-ready', 'good-lift', 'lost-bar',
   ...Array.from({ length: 20 }, (_, i) => `count-${i + 1}` as const),
 ] as const;
 export type VoiceKey = (typeof VOICE_KEYS)[number];
@@ -18,6 +18,8 @@ const COUNT_WORDS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eig
 export const VOICE_WORDS: Record<VoiceKey, string> = {
   squat: 'Squat!', rack: 'Rack!', start: 'Start!', press: 'Press!', down: 'Down!',
   'good-spot': 'Good spot.', 'bar-loaded': 'Bar is loaded.', 'weights-ready': 'Weights ready.', 'good-lift': 'Good lift.',
+  // 3.4b: the bench's plate was lost, before "Start!" (tap again) or out of the rack (the void sheet)
+  'lost-bar': 'We lost the bar.',
   ...Object.fromEntries(COUNT_WORDS.map((w, i) => [`count-${i + 1}`, w])),
 } as Record<VoiceKey, string>;
 

@@ -2,6 +2,8 @@
 
   python worker/cli.py tests/clips/half-squat.webm --fps 15
   python worker/cli.py clip.webm --times 0,200,400 --split 200
+  python worker/cli.py clip.mp4 --pass1                                 # the live server's pass 1
+  python worker/cli.py clip.mp4 --windows '[[300,2050]]' --split 1100   # and its pass 2
 
 Used by scripts/worker-check.ts to prove the worker on the six test clips (piece 6).
 """
@@ -24,7 +26,18 @@ def main() -> None:
     ap.add_argument('--times', default='', help='comma-separated ms')
     ap.add_argument('--split', type=int, default=None, help='split ms; finds the two halves at once')
     ap.add_argument('--one', action='store_true', help='one process, no split')
+    ap.add_argument('--pass1', action='store_true', help="the live server's pass 1 (worker/main.py)")
+    ap.add_argument('--windows', default=None, help="JSON zoom windows: the live server's pass 2, with --split")
     a = ap.parse_args()
+
+    if a.pass1 or a.windows is not None:
+        info = poses.clip_info(a.clip)
+        poses.pool()
+        t0 = time.monotonic()
+        frames = poses.first_pass(a.clip, info.duration) if a.pass1 else poses.second_pass(a.clip, info.duration, json.loads(a.windows), a.split)
+        json.dump({'w': info.w, 'h': info.h, 'duration': info.duration, 'fps': None,
+                   'secs': round(time.monotonic() - t0, 3), 'frames': frames}, sys.stdout)
+        return
 
     info = poses.clip_info(a.clip)
     times = poses.grid(info.duration, a.fps) if a.fps else [int(x) for x in a.times.split(',') if x]

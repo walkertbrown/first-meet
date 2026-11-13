@@ -192,6 +192,38 @@ def middle(times_ms: list[int]) -> int | None:
     return sorted(times_ms)[len(times_ms) // 2] if len(times_ms) > 1 else None
 
 
+# The live server's two passes (plan 2.3), shared by worker/main.py and worker/cli.py, so CI's worker
+# test feeds the landmarker exactly as the live judge does (The Playner, 13 Nov: the close-call sample
+# read 1000 ms on staging and 1200 ms in CI, because the test ran pass 1 unsplit).
+FIRST_FPS = 5
+ZOOM_FPS = 15
+
+
+def first_pass(path: str, duration: float) -> list[dict]:
+    """Pass 1: the whole clip at 5 a second, in two halves at once, split halfway through its frames."""
+    first = grid(duration, FIRST_FPS)
+    return find_split(path, first, middle(first))
+
+
+def zoom_times(duration: float, windows: list[list[int]]) -> list[int]:
+    """Every frame of the 15-a-second grid inside each window, the first pass's included.
+
+    The landmarker tracks the body from frame to frame (VIDEO mode, as on the phone and in
+    Chromium), so a point depends on the frames before it. Found again inside a window, in
+    one unbroken run, the frames near the calls match an unbroken 15-a-second pass; the
+    web service keeps pass 2's point wherever both passes have a frame.
+    """
+    out: set[int] = set()
+    for a, b in windows:
+        out.update(grid(duration, ZOOM_FPS, max(0, a), b))
+    return sorted(out)
+
+
+def second_pass(path: str, duration: float, windows: list[list[int]], split_ms: int | None) -> list[dict]:
+    """Pass 2: the 15-a-second grid inside the web service's zoom windows, split where it says."""
+    return find_split(path, zoom_times(duration, windows), split_ms)
+
+
 def _warm_one(_: int) -> bool:
     return warm()
 

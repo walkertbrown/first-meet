@@ -3,7 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, lifters, meets, reviews } from '../../web/db/schema';
-import { countDemoRun, demoLimitHit, DEMO_SAMPLES, liftAgain, sampleLift, startDemo } from '../../web/lib/demo';
+import { countDemoRun, demoLimitHit, DEMO_SAMPLES, sampleLift, sampleOfAttempt, startDemo } from '../../web/lib/demo';
+import { attemptState } from '../../web/lib/attempt-state';
+import { declareNext, declareSheet } from '../../web/lib/meet-flow';
 import { askAnother, closeCallQueue, saveLights } from '../../web/lib/referee';
 import { keys } from '../../web/lib/r2';
 import { freshDb, MemStore, URL_ } from './setup';
@@ -36,9 +38,34 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     expect(a).toMatchObject({ isSampleClip: true, status: 'queued', commandTimes: DEMO_SAMPLES[0].meet!.command_times });
     expect(store.objects.has(a.videoKey!)).toBe(true);
     expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, a.id))).toHaveLength(1);
-    const again = await liftAgain(db, lifter.id);
-    const r2 = await sampleLift(db, store, lifter.id, again!.id);
+    // once squat 1 has left the phone, the declare sheet opens for squat 2 (5.26)
+    const [l] = await db.select().from(lifters).where(eq(lifters.id, lifter.id));
+    const sheet = await declareSheet(db, l);
+    expect(sheet).toMatchObject({ kind: 'sheet', slot: { lift: 'squat', number: 2 } });
+    if (sheet.kind !== 'sheet') return;
+    const pick = sheet.choices.find(c => c.selected)!;
+    expect((await declareNext(db, l, pick.value + 0.5)).status).toBe(422); // not one of the cards
+    const d = await declareNext(db, l, pick.value);
+    expect(d).toMatchObject({ status: 200, attempt: { lift: 'squat', number: 2, weight: pick.value, status: 'declared' } });
+    expect(await declareNext(db, l, pick.value)).toMatchObject({ status: 409 }); // squat 2 is now hers to lift
+    if (d.status !== 200) return;
+    const r2 = await sampleLift(db, store, lifter.id, d.attempt.id);
     expect(r2).toMatchObject({ status: 200, sample: { kind: 'no' } });
+  });
+
+  it('the attempt says which sample stood in, so a reload keeps the SAMPLE LIFT box and the credit (item 91)', async () => {
+    const { lifter, attempt } = await startDemo(db, { division: 'barbell' });
+    await sampleLift(db, store, lifter.id, attempt.id);
+    const good = DEMO_SAMPLES.find(c => c.kind === 'good')!;
+    const r = await attemptState(db, attempt.id, lifter.id);
+    expect(r).toMatchObject({ status: 200, attempt: { sample: true, sample_clip: { id: good.id, credit: good.credit, reps: good.meet!.reps } } });
+    // a run noted before the clip was: found by the command times it was given
+    await db.update(events).set({ detail: { lifter_id: lifter.id, sample: true, lift: 'squat' } }).where(eq(events.attemptId, attempt.id));
+    expect(await sampleOfAttempt(db, attempt.id, good.meet!.command_times)).toMatchObject({ id: good.id });
+    expect(await sampleOfAttempt(db, attempt.id, { loaded: 0, squat: 1, rack: 2 })).toBeNull();
+    // a filmed lift has none
+    const filmed = await startDemo(db, { division: 'barbell' });
+    expect(await attemptState(db, filmed.attempt.id, filmed.lifter.id)).toMatchObject({ status: 200, attempt: { sample: false, sample_clip: null } });
   });
 
   it('a Home sample is judged on the clip\'s reps', async () => {

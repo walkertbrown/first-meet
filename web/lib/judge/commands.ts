@@ -100,27 +100,38 @@ export class SquatCaller {
   }
 }
 
-export type DeadliftCommand = { cmd: 'start-window' | 'down'; t: number; noLockout?: boolean };
+export type DeadliftCommand = { cmd: 'start-window' | 'down'; t: number; noLockout?: boolean } | { cmd: 'rep'; t: number; k: number };
 
 /**
  * Deadlift: no start command. The window starts when the hip rises 2% of torso
  * length above where it was during "Bar is loaded."; "Down!" when the hip and
  * knee angles are both over 165° for 0.4 s; "Down!" anyway 12 s after the window
  * starts with no lockout.
+ *
+ * `reps` (a Home attempt, 3.8a): each lockout is a rep ("rep", k, and the stage says "Down!"); the
+ * next starts once the hip bends below 150° again. "Down!" ends it at the declared reps, or 8 s
+ * after a rep with no new one.
  */
 export class DeadliftCaller {
   state: 'loaded' | 'lifting' | 'done' = 'loaded';
   windowAt: number | null = null;
   downAt: number | null = null;
+  repsDone = 0;
   private base: { y: number; torso: number; n: number } = { y: 0, torso: 0, n: 0 };
   private lockSince: number | null = null;
+  private lastRepAt: number | null = null;
+  private armed = true;
   private side: Side | null = null;
-  constructor(private d: Dims, private rules: Rules = RULES) {}
+  constructor(private d: Dims, private rules: Rules = RULES, private reps = 1) {}
 
   feed(f: Frame): DeadliftCommand | null {
     const r = this.rules.deadlift;
     if (this.state === 'done') return null;
-    if (this.state === 'lifting' && this.windowAt !== null && f.t - this.windowAt >= r.noLockoutMs) {
+    if (this.state === 'lifting' && this.lastRepAt !== null && f.t - this.lastRepAt >= r.homeNoRepMs) {
+      this.state = 'done'; this.downAt = f.t;
+      return { cmd: 'down', t: f.t };
+    }
+    if (this.state === 'lifting' && this.lastRepAt === null && this.windowAt !== null && f.t - this.windowAt >= r.noLockoutMs) {
       this.state = 'done'; this.downAt = f.t;
       return { cmd: 'down', t: f.t, noLockout: true };
     }
@@ -137,11 +148,18 @@ export class DeadliftCaller {
       this.base.torso += m.torso; this.base.n++;
       return null;
     }
+    if (!this.armed) {
+      if (m.hip_deg < r.rearmBelowDeg) this.armed = true;
+      return null;
+    }
     if (m.hip_deg > r.lockoutMinDeg && m.knee_deg > r.lockoutMinDeg) {
       if (this.lockSince === null) this.lockSince = f.t;
       if (f.t - this.lockSince >= r.lockoutHoldMs) {
-        this.state = 'done'; this.downAt = f.t;
-        return { cmd: 'down', t: f.t };
+        this.lockSince = null;
+        if (this.reps <= 1) { this.state = 'done'; this.downAt = f.t; return { cmd: 'down', t: f.t }; }
+        this.repsDone++; this.lastRepAt = f.t; this.armed = false;
+        if (this.repsDone >= this.reps) { this.state = 'done'; this.downAt = f.t; }
+        return { cmd: 'rep', t: f.t, k: this.repsDone };
       }
     } else this.lockSince = null;
     return null;

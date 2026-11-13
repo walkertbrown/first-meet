@@ -1,0 +1,75 @@
+{
+ "6K8vpaHae6M": {
+  "t": 0,
+  "x": 0.29,
+  "y": 0.31,
+  "racked": true
+ },
+ "83WAq9kcQ0k": {
+  "t": 0.496,
+  "x": 0.417,
+  "y": 0.17,
+  "racked": false
+ },
+ "8qzWMdTtQLI": {
+  "t": 5.5,
+  "x": 0.22,
+  "y": 0.1,
+  "racked": true
+ },
+ "hIuj1H1WOxM": {
+  "t": 0.996,
+  "x": 0.401,
+  "y": 0.363,
+  "racked": false
+ },
+ "IA0PhDBzsz0": {
+  "t": 0,
+  "x": 0.73,
+  "y": 0.39,
+  "racked": true
+ },
+ "IKuXsXyFqUQ": {
+  "t": 0.995,
+  "x": 0.384,
+  "y": 0.456,
+  "racked": false
+ },
+ "m-k8mm8-HTg": {
+  "t": 0,
+  "x": 0.18,
+  "y": 0.25,
+  "racked": true
+ },
+ "NFjKcUxgqzA": {
+  "t": 3.499,
+  "x": 0.458,
+  "y": 0.211,
+  "racked": false
+ },
+ "Nv9hrTzZxJ0": {
+  "t": 0,
+  "x": 0.52,
+  "y": 0.12,
+  "racked": true
+ },
+ "VM_y8r4ZLBw": {
+  "t": 0,
+  "x": 0.27,
+  "y": 0.24,
+  "racked": true
+ },
+ "xXFjNqroOQ0": {
+  "t": 0,
+  "x": 0.52,
+  "y": 0.12,
+  "racked": true
+ },
+ "z838WQVSBmk": {
+  "t": 0.495,
+  "x": 0.528,
+  "y": 0.198,
+  "racked": false
+ },
+ "_note": "Bench commands test marks: racked clips as item 70; clips opening with the bar out are marked at the first frame held still at arm's length by eye (the settled time), racked false."
+}

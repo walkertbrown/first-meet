@@ -11,14 +11,18 @@ const FILL_LB: Record<number, string> = {
   55: 'var(--plate-red)', 45: 'var(--plate-blue)', 35: 'var(--plate-yellow)', 25: 'var(--plate-green)', 10: 'var(--plate-white)', 5: 'var(--plate-change)', 2.5: 'var(--plate-chrome)',
 };
 
-/** The drawing's width in its own units: the box's width, so the bar spans it (look 5.7). */
+/**
+ * The drawing's width in its own units: the box's width, so the bar spans it (look 5.7). Read
+ * against the box's drawn height, so a CSS height (44 px on short screens, look 5.6) scales the
+ * shapes evenly and the sleeves still reach the edges.
+ */
 function useDrawWidth(height: number) {
   const ref = useRef<SVGSVGElement>(null);
   const [w, setW] = useState(320);
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => { if (e.contentRect.width) setW(e.contentRect.width * (76 / height)); });
+    const ro = new ResizeObserver(([e]) => { if (e.contentRect.width) setW(e.contentRect.width * (76 / (e.contentRect.height || height))); });
     ro.observe(el);
     return () => ro.disconnect();
   }, [height]);

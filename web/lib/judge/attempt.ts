@@ -5,15 +5,22 @@ import { judgeDeadlift, judgeSquat, type AttemptResult, type Call } from './call
 import { DeadliftCaller } from './commands';
 import { RULES, type Rules } from './rules';
 import type { CommandTimes } from './zoom';
+import { judgePress, pressTimes, type PressRep } from './press';
+import { judgeOverhead, type OverheadRep } from './overhead';
+import { extrasOk, timesOnly } from './bar-measure';
 
 export type RepLight = { call: 'white' | 'red' | 'close'; reason: string | null; frame_ms?: number };
 
 export type MeetLift = 'squat' | 'bench' | 'deadlift';
 
-/** The commands each lift's recording has, in the order they're called. Recording starts at the soft command. */
+/**
+ * The commands each lift's recording has, in the order they're called. Recording starts at the soft
+ * command. Home's `bench` is the overhead press (3.7): "Start!", her reps, "Rack!", and no "Press!".
+ */
 export const COMMAND_ORDER: Record<MeetLift, { soft: string[]; start: string | null; then: string[] }> = {
   squat: { soft: ['loaded', 'ready'], start: 'squat', then: ['rack'] },
-  bench: { soft: ['loaded', 'ready'], start: 'start', then: ['press', 'rack'] },
+  // a recording has `press` or, when the phone called it late (3.4), `press_late`: never both
+  bench: { soft: ['loaded', 'ready'], start: 'start', then: ['press', 'press_late', 'rack'] },
   deadlift: { soft: ['loaded', 'ready'], start: null, then: ['down'] },
 };
 
@@ -26,6 +33,9 @@ export type CommandProblem = 'missing_soft' | 'missing_start' | 'out_of_order' |
  */
 export function checkCommandTimes(ct: CommandTimes | null | undefined, lift: MeetLift, durationMs: number): CommandProblem | null {
   if (!ct || typeof ct !== 'object') return 'missing_soft';
+  // the bench's `plate_tap` and `press_late_why` (3.4b) aren't times: a broken one can't be read
+  if (!extrasOk(ct)) return 'not_a_number';
+  ct = timesOnly(ct);
   for (const v of Object.values(ct)) if (typeof v !== 'number' || !Number.isFinite(v)) return 'not_a_number';
   for (const v of Object.values(ct)) if (v < 0 || v > durationMs) return 'outside_clip';
   const o = COMMAND_ORDER[lift];
@@ -88,8 +98,11 @@ export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, li
       result = judgeDeadlift(frames, d, window, rules);
     }
   } else {
-    // The press judge comes with the bench and floor press (phase 3); until then a referee decides.
-    return { call: { light: 'close', reason: 'judge_unavailable' }, lights: null, repLights: null, judgedFrameMs: null, measures: { lift: 'press not judged yet' }, result: null };
+    window = { start: ct.start, end: ct.rack ?? durationMs };
+    // Barbell: the bench press. Home: the overhead press (3.7), filmed front-on, every rep judged (3.4c).
+    result = repsDeclared
+      ? judgeOverhead(frames, d, window, rules)
+      : judgePress(frames, d, window, pressTimes(ct), rules);
   }
   const rep = result.reps[0];
   const measures: Record<string, unknown> = {
@@ -103,6 +116,11 @@ export function judgeAttempt(frames: Frame[], d: Dims & { duration: number }, li
   if (rep?.bottomKneeDeg !== undefined) measures.bottom_knee_deg = +rep.bottomKneeDeg.toFixed(1);
   if (rep?.lockoutHipDeg !== undefined) measures.lockout_hip_deg = +rep.lockoutHipDeg.toFixed(1);
   if (rep?.lockoutKneeDeg !== undefined) measures.lockout_knee_deg = +rep.lockoutKneeDeg.toFixed(1);
+  const press = rep as (PressRep & OverheadRep) | undefined;
+  if (press?.pressMs !== undefined) measures.press_ms = press.pressMs;
+  if (press?.pauseMs !== undefined) measures.pause_ms = press.pauseMs;
+  if (press?.riseArm !== undefined) measures.rise_arm = +press.riseArm.toFixed(3);
+  if (press?.lockoutElbowDeg !== undefined) measures.lockout_elbow_deg = +press.lockoutElbowDeg.toFixed(1);
   if (repsDeclared) return homeVerdict(result, repsDeclared, measures);
   return { call: result.call, lights: lightsOf(result.call), repLights: null, judgedFrameMs: result.judgedFrameMs, measures, result };
 }

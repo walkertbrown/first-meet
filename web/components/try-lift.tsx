@@ -18,6 +18,8 @@ import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recor
 import { makeClip, shareOrDownload } from '@/lib/stage/clip-maker';
 import { RESULT_WORDS, STAGE_WORDS, lampsOf, markColour, outcomeOf, type Outcome } from '@/lib/stage/try-words';
 import { WaitLine } from '@/components/wait-line';
+import { deviceOf } from '@/lib/device';
+import { useLand } from '@/lib/stage/land';
 
 type Step = 'choose' | 'setup' | 'stage' | 'denied' | 'nocamera';
 type Source = { kind: 'camera' } | { kind: 'sample'; sample: Sample };
@@ -48,34 +50,6 @@ function browserOf(): 'android' | 'ios' | 'other' {
   return 'other';
 }
 
-/** The browser and its major version, from the user agent ("Chrome 142", "Safari 18"). */
-function browserNameOf(ua: string): string {
-  for (const [re, name] of [[/Edg\/(\d+)/, 'Edge'], [/SamsungBrowser\/(\d+)/, 'Samsung Internet'], [/(?:Firefox|FxiOS)\/(\d+)/, 'Firefox'], [/CriOS\/(\d+)/, 'Chrome'], [/Chrome\/(\d+)/, 'Chrome'], [/Version\/(\d+).*Safari/, 'Safari']] as const) {
-    const m = ua.match(re);
-    if (m) return `${name} ${m[1]}`;
-  }
-  return 'Other browser';
-}
-
-/**
- * Which phone judged the clip: the browser and the model (plan 2.4, the phone judge's time per
- * clip, by device). Nothing that names her.
- */
-async function deviceOf(): Promise<string> {
-  const ua = navigator.userAgent;
-  const browser = browserNameOf(ua);
-  const uad = (navigator as Navigator & { userAgentData?: { getHighEntropyValues(k: string[]): Promise<{ model?: string; platform?: string; platformVersion?: string }> } }).userAgentData;
-  try {
-    if (uad) {
-      const h = await uad.getHighEntropyValues(['model', 'platform', 'platformVersion']);
-      const s = [h.platform, h.platformVersion?.split('.')[0], h.model].filter(Boolean).join(' ');
-      if (s) return `${browser} · ${s}`.slice(0, 80);
-    }
-  } catch { /* fall through */ }
-  const m = ua.match(/\(([^)]+)\)/)?.[1] ?? '';
-  return `${browser} · ${m}`.slice(0, 80);
-}
-
 function reportJudgeTime(body: Record<string, unknown>) {
   void deviceOf().then(device => {
     const data = JSON.stringify({ ...body, device });
@@ -101,6 +75,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const [sound, setSound] = useState(true);
 
   // the stage
+  const land = useLand();
   const [phase, setPhase] = useState<Phase>('loading');
   const [slow, setSlow] = useState(false);
   const [parts, setParts] = useState<Record<Part, boolean>>(NO_PARTS);
@@ -563,7 +538,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
   const recLabel = `REC ${Math.floor(recSec / 60)}:${String(recSec % 60).padStart(2, '0')}`;
 
   return (
-    <div className="try-app">
+    <div className={`try-app${land ? ' land' : ''}`}>
       <section className={`try-stagecol${panelOpen ? '' : ' full'}`} aria-label={isSample ? 'Sample lift' : 'Your lift'}>
         <div className={stageClass} ref={stageRef}>
           <div className={`footage${mirror ? ' mirror' : ''}`} style={box}>

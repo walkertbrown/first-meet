@@ -31,7 +31,7 @@ const hipsDark = (p: Pt[]) => { p[L.leftHip][2] = 0.2; p[L.rightHip][2] = 0.2; }
 
 describe('the four segments light separately', () => {
   it('all four are lit when she is in her spot', () => {
-    expect(checkSpot(standing(), D)).toEqual({ parts: { head: true, hips: true, knees: true, feet: true }, sideOn: true, ok: true, line: null });
+    expect(checkSpot(standing(), D)).toEqual({ parts: { head: true, hips: true, knees: true, feet: true }, sideOn: true, facing: false, room: true, ok: true, line: null });
   });
 
   it.each([
@@ -121,5 +121,56 @@ describe('it never starts an attempt until it passes', () => {
     const squat = seen.find(e => e.type === 'squat');
     expect(squat, '"Squat!" comes once she stands still in a good spot').toBeTruthy();
     expect(squat!.t).toBeGreaterThan(goodSpot.t);
+  });
+});
+
+/** The Home overhead press, filmed front-on (3.4c): shoulders square to the phone, arms in the rack. */
+function frontOn(): Pt[] {
+  const p: Pt[] = Array.from({ length: 33 }, () => [0.5, 0.5, 0] as Pt);
+  const set = (i: number, x: number, y: number, v = 0.99) => { p[i] = [x, y, v]; };
+  set(L.nose, 0.5, 0.24); set(L.leftEar, 0.47, 0.24); set(L.rightEar, 0.53, 0.24);
+  set(L.leftShoulder, 0.65, 0.3); set(L.rightShoulder, 0.35, 0.3);
+  set(L.leftElbow, 0.7, 0.4); set(L.rightElbow, 0.3, 0.4);
+  set(L.leftWrist, 0.66, 0.3); set(L.rightWrist, 0.34, 0.3);
+  set(L.leftHip, 0.6, 0.55); set(L.rightHip, 0.4, 0.55);
+  set(L.leftKnee, 0.6, 0.72); set(L.rightKnee, 0.4, 0.72);
+  set(L.leftAnkle, 0.6, 0.9); set(L.rightAnkle, 0.4, 0.9);
+  set(L.leftHeel, 0.6, 0.92); set(L.rightHeel, 0.4, 0.92);
+  return p;
+}
+const editFront = (f: (p: Pt[]) => void) => { const p = frontOn(); f(p); return p; };
+
+describe('front-on, for the Home overhead press (3.4c, 5.34)', () => {
+  it('square to the phone with room above: all four lit, no line', () => {
+    const s = checkSpot(frontOn(), D, RULES, 'front');
+    expect(s).toMatchObject({ parts: { head: true, hips: true, knees: true, feet: true }, facing: true, room: true, ok: true, line: null });
+  });
+
+  it('turned side-on: "Turn to face the phone."', () => {
+    const s = checkSpot(editFront(p => { p[L.leftShoulder][0] = 0.52; p[L.rightShoulder][0] = 0.48; }), D, RULES, 'front');
+    expect(s.facing).toBe(false);
+    expect(s.line).toBe('Turn to face the phone.');
+  });
+
+  it('an arm not seen counts as not facing', () => {
+    const s = checkSpot(editFront(p => { p[L.leftWrist][2] = 0.2; }), D, RULES, 'front');
+    expect(s.facing).toBe(false);
+    expect(s.line).toBe('Turn to face the phone.');
+  });
+
+  it('too near the top of the frame: the head segment goes dark, with the room line', () => {
+    const s = checkSpot(editFront(p => { for (const i of [L.nose, L.leftEar, L.rightEar]) p[i][1] = 0.12; for (const i of [L.leftShoulder, L.rightShoulder, L.leftWrist, L.rightWrist]) p[i][1] = 0.18; for (const i of [L.leftElbow, L.rightElbow]) p[i][1] = 0.28; }), D, RULES, 'front');
+    expect(s.room).toBe(false);
+    expect(s.parts.head).toBe(false);
+    expect(s.line).toBe("Step back so there's room above your head for your arms.");
+  });
+
+  it('feet out comes first, as side-on', () => {
+    const s = checkSpot(editFront(p => { p[L.leftAnkle][1] = 0.99; p[L.leftHeel][1] = 0.995; p[L.rightAnkle][1] = 0.99; p[L.rightHeel][1] = 0.995; }), D, RULES, 'front');
+    expect(s.line).toBe(FEET);
+  });
+
+  it('the side view never asks for room above', () => {
+    expect(checkSpot(frontOn(), D).room).toBe(true);
   });
 });

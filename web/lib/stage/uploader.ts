@@ -3,6 +3,8 @@
 // every 15 s and on the `online` event; a reload picks up where it stopped (the server lists the
 // parts R2 already has). It leaves IndexedDB only after the server confirms the upload.
 
+import { apiFetch } from '@/lib/stage/server-clock';
+
 export const PART_BYTES = 5 * 1024 * 1024;
 /** web/lib/queue.ts MAX_CLIP_BYTES: 90 s at 2.5 Mbps. */
 export const MAX_CLIP_BYTES = 28 * 1024 * 1024;
@@ -15,11 +17,15 @@ export type Pending = {
   commandTimes: Record<string, number>;
   uploadId: string | null;
   savedAt: number;
+  /** When the phone started recording (ms since 1970): the attempt's recorded_at (3.4, 3.8). */
+  recordedAt?: number;
 };
 
 export type UploadStatus =
   | { kind: 'saved' } | { kind: 'sending'; sent: number; of: number } | { kind: 'offline' } | { kind: 'retrying' }
-  | { kind: 'sent'; status: string } | { kind: 'limit'; limit: 'lifter' | 'everyone' } | { kind: 'refused'; error: string };
+  | { kind: 'sent'; status: string } | { kind: 'limit'; limit: 'lifter' | 'everyone' } | { kind: 'refused'; error: string }
+  /** item 85: the meet window turned it away (410), so it's void and isn't judged: never sent again */
+  | { kind: 'window'; reason: 'after_close' | 'upload_late'; closesAt: string | null; deadline: string | null };
 
 const DB = 'first-meet';
 const STORE = 'uploads';
@@ -59,8 +65,9 @@ export type Net = {
 
 export const browserNet: Net = {
   async api(path, init = {}) {
-    const res = await fetch(path, {
-      method: init.method ?? 'GET', credentials: 'same-origin',
+    // our API, never cached: each answer also corrects the phone's clock (item 86)
+    const res = await apiFetch(path, {
+      method: init.method ?? 'GET',
       headers: init.body ? { 'content-type': 'application/json' } : undefined,
       body: init.body ? JSON.stringify(init.body) : undefined,
     });
@@ -87,6 +94,12 @@ export async function sendOnce(p: Pending, net: Net, onStatus: (s: UploadStatus)
     let r;
     try { r = await net.api(path, init); } catch { throw new Retry(); }
     if (r.status >= 500 || r.status === 0) throw new Retry();
+    if (r.status === 410) {
+      throw new Stop({
+        kind: 'window', reason: r.body.void_reason === 'after_close' ? 'after_close' : 'upload_late',
+        closesAt: (r.body.closes_at as string | null) ?? null, deadline: (r.body.clip_deadline_at as string | null) ?? null,
+      });
+    }
     return r;
   };
   const base = `/api/attempts/${p.attemptId}`;
@@ -98,7 +111,8 @@ export async function sendOnce(p: Pending, net: Net, onStatus: (s: UploadStatus)
     else p.uploadId = null; // the upload is gone (finished elsewhere, or expired): start it again
   }
   if (!p.uploadId) {
-    const r = await api(`${base}/upload`, { method: 'POST', body: { type: p.type } });
+    // recorded_at comes from the phone (3.4): a clip filmed before the close counts if it sends later (3.8)
+    const r = await api(`${base}/upload`, { method: 'POST', body: { type: p.type, recorded_at: new Date(p.recordedAt ?? p.savedAt).toISOString() } });
     if (r.status === 429) throw new Stop({ kind: 'limit', limit: r.body.limit as 'lifter' | 'everyone' });
     if (r.status === 409) {
       // already queued or judged (another tab, or a confirm we never heard): the server has it
@@ -159,7 +173,11 @@ export function keepSending(attemptId: string, onStatus: (s: UploadStatus) => vo
     for (;;) {
       if (cancelled) return { kind: 'retrying' };
       const p = await getPending(attemptId).catch(() => undefined);
-      if (!p) return { kind: 'refused', error: 'not saved on this phone' };
+      if (!p) {
+        const status = { kind: 'refused', error: 'not saved on this phone' } as const;
+        reportFailed(net, attemptId, status.error, true);
+        return status;
+      }
       try {
         const status = await sendOnce(p, net, onStatus);
         await dropPending(attemptId).catch(() => {});
@@ -167,6 +185,7 @@ export function keepSending(attemptId: string, onStatus: (s: UploadStatus) => vo
       } catch (e) {
         if (e instanceof Stop) {
           await dropPending(attemptId).catch(() => {});
+          if (e.status.kind === 'refused') reportFailed(net, attemptId, e.status.error, !p.uploadId);
           onStatus(e.status);
           return e.status;
         }
@@ -176,6 +195,15 @@ export function keepSending(attemptId: string, onStatus: (s: UploadStatus) => vo
     }
   })();
   return { done, cancel: () => { cancelled = true; wake?.(); } };
+}
+
+/**
+ * "Your clip didn't send": tells the server why, for /ops (2.4, failed and refused uploads by
+ * device). `beforeStart`: no upload had begun. Never holds up the sheet; a lost report is only a
+ * missing count.
+ */
+function reportFailed(net: Net, attemptId: string, error: string, beforeStart: boolean) {
+  void net.api(`/api/attempts/${attemptId}/upload-failed`, { method: 'POST', body: { error, before_start: beforeStart } }).catch(() => {});
 }
 
 /** On page load: anything saved but not yet confirmed keeps sending (a reload resumes). */

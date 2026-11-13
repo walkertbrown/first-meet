@@ -12,12 +12,25 @@ async function joinDemo(page: Page) {
   await expect(page.getByRole('heading', { name: 'The demo meet' })).toBeVisible();
   await page.getByLabel('Name on your card').fill('E2E lifter');
   await page.getByRole('button', { name: 'Start the demo meet' }).click();
+  // the welcome sheet (5.36) opens over the platform; "Go to the platform" closes it and drops ?welcome=1
+  await expect(page).toHaveURL(/\/platform\?welcome=1$/);
+  const welcome = page.getByRole('dialog', { name: 'Welcome to the demo meet' });
+  await expect(welcome).toBeVisible();
+  await expect(welcome.getByRole('link', { name: /Open my corner page/ })).toHaveAttribute('href', /^\/corner\/[\w-]{16}$/);
+  // the sheet is in the server's HTML, and a click before the page hydrates does nothing
+  await expect(async () => {
+    if (await welcome.isVisible()) await welcome.getByRole('button', { name: 'Go to the platform' }).click({ timeout: 2000 });
+    await expect(welcome).toBeHidden({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
   await expect(page).toHaveURL(/\/platform$/);
 }
 
 const LIGHTS = /^(Good lift|No lift|Close call)$/;
 
 test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({ page }) => {
+  // 5.2 (item 94): the sample is judged on the server, so the pose model and its wasm never download
+  const models: string[] = [];
+  page.on('request', r => { if (new URL(r.url()).pathname.startsWith('/models/')) models.push(r.url()); });
   await joinDemo(page);
   await expect(page.getByText('Demo meet · Nothing here counts', { exact: false })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'SQUAT' })).toBeVisible();
@@ -31,8 +44,12 @@ test('the demo meet: the card, a sample lift, and the judge\'s lights', async ({
   // the judge on Render Workflows, then the lights (a close call waits for a referee instead)
   await expect(page.getByRole('heading', { name: /^(Good lift|No lift|Close call)$/ })).toBeVisible({ timeout: 4 * 60_000 });
   const title = await page.getByRole('heading', { name: /^(Good lift|No lift|Close call)$/ }).textContent();
+  // the judged frame's marks are the server's pose (look step 10), on the lights and on a close call
+  await expect(page.locator('svg.marks:not(.bench-path) circle').first()).toBeAttached({ timeout: 20_000 });
+  expect(models, 'no pose model on a demo sample').toEqual([]);
   if (title === 'Close call') await expect(page.getByRole('link', { name: "See the referee's side of this close call" })).toBeVisible();
-  else await expect(page.getByRole('button', { name: 'Lift it again' })).toBeVisible();
+  // 5.25 step 11: the first squat's lights lead to the next attempt
+  else await expect(page.getByRole('button', { name: 'Declare your next attempt' })).toBeVisible();
 });
 
 // The stage's beats on a sample lift, timed in the page (MutationObserver, never timers): when
@@ -69,24 +86,24 @@ async function liftSample(page: Page): Promise<Beats> {
 //   movement, never reading time.
 // - "RACK!" stays up 1.5 s and the frozen frame comes no sooner, even though the clips end 0.17 s
 //   and 0.67 s after their "Rack!": the stage holds the last frame, as on a camera lift.
-// "model blocked" runs the stage at frame rate, as on a phone (headless runs the pose model at
-// about a frame a second, which hides short beats); "model loaded" is the stage as it ships.
+// Since item 94 the sample never runs the pose model on the phone (5.2), so the stage runs at frame
+// rate, as on a phone, and no request goes to /models/.
 for (const motion of ['on', 'off'] as const) {
-  for (const model of ['loaded', 'blocked'] as const) {
-    test(`a sample lift's beats, motion ${motion}, pose model ${model}: 1.5 s holds and "RACK!" to the freeze`, async ({ page }) => {
-      if (motion === 'off') await page.emulateMedia({ reducedMotion: 'reduce' });
-      if (model === 'blocked') await page.route('**/models/**', r => r.abort());
-      await watchBeats(page);
-      const b = await liftSample(page);
-      const ms = (x?: number) => Math.round(x ?? NaN);
-      console.log(`beats motion ${motion} model ${model}: good spot→loaded ${ms(b.cmd['Bar is loaded.'] - b.cmd['Good spot.'])}, loaded→SQUAT ${ms(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.'])}, RACK up ${ms(b.rackOff! - b.cmd['RACK!'])}, RACK→frozen ${ms(b.frozenAt! - b.cmd['RACK!'])}`);
-      expect(b.cmd['Bar is loaded.'] - b.cmd['Good spot.']).toBeGreaterThanOrEqual(1400);
-      expect(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
-      expect(b.rackOff! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
-      expect(b.frozenAt, 'the judged frame shows').toBeDefined();
-      expect(b.frozenAt! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
-    });
-  }
+  test(`a sample lift's beats, motion ${motion}: 1.5 s holds and "RACK!" to the freeze, with no pose model`, async ({ page }) => {
+    if (motion === 'off') await page.emulateMedia({ reducedMotion: 'reduce' });
+    const models: string[] = [];
+    page.on('request', r => { if (new URL(r.url()).pathname.startsWith('/models/')) models.push(r.url()); });
+    await watchBeats(page);
+    const b = await liftSample(page);
+    expect(models, 'no pose model on a demo sample').toEqual([]);
+    const ms = (x?: number) => Math.round(x ?? NaN);
+    console.log(`beats motion ${motion}: good spot→loaded ${ms(b.cmd['Bar is loaded.'] - b.cmd['Good spot.'])}, loaded→SQUAT ${ms(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.'])}, RACK up ${ms(b.rackOff! - b.cmd['RACK!'])}, RACK→frozen ${ms(b.frozenAt! - b.cmd['RACK!'])}`);
+    expect(b.cmd['Bar is loaded.'] - b.cmd['Good spot.']).toBeGreaterThanOrEqual(1400);
+    expect(b.cmd['SQUAT!'] - b.cmd['Bar is loaded.']).toBeGreaterThanOrEqual(1450);
+    expect(b.rackOff! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
+    expect(b.frozenAt, 'the judged frame shows').toBeDefined();
+    expect(b.frozenAt! - b.cmd['RACK!']).toBeGreaterThanOrEqual(1450);
+  });
 }
 
 // NerdCider's phase 2 check: a browser's own recording (a WebM with no length in its header)
@@ -120,4 +137,151 @@ test('a lift on her own camera is judged, through the offline sheet\'s OK', asyn
     const r = await page.request.get(`/api/attempts/${id}`);
     expect((await r.json()).reason).not.toBe('judge_unavailable');
   }
+});
+
+// 3.11's other way: "You can keep this screen open or come back later." She closes the tab while
+// offline; her clip waits on the phone (IndexedDB). Back online, she opens the platform again and
+// it sends from where it was and is judged; nothing is lost, and the attempt is never back to ready.
+test('offline after the lift, the tab closed: back later, her saved clip sends and is judged', async ({ page, context }) => {
+  test.setTimeout(9 * 60_000);
+  await fakeCamera(page, '/samples/good-lift-wabba.mp4');
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: "I'm ready" });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.locator('.stage')).toBeVisible({ timeout: 2000 });
+    await expect(page.getByRole('button', { name: "I'm ready" })).toBeHidden({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.locator('.stage.recording')).toBeVisible({ timeout: 90_000 });
+  await context.setOffline(true);
+  await expect(page.getByText('Your lift is saved on this phone')).toBeVisible({ timeout: 90_000 });
+  const saved = await page.evaluate(() => new Promise<number>((resolve, reject) => {
+    const open = indexedDB.open('first-meet');
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      if (!db.objectStoreNames.contains('uploads')) { db.close(); return resolve(0); }
+      const req = db.transaction('uploads', 'readonly').objectStore('uploads').count();
+      req.onsuccess = () => { resolve(req.result); db.close(); };
+      req.onerror = () => reject(req.error);
+    };
+  }));
+  expect(saved).toBe(1);
+  await page.close();
+
+  await context.setOffline(false);
+  const back = await context.newPage();
+  await back.setViewportSize({ width: 390, height: 844 });
+  await back.goto('/platform');
+  await expect(back.getByRole('button', { name: "I'm ready" })).toBeHidden();
+  await expect(back.getByRole('heading', { name: LIGHTS })).toBeVisible({ timeout: 5 * 60_000 });
+});
+
+// LookieBot on 20d916a: a reload during the held breath left the stage black. It holds her lift's
+// frame under the 38% dim (look 7), from the server's copy of the clip, until the lights land.
+test('a reload during the held breath holds the lift\'s frame, dimmed', async ({ page }) => {
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.getByText('Sending to the judges')).toBeVisible({ timeout: 90_000 });
+  await page.reload();
+  const frozen = page.locator('.stage canvas.feed');
+  await expect(frozen).toBeVisible({ timeout: 20_000 });
+  const held = await page.evaluate(() => {
+    const st = document.querySelector('.stage')!;
+    const c = document.querySelector<HTMLCanvasElement>('.stage canvas.feed')!;
+    return { judging: st.classList.contains('judging'), w: c.width, h: c.height, dim: getComputedStyle(document.querySelector('.stage .dim')!).opacity };
+  });
+  // the lights may already be in if the judge was quick: then the held breath is over, and passes
+  if (!held.judging) { await expect(page.getByRole('heading', { name: LIGHTS })).toBeVisible(); return; }
+  expect(held.w).toBeGreaterThan(0);
+  expect(held.h).toBeGreaterThan(0);
+  expect(Number(held.dim)).toBeCloseTo(0.38, 2);
+  // not black: the footage, with the words and buttons over it hidden, has light in it
+  await page.addStyleTag({ content: '.stage .hud, .stage .lamps, .stage .vignette { visibility: hidden !important; }' });
+  const { default: sharp } = await import('sharp');
+  const png = await page.locator('.stage .footage').screenshot();
+  const { channels } = await sharp(png).stats();
+  const mean = (channels[0].mean + channels[1].mean + channels[2].mean) / 3;
+  expect(mean).toBeGreaterThan(12);
+});
+
+// Item 91 (LookieBot's fail 1, NerdCider on febfc59): a decided attempt reopened by a reload
+// opens settled. The lamps are lit with no bloom (and no thock), and the result is up at once,
+// never the held breath. A sample keeps its SAMPLE LIFT box and credit.
+async function settledOnReload(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __sawHeld: boolean };
+    w.__sawHeld = false;
+    new MutationObserver(() => {
+      if (document.querySelector('.stage.judging') || document.body?.textContent?.includes('Sending to the judges')) w.__sawHeld = true;
+    }).observe(document, { childList: true, subtree: true, characterData: true, attributes: true });
+  });
+  await page.reload();
+  await expect(page.getByRole('heading', { name: /^(Good lift|No lift)$/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.stage .lamps .lamp.settled')).toHaveCount(3);
+  await expect(page.getByText('Sample lift', { exact: true })).toBeVisible();
+  await expect(page.locator('.stage .credit')).toHaveText(/\S/);
+  await expect(page.locator('.stage canvas.feed')).toBeVisible({ timeout: 20_000 });
+  expect(await page.evaluate(() => (window as unknown as { __sawHeld: boolean }).__sawHeld), 'the held breath never shows').toBe(false);
+}
+test('a reload after the lights opens settled, and the sample keeps its box and credit', async ({ page }) => {
+  test.setTimeout(8 * 60_000);
+  await joinDemo(page);
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  const credit = await page.locator('.stage .credit').textContent();
+  await expect(page.getByRole('heading', { name: /^(Good lift|No lift)$/ })).toBeVisible({ timeout: 5 * 60_000 });
+  await settledOnReload(page);
+  await expect(page.locator('.stage .credit')).toHaveText(credit!);
+});
+
+// NerdCider on 20d916a (fail 5): after the demo referee's "Save the lights", "Back to the
+// platform" showed the old Squat 3 card ("I'm ready"), the client router's copy of the platform
+// from before the lift. It must show squat 3's lights, then Bench press 1 (5.36, 5.25 step 11).
+async function liftOneSample(page: Page) {
+  await expect(async () => {
+    const btn = page.getByRole('button', { name: 'Use a sample lift instead' });
+    if (await btn.isVisible()) await btn.click({ timeout: 2000 });
+    await expect(page.getByText('Sample lift', { exact: true })).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: LIGHTS })).toBeVisible({ timeout: 5 * 60_000 });
+}
+test('after the demo referee saves, "Back to the platform" shows squat 3\'s lights, then Bench press 1', async ({ page }) => {
+  test.setTimeout(20 * 60_000);
+  await joinDemo(page);
+  // the squat's samples cycle good, no lift, close call, so squat 3 is the close call
+  for (const next of [2, 3]) {
+    await liftOneSample(page);
+    await page.getByRole('button', { name: 'Declare your next attempt' }).click();
+    const sheet = page.getByRole('dialog');
+    await sheet.locator('.try-actions .btn').click();
+    await sheet.getByRole('button', { name: 'OK' }).click();
+    await expect(page.getByRole('article', { name: new RegExp(`^Squat, Attempt ${next} of 3`, 'i') })).toBeVisible({ timeout: 30_000 });
+  }
+  await liftOneSample(page);
+  await expect(page.getByRole('heading', { name: 'Close call' })).toBeVisible();
+  await page.getByRole('link', { name: "See the referee's side of this close call" }).click();
+  // the referee's close call: its h1 is the lift ("Squat 3 · …"), the tab title "Close call"
+  await expect(page.getByRole('heading', { name: /^Squat 3 · /, level: 1 })).toBeVisible({ timeout: 30_000 });
+  await expect(page).toHaveTitle(/Close call/);
+  const whites = page.getByRole('button', { name: 'White light' });
+  for (let i = 0; i < 3; i++) await whites.nth(i).click();
+  await page.getByRole('button', { name: 'Save the lights' }).click();
+  await page.getByRole('link', { name: 'Back to the platform' }).click();
+  await expect(page).toHaveURL(/\/platform$/);
+  await expect(page.getByRole('heading', { name: 'Good lift' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: "I'm ready" })).toHaveCount(0);
+  // item 91: settled, and still the sample, with its box and credit
+  await expect(page.locator('.stage .lamps .lamp.settled')).toHaveCount(3);
+  await expect(page.getByText('Sample lift', { exact: true })).toBeVisible();
+  await expect(page.locator('.stage .credit')).toHaveText(/\S/);
+  await page.getByRole('button', { name: /^(Declare your next attempt|Next: Bench press)$/ }).click();
+  await expect(page.getByRole('article', { name: /^Bench press, Attempt 1 of 3/i })).toBeVisible({ timeout: 30_000 });
 });

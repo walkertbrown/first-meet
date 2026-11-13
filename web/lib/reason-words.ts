@@ -20,13 +20,14 @@ export function reasonSentence(code: ReasonCode, lift: string, division: string)
     case 'depth':
       return 'Almost. Your hips stopped just above your knees. Sit back a little further and take it again.';
     case 'no_lockout':
-      return lift === 'bench'
-        ? "Your arms didn't straighten all the way. Next time, press until your elbows lock and hold for the command."
-        : "You didn't finish standing tall. Next time, stand all the way up and hold still for the command.";
-    case 'no_pause':
+      if (lift !== 'bench') return "You didn't finish standing tall. Next time, stand all the way up and hold still for the command.";
+      // 5.34: Home's press is the overhead press (choice A, #home-press)
       return division === 'home'
-        ? "You pressed before the 'Press!' call. Next time, let your elbows rest on the floor, wait for the call, then press."
-        : "You pressed before the 'Press!' call. Next time, let it rest on your chest, wait for the call, then press.";
+        ? "Your arms didn't straighten enough overhead, or didn't stay still at the top. Next time, press until your elbows are straight and hold it for a moment."
+        : "Your arms didn't straighten all the way. Next time, press until your elbows lock and hold for the command.";
+    case 'no_pause':
+      // the Barbell bench only: the overhead press has no "Press!"
+      return "You pressed before the 'Press!' call. Next time, let it rest on your chest, wait for the call, then press.";
     case 'moved_feet':
       return 'Your feet moved during the lift. Keep them planted from the command to the finish.';
     case 'downward':
@@ -40,10 +41,12 @@ export function reasonSentence(code: ReasonCode, lift: string, division: string)
 
 /**
  * The reasons a referee can give on a lift (3.5's "who can give it"): depth is the squat's,
- * the pause is the press's, and a hitch (the weight going down partway up) is the deadlift's.
+ * the pause is the Barbell bench's (Home's overhead press has no "Press!"), and a hitch (the
+ * weight going down partway up) is the deadlift's.
  */
-export function refereeReasons(lift: string): ReasonCode[] {
+export function refereeReasons(lift: string, division = 'barbell'): ReasonCode[] {
   if (lift === 'squat') return ['depth', 'no_lockout', 'moved_feet', 'weight_not_shown', 'not_whole_lift'];
+  if (lift === 'bench' && division === 'home') return ['no_lockout', 'moved_feet', 'weight_not_shown', 'not_whole_lift'];
   if (lift === 'bench') return ['no_pause', 'no_lockout', 'moved_feet', 'weight_not_shown', 'not_whole_lift'];
   return ['no_lockout', 'downward', 'moved_feet', 'weight_not_shown', 'not_whole_lift'];
 }

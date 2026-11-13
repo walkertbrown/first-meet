@@ -2,7 +2,7 @@
    stage itself is stage.css and try.css. */
 
 /* ---------- Chalk pages under the demo strip ---------- */
-.meet-page { min-height: calc(100dvh - 32px - env(safe-area-inset-top)); padding-top: 16px; }
+.meet-page { min-height: calc(var(--vh) - 32px - var(--sa-t)); padding-top: 16px; }
 @media (min-width: 1024px) { .meet-page { padding-top: 40px; } }
 
 /* ---------- The attempt card (look 5.6, 5.14b) ---------- */
@@ -23,9 +23,37 @@
 .attempt-card .small { margin: 0; }
 .ac-because { margin: 0; padding-top: 12px; border-top: 1px solid var(--rule); }
 
+/* ---------- Look 5.6 (item 81): short screens, and "I'm ready" docks when it can't fit ---------- */
+/* The Primary's wrapper is a direct child of the column. Its place: 40 px under the card (24 on
+   short screens), as when it led the actions group; the links follow it 12 px apart. */
+.look-56 { overflow-x: clip; }
+.look-56 .attempt-card { margin-bottom: 24px; }
+.ready-dock { position: sticky; z-index: 1; bottom: calc(16px + var(--sa-b)); margin-top: auto; display: flex; flex-direction: column; }
+/* 1 px, straight after the button, taking no space: its top is the button's own bottom edge
+   (-16 cancels the column's gap), and -1 below gives its pixel back. Edge to edge with the
+   observer's line counts as on screen, so docked starts the same pixel sticky lifts. */
+.ready-sentinel { display: block; height: 1px; margin: -16px 0 -1px; pointer-events: none; }
+.look-56 .ready-links { margin-top: -4px; padding-top: 0; }
+/* docked: a --chalk band, full width, from 12 px above the button to the bottom edge, a 1 px rule
+   along its top. No shadow, no blur, no motion. */
+.ready-dock[data-docked]::before { content: ''; position: absolute; z-index: -1; top: -12px; left: -100vmax; right: -100vmax;
+  bottom: calc(-16px - var(--sa-b)); background: var(--chalk); border-top: 1px solid var(--rule); }
+@media (min-width: 1024px) { .ready-dock { margin-top: 16px; } }
+@media (max-height: 700px) {
+  .look-56 .platform-top { margin-bottom: 8px; }
+  .look-56 .nine { margin-top: 12px; }
+  .look-56 .attempt-card { padding: 16px; gap: 8px; margin-bottom: 8px; }
+  .look-56 .ac-because { padding-top: 8px; }
+  .look-56 .attempt-card .bar-diagram { height: 44px; }
+}
+
 /* ---------- The stage under the strip ---------- */
-.meet-app.try-app { height: calc(100dvh - 32px - env(safe-area-inset-top)); }
+.meet-app.try-app { height: calc(var(--vh) - 32px - var(--sa-t)); }
 .meet-app .hud { padding-top: 22px; }
+/* look 5.14c (LookieBot 3): a tap anywhere on the camera view marks the plate. Only the close and sound
+   buttons take a tap; the HUD band, the lamps, the wait line and the spot segments let it through. */
+.meet-app .hud, .meet-app .stage .lamps, .meet-app .waitline, .meet-app .spotparts, .meet-app .spotline { pointer-events: none; }
+.meet-app .hud button { pointer-events: auto; }
 /* The meet HUD is three lines deep, so the lamps and the wait line sit under it. */
 .meet-app .stage .lamps { top: 132px; }
 .meet-app .waitline { top: 222px; text-shadow: 0 1px 10px rgb(10 11 14 / .85), 0 0 2px rgb(10 11 14 / .6); }
@@ -57,3 +85,175 @@
 .segments label:has(input:checked) { background: var(--ink); color: var(--on-ink); }
 .segments label:has(input:focus-visible) { box-shadow: inset 0 0 0 3px var(--focus); }
 .segments label:has(input:checked):has(input:focus-visible) { box-shadow: inset 0 0 0 3px var(--on-ink); }
+
+/* ---------- The platform (plan 5.24–5.27) ---------- */
+.platform-top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px; }
+.platform-msg { gap: 16px; }
+.platform-error { margin: 12px 20px; }
+.weight-xl .tag { align-self: center; margin-left: 12px; padding: 3px 6px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); font-size: 12px; line-height: 14px; white-space: nowrap; }
+
+/* The 9-attempt row (look 4): three groups, three 34 px slots each, 4 px between slots, 6 px between groups. */
+.nine { display: flex; gap: 6px; margin-top: 18px; align-items: flex-end; }
+.nine .grp { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.nine .grp > .eyebrow { color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nine .slots { display: flex; gap: 4px; }
+.slot { flex: 1; min-width: 0; height: 34px; border-radius: 3px; background: var(--surface-2); display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--ink-3); }
+.slot.now { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
+.slot.declared, .slot.sent { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
+.slot.white, .slot.red { background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); }
+/* a close call (5.27): the unlit pulsing lamp (its width is set by .nine.wait-below, below) */
+.slot.waiting { flex: 2.4; background: var(--surface); box-shadow: inset 0 0 0 1px var(--rule); color: var(--ink-2); }
+/* Item 76 (look 4, "Waiting on a referee"): every slot stays 34 px; "WAITING" sits 4 px under its group,
+   once, in Eyebrow --ink-2, and takes no room when nothing in the group waits. When the lights land the
+   word fades in 200 ms, then the room closes in 260 ms; it appears at once. Motion off: both at once. */
+.nine.wait-below { align-items: flex-start; }
+.nine.wait-below .slot.waiting { flex: 1; }
+.nine .grp > .grp-wait { display: block; height: 0; margin-top: -6px; opacity: 0; overflow: hidden; color: var(--ink-2); white-space: nowrap;
+  transition: opacity 200ms linear, height 260ms var(--ease-out) 200ms, margin-top 260ms var(--ease-out) 200ms; }
+.nine .grp > .grp-wait.on { height: 16px; margin-top: -2px; opacity: 1; transition: none; }
+@media (prefers-reduced-motion: reduce) { .nine .grp > .grp-wait { transition: none; } }
+/* item 85 (look 4 "Not judged"): the empty look with an en dash; NOT JUDGED in --ink-3 where WAITING goes */
+.nine .grp > .grp-wait.nj { color: var(--ink-3); }
+.nine-list .nj-weight { color: var(--ink-3); }
+.nine-list .nj-line { color: var(--ink-2); flex: none; }
+
+/* Item 75's stand-in line (look 5.14a): under SAMPLE LIFT on the stage, under the sentence on the result. */
+.meet-stand-in { margin: 6px 0 0; max-width: 260px; color: var(--stage-ink-2); text-align: left; }
+.small.stand-in { margin-top: 8px; color: var(--ink-2); }
+/* Item 91 (2): the lamps never land on words. On a sample standing in, the stand-in line and "Demo lifter ·
+   Barbell" fade out over the lamps' 320 ms as they fade in; the title and the box stay. At once with motion
+   off, or when a decided attempt reopens settled. */
+.standing-in .meet-stand-in, .standing-in .meet-hud-who { transition: opacity 320ms var(--ease-out); }
+.stage.judging .standing-in .meet-stand-in, .stage.judging .standing-in .meet-hud-who,
+.stage.lit .standing-in .meet-stand-in, .stage.lit .standing-in .meet-hud-who,
+.stage.norep .standing-in .meet-stand-in, .stage.norep .standing-in .meet-hud-who { opacity: 0; }
+.settled-open .standing-in .meet-stand-in, .settled-open .standing-in .meet-hud-who { transition: none; }
+@media (prefers-reduced-motion: reduce) { .standing-in .meet-stand-in, .standing-in .meet-hud-who { transition: none; } }
+
+/* Bottom sheet (look 5.10) */
+.sheet-scrim { position: fixed; inset: 0; z-index: 50; background: rgb(5 6 10 / .5); display: flex; align-items: flex-end; justify-content: center; animation: scrim-in 320ms var(--ease-out); }
+.bottom-sheet { width: 100%; max-width: 560px; max-height: calc(var(--vh) - 24px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ink-3) transparent;
+  background: var(--chalk); color: var(--ink); border-radius: 12px 12px 0 0; box-shadow: var(--sheet-shadow);
+  padding: 10px 20px calc(20px + var(--sa-b)); display: flex; flex-direction: column; gap: 12px; animation: sheet-up 480ms var(--ease-sheet); }
+.bottom-sheet .grab { align-self: center; width: 40px; height: 5px; border-radius: 3px; background: var(--rule); margin-bottom: 8px; }
+.bottom-sheet .try-actions { margin-top: 8px; padding-top: 0; }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sheet-scrim, .bottom-sheet { animation: none; } }
+/* Look 4a: on a phone on its side the sheet comes in from the right instead: 400 px wide and full height, with
+   a 12 px radius on its left corners, the same 480 ms and --ease-sheet. Drawn turned (4b), from her right. */
+:root:has(.try-app.land) .sheet-scrim { align-items: stretch; justify-content: flex-end; }
+:root:has(.try-app.land) .bottom-sheet { width: 400px; max-width: 400px; max-height: none; height: 100%; border-radius: 12px 0 0 12px;
+  padding: max(16px, var(--sa-t)) calc(20px + var(--sa-r)) calc(20px + var(--sa-b)) 20px; animation-name: sheet-left; }
+:root:has(.try-app.land) .bottom-sheet .grab { display: none; }
+@keyframes sheet-left { from { transform: translateX(100%); } to { transform: none; } }
+
+/* Choices (look 5.9): whole cards that are radios; the ring is the selection. */
+.choices { border: 0; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.choice { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: var(--surface); border-radius: 4px; box-shadow: 0 0 0 1px var(--rule); cursor: pointer; }
+.choice input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choice:hover { box-shadow: 0 0 0 1.5px var(--ink-3); }
+.choice:has(input:checked) { box-shadow: 0 0 0 2.5px var(--ink); }
+.choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+.choice.off { cursor: not-allowed; color: var(--ink-3); }
+.choice.off:hover { box-shadow: 0 0 0 1px var(--rule); }
+.choice.off .small, .choice.off .weight-m, .choice.off .unit { color: var(--ink-3); }
+.choice.off .bar-diagram { opacity: .4; }
+.choice-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.choice-label { font-weight: 700; font-size: 17px; line-height: 22px; }
+.choice-text .bar-diagram { margin-top: 6px; }
+.choice .weight-m { flex: none; display: flex; align-items: baseline; white-space: nowrap; }
+.choice .weight-m .unit { font-family: var(--font-display); font-weight: 800; font-size: 15px; line-height: 16px; letter-spacing: 0; margin-left: 4px; color: var(--ink-2); }
+
+/* Banner (look 5.10): referee lights in */
+.banner { position: fixed; z-index: 100; top: calc(12px + var(--sa-t)); left: 12px; right: 12px; max-width: 536px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; border-radius: 4px; text-align: left; cursor: pointer;
+  background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--rule), 0 18px 40px -18px rgb(0 0 0 / .5); font: inherit; animation: banner-in 420ms var(--ease-sheet); }
+.banner-lamps { display: flex; gap: 6px; flex: none; }
+.banner-more { display: block; color: var(--ink-2); }
+@keyframes banner-in { from { transform: translateY(-140%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .banner { animation: none; } }
+/* A banner is above everything, sheets included (look 5.10, item 92): the page, the scrim, the sheet,
+   then the banner, the highest layer the page has. An open sheet's top edge stays under its bottom edge. */
+:root:has(.banner) .bottom-sheet { max-height: calc(var(--vh) - var(--banner-bottom, 24px) - 8px); }
+
+/* ---------- "You totaled" (plan 5.28; type from look's scale, parts from the meet card) ---------- */
+.total-page { gap: 0; }
+.total-page .page-title { margin-top: 20px; }
+.total-page .body-l, .total-page > .body { margin-top: 16px; }
+.total-page .try-actions { margin-top: 28px; }
+.total-num { container-type: inline-size; margin-top: 8px; }
+/* Meet total type, shrunk to fit a long total on a narrow phone */
+.meet-total { display: block; font-weight: 900; font-stretch: 130%; letter-spacing: -.04em; white-space: nowrap;
+  font-size: min(118px, calc(100cqw / (var(--chars, 3) * .78))); line-height: .85; }
+.total-unit { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.nine-for-nine { padding: 3px 7px; border-radius: 3px; background: var(--lamp-white); color: var(--stage);
+  font-family: var(--font-display); font-weight: 800; font-stretch: 88%; font-size: 13px; line-height: 16px; letter-spacing: .06em; }
+.total-lifts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0 0; padding-top: 16px; border-top: 1px solid var(--rule); }
+.total-lifts > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.total-lifts dd { margin: 0; }
+.number-s { font-weight: 800; font-stretch: 105%; font-size: 24px; line-height: 28px; }
+.total-sum { margin-top: 12px; }
+.so-far { display: flex; align-items: baseline; gap: 8px; margin-top: 20px; }
+.so-far .weight-m .unit { font-size: 17px; margin-left: 4px; color: var(--ink-2); font-weight: 800; letter-spacing: 0; }
+
+/* her nine, after the meet (item 75's "See my lifts") */
+.nine-list { list-style: none; margin: 20px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.nine-list a { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.nine-list a:hover .nine-what { text-decoration: underline; }
+.nine-list a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.nine-what { flex: 1; min-width: 0; font-weight: 600; font-size: 16px; line-height: 22px; }
+/* LookieBot on 5573a20: the list starts 24 px under the slots (the column's 16 px gap and 8 px),
+   with no room held for a WAITING line that isn't there. The names are the corner page's (5.4). */
+.nine-page .platform-top { margin-bottom: 0; }
+.nine-page .nine-list { margin-top: 8px; }
+.nine-list .lamps-mini { display: flex; gap: 6px; }
+
+/* Item 80: the cheer banner (look 5.10): the lights banner with no lamps; a newer line crossfades in */
+.cheer-banner { cursor: default; }
+.cheer-lines { display: grid; flex: 1; min-width: 0; }
+.cheer-line { grid-area: 1 / 1; }
+.cheer-line.leaving { animation: cheer-out 200ms var(--ease-out) forwards; }
+.cheer-line.coming { animation: fade-in 200ms var(--ease-out); }
+@keyframes cheer-out { to { opacity: 0; } }
+
+/* "YOUR CORNER" on her total (5.28, look 5.10): a rule 24 px under the block above, the Eyebrow 16 px
+   under it, the names 8 px under that, the count 4 px under, then 32 px to the buttons */
+.your-corner { display: grid; grid-template-rows: 1fr; margin-top: 24px; border-top: 1px solid var(--rule); }
+.your-corner-in { overflow: hidden; min-height: 0; display: flex; flex-direction: column; padding-top: 16px; }
+.your-corner .eyebrow { color: var(--ink-2); }
+.your-corner-names { margin: 8px 0 0; color: var(--ink); }
+.your-corner-names strong { font-weight: 700; }
+.your-corner-count { margin: 4px 0 0; color: var(--ink-2); }
+.total-page .your-corner + .try-actions { margin-top: 32px; padding-top: 0; }
+.your-corner.opening { animation: corner-open 260ms var(--ease-out); }
+.your-corner.opening .your-corner-in > * { animation: fade-in 200ms var(--ease-out) 260ms both; }
+@keyframes corner-open { from { grid-template-rows: 0fr; margin-top: 0; border-top-color: transparent; } to { grid-template-rows: 1fr; } }
+
+/* "Your flight is lifting" (5.24, look 5.8): newest first, 32 px under "Test your spot first" with the
+   column's 16 px gap (item 81) */
+.flight-strip { margin-top: 16px; }
+.flight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.flight-head .caption { color: var(--ink-3); }
+.flight-list { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+.flight-row { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.flight-row .lamps-mini { display: flex; gap: 6px; flex: none; }
+/* a row that lands while she's here slides down 8 px and fades in; its lamps light 330 ms apart */
+.flight-row.arrive { animation: flight-in 260ms var(--ease-out); }
+.flight-row.arrive .mini-lamp { animation: lamp-wait calc(var(--i) * 330ms + 260ms) step-end; }
+@keyframes flight-in { from { transform: translateY(-8px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes lamp-wait { from { background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); } }
+/* a short phone keeps the card whole: one row, then none */
+
+@media (prefers-reduced-motion: reduce) {
+  .cheer-line.leaving { display: none; }
+  .cheer-line.coming, .your-corner.opening, .your-corner.opening .your-corner-in > *, .flight-row.arrive { animation: none; }
+}
+
+/* item 85: a late clip's total (look 4 "A total that changes after its reveal") */
+.meet-total[data-pending] { opacity: 0; }
+.total-late { margin-top: 8px; color: var(--ink-2); }
+.lift-drop { animation: lift-drop 560ms var(--ease-lamp); }
+@keyframes lift-drop { from { transform: translateY(-30px); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .lift-drop { animation: none; } }

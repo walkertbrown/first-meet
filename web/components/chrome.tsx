@@ -27,7 +27,7 @@ export function Footer() {
   );
 }
 
-export type LiftIconName = 'squat' | 'bench' | 'deadlift' | 'goblet-squat' | 'floor-press' | 'kettlebell-deadlift';
+export type LiftIconName = 'squat' | 'bench' | 'deadlift' | 'goblet-squat' | 'overhead-press' | 'floor-press' | 'kettlebell-deadlift';
 
 /** LookieBot's lift icons (look 7), from /lifts.svg. */
 export function LiftIcon({ name, size = 24, label }: { name: LiftIconName; size?: 24 | 32; label?: string }) {

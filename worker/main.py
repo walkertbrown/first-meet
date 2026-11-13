@@ -5,6 +5,10 @@ attempt, finds its poses in two passes, posts the points back, and asks again. I
 judges: the one judge (web/lib/judge/) runs in the web service, which also tells it
 where the second pass looks.
 
+A Barbell bench (plan 3.4b) comes with `track: 'bar'` and her `plate_tap`: in place of the
+pose run, the worker follows the plate from the tap on its 15-a-second frames
+(worker/plate.py, the phone's tracker in Python) and posts the path to /api/internal/bar.
+
 `find_clip(clip, times_ms, split_ms, fps)` finds poses in one of the repo's test clips at
 the times given, or in a timing clip made from one (worker/timing_clip.py). It proves the
 pose finder on Render (piece 6) and measures it; its points come back gzipped in the
@@ -32,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from render import Retry, TaskContext, Workflows  # noqa: E402
 
+import plate  # noqa: E402
 import poses  # noqa: E402
 import timing_clip  # noqa: E402
 
@@ -40,8 +45,9 @@ COMMIT = (os.environ.get('RENDER_GIT_COMMIT') or 'unknown')[:7]
 APP_URL = os.environ.get('APP_URL', '').rstrip('/')
 WORKER_IDLE_S = float(os.environ.get('WORKER_IDLE_S', 20))
 WORKER_MAX_S = float(os.environ.get('WORKER_MAX_S', 15 * 60))
-ZOOM_FPS = 15
-FIRST_FPS = 5
+ZOOM_FPS = poses.ZOOM_FPS
+FIRST_FPS = poses.FIRST_FPS
+zoom_times = poses.zoom_times
 
 # Render retries a task 3 times by default; the web service owns retrying, through the lease (3.9).
 NO_RETRY = Retry(max_retries=0, wait_duration_ms=1000)
@@ -70,20 +76,6 @@ def post(path: str, payload: dict, timeout: float = 30) -> tuple[int, dict | Non
         return 0, None
 
 
-def zoom_times(duration: float, windows: list[list[int]]) -> list[int]:
-    """Every frame of the 15-a-second grid inside each window, the first pass's included.
-
-    The landmarker tracks the body from frame to frame (VIDEO mode, as on the phone and in
-    Chromium), so a point depends on the frames before it. Found again inside a window, in
-    one unbroken run, the frames near the calls match an unbroken 15-a-second pass; the
-    web service keeps pass 2's point wherever both passes have a frame.
-    """
-    out: set[int] = set()
-    for a, b in windows:
-        out.update(poses.grid(duration, ZOOM_FPS, max(0, a), b))
-    return sorted(out)
-
-
 def one_attempt(job: dict) -> dict:
     """Two passes on one attempt (plan 2.3). The web service judges after pass 2."""
     t0 = time.monotonic()
@@ -92,16 +84,14 @@ def one_attempt(job: dict) -> dict:
         urllib.request.urlretrieve(job['video_url'], path)
         got = time.monotonic()
         info = poses.clip_info(path)
-        first = poses.grid(info.duration, FIRST_FPS)
-        f1 = poses.find_split(path, first, poses.middle(first))
+        f1 = poses.first_pass(path, info.duration)
         status, zoom = post('/api/internal/poses', {
             'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'), 'pass': 1,
             'w': info.w, 'h': info.h, 'duration': info.duration, 'frames': f1,
         })
         if status != 200 or not zoom:
             return {'attempt_id': job['attempt_id'], 'error': f'pass 1 post: {status}'}
-        second = zoom_times(info.duration, zoom.get('windows', []))  # the web service's zoomWindows()
-        f2 = poses.find_split(path, second, zoom.get('split_ms'))
+        f2 = poses.second_pass(path, info.duration, zoom.get('windows', []), zoom.get('split_ms'))  # its zoomWindows()
         secs = time.monotonic() - t0
         status, _ = post('/api/internal/poses', {
             'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'), 'pass': 2,
@@ -113,11 +103,36 @@ def one_attempt(job: dict) -> dict:
     return {'attempt_id': job['attempt_id'], 'frames': len(f1) + len(f2), 'secs': round(secs, 2), 'posted': status}
 
 
+def one_bar(job: dict) -> dict:
+    """A Barbell bench (plan 3.4b): the plate's path from her tap, for the referee's marks."""
+    t0 = time.monotonic()
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, 'clip')
+        urllib.request.urlretrieve(job['video_url'], path)
+        got = time.monotonic()
+        info = poses.clip_info(path)
+        bar = plate.track_clip(path, job['plate_tap'], info.duration)
+        secs = time.monotonic() - t0
+        status, _ = post('/api/internal/bar', {
+            'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'),
+            'w': info.w, 'h': info.h, 'duration': info.duration, 'path': bar,
+            'commit': COMMIT, 'secs': round(secs, 2), 'download_secs': round(got - t0, 2),
+        })
+        if status != 200:
+            return {'attempt_id': job['attempt_id'], 'error': f'bar post: {status}'}
+    return {'attempt_id': job['attempt_id'], 'frames': len(bar), 'secs': round(secs, 2), 'posted': status}
+
+
+def run_for(job: dict):
+    """The bench's bar path, or the two pose passes."""
+    return one_bar if job.get('track') == 'bar' else one_attempt
+
+
 def attempt_or_report(job: dict, run=None) -> dict:
     """One attempt; if anything about it fails, that attempt alone becomes a close call
     (`judge_unavailable`, plan 3.11) and the worker goes on to the next one."""
     try:
-        out = (run or one_attempt)(job)
+        out = (run or run_for(job))(job)
     except Exception as e:  # noqa: BLE001 - one bad clip never stops the worker
         out = {'attempt_id': job['attempt_id'], 'error': f'{type(e).__name__}: {e}'[:300]}
     if out.get('error'):
