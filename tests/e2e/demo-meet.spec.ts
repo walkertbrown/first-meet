@@ -2,6 +2,8 @@
 // the real judge's lights land on the platform. Only against a running site with its database,
 // storage and judge (E2E_BASE_URL); the built site alone has none of them.
 import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fakeCamera } from './fake-camera';
 
 test.skip(!process.env.E2E_BASE_URL, 'needs staging: the database, R2 and the judge');
@@ -304,4 +306,55 @@ test('after the demo referee saves, "Back to the platform" shows squat 3\'s ligh
   await expect(ref.locator('.stage .credit')).toHaveText(/\S/);
   await ref.getByRole('button', { name: /^(Declare your next attempt|Next: Bench press)$/ }).click();
   await expect(ref.getByRole('article', { name: /^Bench press, Attempt 1 of 3/i })).toBeVisible({ timeout: 30_000 });
+});
+
+// Item 95 (3.4, piece 6): a sample's frozen frame is its saved one (samples.json), from "Sending to the
+// judges" through the lights and the marks, on every run. Each sample 5 times (five lifters at once, each
+// lifting the squat's three samples: good lift, no lift, close call), and every frame the stage froze on is
+// read from its moment in the clip (canvas.feed's data-ms). The good-lift sample froze on 3800 ms on one run
+// and 3000 ms on the next (NerdCider, 13 Nov).
+const SAVED: Record<string, number> = Object.fromEntries(
+  (JSON.parse(readFileSync(join(__dirname, '../../content/samples/samples.json'), 'utf8')) as { clips: { kind: string; judged_frame_ms: number }[] })
+    .clips.map(c => [({ good: 'Good lift', no: 'No lift', close: 'Close call' } as Record<string, string>)[c.kind], c.judged_frame_ms]));
+test('each demo sample 5 times: the stage freezes on its saved frame, and it never moves', async ({ browser }) => {
+  test.setTimeout(35 * 60_000);
+  const run = async () => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.addInitScript(() => {
+      const w = window as unknown as { __frozen: number[] };
+      w.__frozen = [];
+      const rec = () => {
+        const c = document.querySelector<HTMLCanvasElement>('.stage canvas.feed');
+        if (c && !c.hidden && c.dataset.ms) w.__frozen.push(Number(c.dataset.ms));
+      };
+      new MutationObserver(rec).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-ms', 'hidden'] });
+    });
+    await joinDemo(page);
+    const seen: Record<string, number[]> = {};
+    for (const next of [2, 3, 0]) {
+      await page.evaluate(() => { (window as unknown as { __frozen: number[] }).__frozen = []; });
+      await liftOneSample(page);
+      const title = (await page.getByRole('heading', { name: LIGHTS }).textContent())!;
+      // the marks land on the frame after the replay: everything the stage froze on until then
+      await expect(page.locator('svg.marks:not(.bench-path) circle').first()).toBeAttached({ timeout: 30_000 });
+      await expect(page.locator('.stage canvas.feed')).toBeVisible();
+      (seen[title] ??= []).push(...await page.evaluate(() => (window as unknown as { __frozen: number[] }).__frozen));
+      if (!next) break;
+      await page.getByRole('button', { name: 'Declare your next attempt' }).click();
+      const sheet = page.getByRole('dialog');
+      await sheet.locator('.try-actions .btn').click();
+      await sheet.getByRole('button', { name: 'OK' }).click();
+      await expect(page.getByRole('article', { name: new RegExp(`^Squat, Attempt ${next} of 3`, 'i') })).toBeVisible({ timeout: 30_000 });
+    }
+    await ctx.close();
+    return seen;
+  };
+  const runs = await Promise.all(Array.from({ length: 5 }, run));
+  console.log(`item 95 frozen frames: ${JSON.stringify(runs)}`);
+  for (const [title, ms] of Object.entries(SAVED)) {
+    const all = runs.map(r => r[title]);
+    expect(all.every(x => x?.length), `${title}: every run froze a frame`).toBe(true);
+    expect([...new Set(all.flat())], `${title}: every frozen frame on all 5 runs is the saved ${ms} ms`).toEqual([ms]);
+  }
 });

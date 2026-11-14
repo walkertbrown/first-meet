@@ -264,6 +264,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (!snap || !fc) return null;
     fc.width = snap.canvas.width; fc.height = snap.canvas.height;
     fc.getContext('2d')!.drawImage(snap.canvas, 0, 0);
+    // the frame's moment in the clip, so the demo test can check a sample's frozen frame never moves (item 95)
+    fc.dataset.ms = String(Math.round(snap.t));
     setFrozen(true);
     return snap;
   };
@@ -1334,7 +1336,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
 function grab(video: HTMLVideoElement, d: Dims): SideSnap {
   const c = document.createElement('canvas'); c.width = d.w; c.height = d.h;
   c.getContext('2d')!.drawImage(video, 0, 0, d.w, d.h);
-  return { t: 0, depth: 0, p: [], canvas: c, side: 'left' };
+  return { t: Math.round(video.currentTime * 1000), depth: 0, p: [], canvas: c, side: 'left' };
 }
 
 /** The deeper of the two sides' deepest frames: the judged moment (or the judged side's, when known). */
