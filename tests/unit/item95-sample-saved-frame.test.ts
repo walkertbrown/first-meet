@@ -27,6 +27,8 @@ describe('item 95: a demo sample\'s frame is its saved one', () => {
   it('the worker test checks the band at the saved frame, and no longer the 67 ms check', () => {
     const w = read('tests/worker/worker.test.ts');
     expect(w).toContain('const at = poseAt(frames, saved!);');
+    // the marks are drawn at exactly the frame the stage holds (NerdCider, 13 Nov)
+    expect(w).toContain('the server has a pose at exactly the saved ${saved} ms (nearest: ${at!.t} ms)`).toBe(saved);');
     expect(w).toContain("if (s.kind === 'no') expect(depth, band).toBeLessThan(RULES.squat.redDepthMax);");
     expect(w).toContain("if (s.kind === 'good') expect(depth, band).toBeGreaterThan(RULES.squat.whiteDepthMin);");
     expect(w).not.toContain('the worker\'s ${v.measures.judged_frame_ms} ms`).toBeLessThanOrEqual');
