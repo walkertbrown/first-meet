@@ -7,6 +7,8 @@ import { connect, type Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '../../web/db/schema';
 import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, parseBar, takeBar, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
 import { BarCaller, judgeClip, type BarPoint, type Frame } from '../../web/lib/judge';
+import { judgedFrame } from '../../web/lib/attempt-state';
+import samples from '../../content/samples/samples.json';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
 type Raw = { w: number; h: number; duration: number; frames: Frame[] };
@@ -209,6 +211,34 @@ describe.skipIf(!URL_)('the judge queue', () => {
     expect(got.filter(j => j === null)).toHaveLength(4);
     const rows = await db.select().from(judgeQueue);
     expect(new Set(rows.map(r => r.workerId)).size).toBe(6);
+  });
+
+  // item 95: a sample's frame is its saved one. The judge still makes the call, but the stored frame (and so
+  // the frame route and the marks) is samples.json's, with the server's points there. The good-lift sample's
+  // saved 3800 ms is fed points whose own lowest frame is elsewhere, so the judge's pick and the saved frame differ.
+  it('a demo sample stores and sends its saved judged frame, and keeps the judge\'s own pick in measures', async () => {
+    const good = samples.clips.find(c => c.id === 'good-lift')!;
+    const { attempts: [id] } = await seed(db, store, 1);
+    await db.update(attempts).set({ isSampleClip: true }).where(eq(attempts.id, id));
+    const [{ lifterId }] = await db.select({ lifterId: attempts.lifterId }).from(attempts).where(eq(attempts.id, id));
+    await db.insert(events).values({ kind: 'demo_run', attemptId: id, detail: { lifter_id: lifterId, sample: true, lift: 'squat', clip: good.id } });
+    await markUploaded(db, store, id, CT);
+    const w = await worker('w-sample');
+    await claimNext(db, store, w);
+    const dims = { w: racked.w, h: racked.h, duration: racked.duration };
+    await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 1, ...dims, frames: racked.frames });
+    await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 2, ...dims, frames: racked.frames });
+    const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+    const own = v0.result!.reps[0].judgedFrameMs;
+    expect(own).not.toBe(good.judged_frame_ms);
+    expect(a).toMatchObject({ status: 'judged', call: 'white', judgedFrameMs: good.judged_frame_ms });
+    expect(a.measures).toMatchObject({ judged_frame_ms: own });
+    const f = await judgedFrame(db, store, id, lifterId);
+    expect(f.status).toBe(200);
+    if (f.status !== 200) return;
+    expect(f.frame.ms).toBe(good.judged_frame_ms);
+    const near = racked.frames.filter(x => x.p).reduce((b, x) => (Math.abs(x.t - good.judged_frame_ms) < Math.abs(b.t - good.judged_frame_ms) ? x : b));
+    expect(f.frame.p).toEqual(near.p);
   });
 
   it('nothing waiting: 204, and the worker is marked idle', async () => {

@@ -58,6 +58,16 @@ export function torsoLength(p: Pt[], d: Dims): number {
 
 export const mid = (a: XY, b: XY): XY => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, v: Math.min(a.v, b.v) });
 
+/**
+ * The frame with a pose nearest a moment: where the marks are drawn for a judged frame (the frame
+ * route), and where the worker test measures a sample's saved frame (item 95).
+ */
+export function poseAt(frames: readonly Frame[], ms: number): (Frame & { p: Pt[] }) | null {
+  let best: Frame | null = null;
+  for (const f of frames) if (f.p && (!best || Math.abs(f.t - ms) < Math.abs(best.t - ms))) best = f;
+  return best?.p ? (best as Frame & { p: Pt[] }) : null;
+}
+
 /** The measures for one frame on one side. */
 export function measure(p: Pt[], d: Dims, side: Side) {
   const s = SIDES[side];

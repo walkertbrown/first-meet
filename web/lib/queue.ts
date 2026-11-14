@@ -7,6 +7,7 @@ import type { Db } from '@/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '@/db/schema';
 import { checkCommandTimes, judgeAttempt, measureBar, mergePasses, plateTap, shadowLights, zoomWindows, type BarPoint, type Frame, type MeetLift, type PlateTap } from '@/lib/judge';
 import { keys } from '@/lib/r2';
+import { sampleJudgedMs, sampleOfAttempt } from '@/lib/sample-clip';
 
 /** What the queue needs from R2 (web/lib/r2.ts), so the tests can use a stand-in. */
 export interface Store {
@@ -189,6 +190,12 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
   // 3.4b: a Barbell bench never gets the camera's light, even from a worker that ran poses on it
   const v = benchByBar(a) && judged.call.light !== 'close'
     ? { ...judged, call: { light: 'close' as const, reason: 'bench_referee' as const }, lights: null, repLights: null } : judged;
+  // item 95: a sample's frame is its saved one (samples.json). The judge still makes the call, but the frame
+  // stored, sent by the frame route and marked is the saved one, with the server's points there, so the demo
+  // stage never moves: on a still bottom several frames sit within noise of the lowest. The judge's own pick
+  // stays in measures.judged_frame_ms. Her own lifts keep the judge's frame.
+  const saved = a.isSampleClip ? await sampleOfAttempt(db, a.id, a.commandTimes).then(s => (s ? sampleJudgedMs(s.id) : null)) : null;
+  const judgedFrameMs = saved ?? v.judgedFrameMs;
   const posesKey = keys.poses(a.id);
   await store.putJson(posesKey, { ...dims, frames, commit: p.commit ?? null });
   const close = v.call.light === 'close';
@@ -202,7 +209,7 @@ export async function takePoses(db: Db, store: Store, p: PosesPost):
     await tx.update(attempts).set({
       status, posesKey, judgedAt: sql`now()`,
       call: v.call.light, lights: v.lights, repLights: v.repLights, reason: 'reason' in v.call ? v.call.reason : null,
-      measures: { ...v.measures, commit: p.commit ?? null }, judgedFrameMs: v.judgedFrameMs,
+      measures: { ...v.measures, commit: p.commit ?? null }, judgedFrameMs,
     }).where(eq(attempts.id, a.id));
     await tx.update(judgeWorkers).set({ attemptsDone: sql`${judgeWorkers.attemptsDone} + 1`, lastSeenAt: sql`now()` })
       .where(eq(judgeWorkers.workerId, p.worker_id));

@@ -8,7 +8,7 @@ import { barbellOpener, homeOpener, type Units } from '@/lib/meet';
 import { keys, type R2 } from '@/lib/r2';
 import { logEvent, markUploaded } from '@/lib/queue';
 import { capSentence } from '@/lib/stage/meet-words';
-import samples from '../../content/samples/samples.json';
+import { CLIPS, type SampleClip } from '@/lib/sample-clip';
 
 export const DEMO_SLUG = 'demo';
 export const DEMO_DEFAULT_NAME = 'Demo lifter';
@@ -90,10 +90,7 @@ export async function demoLimitHit(db: Db, lifterId: string, env = process.env):
 export const countDemoRun = (db: Db, lifterId: string, attemptId: string, sample: boolean, lift?: Lift, clip?: string) =>
   logEvent(db, 'demo_run', { lifter_id: lifterId, sample, ...(lift ? { lift } : {}), ...(clip ? { clip } : {}) }, attemptId);
 
-type SampleClip = { id: string; kind: 'good' | 'no' | 'close'; file: string; credit: string; judged_frame_ms?: number; meet?: { lift: Lift; reps: number; command_times: Record<string, number> } };
-const CLIPS = samples.clips as SampleClip[];
-/** A sample's known judged frame (samples.json), by its id. */
-export const sampleJudgedMs = (id: string) => CLIPS.find(c => c.id === id)?.judged_frame_ms ?? null;
+export { sampleJudgedMs } from '@/lib/sample-clip';
 /** The squat's sample lifts for the demo, in the order they cycle (5.36). */
 export const DEMO_SAMPLES = CLIPS.filter(c => c.meet?.lift === 'squat');
 /**
@@ -136,21 +133,7 @@ export async function sampleLift(db: Db, store: Pick<R2, 'copy' | 'head' | 'putJ
 
 export { sampleRepsLine } from '@/lib/stage/meet-words';
 
-/**
- * Which sample stood in for an attempt (5.36), from its demo run: a reload or "Back to the platform"
- * keeps the SAMPLE LIFT box and the credit. Null for a filmed lift.
- */
-export async function sampleOfAttempt(db: Db, attemptId: string, commandTimes?: Record<string, number> | null): Promise<{ id: string; credit: string; reps: number } | null> {
-  const [row] = await db.select({ detail: events.detail }).from(events)
-    .where(sql`${events.attemptId} = ${attemptId} and ${events.kind} = 'demo_run' and (${events.detail}->>'sample')::boolean`)
-    .orderBy(sql`${events.at} desc`).limit(1);
-  const id = (row?.detail as { clip?: string } | undefined)?.clip;
-  // a run from before the clip was noted: the clip whose stored command times it was given
-  const same = (a: Record<string, number> | undefined, b: Record<string, number> | null | undefined) =>
-    !!a && !!b && Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
-  const clip = id ? CLIPS.find(c => c.id === id) : CLIPS.find(c => same(c.meet?.command_times, commandTimes));
-  return clip ? { id: clip.id, credit: clip.credit, reps: clip.meet?.reps ?? 1 } : null;
-}
+export { sampleOfAttempt } from '@/lib/sample-clip';
 
 /** When the made-up history's best set was judged: five days before now. */
 export const demoCapAt = (now = new Date()) => new Date(now.getTime() - 5 * 86_400_000);

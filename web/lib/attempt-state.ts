@@ -4,8 +4,8 @@ import { eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts } from '@/db/schema';
 import { judgedLift } from '@/lib/queue';
-import { sampleJudgedMs, sampleOfAttempt } from '@/lib/demo';
-import { nearSide, type Frame, type Pt, type Side } from '@/lib/judge/pose';
+import { sampleJudgedMs, sampleOfAttempt } from '@/lib/sample-clip';
+import { nearSide, poseAt, type Frame, type Pt, type Side } from '@/lib/judge/pose';
 import type { R2 } from '@/lib/r2';
 import { heldFrameMs } from '@/lib/stage/held-frame';
 
@@ -155,9 +155,9 @@ export async function judgedFrame(db: Db, store: Pick<R2, 'signedGet' | 'getJson
   if (!a.videoKey || !a.posesKey || a.judgedFrameMs === null || !a.call) return { status: 404, error: 'not judged yet' };
   const poses = await store.getJson<{ frames: Frame[] }>(a.posesKey);
   const ms = a.judgedFrameMs;
-  let best: Frame | null = null;
-  for (const f of poses?.frames ?? []) if (f.p && (!best || Math.abs(f.t - ms) < Math.abs(best.t - ms))) best = f;
-  if (!best?.p) return { status: 404, error: 'no pose at the judged frame' };
+  // a sample's stored frame is its saved one (item 95), so this answers the same frame on every run
+  const best = poseAt(poses?.frames ?? [], ms);
+  if (!best) return { status: 404, error: 'no pose at the judged frame' };
   const m = (a.measures ?? {}) as { side?: Side };
   return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms, p: best.p, side: m.side ?? nearSide(best) } };
 }

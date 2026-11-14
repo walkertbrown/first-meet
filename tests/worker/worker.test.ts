@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CLIPS_DIR, EXPECTED, checkClip, verdictOf } from '../clips/check';
-import { RULES, judgeAttempt, mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
+import { RULES, judgeAttempt, measure, mergePasses, poseAt, zoomWindows, type Frame, type Side } from '../../web/lib/judge';
 import samples from '../../content/samples/samples.json';
 
 const PY = process.env.WORKER_PYTHON;
@@ -129,11 +129,22 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
       const light = ({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind];
       expect(v.call.light).toBe(light);
-      // the stage holds the sample's saved judged frame before the call (samples.json): it must be the
-      // worker's, within one frame of the second pass's 15 fps grid, so a re-cut sample can't drift
+      // item 95: the server stores and marks the sample's saved frame (samples.json), not the judge's own pick,
+      // so the marks there must agree with the call: the server's depth at the saved frame, on the side it
+      // judged, falls in the sample's band. (This replaces "the judge's frame within 67 ms of the saved one":
+      // on a still bottom, frames 0.002 apart trade places from machine to machine.)
       const saved = (s as { judged_frame_ms?: number }).judged_frame_ms;
       expect(saved, `sample ${s.id}: judged_frame_ms in samples.json`).toBeTypeOf('number');
-      expect(Math.abs(v.measures.judged_frame_ms! - saved!), `sample ${s.id}: saved ${saved} ms, the worker's ${v.measures.judged_frame_ms} ms`).toBeLessThanOrEqual(Math.ceil(1000 / 15));
+      const at = poseAt(frames, saved!);
+      expect(at, `sample ${s.id}: a pose at the saved ${saved} ms`).not.toBeNull();
+      expect(Math.abs(at!.t - saved!), `sample ${s.id}: the pose nearest ${saved} ms is at ${at!.t} ms`).toBeLessThanOrEqual(Math.ceil(1000 / 15));
+      const side = v.measures.side as Side;
+      const depth = measure(at!.p, first, side).depth;
+      timings[`sample ${s.id}, saved frame`] = { ms: saved, pose_ms: at!.t, side, depth: +depth.toFixed(3) };
+      const band = `sample ${s.id}: depth ${depth.toFixed(3)} at the saved ${saved} ms (${side} side)`;
+      if (s.kind === 'no') expect(depth, band).toBeLessThan(RULES.squat.redDepthMax);
+      if (s.kind === 'close') { expect(depth, band).toBeGreaterThanOrEqual(RULES.squat.redDepthMax); expect(depth, band).toBeLessThanOrEqual(RULES.squat.whiteDepthMin); }
+      if (s.kind === 'good') expect(depth, band).toBeGreaterThan(RULES.squat.whiteDepthMin);
       // and from both sides, the far side forced (piece 6, item 94): the same call, its `kind`. The
       // 8837221 cut's sides were nearly tied, and its far side read a white.
       const w = judgeAttempt(frames.map(otherSide), first, 'squat', ct, undefined, s.meet.reps);
