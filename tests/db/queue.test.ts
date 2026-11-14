@@ -237,8 +237,11 @@ describe.skipIf(!URL_)('the judge queue', () => {
     expect(f.status).toBe(200);
     if (f.status !== 200) return;
     expect(f.frame.ms).toBe(good.judged_frame_ms);
-    const near = racked.frames.filter(x => x.p).reduce((b, x) => (Math.abs(x.t - good.judged_frame_ms) < Math.abs(b.t - good.judged_frame_ms) ? x : b));
-    expect(f.frame.p).toEqual(near.p);
+    // the server's points timed at exactly the saved frame (no nearest match)
+    expect(f.frame.p).toEqual(racked.frames.find(x => x.t === good.judged_frame_ms)!.p);
+    // a saved frame with no pose at exactly that moment draws no marks, rather than another frame's
+    await db.update(attempts).set({ judgedFrameMs: good.judged_frame_ms + 10 }).where(eq(attempts.id, id));
+    expect(await judgedFrame(db, store, id, lifterId)).toMatchObject({ status: 404, error: 'no pose at the judged frame' });
   });
 
   it('nothing waiting: 204, and the worker is marked idle', async () => {

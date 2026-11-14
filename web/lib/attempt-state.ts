@@ -155,8 +155,11 @@ export async function judgedFrame(db: Db, store: Pick<R2, 'signedGet' | 'getJson
   if (!a.videoKey || !a.posesKey || a.judgedFrameMs === null || !a.call) return { status: 404, error: 'not judged yet' };
   const poses = await store.getJson<{ frames: Frame[] }>(a.posesKey);
   const ms = a.judgedFrameMs;
-  // a sample's stored frame is its saved one (item 95), so this answers the same frame on every run
-  const best = poseAt(poses?.frames ?? [], ms);
+  // a sample's stored frame is its saved one (item 95): the server's points timed at exactly that frame, never
+  // the nearest, so the marks are drawn on the frame the stage holds (CI fails a saved frame off the pose grid).
+  // Her own lifts' frame is the judge's own pick from these frames.
+  const frames = poses?.frames ?? [];
+  const best = a.isSampleClip ? (frames.find(f => f.t === ms && f.p) as (Frame & { p: Pt[] }) | undefined) ?? null : poseAt(frames, ms);
   if (!best) return { status: 404, error: 'no pose at the judged frame' };
   const m = (a.measures ?? {}) as { side?: Side };
   return { status: 200, frame: { clip_url: await store.signedGet(a.videoKey), ms, p: best.p, side: m.side ?? nearSide(best) } };

@@ -16,13 +16,14 @@ describe('item 95: a demo sample\'s frame is its saved one', () => {
     expect(q).toContain('const judgedFrameMs = saved ?? v.judgedFrameMs;');
     expect(q).toContain('measures: { ...v.measures, commit: p.commit ?? null }, judgedFrameMs,');
   });
-  it('the frame route and the worker test take the pose nearest the frame the same way', () => {
+  it('the pose nearest a frame (her own lifts), and a sample\'s frame route takes the pose at exactly its frame', () => {
     const frames: Frame[] = [{ t: 3733, p: pt(0.1) }, { t: 3800, p: null }, { t: 3867, p: pt(0.3) }, { t: 4000, p: pt(0.4) }];
     // the nearest frame with a pose: 3800 has none, so 3733 (the first of the two 67 ms away)
     expect(poseAt(frames, 3800)!.t).toBe(3733);
     expect(poseAt(frames, 3990)!.t).toBe(4000);
     expect(poseAt([{ t: 0, p: null }], 0)).toBeNull();
-    expect(read('web/lib/attempt-state.ts')).toContain('const best = poseAt(poses?.frames ?? [], ms);');
+    // a sample's marks: the points at exactly the saved frame, never the nearest (The Playner, 13 Nov)
+    expect(read('web/lib/attempt-state.ts')).toContain('const best = a.isSampleClip ? (frames.find(f => f.t === ms && f.p) as (Frame & { p: Pt[] }) | undefined) ?? null : poseAt(frames, ms);');
   });
   it('the worker test checks the band at the saved frame, and no longer the 67 ms check', () => {
     const w = read('tests/worker/worker.test.ts');
