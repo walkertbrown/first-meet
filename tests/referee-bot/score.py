@@ -103,7 +103,7 @@ def lines(rows, set_by_id, label):
     lw_red = [r['id'] for r in lost_whites if call[r['id']] == 'red']
     other_wrong = len(wrong) - len(lw_red)
     out.append(('no majority red on a lost-track white (beyond the 1 allowed)', len(lw_red) + other_wrong <= allowed,
-                f'{len(lw_red)} of {len(lost_whites)} red: {", ".join(lw_red) or "none"}'))
+                f'{len(lw_red)} of {len(lost_whites)} red: {", ".join(lw_red) or "none"}; with {other_wrong} other wrong lights'))
 
     # 3. at least 85% of attempts agree ("either" agrees with anything; a failed attempt doesn't agree)
     agree = [r for r in rows if call[r['id']] is not None and (r['key'] == 'either' or (call[r['id']] == 'red') == is_red(r['key']))]
