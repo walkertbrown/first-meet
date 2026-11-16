@@ -137,9 +137,9 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       expect(saved, `sample ${s.id}: judged_frame_ms in samples.json`).toBeTypeOf('number');
       const at = poseAt(frames, saved!);
       expect(at, `sample ${s.id}: a pose at the saved ${saved} ms`).not.toBeNull();
-      // the frame route draws the marks from the pose nearest the stored frame, so the saved frame must be one the
-      // server has a pose at: off the grid, the marks would be drawn on a different frame from the one the stage
-      // holds (NerdCider, 13 Nov). Pass 2's 15 fps grid: 1000 * k / 15, rounded.
+      // a sample's frame route draws the marks from the points at exactly its saved frame (her own lifts use the
+      // nearest), so the saved frame must be one the server has a pose at: off the grid, the route answers 404 and
+      // no marks are drawn (NerdCider, 13 Nov). Pass 2's 15 fps grid: 1000 * k / 15, rounded.
       expect(at!.t, `sample ${s.id}: the server has a pose at exactly the saved ${saved} ms (nearest: ${at!.t} ms)`).toBe(saved);
       const side = v.measures.side as Side;
       const depth = measure(at!.p, first, side).depth;

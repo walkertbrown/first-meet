@@ -44,11 +44,30 @@ describe.skipIf(!URL_)('the meet video upload', () => {
   it('only the attempt\'s own lifter, webm or mp4 only, and an mp4 key for iPhone', async () => {
     const one = await startDemo(db, {});
     const two = await startDemo(db, {});
-    expect((await startAttemptUpload(db, store, one.attempt.id, two.lifter.id, 'video/webm')).status).toBe(403);
+    expect((await startAttemptUpload(db, store, one.attempt.id, two.lifter.id, 'video/webm')).status).toBe(404);
     expect((await startAttemptUpload(db, store, one.attempt.id, one.lifter.id, 'image/png')).status).toBe(400);
     const s = await startAttemptUpload(db, store, one.attempt.id, one.lifter.id, 'video/mp4');
     expect('key' in s && s.key.endsWith('.mp4')).toBe(true);
     expect((await signParts(db, store, one.attempt.id, one.lifter.id, 'x', [0])).status).toBe(400);
+  });
+
+  // NerdCider (15 Nov): /api/attempts/<a bad id>/upload answered 500. An id that doesn't exist, or isn't hers,
+  // is the caller's mistake: 404 with no detail, the same answer for both, on every upload step.
+  it('an attempt id that doesn\'t exist, isn\'t a uuid, or isn\'t hers answers 404 with no detail', async () => {
+    const one = await startDemo(db, {});
+    const two = await startDemo(db, {});
+    const none = { status: 404, error: 'no such attempt' };
+    for (const id of ['not-an-id', '00000000-0000-0000-0000-000000000000', one.attempt.id]) {
+      expect(await startAttemptUpload(db, store, id, two.lifter.id, 'video/webm')).toEqual(none);
+      expect(await signParts(db, store, id, two.lifter.id, 'x', [1])).toEqual(none);
+      expect(await partsDone(db, store, id, two.lifter.id, 'x')).toEqual(none);
+      expect(await attemptUploaded(db, store, id, two.lifter.id, { upload_id: 'x', parts: [{ part: 1, etag: '"e"' }], command_times: ct })).toEqual(none);
+      expect(await uploadFailed(db, id, two.lifter.id, { error: 'x' })).toEqual(none);
+    }
+    // and nothing about her attempt changed
+    const [a] = await db.select().from(attempts).where(eq(attempts.id, one.attempt.id));
+    expect(a.status).toBe(one.attempt.status);
+    expect(a.videoKey).toBeNull();
   });
 
   it('a clip past the size bound is refused before it is finished, and the attempt goes back to ready', async () => {
@@ -118,7 +137,7 @@ describe.skipIf(!URL_)('the meet video upload', () => {
     expect((await kinds()).map(k => k[0])).toEqual(['upload_started', 'upload_refused', 'upload_started', 'upload_failed']);
     // only her own attempt
     const other = await startDemo(db, {});
-    expect((await uploadFailed(db, attempt.id, other.lifter.id, { error: 'x' })).status).toBe(403);
+    expect((await uploadFailed(db, attempt.id, other.lifter.id, { error: 'x' })).status).toBe(404);
   });
 
   it('a clip the phone turned down before any upload began counts as tried and failed', async () => {

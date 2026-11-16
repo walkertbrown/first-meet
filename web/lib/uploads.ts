@@ -10,17 +10,21 @@ import { MAX_CLIP_BYTES, logEvent, markUploaded } from '@/lib/queue';
 import { refusalBody, voidAttempt, windowRefusal } from '@/lib/meet-window';
 
 export type UploadStore = Pick<R2, 'startUpload' | 'signPart' | 'listParts' | 'finishUpload' | 'head' | 'putJson' | 'getJson' | 'signedGet'>;
-type Fail = { status: 400 | 403 | 404 | 409 | 410 | 413 | 429; error: string; limit?: LimitHit; void_reason?: VoidReason; closes_at?: string | null; clip_deadline_at?: string | null };
+type Fail = { status: 400 | 404 | 409 | 410 | 413 | 429; error: string; limit?: LimitHit; void_reason?: VoidReason; closes_at?: string | null; clip_deadline_at?: string | null };
 
 const isDemoLifter = async (db: Db, id: string) =>
   !!(await db.select({ d: lifters.isDemo }).from(lifters).where(eq(lifters.id, id)))[0]?.d;
 const PART_BYTES = 5 * 1024 * 1024;
 const MAX_PARTS = Math.ceil(MAX_CLIP_BYTES / PART_BYTES); // a 90 s Home attempt at 1.5 Mbps is about 17 MB
 
+// An id that isn't an attempt, or isn't hers, is the caller's mistake: 404 with no detail, the same answer
+// either way (NerdCider and The Playner, 15 Nov). An id that isn't a uuid never reaches Postgres, which
+// would throw on it (a 500).
+const noAttempt = () => ({ status: 404, error: 'no such attempt' }) as Fail;
 async function own(db: Db, attemptId: string, lifterId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(attemptId)) return noAttempt();
   const [a] = await db.select().from(attempts).where(and(eq(attempts.id, attemptId)));
-  if (!a) return { status: 404, error: 'no such attempt' } as Fail;
-  if (a.lifterId !== lifterId) return { status: 403, error: 'not your attempt' } as Fail;
+  if (!a || a.lifterId !== lifterId) return noAttempt();
   return a;
 }
 
