@@ -135,7 +135,9 @@ export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number
   out.lost_share = inWin.length ? +(inWin.filter(p => !p.ok).length / inWin.length).toFixed(3) : 1;
   const startY = yNear(s, start, gap);
 
-  if (press !== null) {
+  // After a lost track (`press_late_why: lost`) the phone had no bar at Press!, so neither the pause nor a sink
+  // after it can be known (5.33, item 107): a path the tracker found again later isn't measured across the gap.
+  if (press !== null && why !== 'lost') {
     // the pause: back from Press!, the stretch the bar stayed within 5% of the rep's travel of its lowest point
     const before = s.filter(p => p.t >= start && p.t <= press);
     if (startY !== null && before.length) {

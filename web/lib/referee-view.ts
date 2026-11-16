@@ -46,6 +46,7 @@ export const BENCH_LINES = {
   sinking: "The phone called Press! while the bar was still going down. That's the phone's mistake: don't give a red for the pause.",
   lateStill: 'The phone called Press! late, after 1.5 s still.',
   lateLost: 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.',
+  pauseLost: 'Pause: not measured. The phone lost the bar.',
 } as const;
 
 /**
@@ -62,11 +63,13 @@ export function measuredLines(reason: string | null, m: Record<string, unknown> 
   }
   const out: string[] = [];
   if (bench) {
-    const pause = n('pause_s');
-    if (pause !== null) out.push(`Pause: the bar was still ${pause.toFixed(1)} s before Press!`);
-    out.push(BENCH_LINES.every);
-    if (m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
     const why = pressLateWhy(bench.commandTimes as never);
+    const pause = n('pause_s');
+    // a lost bar (5.33, item 107): no pause and no sinking line, even from measures stored before this rule
+    if (why === 'lost') out.push(BENCH_LINES.pauseLost);
+    else if (pause !== null) out.push(`Pause: the bar was still ${pause.toFixed(1)} s before Press!`);
+    out.push(BENCH_LINES.every);
+    if (why !== 'lost' && m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
     if (why === 'still') out.push(BENCH_LINES.lateStill);
     if (why === 'lost') out.push(BENCH_LINES.lateLost);
     return out;

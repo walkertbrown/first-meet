@@ -82,7 +82,14 @@ describe('a Barbell bench (3.4b, 5.33, look 5.13)', () => {
     const still = measuredLines('bench_referee', {}, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'still', rack: 4000 } });
     expect(still).toEqual([BENCH_LINES.every, 'The phone called Press! late, after 1.5 s still.']);
     const lost = measuredLines('bench_referee', {}, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'lost', rack: 4000 } });
-    expect(lost).toEqual([BENCH_LINES.every, 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.']);
+    expect(lost).toEqual(['Pause: not measured. The phone lost the bar.', BENCH_LINES.every, 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.']);
+  });
+  it('a lost bar never shows a pause or a sinking line, even from measures stored before 5.33 said so (item 107)', () => {
+    const lostCt = { start: 1000, press_late: 3000, press_late_why: 'lost', rack: 4000 };
+    const lines = measuredLines('bench_referee', { pause_s: 0, press_while_sinking: true }, { commandTimes: lostCt });
+    expect(lines).toEqual([BENCH_LINES.pauseLost, BENCH_LINES.every, BENCH_LINES.lateLost]);
+    expect(lines.some(l => l.includes('still 0.0 s'))).toBe(false);
+    expect(lines).not.toContain(BENCH_LINES.sinking);
   });
   it('a command_times bench is still only the commands line', () => {
     expect(measuredLines('command_times', { command_times: 'missing_start' }, { commandTimes: {} })).toEqual(['Commands: the start command is missing. Judge this one by eye, from the clip.']);

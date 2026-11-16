@@ -91,6 +91,16 @@ describe('measureBar', () => {
     expect(m.lost_after_start).toBe(true);
   });
 
+  it('after a lost bar, neither the pause nor a sink is measured, even where the path came back (5.33, item 107)', () => {
+    // the bar found again after the loss: measured across the gap, this Press! would read 0.0 s still and sinking
+    const m = measureBar(path(GOOD, 8000, t => t > 2300 && t < 2800), ct({ press_late: 2900, press_late_why: 'lost' }), DIMS);
+    expect(m.pause_s).toBeNull();
+    expect(m.sink).toBeNull();
+    expect(m.press_while_sinking).toBe(false);
+    // the same times as an on-time Press! do measure
+    expect(measureBar(path(GOOD), ct({ press: 2900 }), DIMS).press_while_sinking).toBe(true);
+  });
+
   it('back up with no "Press!": close short_pause; no Press! and no rep: close visibility', () => {
     const shortRep = knots([[0, 0.3], [2000, 0.3], [3500, 0.45], [4500, 0.3]]);
     expect(measureBar(path(shortRep), ct({}), DIMS).shadow).toEqual({ light: 'close', reason: 'short_pause' });
