@@ -165,7 +165,10 @@ export const attempts = pgTable('attempts', {
   measures: jsonb('measures').$type<Record<string, unknown>>(),
   judgedFrameMs: integer('judged_frame_ms'),
   clipKey: text('clip_key'),
-  clipStatus: text('clip_status'),
+  /** `render_clip` (5.30): `queued`, `rendering`, `ready` or `failed`; `clip_key` is the MP4 at `clips/<attempt>.mp4`. */
+  clipStatus: text('clip_status').$type<'queued' | 'rendering' | 'ready' | 'failed'>(),
+  /** When she shared her card clip from 5.30's Clip segment: this clip, and only this clip, is public (5.30, 5.5). */
+  clipSharedAt: at('clip_shared_at'),
   refereeId: uuid('referee_id').references(() => lifters.id),
   spotChecked: boolean('spot_checked').notNull().default(false),
   isSampleClip: boolean('is_sample_clip').notNull().default(false),
@@ -184,8 +187,53 @@ export const reviews = pgTable('reviews', {
   reason: text('reason'),
   note: text('note'),
   kind: text('kind').$type<'close_call' | 'second_opinion' | 'spot_check'>().notNull(),
+  /** The referee bot's reviews (3.4d, item 88): `referee_id` is empty. */
+  byBot: boolean('by_bot').notNull().default(false),
+  /** The bot's note for each lamp, Left, Head, Right (3.4d step 5). Shown on 5.33 and 5.36, never on her attempt. */
+  lampNotes: jsonb('lamp_notes').$type<(string | null)[]>(),
   createdAt: createdAt(),
 }, t => [index('reviews_attempt').on(t.attemptId)]);
+
+/**
+ * The referee bot's jobs (3.4d). `lamps`: one attempt sent to a referee. `spot_check`: one lifter's nine
+ * clips before the board is final (step 8). `waiting_frames` until `referee_frames` POSTs its frames,
+ * then `ready`, leased by the web service's worker (`running`), and `done` or `doubt` (three whites).
+ */
+export const refereeJobs = pgTable('referee_jobs', {
+  id: id(),
+  kind: text('kind').$type<'lamps' | 'spot_check'>().notNull().default('lamps'),
+  attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }),
+  lifterId: uuid('lifter_id').references(() => lifters.id, { onDelete: 'cascade' }),
+  status: text('status').$type<'waiting_frames' | 'ready' | 'running' | 'done' | 'doubt'>().notNull().default('waiting_frames'),
+  /** [{ n, t_ms, key, attempt_id?, sha256 }]: the JPEGs at `referee/<attempt>/<n>.jpg` */
+  frames: jsonb('frames').$type<RefereeFrame[]>(),
+  framesReadyAt: at('frames_ready_at'),
+  workerId: text('worker_id'),
+  leaseUntil: at('lease_until'),
+  tries: integer('tries').notNull().default(0),
+  firstErrorAt: at('first_error_at'),
+  lastError: text('last_error'),
+  /** `doubt`'s reason: `no_key`, `spend_limit`, `api_failing`, `too_slow`, `no_frames` (step 7) */
+  doubtReason: text('doubt_reason'),
+  /** Every API call, the warm-up included: tokens, cost, stop reason, model, ms (steps 3 and 10). */
+  calls: jsonb('calls').$type<RefereeCall[]>().notNull().default(sql`'[]'::jsonb`),
+  /** Each lamp's answer, Left, Head, Right, after step 4's second ask. Spot check: the one answer. */
+  answers: jsonb('answers').$type<unknown[]>(),
+  costUsd: real('cost_usd').notNull().default(0),
+  /** Staging's "Referee bot test answers" (step 7): what this job fakes from Anthropic. Null: real. */
+  testAnswers: text('test_answers'),
+  decidedAt: at('decided_at'),
+  createdAt: createdAt(),
+}, t => [
+  index('referee_jobs_ready').on(t.status, t.framesReadyAt),
+  uniqueIndex('referee_jobs_one_open').on(t.attemptId, t.kind).where(sql`${t.status} in ('waiting_frames', 'ready', 'running')`),
+]);
+
+export type RefereeFrame = { n: number; t_ms: number; key: string; attempt_id?: string; sha256?: string; note?: string };
+export type RefereeCall = {
+  lamp: 'warm' | 'left' | 'head' | 'right' | 'spot'; try: number; model: string | null; stop: string | null;
+  input: number; cache_write: number; cache_read: number; output: number; cost_usd: number; ms: number; error?: string;
+};
 
 export const cheers = pgTable('cheers', {
   id: id(),
