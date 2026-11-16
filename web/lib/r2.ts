@@ -47,6 +47,9 @@ export class R2 {
   /** A link anyone can GET for `seconds` (10 minutes by default). */
   signedGet(key: string, seconds = GET_LINK_SECONDS) { return this.presign('GET', key, seconds); }
 
+  /** A link that PUTs one object for `seconds` (render_clip's MP4). */
+  signedPut(key: string, seconds = PUT_LINK_SECONDS) { return this.presign('PUT', key, seconds); }
+
   /** Size and type, or null when there's no such object. */
   async head(key: string): Promise<{ bytes: number; type: string | null } | null> {
     const res = await this.call('HEAD', key);

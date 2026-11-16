@@ -2,6 +2,7 @@
 // sign-in beyond the demo's own session.
 //   POST {lights: [l, head, r], reasons?: [l, head, r], rep?} → {call, lights}
 import { db, hasDb } from '@/db';
+import { clipAfterLights } from '@/lib/card/clip-job';
 import { saveLights, type SaveInput } from '@/lib/referee';
 import { sessionFrom } from '@/lib/session';
 
@@ -19,5 +20,6 @@ export async function POST(req: Request, { params }: Ctx) {
   const body = await req.json().catch(() => null) as SaveInput | null;
   if (!body || typeof body !== 'object') return Response.json({ error: 'bad body' }, { status: 400 });
   const { status, ...rest } = await saveLights(db(), id, { kind: 'demo', lifterId: s.lifterId }, { lights: body.lights, reasons: Array.isArray(body.reasons) ? body.reasons : null, reason: body.reason ?? null, rep: body.rep ?? null });
+  if (status === 200) await clipAfterLights(db(), id);
   return Response.json(rest, { status });
 }

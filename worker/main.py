@@ -9,6 +9,10 @@ A Barbell bench (plan 3.4b) comes with `track: 'bar'` and her `plate_tap`: in pl
 pose run, the worker follows the plate from the tap on its 15-a-second frames
 (worker/plate.py, the phone's tracker in Python) and posts the path to /api/internal/bar.
 
+`render_clip(worker_id)` makes lift clips (piece 7, worker/clip.py): it asks for the next clip,
+draws it from her attempt and her story card, PUTs the MP4 to R2 at the link it was given, says how
+it went, and asks again. The web service only hands one out while no attempt waits for its poses.
+
 `find_clip(clip, times_ms, split_ms, fps)` finds poses in one of the repo's test clips at
 the times given, or in a timing clip made from one (worker/timing_clip.py). It proves the
 pose finder on Render (piece 6) and measures it; its points come back gzipped in the
@@ -23,6 +27,7 @@ import base64
 import gzip
 import hashlib
 import hmac
+import io
 import json
 import os
 import sys
@@ -34,8 +39,10 @@ from pathlib import Path
 STARTED = time.monotonic()
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from PIL import Image  # noqa: E402
 from render import Retry, TaskContext, Workflows  # noqa: E402
 
+import clip  # noqa: E402
 import plate  # noqa: E402
 import poses  # noqa: E402
 import timing_clip  # noqa: E402
@@ -162,6 +169,59 @@ def find_poses(ctx: TaskContext, worker_id: str) -> dict:
         post('/api/internal/worker-done', {'worker_id': worker_id, 'commit': COMMIT, 'attempts': len(done)})
     return {'commit': COMMIT, 'worker_id': worker_id, 'model_load_secs': round(ready - begun, 2),
             'process_secs': round(begun - STARTED, 2), 'attempts': done}
+
+
+def one_clip(job: dict) -> dict:
+    """One lift clip: her attempt and her story card in, the MP4 PUT to R2."""
+    t0 = time.monotonic()
+    with tempfile.TemporaryDirectory() as d:
+        video = os.path.join(d, 'attempt')
+        urllib.request.urlretrieve(job['video_url'], video)
+        with urllib.request.urlopen(APP_URL + job['card_path'], timeout=60) as r:
+            card = Image.open(io.BytesIO(r.read()))
+            card.load()
+        out = os.path.join(d, 'clip.mp4')
+        made = clip.render(job, video, card, out, d)
+        data = Path(out).read_bytes()
+        put = urllib.request.Request(job['upload_url'], data=data, method='PUT', headers={'content-type': 'video/mp4', 'content-length': str(len(data))})
+        with urllib.request.urlopen(put, timeout=120) as r:
+            if r.status >= 300:
+                raise RuntimeError(f'upload: {r.status}')
+    return {**made, 'bytes': len(data), 'secs': round(time.monotonic() - t0, 2)}
+
+
+def clip_or_report(job: dict, run=None) -> dict:
+    """One clip; whatever happens, the web service hears how it went (a failure is tried once more there)."""
+    try:
+        out = (run or one_clip)(job)
+        status, _ = post('/api/internal/clip', {'attempt_id': job['attempt_id'], 'worker_id': job['worker_id'], 'ok': True,
+                                                'secs': out.get('secs'), 'bytes': out.get('bytes'), 'commit': COMMIT})
+        return {'attempt_id': job['attempt_id'], **out, 'posted': status}
+    except Exception as e:  # noqa: BLE001 - one bad clip never stops the run
+        why = f'{type(e).__name__}: {e}'[:300]
+        post('/api/internal/clip', {'attempt_id': job['attempt_id'], 'worker_id': job['worker_id'], 'ok': False, 'error': why, 'commit': COMMIT})
+        return {'attempt_id': job['attempt_id'], 'error': why}
+
+
+@app.task(timeout_seconds=int(WORKER_MAX_S) + 300)
+def render_clip(ctx: TaskContext, worker_id: str) -> dict:
+    begun = time.monotonic()
+    done: list[dict] = []
+    idle_since = time.monotonic()
+    try:
+        while time.monotonic() - begun < WORKER_MAX_S:
+            status, job = post('/api/internal/clip-job', {'worker_id': worker_id})
+            if status == 200 and job and job.get('attempt_id'):
+                job['worker_id'] = worker_id
+                done.append(clip_or_report(job))
+                idle_since = time.monotonic()
+                continue
+            if time.monotonic() - idle_since >= WORKER_IDLE_S:
+                break
+            time.sleep(1)
+    finally:
+        post('/api/internal/worker-done', {'worker_id': worker_id, 'commit': COMMIT, 'attempts': len(done)})
+    return {'commit': COMMIT, 'worker_id': worker_id, 'process_secs': round(begun - STARTED, 2), 'clips': done}
 
 
 @app.task(timeout_seconds=900)

@@ -6,12 +6,17 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { events, judgeWorkers } from '@/db/schema';
 import { expireLeases, giveUpWaiting } from '@/lib/queue';
+import { CLIP_WORKER, clipCounts, expireClipLeases } from '@/lib/card/clip-job';
 
 export const LOCK_KEY = 0x46_4d_44_31; // "FMD1"
 /** The Workflow's instance: 2 CPU, so each run start uses 2 of the CPU budget (3.9). */
 export const CPU_PER_RUN = 2;
 /** After a failed start: 5 s, 15 s, 45 s, then every 2 minutes (3.9 step 4). */
 export const BACKOFF_S = [5, 15, 45, 120];
+/** Lift clips (3.9 step 6): at most this many render_clip runs at once, and only while no attempt waits. */
+export const CLIP_RUNS_MAX = 2;
+
+export type Task = 'find_poses' | 'render_clip';
 
 export type Budgets = { runStartsPerMin: number; cpuPerMin: number; workersMax: number };
 
@@ -23,7 +28,7 @@ export const budgetsFromEnv = (env = process.env): Budgets => ({
 
 /** Starting and checking Workflow runs: Render's REST API, or a stand-in in the tests. */
 export interface Runner {
-  start(workerId: string): Promise<{ ok: true; runId: string } | { ok: false; status: number; error: string }>;
+  start(workerId: string, task?: Task): Promise<{ ok: true; runId: string } | { ok: false; status: number; error: string }>;
   /** Render's status for a run: 'pending' | 'running' | 'completed' | 'failed' | 'canceled' … */
   status(runId: string): Promise<string | null>;
 }
@@ -32,12 +37,12 @@ export interface Runner {
 export class RenderRunner implements Runner {
   constructor(private key = process.env.RENDER_API_KEY ?? '', private slug = process.env.JUDGE_WORKFLOW_SLUG ?? '', private base = 'https://api.render.com/v1') {}
 
-  async start(workerId: string) {
+  async start(workerId: string, task: Task = 'find_poses') {
     try {
       const res = await fetch(`${this.base}/task-runs`, {
         method: 'POST',
         headers: { authorization: `Bearer ${this.key}`, 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ task: `${this.slug}/find_poses`, input: [workerId] }),
+        body: JSON.stringify({ task: `${this.slug}/${task}`, input: [workerId] }),
         signal: AbortSignal.timeout(10_000),
       });
       const body = await res.json().catch(() => null) as { id?: string; message?: string } | null;
@@ -63,6 +68,8 @@ export type TickResult = {
   locked: boolean;
   waiting: number; starting: number; idle: number; alive: number;
   started: string[]; failed: number; requeued: string[]; closeCalls: string[];
+  /** render_clip runs started, and clip leases that ran out */
+  clipStarted: string[]; clipExpired: string[];
   blockedBy?: 'run_starts' | 'cpu' | 'workers_max' | 'backoff';
 };
 
@@ -75,13 +82,14 @@ const n = (v: unknown) => Number(v ?? 0);
 export async function tick(db: Db, runner: Runner, budgets: Budgets, now = () => Date.now()): Promise<TickResult> {
   return db.transaction(async tx => {
     const [{ locked }] = await tx.execute<{ locked: boolean }>(sql`select pg_try_advisory_xact_lock(${LOCK_KEY}) as locked`);
-    const out: TickResult = { locked, waiting: 0, starting: 0, idle: 0, alive: 0, started: [], failed: 0, requeued: [], closeCalls: [] };
+    const out: TickResult = { locked, waiting: 0, starting: 0, idle: 0, alive: 0, started: [], failed: 0, requeued: [], closeCalls: [], clipStarted: [], clipExpired: [] };
     if (!locked) return out;
     const txDb = tx as unknown as Db;
 
     const leases = await expireLeases(txDb);
     out.requeued = leases.requeued;
     out.closeCalls = leases.closeCalls;
+    out.clipExpired = await expireClipLeases(txDb);
 
     // No longer alive: seen more than 60 s ago while holding nothing (3.9 step 4).
     await tx.execute(sql`
@@ -107,20 +115,23 @@ export async function tick(db: Db, runner: Runner, budgets: Budgets, now = () =>
     const [c] = await tx.execute<{ waiting: number; starting: number; idle: number; alive: number; starts: number }>(sql`
       select
         (select count(*) from judge_queue where kind = 'poses' and worker_id is null and next_try_at <= now()) as waiting,
-        (select count(*) from judge_workers where ended_at is null and last_seen_at is null) as starting,
-        (select count(*) from judge_workers where ended_at is null and idle_at > now() - interval '2 seconds'
+        (select count(*) from judge_workers where ended_at is null and last_seen_at is null and worker_id not like ${CLIP_WORKER + '%'}) as starting,
+        (select count(*) from judge_workers where ended_at is null and idle_at > now() - interval '2 seconds' and worker_id not like ${CLIP_WORKER + '%'}
            and not exists (select 1 from judge_queue q where q.worker_id = judge_workers.worker_id)) as idle,
         (select count(*) from judge_workers where ended_at is null) as alive,
         (select count(*) from events where kind = 'run_start' and at > now() - interval '60 seconds') as starts`);
     out.waiting = n(c.waiting); out.starting = n(c.starting); out.idle = n(c.idle); out.alive = n(c.alive);
     let want = out.waiting - out.starting - out.idle;
-    if (want <= 0) return out;
-
-    if (backoff.until > now()) { out.blockedBy = 'backoff'; return out; }
     const startsLeft = budgets.runStartsPerMin - n(c.starts);
     const cpuLeft = Math.floor((budgets.cpuPerMin - n(c.starts) * CPU_PER_RUN) / CPU_PER_RUN);
     const aliveLeft = budgets.workersMax - out.alive;
     const can = Math.min(startsLeft, cpuLeft, aliveLeft);
+    if (want <= 0) {
+      // nothing waits for poses: her lift clips may use what's left (3.9 step 6)
+      if (out.waiting === 0 && can > 0 && backoff.until <= now()) await startClipRun(tx, txDb, runner, out, now);
+      return out;
+    }
+    if (backoff.until > now()) { out.blockedBy = 'backoff'; return out; }
     if (want > can) {
       out.blockedBy = can === aliveLeft ? 'workers_max' : can === cpuLeft ? 'cpu' : 'run_starts';
       want = Math.max(0, can);
@@ -150,6 +161,26 @@ export async function tick(db: Db, runner: Runner, budgets: Budgets, now = () =>
   });
 }
 
+/** One render_clip run when a clip waits and fewer than CLIP_RUNS_MAX are going; it takes clips until none wait. */
+async function startClipRun(tx: { insert: Db['insert']; execute: Db['execute'] }, db: Db, runner: Runner, out: TickResult, now: () => number) {
+  const c = await clipCounts(db);
+  if (c.waiting === 0 || c.running >= CLIP_RUNS_MAX || c.running >= c.waiting) return;
+  const workerId = `${CLIP_WORKER}${randomBytes(6).toString('hex')}`;
+  await tx.insert(judgeWorkers).values({ workerId });
+  const r = await runner.start(workerId, 'render_clip');
+  if (r.ok) {
+    await tx.execute(sql`update judge_workers set run_id = ${r.runId} where worker_id = ${workerId}`);
+    await tx.insert(events).values({ kind: 'run_start', detail: { worker_id: workerId, run_id: r.runId, task: 'render_clip' } });
+    out.clipStarted.push(workerId);
+  } else {
+    await tx.execute(sql`update judge_workers set ended_at = now() where worker_id = ${workerId}`);
+    await tx.insert(events).values({ kind: 'run_start_failed', detail: { worker_id: workerId, status: r.status, error: r.error.slice(0, 200), task: 'render_clip' } });
+    out.failed++;
+    backoff.until = now() + BACKOFF_S[Math.min(backoff.failures, BACKOFF_S.length - 1)] * 1000;
+    backoff.failures++;
+  }
+}
+
 let timer: ReturnType<typeof setInterval> | null = null;
 
 /** Starts the 2-second loop once per process (called from instrumentation.ts). */
@@ -161,7 +192,7 @@ export function startDispatcher(db: Db, runner: Runner = new RenderRunner(), bud
     busy = true;
     try {
       const r = await tick(db, runner, budgets);
-      if (r.started.length || r.failed || r.requeued.length || r.closeCalls.length) console.log(JSON.stringify({ msg: 'dispatch', ...r }));
+      if (r.started.length || r.clipStarted.length || r.clipExpired.length || r.failed || r.requeued.length || r.closeCalls.length) console.log(JSON.stringify({ msg: 'dispatch', ...r }));
       for (const id of [...r.requeued, ...r.closeCalls]) {
         await db.execute(sql`select pg_notify('fm_live', ${JSON.stringify({ kind: 'attempt', attempt_id: id, status: 'changed' })})`);
       }

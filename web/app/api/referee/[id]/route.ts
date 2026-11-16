@@ -4,6 +4,7 @@
 // Only a referee (3.1); a lifter without the role gets a 403.
 import { db, hasDb } from '@/db';
 import { hasRole } from '@/lib/guard';
+import { clipAfterLights } from '@/lib/card/clip-job';
 import { askAnother, nextCloseCall, saveLights, type SaveInput } from '@/lib/referee';
 import { viewerOf } from '@/lib/roles';
 import { sessionFrom } from '@/lib/session';
@@ -28,6 +29,7 @@ export async function POST(req: Request, { params }: Ctx) {
     : await saveLights(db(), id, { kind: 'referee', id: v!.id }, { lights: body.lights, reasons: Array.isArray(body.reasons) ? body.reasons : null, reason: body.reason ?? null, rep: body.rep ?? null, note });
   const { status, ...rest } = r;
   if (status !== 200) return Response.json(rest, { status });
+  if (body.action !== 'ask') await clipAfterLights(db(), id);
   const next = await nextCloseCall(db(), v!.id);
   return Response.json({ ...rest, next });
 }
