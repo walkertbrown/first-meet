@@ -5,6 +5,8 @@ import { db } from '@/db';
 import { budgetsFromEnv } from '@/lib/dispatcher';
 import { requireRole } from '@/lib/guard';
 import { commitsDiffer, opsNumbers, opsSections } from '@/lib/ops';
+import { botOps } from '@/lib/referee/bot';
+import { botRows, notRunningLine, TEST_ANSWER_CHOICES } from '@/lib/referee/ops-words';
 
 // /ops (plan 2.4, 5.39): how the judge is running. Admins only (an email in ADMIN_EMAILS).
 export const dynamic = 'force-dynamic';
@@ -16,7 +18,9 @@ export default async function Page() {
   await requireRole('admin');
   const budgets = budgetsFromEnv();
   const n = await opsNumbers(db(), budgets);
-  const sections = opsSections(n, budgets);
+  const bot = await botOps(db());
+  const sections = [...opsSections(n, budgets), { eyebrow: 'REFEREE BOT', rows: botRows(bot) }];
+  const botLine = notRunningLine(bot);
   return (
     <div className="wrap page desk">
       <AutoRefresh everyMs={10_000} />
@@ -24,6 +28,7 @@ export default async function Page() {
       <main>
         <h1 className="page-title">Ops</h1>
         {commitsDiffer(n.commits) && <p className="ops-warn strong" role="alert">Judge and web are on different commits</p>}
+        {botLine && <p className="ops-warn strong" role="alert">{botLine}</p>}
         <div className="ops-grid">
           {sections.map(s => (
             <section key={s.eyebrow} className="ops-section" aria-labelledby={`ops-${s.eyebrow.replace(/\W+/g, '-')}`}>
@@ -38,6 +43,24 @@ export default async function Page() {
               </dl>
             </section>
           ))}
+          {bot.testAnswersAllowed && (
+            <section className="ops-section" aria-labelledby="ops-test-answers">
+              <h2 className="eyebrow" id="ops-test-answers">STAGING</h2>
+              <form method="post" action="/api/ops/referee-test-answers" className="ops-choice">
+                <fieldset>
+                  <legend>Referee bot test answers</legend>
+                  {TEST_ANSWER_CHOICES.map(c => (
+                    <label key={c.value} className="ops-radio">
+                      <input type="radio" name="answers" value={c.value} defaultChecked={(bot.testAnswers ?? 'real') === c.value} />
+                      {c.label}
+                    </label>
+                  ))}
+                </fieldset>
+                <p className="small">For the next job only. Each fakes only what comes back from Anthropic.</p>
+                <button className="btn ghost" type="submit">Use for the next job</button>
+              </form>
+            </section>
+          )}
           <section className="ops-section ops-errors" aria-labelledby="ops-ERRORS">
             <h2 className="eyebrow" id="ops-ERRORS">ERRORS</h2>
             {n.clipsFailed > 0 && <p className="ops-row"><span>Clips that failed · <span className="num">{n.clipsFailed}</span></span></p>}

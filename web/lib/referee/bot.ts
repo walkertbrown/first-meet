@@ -363,16 +363,63 @@ async function finish(db: Db, j: JobRow, workerId: string, lamps: LampResult[], 
   return 'done' as const;
 }
 
-/** Why the bot isn't running, for /ops's red line (2.4), or null. */
+export const NOT_RUNNING_WORDS: Record<DoubtReason, string> = {
+  no_key: 'no key', spend_limit: 'spend limit reached', api_failing: 'the API is failing', too_slow: 'too slow', no_frames: "the frames couldn't be made",
+};
+/** A doubt this recent still says why on /ops (and to the uptime check). */
+export const NOT_RUNNING_WINDOW_MIN = 30;
+
+/**
+ * Why the bot isn't running, for /ops's red line (2.4), or null: on with no key, or a job in `doubt`
+ * in the last 30 minutes (on staging that's also a test answer's doubt). Off with nothing wrong: null.
+ */
 export async function notRunning(db: Db, env: Record<string, string | undefined> = process.env): Promise<string | null> {
-  if ((botOn(env) || testAnswersAllowed(env)) && !hasKey(env)) return 'no key';
-  const [r] = await db.execute<{ reason: string }>(sql`
+  if (botOn(env) && !hasKey(env)) return NOT_RUNNING_WORDS.no_key;
+  const [r] = await db.execute<{ reason: DoubtReason }>(sql`
     select doubt_reason as reason from ${refereeJobs}
-    where status = 'doubt' and doubt_reason in ('spend_limit', 'api_failing', 'too_slow', 'no_frames') and decided_at > now() - interval '30 minutes'
+    where status = 'doubt' and decided_at > now() - make_interval(mins => ${NOT_RUNNING_WINDOW_MIN})
     order by decided_at desc limit 1`);
-  const words: Record<string, string> = { spend_limit: 'spend limit reached', api_failing: 'the API is failing', too_slow: 'too slow', no_frames: "the frames couldn't be made" };
-  return r ? words[r.reason] ?? r.reason : null;
+  return r ? NOT_RUNNING_WORDS[r.reason] ?? r.reason : null;
 }
+
+/**
+ * For the uptime check (2.4: an issue after 10 minutes of the red line): why the bot isn't running
+ * and for how long. On with no key has no start, so it counts as long ago. Null: it's running, or off.
+ */
+export async function botWatch(db: Db, env: Record<string, string | undefined> = process.env): Promise<{ reason: string; forS: number } | null> {
+  const reason = await notRunning(db, env);
+  if (!reason) return null;
+  if (botOn(env) && !hasKey(env)) return { reason, forS: Number.MAX_SAFE_INTEGER };
+  // the red line has shown since the first doubt of this run of them (each keeps it up 30 minutes)
+  const [r] = await db.execute<{ s: number }>(sql`
+    with d as (select decided_at, lag(decided_at) over (order by decided_at) as prev from ${refereeJobs}
+               where status = 'doubt' and decided_at > now() - interval '1 day')
+    select extract(epoch from now() - max(decided_at))::int as s from d
+    where prev is null or decided_at - prev > make_interval(mins => ${NOT_RUNNING_WINDOW_MIN})`);
+  return { reason, forS: Number(r?.s ?? 0) };
+}
+
+/** What /ops shows of the bot: the switch, the red line, the queue, its speed, and the month's cost. */
+export async function botOps(db: Db, env: Record<string, string | undefined> = process.env) {
+  const [q] = await db.execute<{ waiting: number; median_s: number | null; done_hour: number }>(sql`
+    select (select count(*)::int from ${refereeJobs} where status in ('waiting_frames', 'ready', 'running')) as waiting,
+      (select percentile_cont(0.5) within group (order by extract(epoch from decided_at - frames_ready_at))::float
+         from ${refereeJobs} where status = 'done' and decided_at > now() - interval '1 hour' and frames_ready_at is not null) as median_s,
+      (select count(*)::int from ${refereeJobs} where status in ('done', 'doubt') and decided_at > now() - interval '1 hour') as done_hour`);
+  return {
+    on: botOn(env),
+    key: hasKey(env),
+    notRunning: await notRunning(db, env),
+    waiting: Number(q?.waiting ?? 0),
+    medianS: q?.median_s ?? null,
+    decidedHour: Number(q?.done_hour ?? 0),
+    cost: await costThisMonth(db),
+    spendLimitUsd: Number(env.REFEREE_SPEND_LIMIT_USD ?? 100),
+    testAnswersAllowed: testAnswersAllowed(env),
+    testAnswers: testAnswersAllowed(env) ? await pendingTestAnswers(db, env) : null,
+  };
+}
+export type BotOps = Awaited<ReturnType<typeof botOps>>;
 
 /** /ops: what the bot cost this month (step 10). */
 export async function costThisMonth(db: Db) {

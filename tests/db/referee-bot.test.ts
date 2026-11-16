@@ -7,7 +7,7 @@ import type { Db } from '../../web/db';
 import { attempts, opsSettings, refereeJobs, reviews } from '../../web/db/schema';
 import { keys } from '../../web/lib/r2';
 import {
-  costThisMonth, doubt, enqueue, framesJob, framesStarted, framesToStart, lease, notRunning, runJob, setSetting, sweep, takeFrames,
+  botOps, botWatch, costThisMonth, doubt, enqueue, framesJob, framesStarted, framesToStart, lease, notRunning, runJob, setSetting, sweep, takeFrames,
   TEST_ANSWERS_KEY, type FrameStore,
 } from '../../web/lib/referee/bot';
 import { NOT_SURE_NOTE } from '../../web/lib/referee/lamps';
@@ -98,7 +98,15 @@ describe.skipIf(!URL_)('the referee bot', () => {
       expect(r).toMatchObject({ byBot: true, reason: 'referee_unavailable', refereeId: null, kind: 'close_call' });
     }
     expect(await notRunning(db, { REFEREE_BOT: 'on' })).toBe('no key');
+    // those doubts still say why for 30 minutes, whatever the switch
+    expect(await notRunning(db, { REFEREE_BOT: 'off' })).toBe('no key');
+  });
+
+  it('off, with no doubt in the last 30 minutes, the bot is just off: no red line', async () => {
+    await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '31 minutes'` }).where(eq(refereeJobs.status, 'doubt'));
     expect(await notRunning(db, { REFEREE_BOT: 'off' })).toBeNull();
+    expect(await notRunning(db, STAGING)).toBeNull();
+    expect(await notRunning(db, { REFEREE_BOT: 'on' })).toBe('no key');
   });
 
   it('"No key" on staging: that bench gets three whites, and /ops says the bot is not running while the key is missing', async () => {
@@ -108,7 +116,7 @@ describe.skipIf(!URL_)('the referee bot', () => {
     expect(await job(id)).toMatchObject({ status: 'doubt', doubtReason: 'no_key' });
     expect(await attempt(be)).toMatchObject({ status: 'judged', call: 'white', lights: ['white', 'white', 'white'] });
     expect(await notRunning(db, STAGING)).toBe('no key');
-    expect(await notRunning(db, { ...STAGING, ANTHROPIC_API_KEY: 'k' })).toBeNull();
+    expect((await botOps(db, STAGING)).notRunning).toBe('no key');
   });
 
   it('the frames job: the clip, the commands as spoken, 60 places to put frames, and the bench\'s times', async () => {
@@ -255,5 +263,39 @@ describe.skipIf(!URL_)('the referee bot', () => {
     const after = await costThisMonth(db);
     expect(after.usd - before.usd).toBeCloseTo(0.25, 5);
     expect(after.jobs - before.jobs).toBe(1);
+  });
+
+  it("/ops's numbers: the switch, what waits, the median from frames ready to lights, and the test answer set", async () => {
+    const sq = await closeCall();
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const [id] = await enqueue(db, STAGING);
+    await ready(sq);
+    await run(id);
+    // every job decided this hour took 90 s from its frames
+    await db.update(refereeJobs).set({ framesReadyAt: sql`decided_at - interval '90 seconds'` }).where(eq(refereeJobs.status, 'done'));
+    await setSetting(db, TEST_ANSWERS_KEY, 'not_sure_twice');
+    const b = await botOps(db, STAGING);
+    expect(b).toMatchObject({ on: false, key: false, waiting: 0, testAnswersAllowed: true, testAnswers: 'not_sure_twice', spendLimitUsd: 100 });
+    expect(b.medianS).toBeCloseTo(90, 0);
+    expect(b.decidedHour).toBeGreaterThan(0);
+    const p = await botOps(db, PRODUCTION);
+    expect(p).toMatchObject({ testAnswersAllowed: false, testAnswers: null });
+  });
+
+  it('the uptime check: how long the red line has shown, from the first doubt of this run of them', async () => {
+    await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '2 days'` }).where(eq(refereeJobs.status, 'doubt'));
+    expect(await botWatch(db, {})).toBeNull();
+    const a = await closeCall(), b = await closeCall();
+    await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    const [j1] = await enqueue(db, STAGING);
+    await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    const [j2] = await enqueue(db, STAGING);
+    void a; void b;
+    await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '25 minutes'` }).where(eq(refereeJobs.id, j1));
+    await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '5 minutes'` }).where(eq(refereeJobs.id, j2));
+    const w = await botWatch(db, {});
+    expect(w?.reason).toBe('no key');
+    expect(w!.forS).toBeGreaterThanOrEqual(25 * 60 - 2);
+    expect((await botWatch(db, { REFEREE_BOT: 'on' }))!.forS).toBe(Number.MAX_SAFE_INTEGER);
   });
 });

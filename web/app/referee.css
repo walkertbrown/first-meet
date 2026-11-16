@@ -155,6 +155,12 @@
 .ops-row dd { margin: 0; font-weight: 800; font-stretch: 105%; font-size: 20px; line-height: 24px; text-align: right; white-space: nowrap; }
 .ops-row dd.ops-over { color: var(--no-text); font-weight: 700; }
 .ops-errors { grid-column: 1 / -1; }
+.ops-choice { display: flex; flex-direction: column; gap: 12px; }
+.ops-choice fieldset { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; }
+.ops-choice legend { font-size: 15px; line-height: 22px; color: var(--ink-2); padding: 8px 0 4px; }
+.ops-radio { display: flex; align-items: center; gap: 12px; min-height: 44px; font-size: 17px; line-height: 24px; border-bottom: 1px solid var(--rule); cursor: pointer; }
+.ops-radio input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+.ops-choice .btn { align-self: flex-start; width: auto; }
 .ops-errors .ops-row { justify-content: flex-start; font-size: 15px; line-height: 22px; }
 .ops-errors .ops-row > .small:first-child { flex: none; width: 190px; }
 @media (max-width: 640px) { .ops-grid { grid-template-columns: minmax(0, 1fr); } .ops-errors .ops-row { flex-direction: column; gap: 2px; } }

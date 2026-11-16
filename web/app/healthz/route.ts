@@ -6,6 +6,7 @@ import { cachedFor, checkHealth, type PartCheck } from '@/lib/health';
 import { db, hasDb } from '@/db';
 import { hasR2, keys, r2 } from '@/lib/r2';
 import { missingSamples } from '@/lib/health';
+import { watchNumbers, type Watch } from '@/lib/watch';
 import samples from '../../../content/samples/samples.json';
 
 export const dynamic = 'force-dynamic';
@@ -35,5 +36,8 @@ export async function GET() {
   if (hasR2()) parts.r2 = async () => { fault('r2'); if (!(await r2().head(keys.health))) throw new Error('health/ok.txt missing'); await sampleClips(); };
   if (process.env.RENDER_API_KEY) parts.judge = async () => { fault('judge'); await workflowApi(); };
   const h = await checkHealth(parts, process.env.NEXT_PUBLIC_COMMIT ?? 'unknown');
-  return Response.json(h, { status: h.ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } });
+  // the uptime check's other two issues (2.4); never part of `ok`, and a failure here leaves them out
+  let watch: Watch | null = null;
+  if (hasDb()) watch = await watchNumbers(db()).catch(() => null);
+  return Response.json({ ...h, watch }, { status: h.ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } });
 }
