@@ -116,6 +116,19 @@ export function commandList(ct: Record<string, number> | null): [number, string]
   }).sort((a, b) => a[0] - b[0]);
 }
 
+/**
+ * The bench's pause frames (step 1): "Start!", "Press!" (on time, or late: `press_late`) and "Rack!" in ms,
+ * or null with no Start! or no Press!. Only number-valued keys count: `press_late_why` ("lost", "still")
+ * is a word, not a time.
+ */
+export function benchBlock(ct: Record<string, unknown> | null): { start_ms: number; press_ms: number; rack_ms: number | null } | null {
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
+  const start = num(ct?.start);
+  const press = num(ct?.press) ?? num(ct?.press_late);
+  if (start === undefined || press === undefined) return null;
+  return { start_ms: start, press_ms: press, rack_ms: num(ct?.rack) ?? null };
+}
+
 export interface FrameStore {
   getJson<T>(key: string): Promise<T | null>;
   signedGet(key: string, seconds?: number): Promise<string>;
@@ -131,11 +144,8 @@ export async function framesJob(db: Db, store: FrameStore, jobId: string, env: R
   const a = row.a;
   const ct = a.commandTimes as Record<string, number> | null;
   const moments: { ms: number; flagged: boolean }[] = [];
-  let bench: { start_ms: number; press_ms: number; rack_ms: number | null } | null = null;
-  if (benchByBar(a) && ct?.start !== undefined) {
-    const press = ct.press ?? Object.entries(ct).find(([k]) => k.startsWith('press'))?.[1];
-    if (press !== undefined) bench = { start_ms: ct.start, press_ms: press, rack_ms: ct.rack ?? null };
-  } else if (a.posesKey) {
+  const bench = benchByBar(a) ? benchBlock(ct) : null;
+  if (!benchByBar(a) && a.posesKey) {
     const poses = await store.getJson<{ w: number; h: number; duration: number; frames: Frame[] }>(a.posesKey).catch(() => null);
     if (poses) {
       const v = judgeAttempt(poses.frames, poses, judgedLift(a) as MeetLift, ct as never, undefined, a.repsDeclared);
