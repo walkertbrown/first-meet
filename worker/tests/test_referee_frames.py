@@ -95,6 +95,14 @@ class MakeFrames(unittest.TestCase):
         again, _ = rf.make_frames(CLIP, commands, moments, None)
         self.assertEqual(frames, again)
 
+    def test_a_window_is_the_attempt_with_every_time_from_its_start(self):
+        commands = [(0, 'Bar is loaded.'), (1000, 'Down!')]
+        cut, _ = rf.make_frames(CLIP, commands, [], None, window=(2000, 4000))
+        self.assertEqual([t for t, _ in cut], [0, 500, 1000])
+        # the window's first frame is the clip's frame at 2.0 s, stamped 0.00 s
+        want = rf.jpeg(rf.burn(rf.grab(CLIP, [2000])[0], rf.label(0, commands)))
+        self.assertEqual(cut[0][1], want)
+
     def test_the_cap_holds(self):
         frames, _ = rf.make_frames(CLIP, [(0, 'Bar is loaded.')], [], None, cap=5)
         self.assertEqual(len(frames), 5)
