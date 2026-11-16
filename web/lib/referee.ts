@@ -85,16 +85,9 @@ export async function saveLights(db: Db, attemptId: string, who: Who, input: Sav
   if (who.kind === 'demo' ? c.meetKind !== 'demo' || c.lifterId !== who.lifterId : c.meetKind === 'demo') return { status: 403 as const, error: 'not yours to decide' };
   if (c.a.status !== 'close_call') return { status: 409 as const, error: 'already decided' };
   if (who.kind === 'referee' && c.secondOpinion?.refereeId === who.id) return { status: 409 as const, error: 'you asked for a second look' };
-  const lights = input.lights;
-  if (!Array.isArray(lights) || lights.length !== 3 || lights.some(l => l !== 'white' && l !== 'red')) return { status: 400 as const, error: 'three lamps, white or red' };
-  const call = callOf(lights);
-  const reds = redLamps(lights);
-  const reasons = lights.map((l, i) => (l === 'red' ? (input.reasons?.[i] ?? input.reason ?? null) : null));
-  if (reds.some(i => !REFEREE_REASONS.includes(reasons[i] as RefereeReason))) return { status: 400 as const, error: 'every red needs a reason card' };
-  const reason = call === 'red' ? attemptReason(lights, reasons) : null;
-  const home = !!c.a.repsDeclared;
-  const anyRed = reds.length > 0;
-  if (anyRed && home && !(Number.isInteger(input.rep) && input.rep! >= 1 && input.rep! <= c.a.repsDeclared!)) return { status: 400 as const, error: 'a red needs the rep' };
+  const v = checkLights(input, c.a.repsDeclared);
+  if ('error' in v) return { status: 400 as const, error: v.error };
+  const { lights, call, reasons, reason, home, anyRed } = v;
   const saved = await db.transaction(async tx => {
     const [u] = await tx.update(attempts).set({
       status: 'judged', call, lights, reason, refereeId: who.kind === 'referee' ? who.id : null,
@@ -106,6 +99,51 @@ export async function saveLights(db: Db, attemptId: string, who: Who, input: Sav
   });
   if (!saved) return { status: 409 as const, error: 'already decided' };
   await logEvent(db, 'referee_saved', { call, demo: who.kind === 'demo' || undefined, waited_s: c.a.judgedAt ? Math.round((Date.now() - new Date(c.a.judgedAt).getTime()) / 1000) : null }, attemptId);
+  await publish(db, { kind: 'attempt', attempt_id: attemptId, lifter_id: c.lifterId, status: 'judged' });
+  return { status: 200 as const, call, lights };
+}
+
+/** Three lamps, a reason card on every red, and the rep on a Home red (5.33). */
+function checkLights(input: SaveInput, repsDeclared: number | null) {
+  const lights = input.lights;
+  if (!Array.isArray(lights) || lights.length !== 3 || lights.some(l => l !== 'white' && l !== 'red')) return { error: 'three lamps, white or red' };
+  const call: 'white' | 'red' = callOf(lights);
+  const reds = redLamps(lights);
+  const reasons = lights.map((l, i) => (l === 'red' ? (input.reasons?.[i] ?? input.reason ?? null) : null));
+  if (reds.some(i => !REFEREE_REASONS.includes(reasons[i] as RefereeReason))) return { error: 'every red needs a reason card' };
+  const reason = call === 'red' ? attemptReason(lights, reasons) : null;
+  const home = !!repsDeclared;
+  const anyRed = reds.length > 0;
+  if (anyRed && home && !(Number.isInteger(input.rep) && input.rep! >= 1 && input.rep! <= repsDeclared!)) return { error: 'a red needs the rep' };
+  return { lights, call, reasons, reason, home, anyRed };
+}
+
+/**
+ * "Change the lights" (5.33, item 88): a person with the referee role changes the referee bot's
+ * lights before the board is final. Saved with their `referee_id`, and it stands: the bot never
+ * looks at this attempt again. A demo attempt is never changed here.
+ */
+export async function changeLights(db: Db, attemptId: string, refereeId: string, input: SaveInput) {
+  const c = await closeCall(db, attemptId);
+  if (!c || c.meetKind === 'demo') return { status: 404 as const, error: 'no such attempt' };
+  const m = c.a.measures as Record<string, unknown> | null;
+  if (c.a.status !== 'judged' || !m?.referee_bot) return { status: 409 as const, error: 'not the referee bot\'s lights' };
+  const [meet] = await db.select({ status: meets.status }).from(meets).where(eq(meets.id, c.a.meetId));
+  if (meet?.status === 'final') return { status: 409 as const, error: 'the board is final' };
+  const v = checkLights(input, c.a.repsDeclared);
+  if ('error' in v) return { status: 400 as const, error: v.error };
+  const { lights, call, reasons, reason, home, anyRed } = v;
+  const saved = await db.transaction(async tx => {
+    const [u] = await tx.update(attempts).set({
+      call, lights, reason, refereeId,
+      measures: sql`(coalesce(${attempts.measures}, '{}'::jsonb) - 'light_reasons' - 'red_rep' - 'referee_unavailable') || ${JSON.stringify({ referee_changed: true, ...(anyRed ? { light_reasons: reasons } : {}), ...(home && anyRed ? { red_rep: input.rep } : {}) })}::jsonb`,
+    }).where(and(eq(attempts.id, attemptId), eq(attempts.status, 'judged'))).returning();
+    if (!u) return null;
+    await tx.insert(reviews).values({ attemptId, refereeId, lights, reason: reason ?? attemptReason(lights, reasons), note: input.note?.slice(0, 500) ?? null, kind: 'close_call' });
+    return u;
+  });
+  if (!saved) return { status: 409 as const, error: 'already changed' };
+  await logEvent(db, 'referee_changed', { call, was: c.a.call }, attemptId);
   await publish(db, { kind: 'attempt', attempt_id: attemptId, lifter_id: c.lifterId, status: 'judged' });
   return { status: 200 as const, call, lights };
 }

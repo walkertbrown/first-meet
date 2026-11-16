@@ -11,6 +11,9 @@ import {
   TEST_ANSWERS_KEY, type FrameStore,
 } from '../../web/lib/referee/bot';
 import { NOT_SURE_NOTE } from '../../web/lib/referee/lamps';
+import { botQueue, botQueueLine, botSide } from '../../web/lib/referee/bot-view';
+import { changeLights } from '../../web/lib/referee';
+import { lifters, meets } from '../../web/db/schema';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
 class FramesStore extends MemStore implements FrameStore {
@@ -297,5 +300,106 @@ describe.skipIf(!URL_)('the referee bot', () => {
     expect(w?.reason).toBe('no key');
     expect(w!.forS).toBeGreaterThanOrEqual(25 * 60 - 2);
     expect((await botWatch(db, { REFEREE_BOT: 'on' }))!.forS).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  // ---------- 5.33 and 5.36 from item 88: the bot's side, and "Change the lights" ----------
+
+  /** A close call in a real meet, through the bot with "red, white, white". */
+  async function botDecided(meetStatus: 'open' | 'final' = 'open') {
+    const sq = await closeCall();
+    const a = await attempt(sq);
+    await db.update(meets).set({ kind: 'real', status: meetStatus }).where(eq(meets.id, a.meetId));
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const [id] = await enqueue(db, STAGING);
+    await ready(sq);
+    expect(await run(id)).toBe('done');
+    return sq;
+  }
+  const referee = async () => (await db.insert(lifters).values({ cardName: 'Ref', isReferee: true }).returning())[0].id;
+
+  it('5.33 queue: deciding rows first, oldest first, then decided ones newest first, with the lights; demo never', async () => {
+    const decided = await botDecided();
+    const waiting = await closeCall();
+    await db.update(meets).set({ kind: 'real' }).where(eq(meets.id, (await attempt(waiting)).meetId));
+    const demo = await closeCall();
+    const q = await botQueue(db);
+    const ids = q.rows.map(r => r.attemptId);
+    expect(ids).toContain(decided);
+    expect(ids).not.toContain(demo);
+    expect(ids.indexOf(waiting)).toBeLessThan(ids.indexOf(decided));
+    const w = q.rows.find(r => r.attemptId === waiting)!, d = q.rows.find(r => r.attemptId === decided)!;
+    expect(w).toMatchObject({ lights: null, decidedAt: null, why: 'borderline_depth' });
+    expect(d).toMatchObject({ lights: ['red', 'white', 'white'], why: 'borderline_depth' });
+    expect(d.decidedAt).toBeInstanceOf(Date);
+    expect(q.deciding).toBe(q.rows.filter(r => !r.lights).length);
+    expect(q.decidedToday).toBeGreaterThanOrEqual(1);
+    expect(botQueueLine({ deciding: 1, decidedToday: 4 })).toBe('1 deciding · 4 decided today');
+  });
+
+  it("5.33 queue: a decided row whose board is final drops off after its day; one still open stays", async () => {
+    const fin = await botDecided('final');
+    const open = await botDecided('open');
+    await db.update(reviews).set({ createdAt: sql`now() - interval '3 days'` }).where(sql`${reviews.attemptId} in (${fin}, ${open})`);
+    const ids = (await botQueue(db)).rows.map(r => r.attemptId);
+    expect(ids).not.toContain(fin);
+    expect(ids).toContain(open);
+  });
+
+  it("the bot's side: each lamp's light, a red's reason and the notes, and 6 frames at most around the judged one", async () => {
+    const sq = await botDecided();
+    const b = await botSide(db, sq);
+    expect(b).toMatchObject({ final: false, changed: false });
+    expect(b!.side).toEqual({
+      state: 'decided', unavailable: false, lamps: [
+        { light: 'red', reason: 'depth', rep: null, note: 'Test answer: red.' },
+        { light: 'white', reason: null, rep: null, note: 'Test answer: white.' },
+        { light: 'white', reason: null, rep: null, note: 'Test answer: white.' },
+      ],
+    });
+    // three frames at 1.5, 2.0 and 2.5 s; the judged frame is at 3.0 s, so 2.5 s is ringed; all after "Squat!" (1.5 s)
+    expect(b!.frames.map(f => [f.tMs, f.judged, f.command])).toEqual([[1500, false, 'Squat!'], [2000, false, 'Squat!'], [2500, true, 'Squat!']]);
+  });
+
+  it("the bot's side while it decides, and when it couldn't look: three whites, no notes", async () => {
+    const sq = await closeCall();
+    expect((await botSide(db, sq))!.side).toEqual({ state: 'deciding' });
+    await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    await enqueue(db, STAGING);
+    const b = await botSide(db, sq);
+    expect(b!.side).toMatchObject({ state: 'decided', unavailable: true });
+    expect((b!.side as { lamps: { note: string | null }[] }).lamps.map(l => l.note)).toEqual([null, null, null]);
+  });
+
+  it('"Change the lights": saved with the referee\'s id, it stands, and the clip and her card follow', async () => {
+    const sq = await botDecided();
+    const ref = await referee();
+    expect(await changeLights(db, sq, ref, { lights: ['red', 'red', 'white'], reasons: ['depth', null, null] })).toMatchObject({ status: 400 });
+    const r = await changeLights(db, sq, ref, { lights: ['red', 'red', 'white'], reasons: ['depth', 'depth', null] });
+    expect(r).toMatchObject({ status: 200, call: 'red' });
+    const a = await attempt(sq);
+    expect(a).toMatchObject({ status: 'judged', call: 'red', lights: ['red', 'red', 'white'], reason: 'depth', refereeId: ref });
+    expect(a.measures).toMatchObject({ referee_bot: true, referee_changed: true, light_reasons: ['depth', 'depth', null] });
+    const rs = await db.select().from(reviews).where(eq(reviews.attemptId, sq));
+    expect(rs.map(x => [x.byBot, x.refereeId])).toEqual(expect.arrayContaining([[true, null], [false, ref]]));
+    // the queue's Lights are the ones that stand; the board above still shows the bot's call
+    expect((await botQueue(db)).rows.find(x => x.attemptId === sq)).toMatchObject({ lights: ['red', 'red', 'white'] });
+    expect((await botSide(db, sq))!.side).toMatchObject({ lamps: [{ light: 'red' }, { light: 'white' }, { light: 'white' }] });
+    // and back to all white: the red reasons go
+    await changeLights(db, sq, ref, { lights: ['white', 'white', 'white'] });
+    const b = await attempt(sq);
+    expect(b).toMatchObject({ call: 'white', reason: null });
+    expect((b.measures as Record<string, unknown>).light_reasons).toBeUndefined();
+  });
+
+  it('"Change the lights" is never for a final board, a demo, or a close call the bot hasn\'t decided', async () => {
+    const ref = await referee();
+    const fin = await botDecided('final');
+    expect(await changeLights(db, fin, ref, { lights: ['white', 'white', 'white'] })).toMatchObject({ status: 409 });
+    expect((await botSide(db, fin))!.final).toBe(true);
+    const waiting = await closeCall();
+    await db.update(meets).set({ kind: 'real' }).where(eq(meets.id, (await attempt(waiting)).meetId));
+    expect(await changeLights(db, waiting, ref, { lights: ['white', 'white', 'white'] })).toMatchObject({ status: 409 });
+    const demo = await closeCall();
+    expect(await changeLights(db, demo, ref, { lights: ['white', 'white', 'white'] })).toMatchObject({ status: 404 });
   });
 });

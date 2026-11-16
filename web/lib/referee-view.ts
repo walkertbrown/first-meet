@@ -153,16 +153,18 @@ export async function closeCallView(db: Db, store: ClipStore | null, attemptId: 
   if (!c) return null;
   const a = c.a;
   const m = (a.measures ?? null) as Record<string, unknown> | null;
+  // why the judge sent it: once lights land (the referee bot's, 5.33), the attempt's reason is the red's
+  const sent = a.status === 'close_call' ? a.reason : typeof m?.close_reason === 'string' ? m.close_reason : a.reason;
   // 3.4b: a Barbell bench is judged on the plate's path, not the pose
   const bench = a.lift === 'bench' && c.division !== 'home';
   let videoUrl: string | null = null, track: Track | null = null, bar: BarTrack | null = null;
   if (store && a.videoKey) {
     try { videoUrl = await store.signedGet(a.videoKey); } catch { videoUrl = null; }
   }
-  if (store && bench && a.barKey && a.reason !== 'command_times') {
+  if (store && bench && a.barKey && sent !== 'command_times') {
     try { bar = barTrackOf(await store.getJson<BarFile>(a.barKey), a.commandTimes as Record<string, unknown> | null, m); } catch { bar = null; }
   }
-  if (store && !bench && a.posesKey && a.reason !== 'command_times') {
+  if (store && !bench && a.posesKey && sent !== 'command_times') {
     try { track = trackOf(await store.getJson<Dims & { frames: Frame[] }>(a.posesKey), (m?.side as Side) ?? null); } catch { track = null; }
   }
   return {
@@ -170,8 +172,8 @@ export async function closeCallView(db: Db, store: ClipStore | null, attemptId: 
     title: closeCallTitle(a, c.division, c.units),
     ageGroup: c.ageGroup,
     division: c.division,
-    why: whyText(a.reason),
-    measured: measuredLines(a.reason, m, bench ? { commandTimes: a.commandTimes as Record<string, unknown> | null } : null),
+    why: whyText(sent),
+    measured: measuredLines(sent, m, bench ? { commandTimes: a.commandTimes as Record<string, unknown> | null } : null),
     videoUrl, track, bar,
   };
 }

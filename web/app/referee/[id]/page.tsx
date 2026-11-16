@@ -7,6 +7,10 @@ import { requireRole } from '@/lib/guard';
 import { hasR2, r2 } from '@/lib/r2';
 import { nextCloseCall } from '@/lib/referee';
 import { closeCallView } from '@/lib/referee-view';
+import { BotBoard } from '@/components/bot-board';
+import { botSide } from '@/lib/referee/bot-view';
+import { botOn } from '@/lib/referee/words';
+import type { Light } from '@/db/schema';
 
 // One close call (plan 5.33, look 5.13). Referees only; the lifter's name is never shown.
 export const dynamic = 'force-dynamic';
@@ -22,8 +26,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   if (!c || c.meetKind === 'demo') notFound();
   const a = c.attempt;
   const askedByMe = c.secondOpinion?.refereeId === v.id;
+  // From item 88 (5.33): the bot's lamps and notes above the toggles. Once it decided, the
+  // toggles start at the lights, "Change the lights", and read only after the board is final.
+  const bot = botOn() ? await botSide(db(), a.id) : null;
+  const decided = bot?.side?.state === 'decided';
+  const m = (a.measures ?? {}) as Record<string, unknown>;
 
-  if (a.status !== 'close_call' || askedByMe) {
+  if (!decided && (a.status !== 'close_call' || askedByMe)) {
     const next = await nextCloseCall(db(), v.id);
     return (
       <Desk>
@@ -38,10 +47,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   return (
     <Desk>
-      <p className="small"><Link href="/referee">Close calls</Link></p>
+      <p className="small"><Link href="/referee">{bot ? 'Referee bot' : 'Close calls'}</Link></p>
       <h1 className="page-title">{c.title}</h1>
       <p className="small">{[c.ageGroup ? `Age group ${c.ageGroup}` : null, c.why].filter(Boolean).join(' · ')}</p>
-      {c.secondOpinion && (
+      {c.secondOpinion && !bot && (
         <div className="ref-second">
           <p className="small">Another referee asked for a second look.</p>
           {c.secondOpinion.note && <p className="small">“{c.secondOpinion.note}”</p>}
@@ -49,7 +58,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       )}
       <RefereeCall
         saveUrl={`/api/referee/${a.id}`}
-        askUrl={c.secondOpinion ? null : `/api/referee/${a.id}`}
+        askUrl={c.secondOpinion || bot ? null : `/api/referee/${a.id}`}
         lift={a.lift}
         division={c.division}
         videoUrl={c.videoUrl}
@@ -59,6 +68,13 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         repLights={a.repLights}
         repsDeclared={a.repsDeclared}
         measured={c.measured}
+        board={bot?.side ? <BotBoard attemptId={a.id} side={bot.side} /> : undefined}
+        bot={decided ? {
+          lights: (a.lights ?? ['white', 'white', 'white']) as Light[],
+          reasons: Array.isArray(m.light_reasons) ? (m.light_reasons as (string | null)[]) : [null, null, null],
+          rep: typeof m.red_rep === 'number' ? m.red_rep : null,
+          readOnly: bot!.final,
+        } : undefined}
       />
     </Desk>
   );
