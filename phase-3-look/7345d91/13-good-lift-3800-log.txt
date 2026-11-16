@@ -1,0 +1,488 @@
+9274 -,-,- | nomarks | s0.00p/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+10320 -,-,- | nomarks | s0.03p/h0.00p |  | hd0.24 | h:- | p@none | c- | SL | X67
+14235 -,-,- | nomarks | s0.05/h0.00p |  | hd0.24 | h:- | p@none | c- | SL | X67
+14250 -,-,- | nomarks | s0.07/h0.00p |  | hd0.14 | h:- | p@none | c- | SL | X67
+14265 -,-,- | nomarks | s0.08/h0.00p |  | hd0.07 | h:- | p@none | c- | SL | X67
+14280 -,-,- | nomarks | s0.10/h0.00p |  | hd0.04 | h:- | p@none | c- | SL | X67
+14298 -,-,- | nomarks | s0.11/h0.00p |  | hd0.02 | h:- | p@none | c- | SL | X67
+14313 -,-,- | nomarks | s0.13/h0.00p |  | hd0.01 | h:- | p@none | c- | SL | X67
+14331 -,-,- | nomarks | s0.15/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14347 -,-,- | nomarks | s0.16/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14364 -,-,- | nomarks | s0.18/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14379 -,-,- | nomarks | s0.20/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14397 -,-,- | nomarks | s0.21/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14413 -,-,- | nomarks | s0.23/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14432 -,-,- | nomarks | s0.25/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14446 -,-,- | nomarks | s0.26/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14463 -,-,- | nomarks | s0.28/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14479 -,-,- | nomarks | s0.30/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14496 -,-,- | nomarks | s0.31/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14513 -,-,- | nomarks | s0.33/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14529 -,-,- | nomarks | s0.35/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14546 -,-,- | nomarks | s0.36/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14563 -,-,- | nomarks | s0.38/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14579 -,-,- | nomarks | s0.40/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14596 -,-,- | nomarks | s0.41/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14613 -,-,- | nomarks | s0.43/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14629 -,-,- | nomarks | s0.45/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14646 -,-,- | nomarks | s0.46/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14663 -,-,- | nomarks | s0.48/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14679 -,-,- | nomarks | s0.50/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14696 -,-,- | nomarks | s0.51/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14713 -,-,- | nomarks | s0.53/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14730 -,-,- | nomarks | s0.55/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14746 -,-,- | nomarks | s0.56/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14763 -,-,- | nomarks | s0.58/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14779 -,-,- | nomarks | s0.60/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14796 -,-,- | nomarks | s0.61/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14813 -,-,- | nomarks | s0.63/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14829 -,-,- | nomarks | s0.65/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14846 -,-,- | nomarks | s0.66/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14863 -,-,- | nomarks | s0.68/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14879 -,-,- | nomarks | s0.70/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14896 -,-,- | nomarks | s0.71/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14913 -,-,- | nomarks | s0.73/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14929 -,-,- | nomarks | s0.75/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14946 -,-,- | nomarks | s0.76/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14963 -,-,- | nomarks | s0.78/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14979 -,-,- | nomarks | s0.80/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+14996 -,-,- | nomarks | s0.81/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15012 -,-,- | nomarks | s0.83/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15029 -,-,- | nomarks | s0.85/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15046 -,-,- | nomarks | s0.86/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15063 -,-,- | nomarks | s0.88/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15079 -,-,- | nomarks | s0.90/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15096 -,-,- | nomarks | s0.91/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15113 -,-,- | nomarks | s0.93/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15129 -,-,- | nomarks | s0.95/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15146 -,-,- | nomarks | s0.96/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15163 -,-,- | nomarks | s0.98/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15179 -,-,- | nomarks | s1.00/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15196 -,-,- | nomarks | s1.01/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15212 -,-,- | nomarks | s1.03/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15229 -,-,- | nomarks | s1.05/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15246 -,-,- | nomarks | s1.06/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15263 -,-,- | nomarks | s1.08/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15279 -,-,- | nomarks | s1.10/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15296 -,-,- | nomarks | s1.11/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15312 -,-,- | nomarks | s1.13/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15330 -,-,- | nomarks | s1.15/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15346 -,-,- | nomarks | s1.16/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15363 -,-,- | nomarks | s1.18/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15380 -,-,- | nomarks | s1.20/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15396 -,-,- | nomarks | s1.21/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15413 -,-,- | nomarks | s1.23/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15429 -,-,- | nomarks | s1.25/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15446 -,-,- | nomarks | s1.26/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15463 -,-,- | nomarks | s1.28/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15479 -,-,- | nomarks | s1.30/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15496 -,-,- | nomarks | s1.31/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15512 -,-,- | nomarks | s1.33/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15529 -,-,- | nomarks | s1.35/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15546 -,-,- | nomarks | s1.36/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15563 -,-,- | nomarks | s1.38/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15579 -,-,- | nomarks | s1.40/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15596 -,-,- | nomarks | s1.41/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15613 -,-,- | nomarks | s1.43/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15629 -,-,- | nomarks | s1.45/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15646 -,-,- | nomarks | s1.46/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15663 -,-,- | nomarks | s1.48/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15679 -,-,- | nomarks | s1.50/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15696 -,-,- | nomarks | s1.51/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15712 -,-,- | nomarks | s1.53/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15729 -,-,- | nomarks | s1.55/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15746 -,-,- | nomarks | s1.56/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15762 -,-,- | nomarks | s1.58/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15779 -,-,- | nomarks | s1.60/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15796 -,-,- | nomarks | s1.61/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15812 -,-,- | nomarks | s1.63/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15829 -,-,- | nomarks | s1.65/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15846 -,-,- | nomarks | s1.66/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15863 -,-,- | nomarks | s1.68/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15879 -,-,- | nomarks | s1.70/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15896 -,-,- | nomarks | s1.71/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15912 -,-,- | nomarks | s1.73/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15929 -,-,- | nomarks | s1.75/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15946 -,-,- | nomarks | s1.76/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15963 -,-,- | nomarks | s1.78/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15979 -,-,- | nomarks | s1.80/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+15996 -,-,- | nomarks | s1.81/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16012 -,-,- | nomarks | s1.83/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16029 -,-,- | nomarks | s1.85/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16046 -,-,- | nomarks | s1.86/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16063 -,-,- | nomarks | s1.88/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16079 -,-,- | nomarks | s1.90/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16096 -,-,- | nomarks | s1.91/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16112 -,-,- | nomarks | s1.93/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16129 -,-,- | nomarks | s1.95/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16146 -,-,- | nomarks | s1.96/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16163 -,-,- | nomarks | s1.98/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16179 -,-,- | nomarks | s2.00/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16196 -,-,- | nomarks | s2.01/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16212 -,-,- | nomarks | s2.03/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16229 -,-,- | nomarks | s2.05/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16246 -,-,- | nomarks | s2.06/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16263 -,-,- | nomarks | s2.08/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16279 -,-,- | nomarks | s2.10/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16296 -,-,- | nomarks | s2.11/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16312 -,-,- | nomarks | s2.13/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16329 -,-,- | nomarks | s2.15/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16346 -,-,- | nomarks | s2.16/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16362 -,-,- | nomarks | s2.18/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16379 -,-,- | nomarks | s2.20/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16396 -,-,- | nomarks | s2.21/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16413 -,-,- | nomarks | s2.23/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16429 -,-,- | nomarks | s2.25/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16446 -,-,- | nomarks | s2.26/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16463 -,-,- | nomarks | s2.28/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16479 -,-,- | nomarks | s2.30/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16496 -,-,- | nomarks | s2.31/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16512 -,-,- | nomarks | s2.33/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16529 -,-,- | nomarks | s2.35/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16546 -,-,- | nomarks | s2.36/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16563 -,-,- | nomarks | s2.38/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16579 -,-,- | nomarks | s2.40/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16596 -,-,- | nomarks | s2.41/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16612 -,-,- | nomarks | s2.43/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16629 -,-,- | nomarks | s2.45/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16646 -,-,- | nomarks | s2.46/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16662 -,-,- | nomarks | s2.48/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16679 -,-,- | nomarks | s2.50/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16696 -,-,- | nomarks | s2.51/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16712 -,-,- | nomarks | s2.53/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16729 -,-,- | nomarks | s2.55/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16746 -,-,- | nomarks | s2.56/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16762 -,-,- | nomarks | s2.58/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16779 -,-,- | nomarks | s2.60/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16796 -,-,- | nomarks | s2.61/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16812 -,-,- | nomarks | s2.63/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16830 -,-,- | nomarks | s2.65/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16846 -,-,- | nomarks | s2.66/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16862 -,-,- | nomarks | s2.68/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16879 -,-,- | nomarks | s2.69/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16896 -,-,- | nomarks | s2.71/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16912 -,-,- | nomarks | s2.73/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16929 -,-,- | nomarks | s2.75/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16946 -,-,- | nomarks | s2.76/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16963 -,-,- | nomarks | s2.78/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16979 -,-,- | nomarks | s2.80/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+16996 -,-,- | nomarks | s2.81/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17013 -,-,- | nomarks | s2.83/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17029 -,-,- | nomarks | s2.85/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17046 -,-,- | nomarks | s2.86/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17063 -,-,- | nomarks | s2.88/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17079 -,-,- | nomarks | s2.90/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17096 -,-,- | nomarks | s2.91/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17112 -,-,- | nomarks | s2.93/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17129 -,-,- | nomarks | s2.95/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17146 -,-,- | nomarks | s2.96/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17163 -,-,- | nomarks | s2.98/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17179 -,-,- | nomarks | s3.00/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17196 -,-,- | nomarks | s3.01/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17213 -,-,- | nomarks | s3.03/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17229 -,-,- | nomarks | s3.05/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17247 -,-,- | nomarks | s3.06/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17263 -,-,- | nomarks | s3.08/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17279 -,-,- | nomarks | s3.10/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17296 -,-,- | nomarks | s3.11/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17313 -,-,- | nomarks | s3.13/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17329 -,-,- | nomarks | s3.15/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17346 -,-,- | nomarks | s3.16/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17363 -,-,- | nomarks | s3.18/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17379 -,-,- | nomarks | s3.20/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17396 -,-,- | nomarks | s3.21/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17413 -,-,- | nomarks | s3.23/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17429 -,-,- | nomarks | s3.25/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17446 -,-,- | nomarks | s3.26/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17462 -,-,- | nomarks | s3.28/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17479 -,-,- | nomarks | s3.30/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17496 -,-,- | nomarks | s3.31/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17513 -,-,- | nomarks | s3.33/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17529 -,-,- | nomarks | s3.35/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17546 -,-,- | nomarks | s3.36/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17563 -,-,- | nomarks | s3.38/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17579 -,-,- | nomarks | s3.40/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17596 -,-,- | nomarks | s3.41/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17613 -,-,- | nomarks | s3.43/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17629 -,-,- | nomarks | s3.45/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17646 -,-,- | nomarks | s3.46/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17662 -,-,- | nomarks | s3.48/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17679 -,-,- | nomarks | s3.50/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17696 -,-,- | nomarks | s3.51/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17713 -,-,- | nomarks | s3.53/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17729 -,-,- | nomarks | s3.55/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17746 -,-,- | nomarks | s3.56/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17762 -,-,- | nomarks | s3.58/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17779 -,-,- | nomarks | s3.60/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17796 -,-,- | nomarks | s3.61/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17813 -,-,- | nomarks | s3.63/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17829 -,-,- | nomarks | s3.65/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17846 -,-,- | nomarks | s3.66/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17863 -,-,- | nomarks | s3.68/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17879 -,-,- | nomarks | s3.70/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17896 -,-,- | nomarks | s3.71/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17913 -,-,- | nomarks | s3.73/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17929 -,-,- | nomarks | s3.75/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17946 -,-,- | nomarks | s3.76/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17963 -,-,- | nomarks | s3.78/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17979 -,-,- | nomarks | s3.80/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+17996 -,-,- | nomarks | s3.81/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18013 -,-,- | nomarks | s3.83/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18029 -,-,- | nomarks | s3.85/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18046 -,-,- | nomarks | s3.86/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18063 -,-,- | nomarks | s3.88/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18079 -,-,- | nomarks | s3.90/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18096 -,-,- | nomarks | s3.91/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18113 -,-,- | nomarks | s3.93/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18129 -,-,- | nomarks | s3.95/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18146 -,-,- | nomarks | s3.96/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18163 -,-,- | nomarks | s3.98/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18179 -,-,- | nomarks | s4.00/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18196 -,-,- | nomarks | s4.01/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18213 -,-,- | nomarks | s4.03/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18229 -,-,- | nomarks | s4.05/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18247 -,-,- | nomarks | s4.06/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18263 -,-,- | nomarks | s4.08/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18279 -,-,- | nomarks | s4.10/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18296 -,-,- | nomarks | s4.11/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18312 -,-,- | nomarks | s4.13/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18329 -,-,- | nomarks | s4.15/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18346 -,-,- | nomarks | s4.16/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18363 -,-,- | nomarks | s4.18/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18379 -,-,- | nomarks | s4.20/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18396 -,-,- | nomarks | s4.21/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18413 -,-,- | nomarks | s4.23/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18429 -,-,- | nomarks | s4.25/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18446 -,-,- | nomarks | s4.26/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18463 -,-,- | nomarks | s4.28/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18479 -,-,- | nomarks | s4.30/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18496 -,-,- | nomarks | s4.31/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18513 -,-,- | nomarks | s4.33/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18529 -,-,- | nomarks | s4.35/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18546 -,-,- | nomarks | s4.36/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18563 -,-,- | nomarks | s4.38/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18579 -,-,- | nomarks | s4.40/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18596 -,-,- | nomarks | s4.41/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18613 -,-,- | nomarks | s4.43/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18629 -,-,- | nomarks | s4.45/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18646 -,-,- | nomarks | s4.46/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18662 -,-,- | nomarks | s4.48/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18679 -,-,- | nomarks | s4.50/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18696 -,-,- | nomarks | s4.51/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18713 -,-,- | nomarks | s4.53/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18729 -,-,- | nomarks | s4.55/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18746 -,-,- | nomarks | s4.56/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18762 -,-,- | nomarks | s4.58/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18779 -,-,- | nomarks | s4.60/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18796 -,-,- | nomarks | s4.61/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18813 -,-,- | nomarks | s4.63/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18829 -,-,- | nomarks | s4.65/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18846 -,-,- | nomarks | s4.66/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18863 -,-,- | nomarks | s4.68/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18879 -,-,- | nomarks | s4.70/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18896 -,-,- | nomarks | s4.71/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18913 -,-,- | nomarks | s4.73/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18929 -,-,- | nomarks | s4.75/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18946 -,-,- | nomarks | s4.76/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18963 -,-,- | nomarks | s4.78/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18979 -,-,- | nomarks | s4.80/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+18996 -,-,- | nomarks | s4.81/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19012 -,-,- | nomarks | s4.83/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19029 -,-,- | nomarks | s4.85/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19046 -,-,- | nomarks | s4.86/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19063 -,-,- | nomarks | s4.88/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19079 -,-,- | nomarks | s4.90/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19096 -,-,- | nomarks | s4.91/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19113 -,-,- | nomarks | s4.93/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19129 -,-,- | nomarks | s4.95/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19146 -,-,- | nomarks | s4.96/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19163 -,-,- | nomarks | s4.98/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19180 -,-,- | nomarks | s5.00/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19196 -,-,- | nomarks | s5.01/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19213 -,-,- | nomarks | s5.03/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19229 -,-,- | nomarks | s5.04/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19246 -,-,- | nomarks | s5.06/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19263 -,-,- | nomarks | s5.08/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19279 -,-,- | nomarks | s5.10/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19296 -,-,- | nomarks | s5.11/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19313 -,-,- | nomarks | s5.13/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19329 -,-,- | nomarks | s5.15/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19346 -,-,- | nomarks | s5.16/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19362 -,-,- | nomarks | s5.18/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19379 -,-,- | nomarks | s5.19/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19396 -,-,- | nomarks | s5.21/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19412 -,-,- | nomarks | s5.23/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19429 -,-,- | nomarks | s5.25/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19446 -,-,- | nomarks | s5.26/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19463 -,-,- | nomarks | s5.28/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19479 -,-,- | nomarks | s5.30/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19496 -,-,- | nomarks | s5.31/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19512 -,-,- | nomarks | s5.33/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19529 -,-,- | nomarks | s5.35/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19546 -,-,- | nomarks | s5.36/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19563 -,-,- | nomarks | s5.38/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19579 -,-,- | nomarks | s5.40/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19596 -,-,- | nomarks | s5.41/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19613 -,-,- | nomarks | s5.43/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19629 -,-,- | nomarks | s5.45/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19646 -,-,- | nomarks | s5.46/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19663 -,-,- | nomarks | s5.48/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19679 -,-,- | nomarks | s5.50/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19696 -,-,- | nomarks | s5.51/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19713 -,-,- | nomarks | s5.53/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19729 -,-,- | nomarks | s5.55/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19746 -,-,- | nomarks | s5.56/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19763 -,-,- | nomarks | s5.58/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19779 -,-,- | nomarks | s5.60/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19796 -,-,- | nomarks | s5.61/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19813 -,-,- | nomarks | s5.63/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19829 -,-,- | nomarks | s5.65/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19846 -,-,- | nomarks | s5.66/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19863 -,-,- | nomarks | s5.68/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19879 -,-,- | nomarks | s5.70/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19896 -,-,- | nomarks | s5.71/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19913 -,-,- | nomarks | s5.73/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19929 -,-,- | nomarks | s5.75/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19946 -,-,- | nomarks | s5.76/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19963 -,-,- | nomarks | s5.77/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+19996 -,-,- | nomarks | s5.77p/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+21330 -,-,- | nomarks | s3.80p/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+21550 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | p@none | c3800 | SL | X67
+24065 white,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | p@none | c3800 | SL | X67
+24401 white,white,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | p@none | c3800 | SL | X67
+24717 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.00 | p@0.00 | c3800 | SL | X67
+25176 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.27 | p@0.00 | c3800 | SL | X67
+25185 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.49 | p@0.00 | c3800 | SL | X67
+25239 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.85 | p@0.06 | c3800 | SL | X67
+25253 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.91 | p@0.32 | c3800 | SL | X67
+25266 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.94 | p@0.53 | c3800 | SL | X67
+25279 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.97 | p@0.68 | c3800 | SL | X67
+25296 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.98 | p@0.79 | c3800 | SL | X67
+25312 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.99 | p@0.87 | c3800 | SL | X67
+25329 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.99 | p@0.92 | c3800 | SL | X67
+25346 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@0.95 | c3800 | SL | X67
+25362 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@0.97 | c3800 | SL | X67
+25379 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@0.98 | c3800 | SL | X67
+25396 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@0.99 | c3800 | SL | X67
+25413 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@1.00 | c3800 | SL | X67
+26046 white,white,white | nomarks | s3.60p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@1.00 | c3800 | SL | X67
+26213 white,white,white | nomarks | s3.61/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26229 white,white,white | nomarks | s3.63/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26246 white,white,white | nomarks | s3.65/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26262 white,white,white | nomarks | s3.66/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26279 white,white,white | nomarks | s3.68/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26296 white,white,white | nomarks | s3.70/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26312 white,white,white | nomarks | s3.71/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26329 white,white,white | nomarks | s3.73/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26345 white,white,white | nomarks | s3.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26362 white,white,white | nomarks | s3.76/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26379 white,white,white | nomarks | s3.78/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26396 white,white,white | nomarks | s3.80/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26412 white,white,white | nomarks | s3.81/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26429 white,white,white | nomarks | s3.83/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26445 white,white,white | nomarks | s3.85/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26462 white,white,white | nomarks | s3.86/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26479 white,white,white | nomarks | s3.88/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26496 white,white,white | nomarks | s3.90/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26513 white,white,white | nomarks | s3.91/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26530 white,white,white | nomarks | s3.93/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26546 white,white,white | nomarks | s3.95/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26567 white,white,white | nomarks | s3.97/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26582 white,white,white | nomarks | s3.98/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26597 white,white,white | nomarks | s4.00/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26612 white,white,white | nomarks | s4.01/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26629 white,white,white | nomarks | s4.03/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26645 white,white,white | nomarks | s4.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26662 white,white,white | nomarks | s4.06/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26679 white,white,white | nomarks | s4.08/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26695 white,white,white | nomarks | s4.10/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26712 white,white,white | nomarks | s4.11/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26729 white,white,white | nomarks | s4.13/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26745 white,white,white | nomarks | s4.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26762 white,white,white | nomarks | s4.16/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26779 white,white,white | nomarks | s4.18/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26795 white,white,white | nomarks | s4.20/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26812 white,white,white | nomarks | s4.21/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26829 white,white,white | nomarks | s4.23/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26846 white,white,white | nomarks | s4.25/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26863 white,white,white | nomarks | s4.26/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26879 white,white,white | nomarks | s4.28/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26895 white,white,white | nomarks | s4.30/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26913 white,white,white | nomarks | s4.31/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26929 white,white,white | nomarks | s4.33/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26945 white,white,white | nomarks | s4.35/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26962 white,white,white | nomarks | s4.36/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26979 white,white,white | nomarks | s4.38/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+26995 white,white,white | nomarks | s4.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27012 white,white,white | nomarks | s4.41/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27029 white,white,white | nomarks | s4.43/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27046 white,white,white | nomarks | s4.45/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27062 white,white,white | nomarks | s4.46/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27079 white,white,white | nomarks | s4.48/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27096 white,white,white | nomarks | s4.50/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27112 white,white,white | nomarks | s4.51/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27129 white,white,white | nomarks | s4.53/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27145 white,white,white | nomarks | s4.55/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27172 white,white,white | nomarks | s4.57/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27207 white,white,white | nomarks | s4.61/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27250 white,white,white | nomarks | s4.65/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27262 white,white,white | nomarks | s4.66/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27279 white,white,white | nomarks | s4.68/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27295 white,white,white | nomarks | s4.70/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27312 white,white,white | nomarks | s4.71/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27329 white,white,white | nomarks | s4.73/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27345 white,white,white | nomarks | s4.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27362 white,white,white | nomarks | s4.76/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27379 white,white,white | nomarks | s4.78/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27395 white,white,white | nomarks | s4.80/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27412 white,white,white | nomarks | s4.81/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27429 white,white,white | nomarks | s4.83/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27445 white,white,white | nomarks | s4.85/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27462 white,white,white | nomarks | s4.86/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27479 white,white,white | nomarks | s4.88/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27495 white,white,white | nomarks | s4.90/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27512 white,white,white | nomarks | s4.91/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27529 white,white,white | nomarks | s4.93/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27551 white,white,white | nomarks | s4.95/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27562 white,white,white | nomarks | s4.96/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27579 white,white,white | nomarks | s4.98/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27595 white,white,white | nomarks | s5.00/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27612 white,white,white | nomarks | s5.01/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27629 white,white,white | nomarks | s5.03/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27645 white,white,white | nomarks | s5.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27662 white,white,white | nomarks | s5.06/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27685 white,white,white | nomarks | s5.09/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27695 white,white,white | nomarks | s5.10/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27712 white,white,white | nomarks | s5.11/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27729 white,white,white | nomarks | s5.13/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27746 white,white,white | nomarks | s5.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27762 white,white,white | nomarks | s5.16/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27779 white,white,white | nomarks | s5.18/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27796 white,white,white | nomarks | s5.20/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27812 white,white,white | nomarks | s5.21/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27829 white,white,white | nomarks | s5.23/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27846 white,white,white | nomarks | s5.25/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27862 white,white,white | nomarks | s5.26/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27879 white,white,white | nomarks | s5.28/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27895 white,white,white | nomarks | s5.30/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27912 white,white,white | nomarks | s5.31/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27929 white,white,white | nomarks | s5.33/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27945 white,white,white | nomarks | s5.35/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27962 white,white,white | nomarks | s5.36/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27979 white,white,white | nomarks | s5.38/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+27996 white,white,white | nomarks | s5.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28012 white,white,white | nomarks | s5.41/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28029 white,white,white | nomarks | s5.43/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28045 white,white,white | nomarks | s5.45/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28062 white,white,white | nomarks | s5.46/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28079 white,white,white | nomarks | s5.48/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28095 white,white,white | nomarks | s5.50/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28112 white,white,white | nomarks | s5.51/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28129 white,white,white | nomarks | s5.53/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28145 white,white,white | nomarks | s5.55/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28162 white,white,white | nomarks | s5.56/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28179 white,white,white | nomarks | s5.58/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28195 white,white,white | nomarks | s5.60/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28212 white,white,white | nomarks | s5.61/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28229 white,white,white | nomarks | s3.80p/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+28470 white,white,white | 255.244.216 | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | p@1.00 | c3800 | SL | X67

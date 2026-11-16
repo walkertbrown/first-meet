@@ -1,0 +1,37 @@
+533 -,-,- | nomarks | s0.00p/h0.00p |  | hd0.00 | h:- | p@none | c- | SL | X67
+1181 pulse,pulse,pulse | nomarks | s0.00p/h0.00p |  | hd0.00 | h:Close call@1.00 | p@1.00 | c- | SL | X67
+1740 pulse,pulse,pulse | nomarks | s0.00p/h1.40p |  | hd0.00 | h:Close call@1.00 | p@1.00 | c- | SL | X67
+1894 pulse,pulse,pulse | 166.169.179 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@1.00 | p@1.00 | c1400 | SL | X67
+8896 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@1.00 | p@1.00 | c1400 | SL | X67
+8922 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.73 | p@1.00 | c1400 | SL | X67
+8940 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.51 | p@1.00 | c1400 | SL | X67
+8955 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.34 | p@1.00 | c1400 | SL | X67
+8972 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.23 | p@1.00 | c1400 | SL | X67
+8989 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.15 | p@0.94 | c1400 | SL | X67
+9005 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.09 | p@0.68 | c1400 | SL | X67
+9022 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.06 | p@0.47 | c1400 | SL | X67
+9038 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.03 | p@0.32 | c1400 | SL | X67
+9055 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.02 | p@0.21 | c1400 | SL | X67
+9072 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.01 | p@0.13 | c1400 | SL | X67
+9088 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.01 | p@0.08 | c1400 | SL | X67
+9105 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.00 | p@0.05 | c1400 | SL | X67
+9122 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.00 | p@0.03 | c1400 | SL | X67
+9138 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.00 | p@0.02 | c1400 | SL | X67
+9155 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.00 | p@0.01 | c1400 | SL | X67
+9172 white,-,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.00 | p@0.00 | c1400 | SL | X67
+9205 white,white,- | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Close call@0.00 | p@0.00 | c1400 | SL | X67
+9541 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.00 | p@0.00 | c1400 | SL | X67
+9998 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.27 | p@0.00 | c1400 | SL | X67
+10013 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.49 | p@0.00 | c1400 | SL | X67
+10029 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.66 | p@0.00 | c1400 | SL | X67
+10046 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.78 | p@0.00 | c1400 | SL | X67
+10062 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.85 | p@0.06 | c1400 | SL | X67
+10078 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.91 | p@0.32 | c1400 | SL | X67
+10097 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.94 | p@0.53 | c1400 | SL | X67
+10106 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.97 | p@0.68 | c1400 | SL | X67
+10150 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.99 | p@0.87 | c1400 | SL | X67
+10168 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@0.99 | p@0.92 | c1400 | SL | X67
+10184 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@1.00 | p@0.95 | c1400 | SL | X67
+10282 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67
+11156 white,white,white | 255.244.216 | s0.00p/h0.00p | fz? | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67
+11256 white,white,white | 255.244.216 | s0.00p/h1.40p | fz? | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67

@@ -1,0 +1,150 @@
+93096 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@1.00 | p@1.00 | c1400 | SL | X67
+93127 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.73 | p@1.00 | c1400 | SL | X67
+93144 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.51 | p@1.00 | c1400 | SL | X67
+93160 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.34 | p@1.00 | c1400 | SL | X67
+93177 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.23 | p@1.00 | c1400 | SL | X67
+93193 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.15 | p@0.94 | c1400 | SL | X67
+93210 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.09 | p@0.68 | c1400 | SL | X67
+93228 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.06 | p@0.47 | c1400 | SL | X67
+93243 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.03 | p@0.32 | c1400 | SL | X67
+93260 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.02 | p@0.21 | c1400 | SL | X67
+93277 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.01 | p@0.13 | c1400 | SL | X67
+93293 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.01 | p@0.08 | c1400 | SL | X67
+93310 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.05 | c1400 | SL | X67
+93327 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.03 | c1400 | SL | X67
+93343 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.02 | c1400 | SL | X67
+93360 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.01 | c1400 | SL | X67
+93377 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.00 | c1400 | SL | X67
+93427 white,white,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.00 | c1400 | SL | X67
+93761 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.00 | p@0.00 | c1400 | SL | X67
+94212 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.27 | p@0.00 | c1400 | SL | X67
+94235 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.49 | p@0.00 | c1400 | SL | X67
+94251 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.66 | p@0.00 | c1400 | SL | X67
+94263 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.77 | p@0.00 | c1400 | SL | X67
+94286 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.85 | p@0.06 | c1400 | SL | X67
+94301 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.91 | p@0.32 | c1400 | SL | X67
+94317 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.94 | p@0.53 | c1400 | SL | X67
+94334 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.97 | p@0.68 | c1400 | SL | X67
+94350 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.98 | p@0.79 | c1400 | SL | X67
+94366 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.99 | p@0.87 | c1400 | SL | X67
+94384 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.99 | p@0.92 | c1400 | SL | X67
+94395 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | p@0.95 | c1400 | SL | X67
+94458 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | p@0.97 | c1400 | SL | X67
+94464 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67
+95076 white,white,white | 255.244.216 | s0.35p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67
+95140 white,white,white | nomarks | s0.35/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95171 white,white,white | nomarks | s0.38/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95180 white,white,white | nomarks | s0.39/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95193 white,white,white | nomarks | s0.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95210 white,white,white | nomarks | s0.42/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95226 white,white,white | nomarks | s0.44/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95243 white,white,white | nomarks | s0.45/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95260 white,white,white | nomarks | s0.47/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95276 white,white,white | nomarks | s0.49/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95293 white,white,white | nomarks | s0.50/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95310 white,white,white | nomarks | s0.52/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95326 white,white,white | nomarks | s0.54/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95343 white,white,white | nomarks | s0.55/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95360 white,white,white | nomarks | s0.57/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95376 white,white,white | nomarks | s0.59/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95393 white,white,white | nomarks | s0.60/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95410 white,white,white | nomarks | s0.62/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95426 white,white,white | nomarks | s0.64/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95443 white,white,white | nomarks | s0.65/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95459 white,white,white | nomarks | s0.67/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95476 white,white,white | nomarks | s0.69/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95493 white,white,white | nomarks | s0.70/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95510 white,white,white | nomarks | s0.72/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95526 white,white,white | nomarks | s0.74/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95543 white,white,white | nomarks | s0.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95559 white,white,white | nomarks | s0.77/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95576 white,white,white | nomarks | s0.79/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95593 white,white,white | nomarks | s0.80/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95609 white,white,white | nomarks | s0.82/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95626 white,white,white | nomarks | s0.84/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95643 white,white,white | nomarks | s0.85/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95659 white,white,white | nomarks | s0.87/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95676 white,white,white | nomarks | s0.89/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95693 white,white,white | nomarks | s0.90/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95709 white,white,white | nomarks | s0.92/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95726 white,white,white | nomarks | s0.94/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95743 white,white,white | nomarks | s0.95/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95760 white,white,white | nomarks | s0.97/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95776 white,white,white | nomarks | s0.99/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95793 white,white,white | nomarks | s1.00/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95809 white,white,white | nomarks | s1.02/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95826 white,white,white | nomarks | s1.04/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95843 white,white,white | nomarks | s1.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95860 white,white,white | nomarks | s1.07/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95878 white,white,white | nomarks | s1.09/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95899 white,white,white | nomarks | s1.11/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95910 white,white,white | nomarks | s1.12/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95927 white,white,white | nomarks | s1.14/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95943 white,white,white | nomarks | s1.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+95971 white,white,white | nomarks | s1.18/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96000 white,white,white | nomarks | s1.21/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96032 white,white,white | nomarks | s1.24/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96116 white,white,white | nomarks | s1.33/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96133 white,white,white | nomarks | s1.34/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96143 white,white,white | nomarks | s1.35/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96168 white,white,white | nomarks | s1.38/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96177 white,white,white | nomarks | s1.39/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96197 white,white,white | nomarks | s1.41/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96209 white,white,white | nomarks | s1.42/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96226 white,white,white | nomarks | s1.44/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96248 white,white,white | nomarks | s1.46/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96259 white,white,white | nomarks | s1.47/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96281 white,white,white | nomarks | s1.49/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96292 white,white,white | nomarks | s1.50/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96309 white,white,white | nomarks | s1.52/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96326 white,white,white | nomarks | s1.54/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96343 white,white,white | nomarks | s1.55/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96359 white,white,white | nomarks | s1.57/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96376 white,white,white | nomarks | s1.59/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96393 white,white,white | nomarks | s1.60/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96409 white,white,white | nomarks | s1.62/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96426 white,white,white | nomarks | s1.64/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96443 white,white,white | nomarks | s1.65/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96459 white,white,white | nomarks | s1.67/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96476 white,white,white | nomarks | s1.69/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96492 white,white,white | nomarks | s1.70/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96509 white,white,white | nomarks | s1.72/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96526 white,white,white | nomarks | s1.74/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96542 white,white,white | nomarks | s1.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96580 white,white,white | nomarks | s1.79/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96601 white,white,white | nomarks | s1.81/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96609 white,white,white | nomarks | s1.82/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96626 white,white,white | nomarks | s1.84/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96643 white,white,white | nomarks | s1.85/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96659 white,white,white | nomarks | s1.87/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96676 white,white,white | nomarks | s1.89/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96693 white,white,white | nomarks | s1.90/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96709 white,white,white | nomarks | s1.92/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96726 white,white,white | nomarks | s1.94/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96743 white,white,white | nomarks | s1.95/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96759 white,white,white | nomarks | s1.97/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96776 white,white,white | nomarks | s1.99/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96793 white,white,white | nomarks | s2.00/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96809 white,white,white | nomarks | s2.02/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96826 white,white,white | nomarks | s2.04/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96843 white,white,white | nomarks | s2.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96859 white,white,white | nomarks | s2.07/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96876 white,white,white | nomarks | s2.09/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96893 white,white,white | nomarks | s2.10/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96910 white,white,white | nomarks | s2.12/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96926 white,white,white | nomarks | s2.14/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96943 white,white,white | nomarks | s2.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96959 white,white,white | nomarks | s2.17/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96976 white,white,white | nomarks | s2.19/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+96993 white,white,white | nomarks | s2.20/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97010 white,white,white | nomarks | s2.22/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97026 white,white,white | nomarks | s2.24/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97043 white,white,white | nomarks | s2.25/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97060 white,white,white | nomarks | s2.27/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97076 white,white,white | nomarks | s2.29/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97093 white,white,white | nomarks | s2.30/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97109 white,white,white | nomarks | s2.32/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97126 white,white,white | nomarks | s2.34/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97143 white,white,white | nomarks | s2.35/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97160 white,white,white | nomarks | s1.40p/h0.00p |  | hd0.00 | h:Good lift@1.00 | p@1.00 | c- | SL | X67
+97343 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67

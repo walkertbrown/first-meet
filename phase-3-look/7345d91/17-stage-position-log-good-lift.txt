@@ -1,0 +1,496 @@
+9285 -,-,- | nomarks | s0.00p/h0.00p |  | hd0.00 | h:- | T32 | P0 | B0 | c- | SL | X67
+10752 -,-,- | nomarks | s0.03p/h0.00p |  | hd0.24 | h:- | T328 | P0 | B0 | c- | SL | X67
+14657 -,-,- | nomarks | s0.03/h0.00p |  | hd0.24 | h:- | T328 | P0 | B0 | c- | SL | X67
+14671 -,-,- | nomarks | s0.05/h0.00p |  | hd0.14 | h:- | T328 | P0 | B0 | c- | SL | X67
+14683 -,-,- | nomarks | s0.07/h0.00p |  | hd0.07 | h:- | T328 | P0 | B0 | c- | SL | X67
+14702 -,-,- | nomarks | s0.09/h0.00p |  | hd0.04 | h:- | T328 | P0 | B0 | c- | SL | X67
+14716 -,-,- | nomarks | s0.10/h0.00p |  | hd0.02 | h:- | T328 | P0 | B0 | c- | SL | X67
+14736 -,-,- | nomarks | s0.12/h0.00p |  | hd0.01 | h:- | T328 | P0 | B0 | c- | SL | X67
+14752 -,-,- | nomarks | s0.14/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14767 -,-,- | nomarks | s0.15/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14783 -,-,- | nomarks | s0.17/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14803 -,-,- | nomarks | s0.18/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14817 -,-,- | nomarks | s0.20/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14837 -,-,- | nomarks | s0.22/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14850 -,-,- | nomarks | s0.23/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14867 -,-,- | nomarks | s0.25/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14883 -,-,- | nomarks | s0.27/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14900 -,-,- | nomarks | s0.28/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14917 -,-,- | nomarks | s0.30/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14934 -,-,- | nomarks | s0.32/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14951 -,-,- | nomarks | s0.33/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14968 -,-,- | nomarks | s0.35/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+14984 -,-,- | nomarks | s0.37/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15003 -,-,- | nomarks | s0.39/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15016 -,-,- | nomarks | s0.40/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15035 -,-,- | nomarks | s0.42/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15052 -,-,- | nomarks | s0.44/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15066 -,-,- | nomarks | s0.45/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15083 -,-,- | nomarks | s0.47/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15100 -,-,- | nomarks | s0.48/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15116 -,-,- | nomarks | s0.50/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15133 -,-,- | nomarks | s0.52/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15150 -,-,- | nomarks | s0.53/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15167 -,-,- | nomarks | s0.55/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15183 -,-,- | nomarks | s0.57/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15201 -,-,- | nomarks | s0.58/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15217 -,-,- | nomarks | s0.60/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15233 -,-,- | nomarks | s0.62/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15250 -,-,- | nomarks | s0.63/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15267 -,-,- | nomarks | s0.65/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15283 -,-,- | nomarks | s0.67/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15300 -,-,- | nomarks | s0.68/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15319 -,-,- | nomarks | s0.70/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15333 -,-,- | nomarks | s0.72/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15350 -,-,- | nomarks | s0.73/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15366 -,-,- | nomarks | s0.75/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15383 -,-,- | nomarks | s0.77/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15402 -,-,- | nomarks | s0.79/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15418 -,-,- | nomarks | s0.80/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15433 -,-,- | nomarks | s0.82/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15450 -,-,- | nomarks | s0.83/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15468 -,-,- | nomarks | s0.85/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15483 -,-,- | nomarks | s0.87/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15500 -,-,- | nomarks | s0.88/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15517 -,-,- | nomarks | s0.90/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15533 -,-,- | nomarks | s0.92/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15550 -,-,- | nomarks | s0.93/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15568 -,-,- | nomarks | s0.95/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15586 -,-,- | nomarks | s0.97/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15601 -,-,- | nomarks | s0.98/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15619 -,-,- | nomarks | s1.00/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15635 -,-,- | nomarks | s1.02/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15653 -,-,- | nomarks | s1.04/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15668 -,-,- | nomarks | s1.05/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15684 -,-,- | nomarks | s1.07/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15700 -,-,- | nomarks | s1.08/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15717 -,-,- | nomarks | s1.10/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15734 -,-,- | nomarks | s1.12/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15750 -,-,- | nomarks | s1.13/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15766 -,-,- | nomarks | s1.15/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15783 -,-,- | nomarks | s1.17/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15800 -,-,- | nomarks | s1.18/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15816 -,-,- | nomarks | s1.20/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15834 -,-,- | nomarks | s1.22/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15850 -,-,- | nomarks | s1.23/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15867 -,-,- | nomarks | s1.25/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15883 -,-,- | nomarks | s1.27/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15900 -,-,- | nomarks | s1.28/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15916 -,-,- | nomarks | s1.30/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15934 -,-,- | nomarks | s1.32/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15950 -,-,- | nomarks | s1.33/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15967 -,-,- | nomarks | s1.35/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+15987 -,-,- | nomarks | s1.37/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16002 -,-,- | nomarks | s1.39/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16018 -,-,- | nomarks | s1.40/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16033 -,-,- | nomarks | s1.42/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16051 -,-,- | nomarks | s1.43/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16067 -,-,- | nomarks | s1.45/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16084 -,-,- | nomarks | s1.47/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16099 -,-,- | nomarks | s1.48/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16120 -,-,- | nomarks | s1.50/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16136 -,-,- | nomarks | s1.52/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16154 -,-,- | nomarks | s1.54/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16169 -,-,- | nomarks | s1.55/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16187 -,-,- | nomarks | s1.57/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16200 -,-,- | nomarks | s1.58/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16220 -,-,- | nomarks | s1.60/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16233 -,-,- | nomarks | s1.62/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16252 -,-,- | nomarks | s1.64/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16267 -,-,- | nomarks | s1.65/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16287 -,-,- | nomarks | s1.67/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16301 -,-,- | nomarks | s1.69/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16317 -,-,- | nomarks | s1.70/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16339 -,-,- | nomarks | s1.72/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16355 -,-,- | nomarks | s1.74/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16366 -,-,- | nomarks | s1.75/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16383 -,-,- | nomarks | s1.77/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16399 -,-,- | nomarks | s1.78/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16418 -,-,- | nomarks | s1.80/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16435 -,-,- | nomarks | s1.82/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16450 -,-,- | nomarks | s1.83/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16466 -,-,- | nomarks | s1.85/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16486 -,-,- | nomarks | s1.87/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16499 -,-,- | nomarks | s1.88/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16516 -,-,- | nomarks | s1.90/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16535 -,-,- | nomarks | s1.92/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16550 -,-,- | nomarks | s1.93/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16567 -,-,- | nomarks | s1.95/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16585 -,-,- | nomarks | s1.97/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16601 -,-,- | nomarks | s1.98/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16620 -,-,- | nomarks | s2.00/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16634 -,-,- | nomarks | s2.02/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16649 -,-,- | nomarks | s2.03/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16668 -,-,- | nomarks | s2.05/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16683 -,-,- | nomarks | s2.07/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16700 -,-,- | nomarks | s2.08/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16717 -,-,- | nomarks | s2.10/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16736 -,-,- | nomarks | s2.12/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16754 -,-,- | nomarks | s2.14/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16768 -,-,- | nomarks | s2.15/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16785 -,-,- | nomarks | s2.17/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16800 -,-,- | nomarks | s2.18/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16816 -,-,- | nomarks | s2.20/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16833 -,-,- | nomarks | s2.22/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16853 -,-,- | nomarks | s2.24/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16867 -,-,- | nomarks | s2.25/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16883 -,-,- | nomarks | s2.27/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16900 -,-,- | nomarks | s2.28/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16921 -,-,- | nomarks | s2.30/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16936 -,-,- | nomarks | s2.32/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16950 -,-,- | nomarks | s2.33/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16966 -,-,- | nomarks | s2.35/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+16986 -,-,- | nomarks | s2.37/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17003 -,-,- | nomarks | s2.39/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17020 -,-,- | nomarks | s2.40/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17033 -,-,- | nomarks | s2.42/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17050 -,-,- | nomarks | s2.43/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17066 -,-,- | nomarks | s2.45/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17085 -,-,- | nomarks | s2.47/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17100 -,-,- | nomarks | s2.48/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17117 -,-,- | nomarks | s2.50/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17133 -,-,- | nomarks | s2.52/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17150 -,-,- | nomarks | s2.53/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17168 -,-,- | nomarks | s2.55/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17185 -,-,- | nomarks | s2.57/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17200 -,-,- | nomarks | s2.58/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17219 -,-,- | nomarks | s2.60/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17233 -,-,- | nomarks | s2.62/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17253 -,-,- | nomarks | s2.64/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17268 -,-,- | nomarks | s2.65/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17289 -,-,- | nomarks | s2.67/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17300 -,-,- | nomarks | s2.68/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17316 -,-,- | nomarks | s2.70/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17333 -,-,- | nomarks | s2.72/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17351 -,-,- | nomarks | s2.73/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17367 -,-,- | nomarks | s2.75/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17386 -,-,- | nomarks | s2.77/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17400 -,-,- | nomarks | s2.78/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17416 -,-,- | nomarks | s2.80/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17435 -,-,- | nomarks | s2.82/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17452 -,-,- | nomarks | s2.84/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17467 -,-,- | nomarks | s2.85/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17484 -,-,- | nomarks | s2.87/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17500 -,-,- | nomarks | s2.88/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17518 -,-,- | nomarks | s2.90/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17533 -,-,- | nomarks | s2.92/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17550 -,-,- | nomarks | s2.93/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17568 -,-,- | nomarks | s2.95/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17583 -,-,- | nomarks | s2.97/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17601 -,-,- | nomarks | s2.98/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17620 -,-,- | nomarks | s3.00/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17633 -,-,- | nomarks | s3.02/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17649 -,-,- | nomarks | s3.03/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17667 -,-,- | nomarks | s3.05/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17683 -,-,- | nomarks | s3.07/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17700 -,-,- | nomarks | s3.08/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17717 -,-,- | nomarks | s3.10/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17735 -,-,- | nomarks | s3.12/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17754 -,-,- | nomarks | s3.14/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17769 -,-,- | nomarks | s3.15/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17788 -,-,- | nomarks | s3.17/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17800 -,-,- | nomarks | s3.18/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17817 -,-,- | nomarks | s3.20/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17833 -,-,- | nomarks | s3.22/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17851 -,-,- | nomarks | s3.24/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17866 -,-,- | nomarks | s3.25/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17883 -,-,- | nomarks | s3.27/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17899 -,-,- | nomarks | s3.28/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17920 -,-,- | nomarks | s3.30/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17936 -,-,- | nomarks | s3.32/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17952 -,-,- | nomarks | s3.34/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17968 -,-,- | nomarks | s3.35/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17983 -,-,- | nomarks | s3.37/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+17999 -,-,- | nomarks | s3.38/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18016 -,-,- | nomarks | s3.40/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18035 -,-,- | nomarks | s3.42/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18051 -,-,- | nomarks | s3.43/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18067 -,-,- | nomarks | s3.45/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18085 -,-,- | nomarks | s3.47/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18100 -,-,- | nomarks | s3.48/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18117 -,-,- | nomarks | s3.50/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18134 -,-,- | nomarks | s3.52/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18150 -,-,- | nomarks | s3.53/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18166 -,-,- | nomarks | s3.55/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18184 -,-,- | nomarks | s3.57/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18200 -,-,- | nomarks | s3.58/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18220 -,-,- | nomarks | s3.60/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18233 -,-,- | nomarks | s3.62/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18251 -,-,- | nomarks | s3.63/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18266 -,-,- | nomarks | s3.65/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18285 -,-,- | nomarks | s3.67/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18300 -,-,- | nomarks | s3.68/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18319 -,-,- | nomarks | s3.70/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18333 -,-,- | nomarks | s3.72/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18351 -,-,- | nomarks | s3.73/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18367 -,-,- | nomarks | s3.75/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18386 -,-,- | nomarks | s3.77/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18400 -,-,- | nomarks | s3.78/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18419 -,-,- | nomarks | s3.80/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18435 -,-,- | nomarks | s3.82/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18452 -,-,- | nomarks | s3.84/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18470 -,-,- | nomarks | s3.85/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18487 -,-,- | nomarks | s3.87/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18500 -,-,- | nomarks | s3.88/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18516 -,-,- | nomarks | s3.90/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18533 -,-,- | nomarks | s3.92/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18551 -,-,- | nomarks | s3.93/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18566 -,-,- | nomarks | s3.95/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18586 -,-,- | nomarks | s3.97/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18602 -,-,- | nomarks | s3.99/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18616 -,-,- | nomarks | s4.00/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18633 -,-,- | nomarks | s4.02/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18649 -,-,- | nomarks | s4.03/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18669 -,-,- | nomarks | s4.05/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18684 -,-,- | nomarks | s4.07/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18700 -,-,- | nomarks | s4.08/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18717 -,-,- | nomarks | s4.10/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18734 -,-,- | nomarks | s4.12/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18750 -,-,- | nomarks | s4.13/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18766 -,-,- | nomarks | s4.15/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18784 -,-,- | nomarks | s4.17/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18801 -,-,- | nomarks | s4.18/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18821 -,-,- | nomarks | s4.20/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18834 -,-,- | nomarks | s4.22/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18851 -,-,- | nomarks | s4.23/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18866 -,-,- | nomarks | s4.25/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18884 -,-,- | nomarks | s4.27/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18900 -,-,- | nomarks | s4.28/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18916 -,-,- | nomarks | s4.30/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18934 -,-,- | nomarks | s4.32/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18951 -,-,- | nomarks | s4.33/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18966 -,-,- | nomarks | s4.35/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+18989 -,-,- | nomarks | s4.37/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19001 -,-,- | nomarks | s4.38/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19022 -,-,- | nomarks | s4.41/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19033 -,-,- | nomarks | s4.42/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19053 -,-,- | nomarks | s4.44/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19067 -,-,- | nomarks | s4.45/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19083 -,-,- | nomarks | s4.47/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19100 -,-,- | nomarks | s4.48/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19117 -,-,- | nomarks | s4.50/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19133 -,-,- | nomarks | s4.52/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19151 -,-,- | nomarks | s4.53/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19169 -,-,- | nomarks | s4.55/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19184 -,-,- | nomarks | s4.57/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19200 -,-,- | nomarks | s4.58/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19216 -,-,- | nomarks | s4.60/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19233 -,-,- | nomarks | s4.62/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19251 -,-,- | nomarks | s4.63/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19267 -,-,- | nomarks | s4.65/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19283 -,-,- | nomarks | s4.67/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19300 -,-,- | nomarks | s4.68/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19319 -,-,- | nomarks | s4.70/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19333 -,-,- | nomarks | s4.72/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19350 -,-,- | nomarks | s4.73/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19370 -,-,- | nomarks | s4.75/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19386 -,-,- | nomarks | s4.77/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19401 -,-,- | nomarks | s4.78/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19418 -,-,- | nomarks | s4.80/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19433 -,-,- | nomarks | s4.82/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19449 -,-,- | nomarks | s4.83/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19466 -,-,- | nomarks | s4.85/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19483 -,-,- | nomarks | s4.87/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19502 -,-,- | nomarks | s4.89/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19516 -,-,- | nomarks | s4.90/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19533 -,-,- | nomarks | s4.92/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19550 -,-,- | nomarks | s4.93/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19566 -,-,- | nomarks | s4.95/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19583 -,-,- | nomarks | s4.97/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19599 -,-,- | nomarks | s4.98/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19616 -,-,- | nomarks | s5.00/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19633 -,-,- | nomarks | s5.02/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19650 -,-,- | nomarks | s5.03/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19668 -,-,- | nomarks | s5.05/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19684 -,-,- | nomarks | s5.07/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19700 -,-,- | nomarks | s5.08/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19719 -,-,- | nomarks | s5.10/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19734 -,-,- | nomarks | s5.12/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19751 -,-,- | nomarks | s5.13/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19767 -,-,- | nomarks | s5.15/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19785 -,-,- | nomarks | s5.17/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19799 -,-,- | nomarks | s5.18/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19817 -,-,- | nomarks | s5.20/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19834 -,-,- | nomarks | s5.22/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19850 -,-,- | nomarks | s5.23/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19866 -,-,- | nomarks | s5.25/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19883 -,-,- | nomarks | s5.27/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19903 -,-,- | nomarks | s5.29/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19918 -,-,- | nomarks | s5.30/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19933 -,-,- | nomarks | s5.32/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19950 -,-,- | nomarks | s5.33/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19966 -,-,- | nomarks | s5.35/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+19983 -,-,- | nomarks | s5.37/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20000 -,-,- | nomarks | s5.38/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20016 -,-,- | nomarks | s5.40/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20033 -,-,- | nomarks | s5.42/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20049 -,-,- | nomarks | s5.43/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20066 -,-,- | nomarks | s5.45/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20083 -,-,- | nomarks | s5.47/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20100 -,-,- | nomarks | s5.48/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20116 -,-,- | nomarks | s5.50/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20133 -,-,- | nomarks | s5.52/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20151 -,-,- | nomarks | s5.54/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20167 -,-,- | nomarks | s5.55/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20183 -,-,- | nomarks | s5.57/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20199 -,-,- | nomarks | s5.58/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20216 -,-,- | nomarks | s5.60/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20233 -,-,- | nomarks | s5.62/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20250 -,-,- | nomarks | s5.63/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20266 -,-,- | nomarks | s5.65/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20285 -,-,- | nomarks | s5.67/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20300 -,-,- | nomarks | s5.68/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20316 -,-,- | nomarks | s5.70/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20333 -,-,- | nomarks | s5.72/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20351 -,-,- | nomarks | s5.73/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20367 -,-,- | nomarks | s5.75/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20385 -,-,- | nomarks | s5.77/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+20433 -,-,- | nomarks | s5.77p/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+21754 -,-,- | nomarks | s3.80p/h0.00p |  | hd0.00 | h:- | T328 | P0 | B0 | c- | SL | X67
+22044 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T328 | P0 | B0 | c3800 | SL | X67
+22068 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T328 | P33 | B0 | c3800 | SL | X67
+22084 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T312 | P70 | B0 | c3800 | SL | X67
+22101 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T293 | P114 | B0 | c3800 | SL | X67
+22120 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T272 | P154 | B0 | c3800 | SL | X67
+22134 -,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T251 | P154 | B0 | c3800 | SL | X67
+24557 white,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T251 | P50 | B0 | c3800 | SL | X67
+24574 white,-,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T303 | P50 | B0 | c3800 | SL | X67
+24883 white,white,- | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:- | T303 | P50 | B0 | c3800 | SL | X67
+25205 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.00 | T303 | P154 | B0 | c3800 | SL | X67
+25223 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.00 | T251 | P154 | B0 | c3800 | SL | X67
+25635 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.00 | T251 | P251 | B1 | c3800 | SL | X67
+25655 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.27 | T203 | P251 | B1 | c3800 | SL | X67
+25670 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.49 | T203 | P251 | B1 | c3800 | SL | X67
+25686 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.66 | T203 | P251 | B1 | c3800 | SL | X67
+25701 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.77 | T203 | P251 | B1 | c3800 | SL | X67
+25720 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.85 | T203 | P251 | B1 | c3800 | SL | X67
+25737 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.91 | T203 | P251 | B1 | c3800 | SL | X67
+25752 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.94 | T203 | P251 | B1 | c3800 | SL | X67
+25767 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.97 | T203 | P251 | B1 | c3800 | SL | X67
+25785 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.98 | T203 | P251 | B1 | c3800 | SL | X67
+25801 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@0.99 | T203 | P251 | B1 | c3800 | SL | X67
+25833 white,white,white | nomarks | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c3800 | SL | X67
+26532 white,white,white | nomarks | s3.60p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c3800 | SL | X67
+26783 white,white,white | nomarks | s3.60/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26804 white,white,white | nomarks | s3.62/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26821 white,white,white | nomarks | s3.64/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26840 white,white,white | nomarks | s3.66/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26854 white,white,white | nomarks | s3.67/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26866 white,white,white | nomarks | s3.69/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26886 white,white,white | nomarks | s3.71/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26901 white,white,white | nomarks | s3.72/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26919 white,white,white | nomarks | s3.74/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26935 white,white,white | nomarks | s3.76/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26949 white,white,white | nomarks | s3.77/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26970 white,white,white | nomarks | s3.79/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+26990 white,white,white | nomarks | s3.81/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27009 white,white,white | nomarks | s3.83/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27020 white,white,white | nomarks | s3.84/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27040 white,white,white | nomarks | s3.86/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27051 white,white,white | nomarks | s3.87/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27069 white,white,white | nomarks | s3.89/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27087 white,white,white | nomarks | s3.91/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27103 white,white,white | nomarks | s3.92/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27116 white,white,white | nomarks | s3.94/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27133 white,white,white | nomarks | s3.95/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27149 white,white,white | nomarks | s3.97/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27166 white,white,white | nomarks | s3.99/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27185 white,white,white | nomarks | s4.01/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27202 white,white,white | nomarks | s4.02/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27219 white,white,white | nomarks | s4.04/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27234 white,white,white | nomarks | s4.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27254 white,white,white | nomarks | s4.07/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27267 white,white,white | nomarks | s4.09/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27284 white,white,white | nomarks | s4.10/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27300 white,white,white | nomarks | s4.12/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27316 white,white,white | nomarks | s4.14/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27332 white,white,white | nomarks | s4.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27349 white,white,white | nomarks | s4.17/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27366 white,white,white | nomarks | s4.19/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27385 white,white,white | nomarks | s4.21/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27400 white,white,white | nomarks | s4.22/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27417 white,white,white | nomarks | s4.24/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27435 white,white,white | nomarks | s4.26/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27449 white,white,white | nomarks | s4.27/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27466 white,white,white | nomarks | s4.29/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27483 white,white,white | nomarks | s4.30/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27499 white,white,white | nomarks | s4.32/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27516 white,white,white | nomarks | s4.34/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27536 white,white,white | nomarks | s4.36/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27550 white,white,white | nomarks | s4.37/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27566 white,white,white | nomarks | s4.39/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27584 white,white,white | nomarks | s4.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27600 white,white,white | nomarks | s4.42/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27616 white,white,white | nomarks | s4.44/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27633 white,white,white | nomarks | s4.45/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27650 white,white,white | nomarks | s4.47/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27669 white,white,white | nomarks | s4.49/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27682 white,white,white | nomarks | s4.50/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27699 white,white,white | nomarks | s4.52/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27716 white,white,white | nomarks | s4.54/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27732 white,white,white | nomarks | s4.55/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27749 white,white,white | nomarks | s4.57/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27768 white,white,white | nomarks | s4.59/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27783 white,white,white | nomarks | s4.60/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27799 white,white,white | nomarks | s4.62/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27816 white,white,white | nomarks | s4.64/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27832 white,white,white | nomarks | s4.65/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27850 white,white,white | nomarks | s4.67/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27869 white,white,white | nomarks | s4.69/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27882 white,white,white | nomarks | s4.70/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27899 white,white,white | nomarks | s4.72/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27916 white,white,white | nomarks | s4.74/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27932 white,white,white | nomarks | s4.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27949 white,white,white | nomarks | s4.77/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27967 white,white,white | nomarks | s4.79/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+27983 white,white,white | nomarks | s4.80/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28002 white,white,white | nomarks | s4.82/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28016 white,white,white | nomarks | s4.84/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28032 white,white,white | nomarks | s4.85/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28051 white,white,white | nomarks | s4.87/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28067 white,white,white | nomarks | s4.89/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28082 white,white,white | nomarks | s4.90/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28099 white,white,white | nomarks | s4.92/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28116 white,white,white | nomarks | s4.94/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28132 white,white,white | nomarks | s4.95/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28151 white,white,white | nomarks | s4.97/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28166 white,white,white | nomarks | s4.99/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28184 white,white,white | nomarks | s5.01/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28202 white,white,white | nomarks | s5.02/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28219 white,white,white | nomarks | s5.04/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28232 white,white,white | nomarks | s5.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28249 white,white,white | nomarks | s5.07/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28266 white,white,white | nomarks | s5.09/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28282 white,white,white | nomarks | s5.10/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28301 white,white,white | nomarks | s5.12/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28317 white,white,white | nomarks | s5.14/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28333 white,white,white | nomarks | s5.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28349 white,white,white | nomarks | s5.17/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28366 white,white,white | nomarks | s5.19/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28382 white,white,white | nomarks | s5.20/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28401 white,white,white | nomarks | s5.22/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28416 white,white,white | nomarks | s5.24/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28432 white,white,white | nomarks | s5.25/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28449 white,white,white | nomarks | s5.27/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28469 white,white,white | nomarks | s5.29/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28484 white,white,white | nomarks | s5.30/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28503 white,white,white | nomarks | s5.32/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28516 white,white,white | nomarks | s5.34/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28535 white,white,white | nomarks | s5.36/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28551 white,white,white | nomarks | s5.37/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28566 white,white,white | nomarks | s5.39/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28582 white,white,white | nomarks | s5.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28599 white,white,white | nomarks | s5.42/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28616 white,white,white | nomarks | s5.44/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28636 white,white,white | nomarks | s5.46/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28649 white,white,white | nomarks | s5.47/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28667 white,white,white | nomarks | s5.49/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28682 white,white,white | nomarks | s5.50/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28699 white,white,white | nomarks | s5.52/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28716 white,white,white | nomarks | s5.54/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28734 white,white,white | nomarks | s5.55/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28749 white,white,white | nomarks | s5.57/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28767 white,white,white | nomarks | s5.59/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28783 white,white,white | nomarks | s5.60/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28800 white,white,white | nomarks | s3.80p/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+28998 white,white,white | 255.244.216 | s3.80p/h0.00p | fzj4bt | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c3800 | SL | X67

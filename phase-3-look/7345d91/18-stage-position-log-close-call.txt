@@ -1,0 +1,138 @@
+100981 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@1.00 | T160 | P180 | B0 | c1400 | SL | X67
+101014 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@1.00 | T238 | P180 | B0 | c1400 | SL | X67
+101022 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.73 | T238 | P180 | B0 | c1400 | SL | X67
+101036 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.51 | T238 | P180 | B0 | c1400 | SL | X67
+101051 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.34 | T238 | P180 | B0 | c1400 | SL | X67
+101067 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.23 | T238 | P180 | B0 | c1400 | SL | X67
+101081 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.15 | T238 | P180 | B0 | c1400 | SL | X67
+101097 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.09 | T238 | P180 | B0 | c1400 | SL | X67
+101113 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.06 | T238 | P180 | B0 | c1400 | SL | X67
+101130 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.03 | T238 | P180 | B0 | c1400 | SL | X67
+101147 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.02 | T238 | P180 | B0 | c1400 | SL | X67
+101167 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.01 | T238 | P180 | B0 | c1400 | SL | X67
+101198 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | T238 | P180 | B0 | c1400 | SL | X67
+101314 white,white,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | T238 | P180 | B0 | c1400 | SL | X67
+101648 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.00 | T238 | P154 | B0 | c1400 | SL | X67
+101671 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.00 | T251 | P154 | B0 | c1400 | SL | X67
+102069 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.00 | T251 | P251 | B1 | c1400 | SL | X67
+102097 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.00 | T203 | P251 | B1 | c1400 | SL | X67
+102167 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.85 | T203 | P251 | B1 | c1400 | SL | X67
+102181 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.91 | T203 | P251 | B1 | c1400 | SL | X67
+102213 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.97 | T203 | P251 | B1 | c1400 | SL | X67
+102247 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.99 | T203 | P251 | B1 | c1400 | SL | X67
+102301 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c1400 | SL | X67
+102963 white,white,white | 255.244.216 | s0.35p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c1400 | SL | X67
+103048 white,white,white | nomarks | s0.35/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103067 white,white,white | nomarks | s0.37/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103083 white,white,white | nomarks | s0.38/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103098 white,white,white | nomarks | s0.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103113 white,white,white | nomarks | s0.41/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103129 white,white,white | nomarks | s0.43/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103148 white,white,white | nomarks | s0.45/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103164 white,white,white | nomarks | s0.46/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103180 white,white,white | nomarks | s0.48/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103196 white,white,white | nomarks | s0.49/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103213 white,white,white | nomarks | s0.51/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103230 white,white,white | nomarks | s0.53/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103246 white,white,white | nomarks | s0.54/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103263 white,white,white | nomarks | s0.56/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103280 white,white,white | nomarks | s0.58/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103297 white,white,white | nomarks | s0.59/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103313 white,white,white | nomarks | s0.61/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103329 white,white,white | nomarks | s0.63/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103346 white,white,white | nomarks | s0.64/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103369 white,white,white | nomarks | s0.67/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103384 white,white,white | nomarks | s0.68/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103396 white,white,white | nomarks | s0.69/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103413 white,white,white | nomarks | s0.71/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103432 white,white,white | nomarks | s0.73/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103449 white,white,white | nomarks | s0.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103465 white,white,white | nomarks | s0.76/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103480 white,white,white | nomarks | s0.78/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103497 white,white,white | nomarks | s0.79/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103515 white,white,white | nomarks | s0.81/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103530 white,white,white | nomarks | s0.83/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103546 white,white,white | nomarks | s0.84/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103567 white,white,white | nomarks | s0.86/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103580 white,white,white | nomarks | s0.88/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103596 white,white,white | nomarks | s0.89/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103613 white,white,white | nomarks | s0.91/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103630 white,white,white | nomarks | s0.93/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103646 white,white,white | nomarks | s0.94/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103664 white,white,white | nomarks | s0.96/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103681 white,white,white | nomarks | s0.98/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103697 white,white,white | nomarks | s1.00/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103714 white,white,white | nomarks | s1.01/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103733 white,white,white | nomarks | s1.03/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103749 white,white,white | nomarks | s1.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103763 white,white,white | nomarks | s1.06/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103807 white,white,white | nomarks | s1.11/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103817 white,white,white | nomarks | s1.12/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103851 white,white,white | nomarks | s1.15/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103884 white,white,white | nomarks | s1.18/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103909 white,white,white | nomarks | s1.21/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103923 white,white,white | nomarks | s1.22/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103932 white,white,white | nomarks | s1.23/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+103995 white,white,white | nomarks | s1.29/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104025 white,white,white | nomarks | s1.32/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104032 white,white,white | nomarks | s1.33/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104097 white,white,white | nomarks | s1.40/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104119 white,white,white | nomarks | s1.42/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104132 white,white,white | nomarks | s1.43/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104152 white,white,white | nomarks | s1.45/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104165 white,white,white | nomarks | s1.46/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104180 white,white,white | nomarks | s1.48/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104196 white,white,white | nomarks | s1.49/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104214 white,white,white | nomarks | s1.51/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104230 white,white,white | nomarks | s1.53/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104246 white,white,white | nomarks | s1.54/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104263 white,white,white | nomarks | s1.56/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104279 white,white,white | nomarks | s1.58/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104297 white,white,white | nomarks | s1.59/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104313 white,white,white | nomarks | s1.61/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104330 white,white,white | nomarks | s1.63/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104346 white,white,white | nomarks | s1.64/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104363 white,white,white | nomarks | s1.66/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104380 white,white,white | nomarks | s1.68/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104397 white,white,white | nomarks | s1.70/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104413 white,white,white | nomarks | s1.71/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104443 white,white,white | nomarks | s1.74/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104454 white,white,white | nomarks | s1.75/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104463 white,white,white | nomarks | s1.76/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104481 white,white,white | nomarks | s1.78/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104496 white,white,white | nomarks | s1.79/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104518 white,white,white | nomarks | s1.82/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104531 white,white,white | nomarks | s1.83/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104546 white,white,white | nomarks | s1.84/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104563 white,white,white | nomarks | s1.86/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104580 white,white,white | nomarks | s1.88/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104597 white,white,white | nomarks | s1.89/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104613 white,white,white | nomarks | s1.91/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104630 white,white,white | nomarks | s1.93/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104646 white,white,white | nomarks | s1.94/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104663 white,white,white | nomarks | s1.96/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104681 white,white,white | nomarks | s1.98/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104697 white,white,white | nomarks | s2.00/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104715 white,white,white | nomarks | s2.01/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104732 white,white,white | nomarks | s2.03/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104747 white,white,white | nomarks | s2.05/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104763 white,white,white | nomarks | s2.06/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104788 white,white,white | nomarks | s2.09/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104804 white,white,white | nomarks | s2.10/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104818 white,white,white | nomarks | s2.12/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104832 white,white,white | nomarks | s2.13/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104846 white,white,white | nomarks | s2.14/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104864 white,white,white | nomarks | s2.16/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104881 white,white,white | nomarks | s2.18/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104898 white,white,white | nomarks | s2.20/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104913 white,white,white | nomarks | s2.21/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104935 white,white,white | nomarks | s2.23/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104958 white,white,white | nomarks | s2.26/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+104982 white,white,white | nomarks | s2.28/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105000 white,white,white | nomarks | s2.30/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105013 white,white,white | nomarks | s2.31/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105034 white,white,white | nomarks | s2.33/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105046 white,white,white | nomarks | s2.34/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105063 white,white,white | nomarks | s2.36/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105083 white,white,white | nomarks | s1.40p/h0.00p |  | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c- | SL | X67
+105505 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | T203 | P251 | B1 | c1400 | SL | X67

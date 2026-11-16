@@ -1,0 +1,4 @@
+93439 white,-,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.00 | c1400 | SL | X67
+93772 white,white,- | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Close call@0.00 | p@0.00 | c1400 | SL | X67
+94106 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@0.00 | p@0.00 | c1400 | SL | X67
+94523 white,white,white | 255.244.216 | s1.40p/h0.00p | fzph0w | hd0.00 | h:Good lift@1.00 | p@1.00 | c1400 | SL | X67
