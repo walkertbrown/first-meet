@@ -34,6 +34,8 @@ export type OpsNumbers = {
   uploads: { device: string; tried: number; failed: number }[];
   demo: { runsToday: number; runsLimit: number; waiting: number; closeCalls: number; onPlatform: number; lights15mMedian: number | null };
   errors: { at: string; kind: string; attemptId: string | null; text: string }[];
+  /** 5.39, item 102: clips that still couldn't be made after her "Try again" ("We've told the team."). */
+  clipsFailed: number;
   commits: { web: string | null; judge: string | null };
 };
 
@@ -165,6 +167,8 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
        or (kind = 'close_call' and detail->>'reason' = 'judge_unavailable')
     order by at desc, id desc limit 20`);
 
+  const [cf] = await db.execute<{ n: number }>(sql`select count(*) as n from attempts where clip_status = 'failed' and clip_retried`);
+
   const [jc] = await db.execute<{ commit: string | null }>(sql`
     select commit from (
       select detail->>'commit' as commit, at from events where kind = 'judged' and detail->>'commit' is not null
@@ -198,6 +202,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       waiting: num(q?.demo_waiting), closeCalls: num(cc?.demo), onPlatform: num(p?.demo), lights15mMedian: numOrNull(d15?.median),
     },
     errors: errs.map(e => ({ at: new Date(e.at).toISOString(), kind: e.kind, attemptId: e.attempt_id, text: errorText(e.kind, e.detail) })),
+    clipsFailed: num(cf?.n),
     commits: { web: webCommit ? webCommit.slice(0, 7) : null, judge: jc?.commit ? jc.commit.slice(0, 7) : null },
   };
 }

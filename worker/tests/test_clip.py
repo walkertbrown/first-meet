@@ -144,6 +144,11 @@ class RenderClipTask(unittest.TestCase):
         self.assertEqual(self.sent[0][1]['ok'], False)
         self.assertIn('no footage', self.sent[0][1]['error'])
 
+    def test_staging_fault_fails_the_clip_through_the_real_path(self):
+        out = self.main.clip_or_report({'attempt_id': 'a3', 'worker_id': 'c-1', 'fault': True})
+        self.assertIn('FAULT=clip', out['error'])
+        self.assertEqual(self.sent[0][1]['ok'], False)
+
     def test_the_task_is_registered(self):
         self.assertIsInstance(self.main.render_clip, type(self.main.find_poses))
 

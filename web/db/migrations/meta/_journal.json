@@ -57,6 +57,13 @@
       "when": 1794797269613,
       "tag": "0007_phase4_card_clip_referee_bot",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794800571405,
+      "tag": "0008_clip_retried",
+      "breakpoints": true
     }
   ]
 }

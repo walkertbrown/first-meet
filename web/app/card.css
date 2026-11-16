@@ -70,3 +70,10 @@
   .cert-lifts { gap: 20px; }
   .cert-page .cert-actions { padding: 16px 16px 0; }
 }
+
+/* A clip that couldn't be made (item 102, look 5.15): in the clip's own 9:16 frame on --stage, never red. */
+.card-failed > div { display: grid; gap: 12px; justify-items: center; max-width: 280px; }
+.card-failed .sheet-title { color: var(--stage-ink); margin: 0; }
+.card-failed .body { color: var(--stage-ink); margin: 0; }
+.card-failed .btn.ghost.on-stage { color: var(--stage-ink); box-shadow: inset 0 0 0 1.5px var(--stage-ink); margin-top: 8px; }
+.card-failed .btn.ghost.on-stage:hover, .card-failed .btn.ghost.on-stage:active { background: rgba(241, 239, 232, .08); }

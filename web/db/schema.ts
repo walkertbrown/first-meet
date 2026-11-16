@@ -167,6 +167,8 @@ export const attempts = pgTable('attempts', {
   clipKey: text('clip_key'),
   /** `render_clip` (5.30): `queued`, `rendering`, `ready` or `failed`; `clip_key` is the MP4 at `clips/<attempt>.mp4`. */
   clipStatus: text('clip_status').$type<'queued' | 'rendering' | 'ready' | 'failed'>(),
+  /** She tapped "Try again" on a clip that couldn't be made (item 102); a failure after that is the last. */
+  clipRetried: boolean('clip_retried').notNull().default(false),
   /** When she shared her card clip from 5.30's Clip segment: this clip, and only this clip, is public (5.30, 5.5). */
   clipSharedAt: at('clip_shared_at'),
   refereeId: uuid('referee_id').references(() => lifters.id),

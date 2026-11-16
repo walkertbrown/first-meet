@@ -71,6 +71,8 @@ export type ClipJob = {
   /** landscape footage (the presses): "BENCH · 2 OF 3" and "85 lb" under it (look 9) */
   lift_line: string; weight: string;
   upload_url: string;
+  /** FAULT=clip (staging only, as /healthz's): the run fails this clip on purpose, through the real failure path (item 102) */
+  fault?: true;
   times: typeof CLIP_TIMES;
 };
 
@@ -154,6 +156,7 @@ export async function clipJob(db: Db, store: ClipStore, attemptId: string, worke
     weight: weightText(a.weight, l.units, a.repsDeclared),
     upload_url: await store.signedPut(keys.clip(a.id), CLIP_LEASE_S),
     times: CLIP_TIMES,
+    ...(process.env.FAULT === 'clip' ? { fault: true as const } : {}),
   };
 }
 
@@ -167,7 +170,7 @@ export function parseClipPost(b: unknown): ClipPost | null {
 
 /**
  * The run says how it went. Made: the MP4 must be in R2, then the clip is `ready`. Not made: it's tried once
- * more; a second failure leaves it `failed` (her Clip segment keeps its making line).
+ * more at once; a second failure leaves it `failed`, and her Clip segment offers "Try again" (item 102).
  */
 export async function takeClip(db: Db, store: ClipStore, p: ClipPost): Promise<{ status: 200 | 404 | 409; error?: string }> {
   const [q] = await db.select().from(judgeQueue).where(and(eq(judgeQueue.attemptId, p.attempt_id), eq(judgeQueue.kind, 'clip')));
@@ -197,6 +200,24 @@ async function clipFailed(db: Db, attemptId: string, requeued: boolean, why: str
     await db.update(attempts).set({ clipStatus: 'failed' }).where(eq(attempts.id, attemptId));
   }
   await logEvent(db, requeued ? 'clip_failed' : 'clip_requeued', { why: why.slice(0, 300) }, attemptId);
+}
+
+/**
+ * "Try again" (item 102): a clip that couldn't be made is queued once more, for her own card's attempt, once.
+ * That run gets one try: if it fails too, the clip is `failed` for good ("We've told the team.").
+ */
+export async function retryClip(db: Db, lifterId: string, attemptId: string): Promise<boolean> {
+  const queued = await db.transaction(async tx => {
+    const [a] = await tx.update(attempts).set({ clipStatus: 'queued', clipRetried: true })
+      .where(and(eq(attempts.id, attemptId), eq(attempts.lifterId, lifterId), eq(attempts.clipStatus, 'failed'), eq(attempts.clipRetried, false)))
+      .returning({ id: attempts.id, ct: attempts.commandTimes, call: attempts.call, rl: attempts.repLights });
+    if (!a) return false;
+    const w = clipWindow({ call: a.call, repLights: a.rl, commandTimes: a.ct });
+    await tx.insert(judgeQueue).values({ attemptId: a.id, kind: 'clip', requeued: true, clipSeconds: clipLength(w.endMs - w.startMs) / 1000 }).onConflictDoNothing();
+    return true;
+  });
+  if (queued) await logEvent(db, 'clip_retried', { lifter_id: lifterId }, attemptId);
+  return queued;
 }
 
 /** Clip leases that ran out (the dispatcher's tick): tried once more, then `failed`. */

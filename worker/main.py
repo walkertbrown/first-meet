@@ -174,6 +174,8 @@ def find_poses(ctx: TaskContext, worker_id: str) -> dict:
 def one_clip(job: dict) -> dict:
     """One lift clip: her attempt and her story card in, the MP4 PUT to R2."""
     t0 = time.monotonic()
+    if job.get('fault'):
+        raise RuntimeError('FAULT=clip set')  # staging's forced failure (item 102)
     with tempfile.TemporaryDirectory() as d:
         video = os.path.join(d, 'attempt')
         urllib.request.urlretrieve(job['video_url'], video)

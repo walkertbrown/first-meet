@@ -7,7 +7,9 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers, lifters, meets } from '../../web/db/schema';
 import { ORDER } from '../../web/lib/meet';
-import { claimClip, clipAfterLights, clipCounts, expireClipLeases, queueCardClip, takeClip } from '../../web/lib/card/clip-job';
+import { claimClip, clipAfterLights, clipCounts, expireClipLeases, queueCardClip, retryClip, takeClip } from '../../web/lib/card/clip-job';
+import { cardFor, clipState } from '../../web/lib/card/card-data';
+import { opsNumbers } from '../../web/lib/ops';
 import { resetBackoff, tick, type Runner } from '../../web/lib/dispatcher';
 import { keys } from '../../web/lib/r2';
 import { freshDb, MemStore, URL_ } from './setup';
@@ -136,6 +138,33 @@ describe.skipIf(!URL_)('her lift clip', () => {
     await takeClip(db, store, { attempt_id: id, worker_id: 'c-4', ok: true });
     expect(await status(id)).toBe('failed');
     expect(await clipRows([id])).toHaveLength(0);
+  });
+
+  it('item 102: after two failures she can "Try again" once; a third failure is the last, and /ops counts it', async () => {
+    const { l, rows } = await lifter();
+    await queueCardClip(db, l.id, NOW);
+    const id = rows[8].id;
+    await db.insert(judgeWorkers).values([{ workerId: 'c-6' }, { workerId: 'c-7' }, { workerId: 'c-8' }, { workerId: 'c-9' }]);
+    const fail = async (w: string) => { await claimClip(db, store, w); await takeClip(db, store, { attempt_id: id, worker_id: w, ok: false, error: 'FAULT=clip set' }); };
+    const state = async () => clipState((await cardFor(db, (await db.select().from(lifters).where(eq(lifters.id, l.id)))[0], NOW))!.clip);
+    expect(await retryClip(db, l.id, id)).toBe(false);   // nothing has failed yet
+    await fail('c-6');
+    await fail('c-7');
+    expect(await state()).toEqual({ ready: false, failed: 'retry' });
+    const before = (await opsNumbers(db, BIG as never)).clipsFailed;
+    // only her own clip
+    const other = await lifter();
+    expect(await retryClip(db, other.l.id, id)).toBe(false);
+    expect(await retryClip(db, l.id, id)).toBe(true);
+    expect(await status(id)).toBe('queued');
+    expect(await state()).toEqual({ ready: false, failed: null });
+    expect(await retryClip(db, l.id, id)).toBe(false);   // once
+    expect(await db.select().from(events).where(and(eq(events.kind, 'clip_retried'), eq(events.attemptId, id)))).toHaveLength(1);
+    await fail('c-8');
+    expect(await status(id)).toBe('failed');
+    expect(await state()).toEqual({ ready: false, failed: 'final' });
+    expect(await retryClip(db, l.id, id)).toBe(false);
+    expect((await opsNumbers(db, BIG as never)).clipsFailed).toBe(before + 1);
   });
 
   it('a lease that runs out is a failure too, and that run is ended', async () => {

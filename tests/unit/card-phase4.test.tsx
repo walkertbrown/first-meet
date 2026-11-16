@@ -99,7 +99,18 @@ describe('the certificate (5.30 Print, look 9)', () => {
 
 describe('5.30\'s screen, and 5.5\'s card', () => {
   const screen = (o: Partial<Parameters<typeof CardScreen>[0]> = {}) => renderToStaticMarkup(
-    <CardScreen token="AbCdEfGhIjKlMnOp" name="Diane R." clip={{ ready: false, shared: false }} judgesOnly {...o} />);
+    <CardScreen token="AbCdEfGhIjKlMnOp" name="Diane R." clip={{ ready: false, failed: null, shared: false }} judgesOnly {...o} />);
+  it('item 102: a clip that couldn\'t be made says so in its frame, with "Try again" once, then "We\'ve told the team."', () => {
+    const retry = screen({ start: 'Clip', clip: { ready: false, failed: 'retry', shared: false } });
+    expect(retry).toContain('Your clip couldn&#x27;t be made.');
+    expect(retry).toContain('Your card is ready to share. You can try the clip again.');
+    expect(retry).toContain('>Try again</button>');
+    expect(retry).not.toContain(CARD_WORDS.making);
+    const final = screen({ start: 'Clip', clip: { ready: false, failed: 'final', shared: false } });
+    expect(final).toContain('We&#x27;ve told the team.');
+    expect(final).not.toContain('Try again');
+    expect(screen({ start: 'Clip' })).toContain(CARD_WORDS.making);
+  });
   it('the title, the four segments, the buttons, and the honest line under the card', () => {
     const html = screen();
     expect(html).toContain('<h1 class="page-title">Your meet card</h1>');

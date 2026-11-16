@@ -13,9 +13,12 @@ import { HONEST_LINE } from '@/lib/site';
 type Props = {
   token: string;
   name: string;
-  clip: { ready: boolean; shared: boolean };
+  /** `failed`: couldn't be made (item 102); 'retry' offers "Try again" once, 'final' doesn't */
+  clip: { ready: boolean; failed: null | 'retry' | 'final'; shared: boolean };
   /** her videos are "Only the judges", so the Clip says who can watch it */
   judgesOnly: boolean;
+  /** the segment it opens on (Story; a test can open it on Clip) */
+  start?: CardSegment;
 };
 
 const fileUrl = (token: string, seg: CardSegment, download = false) => {
@@ -43,9 +46,10 @@ function PrintPreview({ frame }: { frame: React.RefObject<HTMLIFrameElement | nu
   );
 }
 
-export function CardScreen({ token, name, clip, judgesOnly }: Props) {
-  const [seg, setSeg] = useState<CardSegment>('Story');
+export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: Props) {
+  const [seg, setSeg] = useState<CardSegment>(start);
   const [ready, setReady] = useState(clip.ready);
+  const [failed, setFailed] = useState(clip.failed);
   const [shared, setShared] = useState(clip.shared);
   const [copied, setCopied] = useState(false);
   const [shown, setShown] = useState<string | null>(null);
@@ -54,16 +58,25 @@ export function CardScreen({ token, name, clip, judgesOnly }: Props) {
 
   // the clip takes about a minute: while she's on Clip, look again every 8 s until it's there, then it plays
   useEffect(() => {
-    if (ready || seg !== 'Clip') return;
+    if (ready || failed || seg !== 'Clip') return;
     const t = setInterval(async () => {
       try {
         const r = await fetch('/api/me/card/share-clip', { cache: 'no-store' });
-        const j = r.ok ? await r.json() as { ready?: boolean } : null;
+        const j = r.ok ? await r.json() as { ready?: boolean; failed?: null | 'retry' | 'final' } : null;
         if (j?.ready) setReady(true);
+        else if (j?.failed) setFailed(j.failed);
       } catch { /* try again */ }
     }, 8000);
     return () => clearInterval(t);
-  }, [ready, seg]);
+  }, [ready, failed, seg]);
+
+  // "Try again" (item 102): queued once more, and the making line is back
+  const tryAgain = async () => {
+    try {
+      const r = await fetch('/api/me/card/retry-clip', { method: 'POST' });
+      if (r.ok) setFailed(null);
+    } catch { /* she can tap again */ }
+  };
 
   // Web Share needs the file in hand when she taps, so fetch this segment's file ahead of the tap
   useEffect(() => {
@@ -142,7 +155,17 @@ export function CardScreen({ token, name, clip, judgesOnly }: Props) {
         <div className="card-frame story">
           {ready
             ? <video src={fileUrl(token, 'Clip')} controls playsInline preload="metadata" aria-label={`${name}'s lift clip`} />
-            : <div className="card-making" style={{ height: '100%' }}><p className="body" aria-live="polite">{CARD_WORDS.making}</p></div>}
+            : failed
+              ? (
+                <div className="card-making card-failed" style={{ height: '100%' }} role="status">
+                  <div>
+                    <h2 className="sheet-title">{CARD_WORDS.failedTitle}</h2>
+                    <p className="body">{failed === 'retry' ? CARD_WORDS.failedBody : CARD_WORDS.failedFinal}</p>
+                    {failed === 'retry' && <button className="btn ghost on-stage" type="button" onClick={() => void tryAgain()}>{CARD_WORDS.tryAgain}</button>}
+                  </div>
+                </div>
+              )
+              : <div className="card-making" style={{ height: '100%' }}><p className="body" aria-live="polite">{CARD_WORDS.making}</p></div>}
         </div>
       )}
       {seg === 'Print' && <PrintPreview frame={printFrame} />}

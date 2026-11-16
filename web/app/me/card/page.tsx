@@ -5,7 +5,7 @@ import { db, hasDb } from '@/db';
 import { lifters } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
 import { CardScreen } from '@/components/card-screen';
-import { cardFor, ensureCardToken } from '@/lib/card/card-data';
+import { cardFor, clipState, ensureCardToken } from '@/lib/card/card-data';
 import { currentViewer } from '@/lib/roles';
 import '../../try.css';
 import '../../platform.css';
@@ -34,7 +34,7 @@ export default async function MeCardPage() {
           <CardScreen
             token={token}
             name={card.view.name}
-            clip={{ ready: clip?.status === 'ready' && !!clip.key, shared: !!clip?.sharedAt }}
+            clip={{ ...clipState(clip), shared: !!clip?.sharedAt }}
             judgesOnly={l.clipVisibility === 'judges'}
           />
         </main>
