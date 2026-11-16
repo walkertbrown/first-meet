@@ -8,6 +8,48 @@
       "when": 1794185421398,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794221903402,
+      "tag": "0001_block_starts_on",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794223915158,
+      "tag": "0002_cheers_seen_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794225065158,
+      "tag": "0003_flight_votes_every_hour",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794226049263,
+      "tag": "0004_meet_flight_hour_cutoff",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794233829339,
+      "tag": "0005_meet_clip_deadline",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794246294909,
+      "tag": "0006_bench_bar",
+      "breakpoints": true
     }
   ]
 }

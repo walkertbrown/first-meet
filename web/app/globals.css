@@ -57,7 +57,10 @@
     --plate-blue: #2E62DD; --plate-green: #24A05A; --plate-change: #4A4E5A;
   }
 }
-:root[data-theme="dark"] {
+/* Look 2: the platform screens go Lights down on meet weekend, and the corner page too, unless Day
+   was picked: the page carries a hidden .lights-down mark (components/lights-down.tsx). */
+:root[data-theme="dark"],
+:root:not([data-theme="light"]):has(.lights-down) {
   color-scheme: dark;
   --chalk: #0E0F14; --surface: #171920; --surface-2: #21242D; --ink: #F1EFE8; --ink-2: #A9ACB6; --ink-3: #8A8E9A;
   --rule: #2A2D37; --on-ink: #0E0F14; --press: #D9D6CC; --hover: #FFFFFF; --focus: #FFF4D8; --no-text: #FF8B7E;
@@ -68,6 +71,21 @@
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; }
+/* The stage's viewport and safe areas, as variables: look 4b draws the page turned when rotation lock keeps
+   the screen portrait, and swaps them (web/lib/stage/drawn-turn.ts). */
+:root { --vw: 100vw; --vh: 100dvh;
+  --sa-t: env(safe-area-inset-top); --sa-r: env(safe-area-inset-right); --sa-b: env(safe-area-inset-bottom); --sa-l: env(safe-area-inset-left); }
+/* One wrapper, the body, 100dvh wide and 100vw tall, turned to match gravity so her eyes read it upright;
+   inside it the layout is plain look 4a, so "right" is her right. */
+html.rot { --vw: 100dvh; --vh: 100vw; height: 100%; overflow: hidden; }
+html.rot body { position: fixed; top: 50%; left: 50%; width: 100dvh; height: 100vw; overflow: hidden auto; overscroll-behavior: none;
+  transform: translate(-50%, -50%) rotate(90deg); }
+html.rot[data-turn="-90"] body { transform: translate(-50%, -50%) rotate(-90deg); }
+/* The swap: no spin, which reads as a lurch. The old layout fades out over 120 ms, the new one in over 200 ms. */
+html.rot-out body { opacity: 0; transition: opacity 120ms var(--ease-out); }
+html.rot-in body { animation: rot-in 200ms var(--ease-out); }
+@keyframes rot-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { html.rot-out body { transition: none; } html.rot-in body { animation: none; } }
 html { -webkit-text-size-adjust: 100%; }
 body {
   background: var(--chalk);
@@ -115,6 +133,9 @@ h1, h2, h3, p, ul, ol { margin: 0; }
 .btn.ghost:hover { background: var(--surface-2); }
 .btn.ghost:active { background: var(--surface-2); }
 .btn.small { min-height: 48px; font-size: 17px; }
+/* look 5.14a: the new-tab mark sits 8 px after the words, centred with them; it never moves */
+.btn.new-tab { gap: 8px; }
+.btn.new-tab > svg { flex: none; color: currentColor; }
 .btn[disabled], .btn[aria-disabled="true"] { background: var(--surface-2); color: var(--ink-3); cursor: not-allowed; transform: none; }
 .btn.ghost[disabled] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule); }
 .btn[aria-busy="true"] { opacity: .85; }
@@ -161,6 +182,13 @@ h1, h2, h3, p, ul, ol { margin: 0; }
 .lamp.settled::after { animation: none; opacity: .75; transform: none; }
 @keyframes bloom { 0% { opacity: 0; transform: scale(.6); } 35% { opacity: 1; transform: scale(1.12); } 100% { opacity: .75; transform: scale(1); } }
 .lamp.pulse { animation: pulse 2400ms var(--ease-in-out) infinite; }
+/* The 12 px mini lamps (look 4, 5.8, 5.10, 5.13): the 9-attempt row, the banner, the referee's strip. */
+.mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
+.mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
+.mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
+.mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
+@keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
+@media (prefers-reduced-motion: reduce) { .mini-lamp.pulse { animation: none; } }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 5px var(--lamp-bezel), 0 0 0 6px rgb(255 255 255 / .06), inset 0 2px 6px rgb(0 0 0 / .6); }
   50% { box-shadow: 0 0 0 5px #4A4E5A, 0 0 0 6px rgb(255 255 255 / .16), inset 0 2px 6px rgb(0 0 0 / .6); }
@@ -171,3 +199,8 @@ h1, h2, h3, p, ul, ol { margin: 0; }
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; animation-iteration-count: 1 !important; }
   .lamp.white::after, .lamp.red::after { animation: none; opacity: .75; transform: none; }
 }
+
+/* a 200 ms fade (look 5.10's crossfades) */
+.fade-in { animation: fade-in 200ms var(--ease-out); }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }

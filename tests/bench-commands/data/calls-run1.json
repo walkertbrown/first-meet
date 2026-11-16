@@ -1,0 +1,354 @@
+{
+ "_note": "Barbell bench test, by-eye calls (Nov 9). Rep bottoms and pauses come from a CSRT tracker on the plate or the hands (OpenCV, not the judge's pose model), checked against 0.2 s sheets. Pause = the time the bar (trace smoothed by a 5-frame median) stays within 5% of the rep's travel of its lowest point. Rule, fixed before the judge ran: 0.5 s or more white, under 0.3 s red no_pause (touch and go), in between 'either'. The lifters hear no commands. Every rep locks out by eye. Excluded, can't be called by eye: SK8CwUe4Y00 and 6UmUTrZlt84 (bar seen end-on, too small to time), a8mTttNgkgk (bar end out of frame, hands too small), _MZaM_8htKQ (blurred, plate hides the lifter), PxIMfJa_QBc (bar hidden by the machine's rails). Not side-on: sD7u9lQ8Gec, WUSqBV-xOiI (from the feet or the head), eWIZk_S_Bi0, hNoJTmOBTJg (from above the head).",
+ "attempts": [
+  {
+   "id": "6K8vpaHae6M",
+   "start": [
+    1.5,
+    3.0
+   ],
+   "reps": [
+    [
+     4.43,
+     4.8,
+     "either"
+    ],
+    [
+     7.33,
+     7.57,
+     "red:no_pause"
+    ],
+    [
+     10.3,
+     10.47,
+     "red:no_pause"
+    ]
+   ],
+   "note": "near plate hides the arms; bar read from the plate",
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "83WAq9kcQ0k",
+   "start": [
+    0.5,
+    3.8
+   ],
+   "reps": [
+    [
+     4.81,
+     5.51,
+     "white"
+    ],
+    [
+     9.78,
+     10.42,
+     "white"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "8qzWMdTtQLI",
+   "start": [
+    6.0,
+    8.2
+   ],
+   "win": [
+    5.5,
+    14.1
+   ],
+   "reps": [
+    [
+     9.61,
+     10.28,
+     "white"
+    ]
+   ],
+   "note": "a small heave at the bottom stays inside 5% of travel",
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "hIuj1H1WOxM",
+   "start": [
+    0.5,
+    1.4
+   ],
+   "reps": [
+    [
+     2.57,
+     3.37,
+     "white"
+    ]
+   ],
+   "note": "small figure; tracker trace noisy until smoothed",
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "IA0PhDBzsz0",
+   "start": [
+    6.8,
+    7.7
+   ],
+   "reps": [
+    [
+     9.24,
+     9.68,
+     "either"
+    ],
+    [
+     12.68,
+     13.28,
+     "white"
+    ],
+    [
+     17.05,
+     17.35,
+     "either"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "IKuXsXyFqUQ",
+   "start": [
+    0.2,
+    1.6
+   ],
+   "reps": [
+    [
+     2.73,
+     3.03,
+     "either"
+    ],
+    [
+     4.27,
+     4.5,
+     "red:no_pause"
+    ],
+    [
+     5.73,
+     5.97,
+     "red:no_pause"
+    ],
+    [
+     7.23,
+     7.5,
+     "red:no_pause"
+    ],
+    [
+     8.87,
+     9.1,
+     "red:no_pause"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "m-k8mm8-HTg",
+   "start": [
+    9.8,
+    11.2
+   ],
+   "reps": [
+    [
+     12.27,
+     12.43,
+     "red:no_pause"
+    ],
+    [
+     14.4,
+     14.8,
+     "either"
+    ],
+    [
+     17.13,
+     17.47,
+     "either"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "NFjKcUxgqzA",
+   "start": [
+    3.0,
+    4.2
+   ],
+   "win": [
+    0.5,
+    27.5
+   ],
+   "reps": [
+    [
+     5.91,
+     6.37,
+     "either"
+    ],
+    [
+     10.34,
+     10.74,
+     "either"
+    ],
+    [
+     14.45,
+     14.71,
+     "red:no_pause"
+    ],
+    [
+     18.68,
+     19.09,
+     "either"
+    ],
+    [
+     23.42,
+     23.79,
+     "either"
+    ]
+   ],
+   "note": "6th rep left out: the clip ends before its lockout",
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "Nv9hrTzZxJ0",
+   "start": [
+    10.0,
+    10.9
+   ],
+   "reps": [
+    [
+     11.97,
+     12.2,
+     "red:no_pause"
+    ],
+    [
+     14.23,
+     14.47,
+     "red:no_pause"
+    ],
+    [
+     16.43,
+     16.63,
+     "red:no_pause"
+    ],
+    [
+     18.57,
+     18.77,
+     "red:no_pause"
+    ],
+    [
+     20.63,
+     20.8,
+     "red:no_pause"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "VM_y8r4ZLBw",
+   "start": [
+    3.2,
+    4.8
+   ],
+   "reps": [
+    [
+     5.57,
+     5.77,
+     "red:no_pause"
+    ],
+    [
+     7.07,
+     7.27,
+     "red:no_pause"
+    ],
+    [
+     8.53,
+     8.73,
+     "red:no_pause"
+    ],
+    [
+     10.07,
+     10.27,
+     "red:no_pause"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "xXFjNqroOQ0",
+   "start": [
+    13.8,
+    15.0
+   ],
+   "reps": [
+    [
+     16.13,
+     16.33,
+     "red:no_pause"
+    ],
+    [
+     18.23,
+     18.4,
+     "red:no_pause"
+    ],
+    [
+     20.37,
+     20.53,
+     "red:no_pause"
+    ],
+    [
+     22.57,
+     22.8,
+     "red:no_pause"
+    ],
+    [
+     24.8,
+     25.1,
+     "either"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  },
+  {
+   "id": "z838WQVSBmk",
+   "start": [
+    0.0,
+    1.2
+   ],
+   "reps": [
+    [
+     2.43,
+     2.97,
+     "white"
+    ],
+    [
+     6.0,
+     6.47,
+     "either"
+    ],
+    [
+     9.37,
+     9.8,
+     "either"
+    ],
+    [
+     12.67,
+     13.1,
+     "either"
+    ]
+   ],
+   "floor": false,
+   "benchOnly": true
+  }
+ ]
+}

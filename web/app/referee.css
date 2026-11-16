@@ -38,6 +38,7 @@
 }
 .ref-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; cursor: pointer; }
 .ref-marks { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; overflow: visible; pointer-events: none; }
+.ref-tick-label { font-family: var(--font-display); font-weight: 700; font-stretch: 88%; letter-spacing: .09em; text-transform: uppercase; }
 .ref-noclip { position: absolute; inset: 0; display: grid; place-items: center; color: var(--stage-ink-2); }
 
 /* The scrub bar (look 5.13): never the browser's own. A 4 px track, the played part in ink, a
@@ -85,15 +86,10 @@
 }
 .ref-rep .num { font-weight: 800; font-stretch: 105%; font-size: 24px; line-height: 28px; }
 .ref-rep[aria-pressed="true"] { box-shadow: 0 0 0 2.5px var(--ink); }
-.mini-lamp { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); }
-.mini-lamp.white { background: var(--lamp-white); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-white-glow) / .6); }
-.mini-lamp.red { background: var(--lamp-red); box-shadow: 0 0 0 1.5px var(--lamp-bezel), 0 0 6px 1px rgb(var(--lamp-red-glow) / .5); }
 .mini-lamp.lg { width: 24px; height: 24px; flex: none; box-shadow: 0 0 0 2px var(--lamp-bezel); }
 .mini-lamp.lg.white { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-white-glow) / .6); animation: mini-bloom 180ms var(--ease-lamp); }
 .mini-lamp.lg.red { box-shadow: 0 0 0 2px var(--lamp-bezel), 0 0 10px 2px rgb(var(--lamp-red-glow) / .5); animation: mini-bloom 180ms var(--ease-lamp); }
 @keyframes mini-bloom { from { transform: scale(.55); opacity: .5; } to { transform: scale(1); opacity: 1; } }
-.mini-lamp.pulse { animation: mini-pulse 2400ms var(--ease-in-out) infinite; }
-@keyframes mini-pulse { 0%, 100% { box-shadow: 0 0 0 1.5px var(--lamp-bezel); } 50% { box-shadow: 0 0 0 1.5px #4A4E5A, 0 0 0 3px rgb(255 255 255 / .12); } }
 
 /* The side: what the judge measured, the lamps, the reasons, save. */
 .ref-side { display: flex; flex-direction: column; gap: 20px; }
@@ -116,8 +112,9 @@
 }
 .ref-light.white { box-shadow: inset 0 0 0 2px var(--lamp-white), 0 0 0 1px var(--rule); }
 .ref-light.red { box-shadow: inset 0 0 0 2px var(--lamp-red); }
-.ref-light.white[aria-pressed="true"] { background: var(--lamp-white); color: #16181F; box-shadow: none; }
-.ref-light.red[aria-pressed="true"] { background: var(--lamp-red); color: #FFFFFF; box-shadow: none; }
+/* chosen: the fill, and a 2 px ink ring 2 px outside, in both themes (look 5.13, item 60) */
+.ref-light.white[aria-pressed="true"] { background: var(--lamp-white); color: #16181F; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.ref-light.red[aria-pressed="true"] { background: var(--lamp-red); color: #FFFFFF; box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
 .ref-light:active { transform: scale(.97); }
 .ref-lamp .ref-reasons { padding-bottom: 16px; }
 .ref-all { display: flex; gap: 8px; }
@@ -127,6 +124,8 @@
   .ref-lamp-name { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 .ref-lamp-name .eyebrow { white-space: nowrap; }
+/* above 420 px the eyebrow is a fixed 56 px column, so the three mini lamps line up (look 5.13) */
+@media (min-width: 421px) { .ref-lamp-name .eyebrow { flex: none; width: 56px; } }
 
 .ref-reasons { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .choice { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 4px; cursor: pointer; background: var(--surface); box-shadow: 0 0 0 1px var(--rule); }
@@ -154,6 +153,7 @@
 .ops-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
 .ops-row dt { font-size: 15px; line-height: 22px; color: var(--ink-2); }
 .ops-row dd { margin: 0; font-weight: 800; font-stretch: 105%; font-size: 20px; line-height: 24px; text-align: right; white-space: nowrap; }
+.ops-row dd.ops-over { color: var(--no-text); font-weight: 700; }
 .ops-errors { grid-column: 1 / -1; }
 .ops-errors .ops-row { justify-content: flex-start; font-size: 15px; line-height: 22px; }
 .ops-errors .ops-row > .small:first-child { flex: none; width: 190px; }

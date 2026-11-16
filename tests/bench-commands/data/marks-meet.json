@@ -1,0 +1,63 @@
+{
+ "AMih": {
+  "t": 19.0,
+  "x": 0.43,
+  "y": 0.29,
+  "racked": true
+ },
+ "ak3m2": {
+  "t": 26.0,
+  "x": 0.61,
+  "y": 0.26,
+  "racked": true
+ },
+ "ak3m3": {
+  "t": 41.0,
+  "x": 0.59,
+  "y": 0.34,
+  "racked": true
+ },
+ "cE2t": {
+  "t": 19.0,
+  "x": 0.26,
+  "y": 0.27,
+  "racked": true
+ },
+ "Ecs1": {
+  "t": 21.0,
+  "x": 0.83,
+  "y": 0.27,
+  "racked": true
+ },
+ "Ecs2": {
+  "t": 42.0,
+  "x": 0.79,
+  "y": 0.26,
+  "racked": true
+ },
+ "KrDo": {
+  "t": 50.495,
+  "x": 0.24,
+  "y": 0.28,
+  "racked": false
+ },
+ "Lj0X": {
+  "t": 1.997,
+  "x": 0.34,
+  "y": 0.41,
+  "racked": false
+ },
+ "Nazt": {
+  "t": 10.995,
+  "x": 0.234,
+  "y": 0.31,
+  "racked": false
+ },
+ "uGCh": {
+  "t": 27.995,
+  "x": 0.282,
+  "y": 0.334,
+  "racked": false
+ },
+ "_note": "Bench commands test marks: racked clips as item 70; clips opening with the bar out are marked at the first frame held still at arm's length by eye (the settled time), racked false."
+}

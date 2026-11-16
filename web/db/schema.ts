@@ -22,13 +22,20 @@ export const meets = pgTable('meets', {
   opensAt: at('opens_at'),
   closesAt: at('closes_at'),
   liveAt: at('live_at'),
-  kind: text('kind').$type<'real' | 'demo' | 'sample'>().notNull(),
+  /** `test`: staging only, made by /signin/test's meet-week buttons (plan 3.1, item 82); nothing that looks for a `real` meet picks it. */
+  kind: text('kind').$type<'real' | 'demo' | 'sample' | 'test'>().notNull(),
   status: text('status').$type<'upcoming' | 'open' | 'closed' | 'final'>().notNull().default('upcoming'),
   streamVideoId: text('stream_video_id'),
   streamStartedAt: at('stream_started_at'),
   replayVideoId: text('replay_video_id'),
   liveMinutes: integer('live_minutes').notNull().default(60),
   rollcallRows: smallint('rollcall_rows').notNull().default(1),
+  /** The Monday (Eastern) its 12-week block starts (plan 3.2, item 76): the closed page, 5.8, 5.32. */
+  blockStartsOn: date('block_starts_on', { mode: 'string' }),
+  /** When the flight hour is decided (plan 3.2, 5.23): opens_at − 72 h for a real meet; the test meet's is set by /signin/test. */
+  flightHourCutoffAt: at('flight_hour_cutoff_at'),
+  /** The last moment a meet clip's upload can finish (plan 3.2, 3.8): closes_at + 6 h for a real meet; the test meet's is set by /signin/test. */
+  clipDeadlineAt: at('clip_deadline_at'),
 });
 
 export type HomeWeight = { weight: number; kind: 'pair' | 'bell' };
@@ -83,8 +90,9 @@ export const flights = pgTable('flights', {
 export const flightHourVotes = pgTable('flight_hour_votes', {
   flightId: uuid('flight_id').notNull().references(() => flights.id),
   lifterId: uuid('lifter_id').notNull().references(() => lifters.id, { onDelete: 'cascade' }),
+  // 0–7, MEET_WEEK_SLOTS in web/lib/meet-week.ts; she may tick every hour that works (5.23)
   slot: smallint('slot').notNull(),
-}, t => [primaryKey({ columns: [t.flightId, t.lifterId] })]);
+}, t => [primaryKey({ columns: [t.flightId, t.lifterId, t.slot] })]);
 
 export const sessions = pgTable('sessions', {
   id: id(),
@@ -124,6 +132,10 @@ export const judgedSets = pgTable('judged_sets', {
 }, t => [index('judged_sets_lifter').on(t.lifterId, t.movement)]);
 
 export type AttemptStatus = 'declared' | 'recording' | 'uploading' | 'queued' | 'judging' | 'close_call' | 'judged' | 'void';
+/** Why a `void` attempt isn't judged (plan 3.2, 3.8): it's never a red, and it's never lifted again. */
+// item 93: a turn or a lost bar never voids the attempt (it stays declared, with a `turned_void` or
+// `lost_bar_void` event); only the final cases do (3.8)
+export type VoidReason = 'after_close' | 'upload_late';
 
 export const attempts = pgTable('attempts', {
   id: id(),
@@ -137,7 +149,12 @@ export const attempts = pgTable('attempts', {
   score: real('score'),
   commandTimes: jsonb('command_times').$type<Record<string, number>>(),
   posesKey: text('poses_key'),
+  /** Bench (3.4b): the server's plate path, R2 `bar/<attempt>.json`, for the referee's marks. */
+  barKey: text('bar_key'),
+  /** Bench (3.4b): the bar's own call, like `lights`; never shown to her or a referee. */
+  shadowLights: jsonb('shadow_lights').$type<Light[]>(),
   status: text('status').$type<AttemptStatus>().notNull().default('declared'),
+  voidReason: text('void_reason').$type<VoidReason>(),
   videoKey: text('video_key'),
   recordedAt: at('recorded_at'),
   uploadedAt: at('uploaded_at'),
@@ -179,6 +196,8 @@ export const cheers = pgTable('cheers', {
   attemptId: uuid('attempt_id').references(() => attempts.id, { onDelete: 'cascade' }),
   sessionId: uuid('session_id').references(() => sessions.id, { onDelete: 'cascade' }),
   createdAt: createdAt(),
+  /** when a banner showed it to her (5.24, item 80); empty ones show when she next opens the platform */
+  seenAt: at('seen_at'),
 }, t => [
   // one cheer per sender per attempt or session
   uniqueIndex('cheers_one_per_sender').on(t.toLifterId, sql`coalesce(${t.fromLifterId}::text, ${t.fromCornerName})`, sql`coalesce(${t.attemptId}, ${t.sessionId})`),

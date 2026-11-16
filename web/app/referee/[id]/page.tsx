@@ -54,6 +54,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         division={c.division}
         videoUrl={c.videoUrl}
         track={c.track}
+        bar={c.bar}
         judgedFrameMs={a.judgedFrameMs}
         repLights={a.repLights}
         repsDeclared={a.repsDeclared}

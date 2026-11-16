@@ -58,10 +58,11 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('the voice pack', () => {
-  it('has the 29 fixed names: the nine commands and count-1 to count-20', () => {
-    expect(VOICE_KEYS).toHaveLength(29);
-    expect(VOICE_KEYS.slice(0, 9)).toEqual(['squat', 'rack', 'start', 'press', 'down', 'good-spot', 'bar-loaded', 'weights-ready', 'good-lift']);
-    expect(VOICE_KEYS.slice(9)).toEqual(Array.from({ length: 20 }, (_, i) => `count-${i + 1}`));
+  it('has the 30 fixed names: the ten lines (lost-bar, 3.4b) and count-1 to count-20', () => {
+    expect(VOICE_KEYS).toHaveLength(30);
+    expect(VOICE_KEYS.slice(0, 10)).toEqual(['squat', 'rack', 'start', 'press', 'down', 'good-spot', 'bar-loaded', 'weights-ready', 'good-lift', 'lost-bar']);
+    expect(VOICE_WORDS['lost-bar']).toBe('We lost the bar.');
+    expect(VOICE_KEYS.slice(10)).toEqual(Array.from({ length: 20 }, (_, i) => `count-${i + 1}`));
   });
 
   it('voices/team/pack.json names only files of the pack, and every file it names is there', () => {

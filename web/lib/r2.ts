@@ -134,6 +134,8 @@ export const keys = {
   meetVideo: (meet: string, lifter: string, attempt: string, ext: 'webm' | 'mp4') => `meet/${meet}/${lifter}/${attempt}.${ext}`,
   poses: (attempt: string) => `poses/${attempt}.json`,
   firstPass: (attempt: string) => `poses/${attempt}.pass1.json`,
+  /** Bench (3.4b): the server's plate path. */
+  bar: (attempt: string) => `bar/${attempt}.json`,
   sample: (file: string) => `samples/${file}`,
   health: 'health/ok.txt',
 };

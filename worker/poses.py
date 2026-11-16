@@ -95,29 +95,31 @@ def grid(duration: float, fps: int, start_ms: int = 0, end_ms: int | None = None
     return out
 
 
-# One landmarker per process, made once and reused for every clip the process sees.
-_lm = None
-_clock = 0
+# A fresh landmarker for every run of frames. In VIDEO mode it tracks the body from frame to frame,
+# so one kept for the process carried the last clip's track into the next: staging's warm workers read
+# the good-lift sample's 3000 ms frame at depth 0.145, a fresh process 0.039, and judged a different
+# frame (13 Nov). The model's bytes are read once per process; only the tracker is new each time.
+_model: bytes | None = None
 
 
 def _landmarker():
-    global _lm
-    if _lm is None:
-        import mediapipe as mp
-        from mediapipe.tasks.python import BaseOptions
-        from mediapipe.tasks.python.vision import PoseLandmarker, PoseLandmarkerOptions, RunningMode
-        _lm = PoseLandmarker.create_from_options(PoseLandmarkerOptions(
-            base_options=BaseOptions(model_asset_path=str(MODEL), delegate=BaseOptions.Delegate.CPU),
-            running_mode=RunningMode.VIDEO,
-            num_poses=1,
-        ))
-        _ = mp
-    return _lm
+    global _model
+    import mediapipe as mp
+    from mediapipe.tasks.python import BaseOptions
+    from mediapipe.tasks.python.vision import PoseLandmarker, PoseLandmarkerOptions, RunningMode
+    if _model is None:
+        _model = MODEL.read_bytes()
+    _ = mp
+    return PoseLandmarker.create_from_options(PoseLandmarkerOptions(
+        base_options=BaseOptions(model_asset_buffer=_model, delegate=BaseOptions.Delegate.CPU),
+        running_mode=RunningMode.VIDEO,
+        num_poses=1,
+    ))
 
 
 def warm() -> bool:
-    """Loads the model in this process, so the first clip doesn't pay for it."""
-    _landmarker()
+    """Loads MediaPipe and the model's bytes in this process, so the first clip doesn't pay for them."""
+    _landmarker().close()
     return True
 
 
@@ -126,18 +128,16 @@ def _point(q) -> list[float]:
 
 
 def find_at(path: str, times_ms: list[int]) -> list[dict]:
-    """Pose points at each time in `times_ms` (sorted, ms from the clip's start)."""
-    global _clock
+    """Pose points at each time in `times_ms` (sorted, ms from the clip's start), on a fresh tracker."""
     if not times_ms:
         return []
     import av
     import mediapipe as mp
     import numpy as np
 
-    lm = _landmarker()
     times = sorted(times_ms)
     out: list[dict] = []
-    with av.open(path) as c:
+    with _landmarker() as lm, av.open(path) as c:
         s = c.streams.video[0]
         s.thread_type = 'AUTO'
         first_s = times[0] / 1000
@@ -152,7 +152,7 @@ def find_at(path: str, times_ms: list[int]) -> list[dict]:
             if rot:
                 arr = np.ascontiguousarray(np.rot90(arr, k=rot // 90))
             img = mp.Image(image_format=mp.ImageFormat.SRGB, data=arr)
-            res = lm.detect_for_video(img, _clock + t_ms)
+            res = lm.detect_for_video(img, t_ms)
             p = res.pose_landmarks[0] if res.pose_landmarks else None
             out.append({'t': t_ms, 'p': [_point(q) for q in p] if p else None})
 
@@ -171,7 +171,6 @@ def find_at(path: str, times_ms: list[int]) -> list[dict]:
         while i < len(times) and prev is not None:
             emit(prev[1], times[i])
             i += 1
-    _clock += times[-1] + 1000  # VIDEO mode wants ever-later timestamps, across clips too
     return out
 
 
@@ -190,6 +189,38 @@ def pool(workers: int = 2) -> ProcessPoolExecutor:
 def middle(times_ms: list[int]) -> int | None:
     """The first pass splits halfway through its frames."""
     return sorted(times_ms)[len(times_ms) // 2] if len(times_ms) > 1 else None
+
+
+# The live server's two passes (plan 2.3), shared by worker/main.py and worker/cli.py, so CI's worker
+# test feeds the landmarker exactly as the live judge does (The Playner, 13 Nov: the close-call sample
+# read 1000 ms on staging and 1200 ms in CI, because the test ran pass 1 unsplit).
+FIRST_FPS = 5
+ZOOM_FPS = 15
+
+
+def first_pass(path: str, duration: float) -> list[dict]:
+    """Pass 1: the whole clip at 5 a second, in two halves at once, split halfway through its frames."""
+    first = grid(duration, FIRST_FPS)
+    return find_split(path, first, middle(first))
+
+
+def zoom_times(duration: float, windows: list[list[int]]) -> list[int]:
+    """Every frame of the 15-a-second grid inside each window, the first pass's included.
+
+    The landmarker tracks the body from frame to frame (VIDEO mode, as on the phone and in
+    Chromium), so a point depends on the frames before it. Found again inside a window, in
+    one unbroken run, the frames near the calls match an unbroken 15-a-second pass; the
+    web service keeps pass 2's point wherever both passes have a frame.
+    """
+    out: set[int] = set()
+    for a, b in windows:
+        out.update(grid(duration, ZOOM_FPS, max(0, a), b))
+    return sorted(out)
+
+
+def second_pass(path: str, duration: float, windows: list[list[int]], split_ms: int | None) -> list[dict]:
+    """Pass 2: the 15-a-second grid inside the web service's zoom windows, split where it says."""
+    return find_split(path, zoom_times(duration, windows), split_ms)
 
 
 def _warm_one(_: int) -> bool:

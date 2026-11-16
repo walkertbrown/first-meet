@@ -3,6 +3,8 @@
 // nearest the phone, so while she lifts we keep a picture of the deepest frame on each
 // side. Once the judge has its call, the one on its side is the judged frame.
 import { measure, type Dims, type Frame, type Pt, type Side } from '@/lib/judge';
+import { nearSide, px, SIDES } from '@/lib/judge/pose';
+import { JUDGED_POINTS } from '@/lib/judge/call';
 
 export type Snap = { t: number; depth: number; p: Pt[]; canvas: HTMLCanvasElement };
 
@@ -34,3 +36,15 @@ export function marksOf(p: Pt[], side: Side, d: Dims) {
   return { hip: { x: m.hip.x, y: m.hip.y }, knee: { x: m.knee.x, y: m.knee.y } };
 }
 export type Marks = ReturnType<typeof marksOf>;
+
+/**
+ * The marks for any lift (3.4: "the marks are drawn on" the judged frame): the points its call is
+ * measured from, joined. The squat keeps hip to knee (look 9 step 10); the deadlift is hip, knee
+ * and ankle; the presses are shoulder, elbow and wrist (JUDGED_POINTS).
+ */
+export function liftMarks(lift: string, p: Pt[], d: Dims, side: Side = nearSide({ t: 0, p })): { pts: { x: number; y: number }[] } {
+  if (lift === 'squat') { const m = marksOf(p, side, d); return { pts: [m.hip, m.knee] }; }
+  const keys = lift === 'deadlift' ? JUDGED_POINTS.deadlift : JUDGED_POINTS.press;
+  return { pts: keys.map(k => { const q = px(p, SIDES[side][k], d); return { x: q.x, y: q.y }; }) };
+}
+export type LiftMarks = ReturnType<typeof liftMarks>;

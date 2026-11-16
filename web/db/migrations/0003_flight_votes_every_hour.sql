@@ -1,0 +1,2 @@
+ALTER TABLE "flight_hour_votes" DROP CONSTRAINT "flight_hour_votes_flight_id_lifter_id_pk";--> statement-breakpoint
+ALTER TABLE "flight_hour_votes" ADD CONSTRAINT "flight_hour_votes_flight_id_lifter_id_slot_pk" PRIMARY KEY("flight_id","lifter_id","slot");

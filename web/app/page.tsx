@@ -127,7 +127,7 @@ export default function Landing() {
             <div className="card">
               <h3 className="sheet-title">Home</h3>
               <p className="body">
-                Goblet squat, floor press, deadlift with dumbbells or a kettlebell. In your living room. Scored on weight × good reps, so your number grows with the same dumbbells.
+                Goblet squat, overhead press, deadlift with dumbbells or a kettlebell. In your living room. Scored on weight × good reps, so your number grows with the same dumbbells.
               </p>
             </div>
           </div>

@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import { eq, sql } from 'drizzle-orm';
 import { connect, type Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '../../web/db/schema';
-import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
-import { judgeClip, type Frame } from '../../web/lib/judge';
+import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, parseBar, takeBar, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
+import { BarCaller, judgeClip, type BarPoint, type Frame } from '../../web/lib/judge';
+import { judgedFrame } from '../../web/lib/attempt-state';
+import samples from '../../content/samples/samples.json';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
 type Raw = { w: number; h: number; duration: number; frames: Frame[] };
@@ -91,6 +93,81 @@ describe.skipIf(!URL_)('the judge queue', () => {
     expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
   });
 
+  describe('a Barbell bench (3.4b): every one to a referee, followed from her tap', () => {
+    const tr = JSON.parse(readFileSync(join(__dirname, '../bench-commands/data/traces/KrDo.json'), 'utf8')) as
+      { w: number; h: number; racked: boolean; mark: { x: number; y: number }; pts: BarPoint[] };
+    const tap = { x: tr.mark.x, y: tr.mark.y, size: 0.08 };
+    const phone: Record<string, unknown> = { loaded: tr.pts[0][0], plate_tap: tap };
+    const c = new BarCaller(tr.mark, tr, undefined, tr.racked);
+    for (const [t, x, y, s] of tr.pts) { const r = c.feed(t, x, y, s); if (r) phone[r.cmd] = t; }
+    const BENCH_CT = phone as Record<string, number>;
+    const dims = { w: tr.w, h: tr.h, duration: tr.pts.at(-1)![0] / 1000 + 1 };
+
+    it('the job says to follow the bar; its path is saved and measured, and it goes to a referee', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      expect((await markUploaded(db, store, id, BENCH_CT)).status).toBe(200);
+      const w = await worker('w-bench');
+      const job = await claimNext(db, store, w);
+      expect(job).toMatchObject({ attempt_id: id, lift: 'bench', track: 'bar', plate_tap: tap });
+      const post = parseBar({ attempt_id: id, worker_id: w, ...dims, path: tr.pts, commit: 'abc1234', secs: 1.5 });
+      expect(post).not.toBeNull();
+      expect(await takeBar(db, store, { ...post!, worker_id: 'w-other' })).toMatchObject({ status: 409 });
+      expect(await takeBar(db, store, post!)).toEqual({ status: 200, call: 'close' });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', lights: null, barKey: `bar/${id}.json`, shadowLights: ['white', 'white', 'white'] });
+      expect(a.measures).toMatchObject({ press_while_sinking: false, lost_share: 0, lost_after_start: false, shadow: { light: 'white' }, commit: 'abc1234' });
+      expect((a.measures as { pause_s: number }).pause_s).toBeGreaterThan(0.5);
+      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ tap, path: tr.pts });
+      expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+      const [ev] = await db.select().from(events).where(sql`${events.kind} = 'close_call' and ${events.attemptId} = ${id}`);
+      expect(ev.detail).toMatchObject({ reason: 'bench_referee', shadow: { light: 'white' }, bar_secs: 1.5 });
+      // posting it again changes nothing
+      expect(await takeBar(db, store, post!)).toMatchObject({ status: 404 });
+    });
+
+    it('broken command times: still to a referee, as a command_times close call', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await markUploaded(db, store, id, { ...BENCH_CT, press: BENCH_CT.start - 100 });
+      const w = await worker('w-bench-bad');
+      await claimNext(db, store, w);
+      await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: tr.pts });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', reason: 'command_times', shadowLights: null, measures: { command_times: 'out_of_order' } });
+    });
+
+    it('no plate_tap: nothing to follow, so straight to a referee with no worker run', async () => {
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      const noTap: Record<string, unknown> = { ...BENCH_CT };
+      delete noTap.plate_tap;
+      await markUploaded(db, store, id, noTap);
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', measures: { plate_tap: 'missing' } });
+      expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
+    });
+
+    it("a worker that ran poses on it anyway never gives it the camera's light", async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await markUploaded(db, store, id, { loaded: 0, start: 1000, press: 3000, rack: 5000, plate_tap: tap } as unknown as Record<string, number>);
+      const w = await worker('w-old');
+      await claimNext(db, store, w);
+      const d = { w: racked.w, h: racked.h, duration: racked.duration };
+      await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 1, ...d, frames: racked.frames });
+      await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 2, ...d, frames: racked.frames });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', lights: null });
+      expect(['bench_referee', 'visibility', 'command_times', 'judge_unavailable']).toContain(a.reason);
+    });
+
+    it('parseBar refuses a path that is not [t, x, y, score] points', () => {
+      expect(parseBar({ attempt_id: 'a', worker_id: 'w', ...dims, path: [[0, 0.5, 0.5]] })).toBeNull();
+      expect(parseBar({ attempt_id: 'a', worker_id: 'w', ...dims, path: [[0, 0.5, 0.5, 'x']] })).toBeNull();
+      expect(parseBar({ attempt_id: 'a', worker_id: 'w', ...dims, path: [] })).not.toBeNull();
+    });
+  });
+
   it('one bad clip: only that attempt becomes judge_unavailable, and only its worker can say so', async () => {
     await db.delete(judgeQueue);
     const { attempts: [bad, good] } = await seed(db, store, 2);
@@ -134,6 +211,37 @@ describe.skipIf(!URL_)('the judge queue', () => {
     expect(got.filter(j => j === null)).toHaveLength(4);
     const rows = await db.select().from(judgeQueue);
     expect(new Set(rows.map(r => r.workerId)).size).toBe(6);
+  });
+
+  // item 95: a sample's frame is its saved one. The judge still makes the call, but the stored frame (and so
+  // the frame route and the marks) is samples.json's, with the server's points there. The good-lift sample's
+  // saved 3800 ms is fed points whose own lowest frame is elsewhere, so the judge's pick and the saved frame differ.
+  it('a demo sample stores and sends its saved judged frame, and keeps the judge\'s own pick in measures', async () => {
+    const good = samples.clips.find(c => c.id === 'good-lift')!;
+    const { attempts: [id] } = await seed(db, store, 1);
+    await db.update(attempts).set({ isSampleClip: true }).where(eq(attempts.id, id));
+    const [{ lifterId }] = await db.select({ lifterId: attempts.lifterId }).from(attempts).where(eq(attempts.id, id));
+    await db.insert(events).values({ kind: 'demo_run', attemptId: id, detail: { lifter_id: lifterId, sample: true, lift: 'squat', clip: good.id } });
+    await markUploaded(db, store, id, CT);
+    const w = await worker('w-sample');
+    await claimNext(db, store, w);
+    const dims = { w: racked.w, h: racked.h, duration: racked.duration };
+    await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 1, ...dims, frames: racked.frames });
+    await takePoses(db, store, { attempt_id: id, worker_id: w, pass: 2, ...dims, frames: racked.frames });
+    const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+    const own = v0.result!.reps[0].judgedFrameMs;
+    expect(own).not.toBe(good.judged_frame_ms);
+    expect(a).toMatchObject({ status: 'judged', call: 'white', judgedFrameMs: good.judged_frame_ms });
+    expect(a.measures).toMatchObject({ judged_frame_ms: own });
+    const f = await judgedFrame(db, store, id, lifterId);
+    expect(f.status).toBe(200);
+    if (f.status !== 200) return;
+    expect(f.frame.ms).toBe(good.judged_frame_ms);
+    // the server's points timed at exactly the saved frame (no nearest match)
+    expect(f.frame.p).toEqual(racked.frames.find(x => x.t === good.judged_frame_ms)!.p);
+    // a saved frame with no pose at exactly that moment draws no marks, rather than another frame's
+    await db.update(attempts).set({ judgedFrameMs: good.judged_frame_ms + 10 }).where(eq(attempts.id, id));
+    expect(await judgedFrame(db, store, id, lifterId)).toMatchObject({ status: 404, error: 'no pose at the judged frame' });
   });
 
   it('nothing waiting: 204, and the worker is marked idle', async () => {

@@ -1,0 +1,2 @@
+ALTER TABLE "meets" ADD COLUMN "flight_hour_cutoff_at" timestamp with time zone;--> statement-breakpoint
+UPDATE "meets" SET "flight_hour_cutoff_at" = "opens_at" - interval '72 hours' WHERE "kind" = 'real' AND "opens_at" IS NOT NULL AND "flight_hour_cutoff_at" IS NULL;

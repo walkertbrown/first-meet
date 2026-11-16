@@ -1,0 +1,1 @@
+ALTER TABLE "meets" ADD COLUMN "block_starts_on" date;

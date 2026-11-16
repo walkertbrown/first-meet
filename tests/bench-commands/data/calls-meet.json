@@ -1,0 +1,187 @@
+{
+ "_note": "Bench meet test (item 70), by-eye calls (Nov 9). Side-on bench presses from powerlifting meets, one attempt each, the lifter under the referee's commands. Bar height from a CSRT tracker on the near plate (OpenCV, not the judge's tracker), steadied for camera movement by the mean shift of 2-4 CSRT background points, smoothed by a 5-frame median; bottoms checked on 0.1-0.5 s sheets. Same rule as run 1, fixed before the judge ran: pause = time within 5% of the rep's travel of its lowest point; 0.5 s or more white, under 0.3 s red no_pause, in between 'either'. Lockout by eye: back to within 2% of the Start! height (Nazt never got there: spotters took it, red no_lockout). Only the plan's bench checks (pause, lockout) are called; other faults are notes. Meet lights: no clip shows the referees' lights. ak3m attempts 2 and 3 were good by the clip's own title cards (it moves up 175 then 182.5, and the last card reads 'I think I should have added more weight'); the rest are unknown.",
+ "method": "camera-steadied CSRT trace, 5% rule as run 1",
+ "excluded": {
+  "A-Tg44nPzMI": "gym clip, camera moving",
+  "t2sBtEVVDD4": "camera keeps moving, lifter far and blocked",
+  "hENAhITjJAQ": "gym clip, not a meet; plate huge at the frame edge",
+  "hiIuf_8xJY4": "gym clip, filmed at an angle",
+  "6dx-J5Jbms8": "descent already under way at the clip's 9.6 s; Start! during a camera pan",
+  "ak3m1Ra_5dw attempt 1": "camera moved at 10-11.5 s, mid-descent",
+  "2o3m0H3RO1k": "bar seen at an angle: the plate moves only 1-2% against the background",
+  "EcsE0QO-wmM attempt 3": "the plate tracker jumped 30% in 0.2 s at 76.8 s",
+  "35FjNdnw-AE, aOggatvtIdE, kTKV38pXk9k, U-3A7QmDZjE, xBvFfGjm5L4, b6tTUcgG_BM, cplW4M9FQVk, _py6p_hWVA4, nhWA1LNZLfE": "not side-on, bar hidden, or not a meet bench (first pass)"
+ },
+ "attempts": [
+  {
+   "id": "AMih",
+   "clip": "AMih7_oK-yA",
+   "start": [
+    19.9,
+    21.2
+   ],
+   "reps": [
+    [
+     25.1,
+     25.67,
+     "white"
+    ]
+   ],
+   "note": "equipped shirt; slow 3.7 s descent; stall at 26.2-27.0 and a 2.5% sink at about 27.4 (downward movement: a referee matter in the plan, not judged)",
+   "lights": "not shown"
+  },
+  {
+   "id": "ak3m2",
+   "clip": "ak3m1Ra_5dw 26-35.5 s",
+   "start": [
+    27.6,
+    28.0
+   ],
+   "reps": [
+    [
+     29.93,
+     30.36,
+     "either"
+    ]
+   ],
+   "note": "hold after lift-off only 0.4 s; 175 kg, good by the next title card",
+   "lights": "good (title card)"
+  },
+  {
+   "id": "ak3m3",
+   "clip": "ak3m1Ra_5dw 41-51 s",
+   "start": [
+    44.0,
+    44.15
+   ],
+   "reps": [
+    [
+     46.08,
+     46.58,
+     "white"
+    ]
+   ],
+   "note": "lift-off at 43.6 moves the bar 1.6% of the frame; the referee signals at about 44.2 and she goes down at once: no 0.5 s hold; 182.5 kg, good by the title card",
+   "lights": "good (title card)"
+  },
+  {
+   "id": "cE2t",
+   "clip": "cE2tczBcAJo",
+   "start": [
+    19.8,
+    22.9
+   ],
+   "reps": [
+    [
+     24.48,
+     25.36,
+     "white"
+    ]
+   ],
+   "note": "",
+   "lights": "not shown"
+  },
+  {
+   "id": "Ecs1",
+   "clip": "EcsE0QO-wmM 21-31.5 s",
+   "start": [
+    22.5,
+    25.3
+   ],
+   "reps": [
+    [
+     26.53,
+     27.2,
+     "white"
+    ]
+   ],
+   "note": "camera moves up to 10% during the attempt",
+   "lights": "not shown"
+  },
+  {
+   "id": "Ecs2",
+   "clip": "EcsE0QO-wmM 42-53.5 s",
+   "start": [
+    43.6,
+    45.9
+   ],
+   "reps": [
+    [
+     46.87,
+     47.53,
+     "white"
+    ]
+   ],
+   "note": "",
+   "lights": "not shown"
+  },
+  {
+   "id": "KrDo",
+   "clip": "KrDoQOTlE0k 50.5-63 s",
+   "start": [
+    50.5,
+    54.0
+   ],
+   "reps": [
+    [
+     56.8,
+     57.87,
+     "white"
+    ]
+   ],
+   "note": "clip opens with the bar in her hands; camera moves up to 8%",
+   "lights": "not shown"
+  },
+  {
+   "id": "Lj0X",
+   "clip": "Lj0XctxFP9U",
+   "start": [
+    2.0,
+    2.5
+   ],
+   "reps": [
+    [
+     3.94,
+     4.57,
+     "white"
+    ]
+   ],
+   "note": "clip opens with the bar in hand, 0.5 s before the descent; clip ends at 9.3 s",
+   "lights": "not shown"
+  },
+  {
+   "id": "Nazt",
+   "clip": "NaztT1FjLSo 9-21 s",
+   "start": [
+    11.0,
+    12.0
+   ],
+   "reps": [
+    [
+     14.3,
+     15.33,
+     "red:no_lockout"
+    ]
+   ],
+   "note": "missed: stuck halfway at 16-19 s, spotters take it at about 19 s; camera moves up to 10%",
+   "lights": "not shown"
+  },
+  {
+   "id": "uGCh",
+   "clip": "uGCh3HQG7VA 27-37 s",
+   "start": [
+    27.2,
+    28.3
+   ],
+   "reps": [
+    [
+     29.63,
+     30.7,
+     "white"
+    ]
+   ],
+   "note": "handed out by a spotter; the camera zooms out at 26.5-27; marked at 27.0 with the bar in hand; slow press to 35.4",
+   "lights": "not shown"
+  }
+ ]
+}

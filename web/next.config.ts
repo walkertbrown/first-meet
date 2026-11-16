@@ -26,6 +26,8 @@ const config: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // the phone's model on later requests, for /ops "by device" (2.4)
+          { key: 'Accept-CH', value: 'Sec-CH-UA-Model, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version' },
         ],
       },
       {

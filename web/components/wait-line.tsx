@@ -1,11 +1,12 @@
 'use client';
 // The line under the lamps (look 5.25 step 8): one line crossfades into the next over 400 ms,
 // the old line fading out on top of the new one fading in, so a change never reads as a glitch.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type Ref } from 'react';
 
 export const CROSSFADE_MS = 400;
 
-export function WaitLine({ text }: { text: string }) {
+/** `lineRef`: the line takes focus where she is sent back to it ("OK" on the offline sheet, plan 3.11). */
+export function WaitLine({ text, lineRef }: { text: string; lineRef?: Ref<HTMLDivElement> }) {
   const [now, setNow] = useState({ text, prev: '', n: 0 });
   const last = useRef(text);
   useEffect(() => {
@@ -20,7 +21,7 @@ export function WaitLine({ text }: { text: string }) {
     return () => clearTimeout(t);
   }, [text]);
   return (
-    <div className={`waitline${text ? ' on' : ''}`} aria-live="polite">
+    <div ref={lineRef} tabIndex={lineRef ? -1 : undefined} className={`waitline${text ? ' on' : ''}`} aria-live="polite">
       {now.prev && <span key={`out-${now.n}`} className="wl-out" aria-hidden="true">{now.prev}</span>}
       <span key={`in-${now.n}`} className={now.prev ? 'wl-in' : undefined}>{now.text}</span>
     </div>

@@ -5,7 +5,9 @@
   "frameCheck": {
     "holdMs": 1000,
     "edgeMargin": 0.03,
-    "sideOnMaxShoulderOverTorso": 0.35
+    "sideOnMaxShoulderOverTorso": 0.35,
+    "frontOnMinShoulderOverTorso": 0.5,
+    "roomAboveArm": 1.1
   },
   "visibilityCloseCallShare": 0.2,
   "squat": {
@@ -24,22 +26,86 @@
     "windowStartHipRiseTorso": 0.02,
     "noLockoutMs": 12000,
     "hitchDropDeg": 8,
-    "rearmBelowDeg": 150
+    "rearmBelowDeg": 150,
+    "homeNoRepMs": 8000
   },
   "bench": {
     "startElbowMinDeg": 155,
     "startStillMs": 500,
     "bottomElbowMaxDeg": 110,
-    "pauseStillMaxArm": 0.02,
+    "pauseStillMaxArm": 0.07,
     "pauseStillMs": 400,
     "lockoutElbowMinDeg": 155,
     "lockoutHoldMs": 400,
     "noPauseRiseArm": 0.03,
     "serverPauseMinMs": 300,
+    "pressLateDropArm": 0.3,
+    "pressLateStillMs": 1500,
     "noRepMs": 20000
   },
   "tryALift": {
     "goodSpotToStandTallMs": 1500,
     "judgeLookingMinMs": 1200
+  },
+  "overhead": {
+    "startElbowMaxDeg": 100,
+    "startWristOverNoseArm": 0.2,
+    "startStillMs": 300,
+    "stillMaxArm": 0.07,
+    "repUpArm": 0.3,
+    "repBackArm": 0.15,
+    "lockoutElbowMinDeg": 145,
+    "borderlineElbowMinDeg": 135,
+    "lockoutStillMs": 400,
+    "lockoutStillMaxArm": 0.12,
+    "noRepMs": 20000,
+    "homeNoRepMs": 8000
+  },
+  "benchBar": {
+    "$comment": "The Barbell bench, judged from the bar (plan 3.4b, item 74). Fractions of the frame's height; speeds are frame heights a second, each the least-squares slope over slopeMs, past frames only. Tested in tests/bench-commands/ (NerdCider passed it at 490e2ba).",
+    "tracker": {
+      "frameH": 160,
+      "tpl": 0.08,
+      "search": 0.08,
+      "follow": 0.1,
+      "followMin": 0.8
+    },
+    "leftRack": 0.03,
+    "slopeMs": 500,
+    "startXY": true,
+    "startRel": 0.1,
+    "startFloor": 0.05,
+    "startStillMs": 500,
+    "nearTop": 0.03,
+    "startStill": 0.01,
+    "pressDown": 0.08,
+    "pressXY": false,
+    "pressRel": 0.2,
+    "pressFloor": 0.01,
+    "pressStillMs": 500,
+    "pressStill": 0.01,
+    "pastPeakDown": 0,
+    "rackRel": 0.05,
+    "rackBack": 0.02,
+    "rackHoldMs": 400,
+    "lateMs": 1500,
+    "lateStill": 0.01,
+    "noRepMs": 20000,
+    "pauseRise": 0.01,
+    "lostScore": 0.4,
+    "lostShare": 0.2,
+    "redOnBounce": false,
+    "stillY": false,
+    "shortPause": true,
+    "stuckRule": true,
+    "freezeScore": 0.99,
+    "freezeMs": 400,
+    "voidRule": true,
+    "voidMs": 5000,
+    "lostLateMs": 2000,
+    "lostRackMs": 3000,
+    "tapLostMs": 1000,
+    "sinkAfterPress": 0.01,
+    "trainingNoDescentMs": 8000
   }
 }

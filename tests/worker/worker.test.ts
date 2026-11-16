@@ -8,7 +8,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { CLIPS_DIR, EXPECTED, checkClip, verdictOf } from '../clips/check';
-import { mergePasses, zoomWindows, type Frame } from '../../web/lib/judge';
+import { RULES, judgeAttempt, measure, mergePasses, poseAt, zoomWindows, type Frame, type Side } from '../../web/lib/judge';
+import samples from '../../content/samples/samples.json';
 
 const PY = process.env.WORKER_PYTHON;
 const CLI = join(__dirname, '../../worker/cli.py');
@@ -26,6 +27,15 @@ const grid15 = (duration: number, [a, b]: [number, number]) => {
 };
 
 const timings: Record<string, unknown> = {};
+// The other side made the near one: each left/right landmark pair swaps its visibility, so the
+// judge's nearSide (the higher summed visibility) picks the far side and measures from it.
+const PAIRS = [[1, 4], [2, 5], [3, 6], [7, 8], [9, 10], ...Array.from({ length: 11 }, (_, i) => [11 + 2 * i, 12 + 2 * i])];
+const otherSide = (f: Frame): Frame => {
+  if (!f.p) return f;
+  const p = f.p.map(q => [...q]) as typeof f.p;
+  for (const [a, b] of PAIRS) { p[a][2] = f.p[b][2]; p[b][2] = f.p[a][2]; }
+  return { ...f, p };
+};
 
 // The six test clips of piece 1 are checked. half-squat-whole is the whole video one of
 // them is cut from, kept so a change to the judge shows up; its dark last minute is where
@@ -43,6 +53,14 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       const v = verdictOf({ ...first, frames }, e);
       timings[name] = { duration: +first.duration.toFixed(1), frames: first.frames.length + second.frames.length, pass1: first.secs, pass2: second.secs, calls: e.skipped ? v.skipped : v.reps };
       if (!LOGGED_ONLY.has(name)) checkClip(expect, { ...first, frames }, e);
+      // piece 6 (item 94): a clip that passes the frame check's side-on part gives the same calls
+      // from both sides, the far side forced. 2.3 has no tie rule; this is what holds it.
+      if (e.frameCheck === 'pass') {
+        const w = verdictOf({ ...first, frames: frames.map(otherSide) }, e);
+        timings[`${name}, other side`] = { calls: w.reps };
+        expect(w.reps, `${name}: the far side's calls`).toEqual(v.reps);
+        expect(w.reps).toEqual(e.reps);
+      }
     }, 600_000);
   }
   // What the two passes add to any difference: one unbroken 15 fps pass, set against the
@@ -84,6 +102,79 @@ describe.skipIf(!PY)('the worker finds poses that give the expected calls', () =
       expect(first.duration).toBeGreaterThan(29);
     }, 600_000);
   }
+  // The demo meet's sample lifts go through the server (5.36): the worker's two passes, then the
+  // judge with the clip's stored command times. A close call is judged on the line, where
+  // Python's and Chromium's points part ways (the Pexels 5025965 cut was a close call on
+  // Chromium's points, depth 0.008, and a white on the worker's, 0.077), so it is checked here.
+  // And it must sit well inside the band: staging's judge read the Pexels 8837118 cut at -0.087
+  // and -0.121 on two runs of the same file (GitHub's worker: -0.073), so a close call within
+  // CLOSE_MARGIN of the band's edges is a red or a white on some machine.
+  // The close call is Amanda King's box squat at 18.7 s, picked because fed as the live server feeds
+  // it, both sides read at least 0.04 inside the band (-0.052 and -0.032 on a measuring run). The rep
+  // at 22.7 s read -0.067 here and -0.063 to -0.084 over 40 staging runs: up to 0.017 from CI's reading
+  // (The Playner, 13 Nov: the guard back at 0.04 once a rep clears it).
+  const CLOSE_MARGIN = 0.04;
+  for (const s of samples.clips) {
+    it(`demo sample ${s.id}: on the worker's points it is a ${s.kind === 'good' ? 'good lift' : s.kind === 'no' ? 'no lift' : 'close call'}`, () => {
+      const file = join(__dirname, '../../content/samples', s.file);
+      const ct = s.meet.command_times;
+      // fed exactly as the live server feeds it (worker/main.py's two passes, through poses.first_pass and
+      // poses.second_pass): pass 1 split halfway, as staging does. Run unsplit, the close call's deepest frame
+      // came out 1200 ms here and 1000 ms on all 40 of staging's runs (The Playner, 13 Nov).
+      const first = runFile(file, ['--pass1']);
+      const zoom = zoomWindows(first.frames, first, 'squat', ct);
+      const second = zoom.windows.length ? runFile(file, ['--windows', JSON.stringify(zoom.windows), ...(zoom.splitMs !== null ? ['--split', String(zoom.splitMs)] : [])]) : { frames: [], secs: 0 };
+      const frames = mergePasses(first.frames, second.frames);
+      const v = judgeAttempt(frames, first, 'squat', ct, undefined, s.meet.reps);
+      timings[`sample ${s.id}`] = { call: v.call, measures: v.measures };
+      const light = ({ good: 'white', no: 'red', close: 'close' } as Record<string, string>)[s.kind];
+      expect(v.call.light).toBe(light);
+      // item 95: the server stores and marks the sample's saved frame (samples.json), not the judge's own pick,
+      // so the marks there must agree with the call: the server's depth at the saved frame, on the side it
+      // judged, falls in the sample's band. (This replaces "the judge's frame within 67 ms of the saved one":
+      // on a still bottom, frames 0.002 apart trade places from machine to machine.)
+      const saved = (s as { judged_frame_ms?: number }).judged_frame_ms;
+      expect(saved, `sample ${s.id}: judged_frame_ms in samples.json`).toBeTypeOf('number');
+      const at = poseAt(frames, saved!);
+      expect(at, `sample ${s.id}: a pose at the saved ${saved} ms`).not.toBeNull();
+      // the frame route draws the marks from the pose nearest the stored frame, so the saved frame must be one the
+      // server has a pose at: off the grid, the marks would be drawn on a different frame from the one the stage
+      // holds (NerdCider, 13 Nov). Pass 2's 15 fps grid: 1000 * k / 15, rounded.
+      expect(at!.t, `sample ${s.id}: the server has a pose at exactly the saved ${saved} ms (nearest: ${at!.t} ms)`).toBe(saved);
+      const side = v.measures.side as Side;
+      const depth = measure(at!.p, first, side).depth;
+      timings[`sample ${s.id}, saved frame`] = { ms: saved, pose_ms: at!.t, side, depth: +depth.toFixed(3) };
+      const band = `sample ${s.id}: depth ${depth.toFixed(3)} at the saved ${saved} ms (${side} side)`;
+      if (s.kind === 'no') expect(depth, band).toBeLessThan(RULES.squat.redDepthMax);
+      if (s.kind === 'close') { expect(depth, band).toBeGreaterThanOrEqual(RULES.squat.redDepthMax); expect(depth, band).toBeLessThanOrEqual(RULES.squat.whiteDepthMin); }
+      if (s.kind === 'good') expect(depth, band).toBeGreaterThan(RULES.squat.whiteDepthMin);
+      // and from both sides, the far side forced (piece 6, item 94): the same call, its `kind`. The
+      // 8837221 cut's sides were nearly tied, and its far side read a white.
+      const w = judgeAttempt(frames.map(otherSide), first, 'squat', ct, undefined, s.meet.reps);
+      timings[`sample ${s.id}, other side`] = { call: w.call, measures: w.measures };
+      expect(w.measures.side).not.toBe(v.measures.side);
+      expect(w.call.light, `sample ${s.id}: the ${w.measures.side} side's call`).toBe(light);
+      if (s.kind === 'close') {
+        for (const x of [v, w]) {
+          const d = x.measures.depth!;
+          expect(x.call.light, `the ${x.measures.side} side's call`).toBe('close');
+          // depth, not "hard to see": a `visibility` close call would show "Hard to see" on the referee's side
+          expect(x.call.reason, `the ${x.measures.side} side's reason`).toBe('borderline_depth');
+          expect(d, `the close call's depth ${d} (${x.measures.side} side) is ${CLOSE_MARGIN} inside the band`).toBeGreaterThanOrEqual(RULES.squat.redDepthMax + CLOSE_MARGIN);
+          expect(d).toBeLessThanOrEqual(RULES.squat.whiteDepthMin - CLOSE_MARGIN);
+        }
+      }
+    }, 600_000);
+  }
+  // A warm worker judges the same clip as a fresh one: each run of frames gets a fresh tracker. Kept for
+  // the process, the tracker carried the last clip in: staging's warm workers read the good-lift sample's
+  // 3000 ms frame at depth 0.145 and a fresh one at 0.039, and judged 3000 ms instead of 3800 (13 Nov).
+  it('a warm worker finds the same points as a fresh one', () => {
+    const good = join(__dirname, '../../content/samples', samples.clips.find(c => c.id === 'good-lift')!.file);
+    const fresh = runFile(good, ['--pass1']);
+    const warm = runFile(good, ['--pass1', '--after', join(CLIPS_DIR, 'racked-squats-side.webm')]);
+    expect(warm.frames).toEqual(fresh.frames);
+  }, 600_000);
   it('writes the timings', () => {
     const out = process.env.WORKER_TIMINGS;
     if (out) writeFileSync(out, JSON.stringify(timings, null, 2));

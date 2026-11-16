@@ -63,7 +63,7 @@ export class MemStore implements Store {
   }
 }
 
-export async function seed(db: Db, store: MemStore, n: number, lift: 'squat' | 'deadlift' = 'squat') {
+export async function seed(db: Db, store: MemStore, n: number, lift: 'squat' | 'bench' | 'deadlift' = 'squat') {
   const [meet] = await db.insert(meets).values({ slug: `demo-${randomBytes(3).toString('hex')}`, name: 'Demo meet', kind: 'demo', status: 'open' }).returning();
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
