@@ -42,6 +42,13 @@ function slope(h: P[], from: number): { vy: number; vx: number } | null {
   return d > 0 ? { vy: (n * sty - st * sy) / d, vx: (n * stx - st * sx) / d } : null;
 }
 
+/**
+ * Item 109, on trial in the commands test only (The Playner, Nov 16, 2:23 AM): when x and y stayed within `frozenStill` of
+ * the frame through the whole pressStillMs window, Press! waits until the bar has been still `frozenPressMs`. Off unless
+ * set; the product's rules don't set it.
+ */
+export type FrozenPress = { frozenPressMs?: number; frozenStill?: number };
+
 export class BarCaller {
   state: 'racked' | 'waiting' | 'lifting' | 'pressed' | 'done' = 'racked';
   startY: number | null = null; startAt: number | null = null; pressAt: number | null = null; late = false;
@@ -51,7 +58,7 @@ export class BarCaller {
   speeds: { t: number; v: number; s: number }[] = [];
   private aspect: number; private h: number; private w: number; lostSince: number | null = null; frozeAt: number[] = []; lostBeforeStart: number | null = null; lostPress = false;
   voidAt: number | null = null; private lowSince: number | null = null;
-  constructor(private tap: { x: number; y: number }, dims: { w: number; h: number }, private r: BarRel = BAR_RULES, racked = true) {
+  constructor(private tap: { x: number; y: number }, dims: { w: number; h: number }, private r: BarRel & FrozenPress = BAR_RULES, racked = true) {
     this.aspect = dims.w / dims.h; this.w = dims.w; this.h = dims.h;
     if (!racked) this.state = 'waiting';
   }
@@ -66,6 +73,15 @@ export class BarCaller {
     let y0 = Infinity, y1 = -Infinity;
     for (let i = this.hist.length - 1; i >= 0 && this.hist[i].t >= from; i--) { y0 = Math.min(y0, this.hist[i].y); y1 = Math.max(y1, this.hist[i].y); }
     return y1 - y0;
+  }
+  /** Item 109: x and y within `still` of the frame (x in frame widths) on every reading over the last `ms`. */
+  private frozenFor(t: number, ms: number, still: number) {
+    const h = this.hist; if (!h.length || t - h[0].t < ms) return false;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, n = 0;
+    for (let i = h.length - 1; i >= 0 && h[i].t >= t - ms; i--) {
+      const x = h[i].x / this.aspect; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, h[i].y); y1 = Math.max(y1, h[i].y); n++;
+    }
+    return n >= 3 && x1 - x0 <= still && y1 - y0 <= still;
   }
   /** Back-up band: rackRel x this rep's travel when set, else item 70's rackBack. */
   private back() { return this.r.rackRel > 0 ? this.r.rackRel * (this.lowY - this.startY!) : this.r.rackBack; }
@@ -139,7 +155,8 @@ export class BarCaller {
       if (v > this.descPeak) { this.descPeak = v; this.descPeakY = p.y; }
       const down = p.y - this.startY! >= r.pressDown && p.y - this.descPeakY >= r.pastPeakDown;
       const lim = Math.max(r.pressFloor, r.pressRel * this.descPeak);
-      if (down && this.stillFor(t, r.pressStillMs, lim, r.pressXY)) {
+      const frozen = !!r.frozenPressMs && this.frozenFor(t, r.pressStillMs, r.frozenStill ?? 0.002);
+      if (down && this.stillFor(t, r.pressStillMs, lim, r.pressXY) && (!frozen || this.stillFor(t, r.frozenPressMs!, lim, r.pressXY))) {
         this.state = 'pressed'; this.pressAt = t; this.late = false; this.backSince = null;
         return { cmd: 'press', t };
       }

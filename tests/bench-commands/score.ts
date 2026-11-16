@@ -2,7 +2,8 @@
 // past frames only, scored against the by-eye times. No clips or frames are needed.
 //
 // Usage: npx tsx tests/bench-commands/score.ts [rules override .json] [traces dir]
-//        env QUIET=1 (lines only), DEBUG=<id prefix> (every frame of that rep), OUT=<file> (every rep's times as JSON)
+//        env QUIET=1 (lines only), DEBUG=<id prefix> (every frame of that rep), OUT=<file> (every rep's times as JSON),
+//        ALL_REPS=1 (every rep of the gym sets, not just rep 1; see laterReps)
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BenchCaller, RULES, type Rel } from './caller';
@@ -16,10 +17,10 @@ const SHOWN_SHARE = 0.5;
 
 type Eye = { grp: string; settled: number; descent: number; stop: number; pauseEnd: number; backUp: number | null };
 type Ref = { t: number[]; y: number[]; h: number };
-type Hold = { what: 'start' | 'press'; from: number; to: number; still: boolean };
+type Hold = { what: 'start' | 'press' | 'rack'; from: number; to: number; still: boolean };
 export type Status = 'PASS' | 'FAIL' | 'NOT SHOWN';
 export type Row = {
-  id: string; group: 'meet' | 'paused' | 'bounced'; inHand: boolean;
+  id: string; rep: number; group: 'meet' | 'paused' | 'bounced'; inHand: boolean;
   start: number | null; press: number | null; late: boolean; rack: number | null; noRep: boolean; lostBeforeStart: number | null;
   leftHooks: number | null; voided: number | null; voidAfterHooks: number | null; voidAtLoss: boolean; voidOk: boolean;
   startIn: 'clip' | 'replay' | null; pressIn: 'clip' | 'replay' | null; pressClip: number | null;
@@ -52,24 +53,79 @@ function stillStretch(ref: Ref, lo: number, hi: number): { from: number; to: num
   return { from: Math.max(lo, hi - HOLD_MS), to: hi, still: false };
 }
 
+/**
+ * Reps 2 and on: the HOLD_MS stretch inside [lo, hi] (clip ms) where the phone's trace moves least (x in frame heights,
+ * the larger of the two ranges), or with `highest` where its lowest point is highest; the latest on a tie; all of
+ * [lo, hi] when it's shorter. `still` is the reference's.
+ */
+function stillestStretch(pts: number[][], ref: Ref, aspect: number, lo: number, hi: number, highest = false): { from: number; to: number; still: boolean } {
+  const w = pts.filter(q => q[0] >= lo && q[0] <= hi && q[3] >= 0.5);
+  let best: { from: number; to: number } | null = null, bestS = Infinity;
+  for (let j = 0, i = 0; j < w.length; j++) {
+    while (w[j][0] - w[i][0] > HOLD_MS) i++;
+    if (w[j][0] - w[i][0] < HOLD_MS - 50 && w.at(-1)![0] - w[0][0] >= HOLD_MS - 50) continue;
+    const xs = w.slice(i, j + 1).map(q => q[1] * aspect), ys = w.slice(i, j + 1).map(q => q[2]);
+    const sp = highest ? Math.max(...ys) : Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+    if (j > i && sp <= bestS) { bestS = sp; best = { from: w[i][0], to: w[j][0] }; }
+  }
+  const b = best ?? { from: Math.max(lo, hi - HOLD_MS), to: hi };
+  return { ...b, still: refStill(ref, b.from, b.to) };
+}
+
 /** Whether the reference bar stays within STILL_REF of the frame over [a, b] (clip ms). */
 function refStill(ref: Ref, a: number, b: number): boolean {
   const w = ref.y.filter((y, k) => ref.t[k] * 1000 >= a && ref.t[k] * 1000 <= b && Number.isFinite(y));
   return w.length >= 3 && (Math.max(...w) - Math.min(...w)) / ref.h <= STILL_REF;
 }
 
-export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces')) {
+type GymCall = { id: string; start: [number, number]; reps: [number, number, string][] };
+
+/**
+ * Reps 2 and on of a gym set, each played as its own attempt (item 109, The Playner, Nov 16, 2:23 AM). A stand-in: no
+ * lifter filmed them that way. The phone starts with the bar in hand at arm's length, at the later of 0.5 s before the
+ * rep's descent and the last rep's back-up, and the clip runs to the next rep's descent (or its end). These sets went
+ * from rep to rep without a settled pause, so she holds the bar as a lifter on her own attempt would: for Start!, on the
+ * stillest stretch of the phone's trace before the descent; for Rack!, on its highest stretch after the back-up
+ * (stillestStretch); for Press!, as on rep 1. The eye's stop and
+ * pause end are calls-run1.json's; the descent is the last frame within 10% of the travel from the top before the
+ * stop, and the back-up the first after the pause end, on the phone's trace (as tests/referee-bot/build-set.ts does).
+ */
+function laterReps(e0: Eye, pts: number[][], g: GymCall): { rep: number; e: Eye; pts: number[][] }[] {
+  const reps: { descent: number; stop: number; end: number; backUp: number | null }[] = [];
+  let prev = g.start[0];
+  g.reps.forEach(([stop, end], i) => {
+    const seg = pts.filter(q => q[0] / 1000 >= prev && q[0] / 1000 <= stop && q[3] >= 0.5);
+    const top = Math.min(...seg.map(q => q[2])), low = Math.max(...seg.map(q => q[2]));
+    const near = seg.filter(q => q[2] <= top + 0.1 * (low - top));
+    const up = pts.find(q => q[0] / 1000 > end && q[3] >= 0.5 && q[2] <= top + 0.1 * (low - top));
+    reps.push({ descent: i === 0 ? e0.descent : near.length ? near[near.length - 1][0] / 1000 : prev, stop, end,
+      backUp: i === 0 ? e0.backUp : up ? up[0] / 1000 : null });
+    prev = end;
+  });
+  const from = (i: number) => Math.max(reps[i].descent - 0.5, reps[i - 1].backUp ?? -Infinity);
+  return reps.slice(1).map((r, k) => {
+    const i = k + 1, a = from(i), b = i + 1 < reps.length ? reps[i + 1].descent : Infinity;
+    return { rep: i + 1, e: { grp: e0.grp, settled: a, descent: r.descent, stop: r.stop, pauseEnd: r.end, backUp: r.backUp },
+      pts: pts.filter(q => q[0] / 1000 >= a && q[0] / 1000 < b) };
+  });
+}
+
+export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces'), opts: { allReps?: boolean } = {}) {
   const eye: Record<string, Eye> = JSON.parse(readFileSync(join(HERE, 'data', 'eyetimes.json'), 'utf8'));
+  const gym: Record<string, GymCall> = Object.fromEntries(
+    (JSON.parse(readFileSync(join(HERE, 'data', 'calls-run1.json'), 'utf8')).attempts as GymCall[]).map(g => [g.id, g]));
   const rows: Row[] = [];
   const files = readdirSync(tracesDir).filter(f => f.endsWith('.json')).sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
   for (const f of files) {
     const pj = JSON.parse(readFileSync(join(tracesDir, f), 'utf8'));
-    const id: string = pj.id; const e = eye[id]; if (!e) continue;
-    const rj = JSON.parse(readFileSync(join(HERE, 'data', 'reference', `${id}.json`), 'utf8'));
+    const id0: string = pj.id; const e0 = eye[id0]; if (!e0) continue;
+    const rj = JSON.parse(readFileSync(join(HERE, 'data', 'reference', `${id0}.json`), 'utf8'));
     const ref: Ref = { t: rj.t, y: rj.y.map((y: number | null) => (y == null ? NaN : y)), h: rj.h };
-    const group = e.grp === 'meet' ? 'meet' : BOUNCED.some(b => id.startsWith(b)) ? 'bounced' : 'paused';
-    const pts: number[][] = pj.pts;
-    const step = (pts.at(-1)![0] - pts[0][0]) / (pts.length - 1);
+    const group = e0.grp === 'meet' ? 'meet' : BOUNCED.some(b => id0.startsWith(b)) ? 'bounced' : 'paused';
+    const step = (pj.pts.at(-1)![0] - pj.pts[0][0]) / (pj.pts.length - 1);
+    const plays = [{ rep: 1, e: e0, pts: pj.pts as number[][] }, ...(opts.allReps && gym[id0] ? laterReps(e0, pj.pts, gym[id0]) : [])];
+    for (const { rep, e, pts } of plays) {
+    const id = rep === 1 ? id0 : `${id0}-r${rep}`, racked: boolean = rep === 1 ? pj.racked : false;
     const dbg = process.env.DEBUG && id.startsWith(process.env.DEBUG);
     const cut1 = (e.descent - 0.1) * 1000, cut2 = e.pauseEnd * 1000;
 
@@ -81,7 +137,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     // she waits until it comes or the phone voids the attempt, at most voidMs + 1 s. Every later time, by eye and by
     // phone, moves by the wait. Whether she has to wait is found by running the clip without that wait first.
     const run = (holds: Hold[]) => {
-      const c = new BenchCaller({ x: pj.mark.x, y: pj.mark.y }, { w: pj.w, h: pj.h }, rules, pj.racked);
+      const c = new BenchCaller({ x: pj.mark.x, y: pj.mark.y }, { w: pj.w, h: pj.h }, rules, racked);
       const ct: Record<string, number> = {}, ctClip: Record<string, number> = {}, inHold: Record<string, boolean> = {};
       let late = false, noRep = false, voided: number | null = null, off = 0, holding: string | null = null;
       const log: string[] = [], fed: { t: number; y: number }[] = [], waits: Row['waits'] = [];
@@ -119,16 +175,21 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
         if (voided != null) break; // void: she racks the bar, and the clip is over for the phone
         feed(t + off, t, x, y, sc);
       }
+      while (todo.length && voided == null) hold(todo.shift()!); // a hold at the clip's end (reps 2 and on: Rack!)
       return { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, state1, state2 };
     };
     const holds: Hold[] = [];
     let r = run(holds);
     if (r.state1 === 'racked' || r.state1 === 'waiting') {
       const lo = Math.max(e.settled * 1000, cut1 - HOLD_MS);
-      holds.push({ what: 'start', ...(process.env.STILL_START === '1' ? stillStretch(ref, e.settled * 1000, cut1) : { from: lo, to: cut1, still: refStill(ref, lo, cut1) }) });
+      holds.push({ what: 'start', ...(rep > 1 ? stillestStretch(pts, ref, pj.w / pj.h, e.settled * 1000, cut1)
+        : process.env.STILL_START === '1' ? stillStretch(ref, e.settled * 1000, cut1) : { from: lo, to: cut1, still: refStill(ref, lo, cut1) }) });
       r = run(holds);
     }
     if (r.state2 === 'lifting') { holds.push({ what: 'press', ...stillStretch(ref, e.stop * 1000, cut2) }); r = run(holds); }
+    if (rep > 1 && r.ct.press !== undefined && r.ct.rack === undefined && r.voided == null && e.backUp != null) {
+      holds.push({ what: 'rack', ...stillestStretch(pts, ref, pj.w / pj.h, e.backUp * 1000, pts.at(-1)![0], true) }); r = run(holds);
+    }
     const { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits } = r;
 
     const sh = (sec: number | null) => (sec == null ? null : sec + waits.filter(w => w.at < sec).reduce((a, w) => a + w.s, 0));
@@ -148,7 +209,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     const voidOk = voided != null && ((voidAfterHooks != null && voidAfterHooks <= (rules.voidMs + step) / 1000 + 1e-9) || voidAtLoss);
     const backEye = E.backUp != null;
     rows.push({
-      id, group, inHand: !pj.racked, start: ct.start ?? null, press: ct.press ?? null, late, rack: ct.rack ?? null, noRep,
+      id, rep, group, inHand: !racked, start: ct.start ?? null, press: ct.press ?? null, late, rack: ct.rack ?? null, noRep,
       lostBeforeStart: lostAt, leftHooks, voided, voidAfterHooks, voidAtLoss, voidOk,
       startIn: ct.start == null ? null : inHold.start ? 'replay' : 'clip', pressIn, pressClip: ctClip.press ?? null,
       settled: E.settled, descent: E.descent, stop: E.stop, pauseEnd: E.pauseEnd, backUpEye: E.backUp, delay,
@@ -159,9 +220,11 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
       backPhone, backEye, backAgree: backPhone === backEye,
       sink, sinking: sink != null && sink > 0.01, refSink, refSinking: refSink != null && refSink > 0.01, waits, log,
     });
+    }
   }
   const scored = rows.filter(r => r.group !== 'bounced'), n = scored.length;
-  const ids = (l: Row[]) => (l.length ? l.map(r => r.id.slice(0, 4)).join(', ') : 'none');
+  const tag = (r: Row) => r.id.slice(0, 4) + (r.rep > 1 ? `-r${r.rep}` : '');
+  const ids = (l: Row[]) => (l.length ? l.map(tag).join(', ') : 'none');
   const pc = (x: number | null) => (x == null ? '-' : `${(100 * x).toFixed(1)}%`);
   const inClip = scored.filter(r => r.pressIn === 'clip'), replay = scored.filter(r => r.pressIn === 'replay');
   const sinkIn = inClip.filter(r => r.sinking || r.refSinking || r.early), early = scored.filter(r => r.early);
@@ -185,7 +248,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     line3: {
       status: st(!sE.length && !noVoid.length),
       text: `3. No Start! before the bar settled, all ${rows.length} reps: ${sE.length} early (${ids(sE)}). No Start!: ${ids(noStart)}; each must be voided within ${rules.voidMs / 1000} s of leaving the hooks, or at the loss: ` +
-        noStart.map(r => `${r.id.slice(0, 4)} void ${r.voidAfterHooks?.toFixed(2) ?? '-'} s after leaving the hooks${r.voidAtLoss ? ' (at the loss)' : ''}${r.voidOk ? '' : ' (NOT OK)'}`).join('; '),
+        noStart.map(r => `${tag(r)} void ${r.voidAfterHooks?.toFixed(2) ?? '-'} s after leaving the hooks${r.voidAtLoss ? ' (at the loss)' : ''}${r.voidOk ? '' : ' (NOT OK)'}`).join('; '),
     },
     line4: { status: st(!rE.length && !noVoid.length), text: `4. No Rack! before the bar is back up, all ${rows.length} reps: ${rE.length} early (${ids(rE)}). A rep with no Start! passes only by the void's Rack!: ${noStart.length - noVoid.length} of ${noStart.length}` },
     line5: { status: st(!bD.length), text: `5. "Back up" agrees with the eye, ${n} reps: ${n - bD.length} of ${n} (disagree: ${ids(bD)})` },
@@ -199,11 +262,11 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
 
 if (process.argv[1]?.endsWith('score.ts')) {
   const o = process.argv[2] ? JSON.parse(readFileSync(process.argv[2], 'utf8')) : {};
-  const { rows, lines, notes } = score({ ...RULES, ...o }, process.argv[3]);
+  const { rows, lines, notes } = score({ ...RULES, ...o }, process.argv[3], { allReps: process.env.ALL_REPS === '1' });
   const f2 = (x: number | null) => (x == null ? '-' : x.toFixed(2));
   const pc = (x: number | null) => (x == null ? '-' : `${(100 * x).toFixed(1)}%`);
   if (process.env.QUIET !== '1') for (const r of rows) {
-    console.log(`${r.id.slice(0, 5).padEnd(5)} ${r.group.padEnd(7)} ${r.inHand ? 'hand' : 'rack'} ${r.log.join(', ').padEnd(46)}| settled ${f2(r.settled)} descent ${f2(r.descent)} stop ${f2(r.stop)} rose ${f2(r.pauseEnd)} back up ${f2(r.backUpEye)}` +
+    console.log(`${(r.id.slice(0, 5) + (r.rep > 1 ? `-r${r.rep}` : '')).padEnd(8)} ${r.group.padEnd(7)} ${r.inHand ? 'hand' : 'rack'} ${r.log.join(', ').padEnd(46)}| settled ${f2(r.settled)} descent ${f2(r.descent)} stop ${f2(r.stop)} rose ${f2(r.pauseEnd)} back up ${f2(r.backUpEye)}` +
       ` | Start! in ${r.startIn ?? '-'}, Press! in ${r.pressIn ?? '-'}, Press!-stop ${f2(r.delay)} sink ${pc(r.sink)} ref ${pc(r.refSink)}` +
       `${r.waits.length ? ' | waits ' + r.waits.map(w => `${w.what} ${w.s.toFixed(2)} s on ${w.from.toFixed(2)}-${w.to.toFixed(2)}${w.still ? '' : ' (not still)'}${w.got ? '' : ' (none)'}`).join(', ') : ''}` +
       `${r.lostBeforeStart != null ? ` | lost before Start! at ${f2(r.lostBeforeStart)}` : ''}${r.start == null ? ` | off the hooks ${f2(r.leftHooks)}, void ${f2(r.voided)}` : ''}`);
