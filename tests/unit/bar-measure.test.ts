@@ -97,6 +97,10 @@ describe('measureBar', () => {
     expect(m.pause_s).toBeNull();
     expect(m.sink).toBeNull();
     expect(m.press_while_sinking).toBe(false);
+    // keyed on press_late_why itself: the server's tracker may never lose the bar the phone lost, so an unbroken path
+    // sends neither either (NerdCider, Nov 15, 11:23 PM)
+    const whole = measureBar(path(GOOD), ct({ press_late: 2900, press_late_why: 'lost' }), DIMS);
+    expect([whole.pause_s, whole.sink, whole.press_while_sinking]).toEqual([null, null, false]);
     // the same times as an on-time Press! do measure
     expect(measureBar(path(GOOD), ct({ press: 2900 }), DIMS).press_while_sinking).toBe(true);
   });
