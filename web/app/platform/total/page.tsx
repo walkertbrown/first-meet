@@ -20,6 +20,7 @@ import { ResumeSending } from '@/components/resume-sending';
 import { bombedWords, formatTotal, homeSum, totalLifts, totalWords, unitLine, waitingBody } from '@/lib/total-view';
 import '../../try.css';
 import '../../platform.css';
+import { botOn } from '@/lib/referee/words';
 
 // "You totaled" (plan 5.28): after her ninth attempt has lights or is a close call waiting.
 export const dynamic = 'force-dynamic';
@@ -52,7 +53,7 @@ export default async function TotalPage() {
     return page(<>
       <LiveRefresh />
       <h1 className="page-title">Your total is almost in.</h1>
-      <p className="body">{waitingBody(t.on, division)}</p>
+      <p className="body">{waitingBody(t.on, division, botOn())}</p>
       <p className="so-far"><span className="weight-m num">{formatTotal(t.soFar)}<span className="unit">{units}</span></span> <span className="small">so far</span></p>
       {corner}
     </>);

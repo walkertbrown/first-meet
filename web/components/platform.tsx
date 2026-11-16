@@ -14,6 +14,7 @@ import { notJudgedLabel } from '@/lib/stage/meet-words';
 import type { CardAttempt, RowCell } from '@/lib/platform-view';
 import type { DeclareSheet } from '@/lib/meet-flow';
 import { LightsBanner } from '@/components/banner-layer';
+import { useRefereeWords } from '@/components/referee-bot';
 import {
   DECLARE_WORDS, WELCOME_WORDS, capLine, choiceWords, declareButton, liftWord, loadingLine, meetResult,
 } from '@/lib/stage/meet-words';
@@ -30,6 +31,7 @@ const GROUPS: Record<'barbell' | 'home', string[]> = { barbell: ['Squat', 'Bench
  * sits under the group, once (look 4, "Waiting on a referee").
  */
 export function NineRow({ row, division, label = 'Your nine attempts' }: { row: RowCell[]; division: 'barbell' | 'home'; label?: string }) {
+  const rw = useRefereeWords();
   return (
     // item 85 (look 4 "Not judged"): a void slot's NOT JUDGED sits under its group where WAITING goes
     <div className="nine wait-below" aria-label={label}>
@@ -42,7 +44,7 @@ export function NineRow({ row, division, label = 'Your nine attempts' }: { row: 
               {cells.map(c => {
                 const name = `${liftWord(c.lift, division)} ${c.number}`;
                 const said = c.state === 'white' ? 'good lift' : c.state === 'red' ? 'no lift'
-                  : c.state === 'waiting' ? 'waiting for a referee' : c.state === 'now' ? 'now' : '';
+                  : c.state === 'waiting' ? rw.waitingFor : c.state === 'now' ? 'now' : '';
                 const aria = c.state === 'void' ? notJudgedLabel(liftWord(c.lift, division), c.number, c.voidReason) : said ? `${name}, ${said}` : name;
                 return (
                   <div key={c.number} className={`slot ${c.state}`} aria-label={aria} role="img">

@@ -2,6 +2,7 @@
 // `referee_jobs`; the dispatcher starts `referee_frames` for each; the worker here, in the web
 // service, leases ready jobs (up to 4 at once) and asks Claude for three lamps; the lights land
 // as a referee's do. When it can't run, the job is `doubt`: three whites, the benefit of the doubt.
+import { botOn } from '@/lib/referee/words';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
@@ -36,7 +37,7 @@ export const TEST_ANSWERS_KEY = 'referee_test_answers';
 export type DoubtReason = 'no_key' | 'spend_limit' | 'api_failing' | 'too_slow' | 'no_frames';
 
 /** Item 103: off until the referee bot test (step 11) passes. */
-export const botOn = (env: Record<string, string | undefined> = process.env) => env.REFEREE_BOT === 'on';
+export { botOn };
 export const hasKey = (env: Record<string, string | undefined> = process.env) => !!env.ANTHROPIC_API_KEY;
 /** Staging only, never production (step 7, as item 86's buttons). */
 export const testAnswersAllowed = (env: Record<string, string | undefined> = process.env) =>

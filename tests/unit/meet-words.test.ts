@@ -30,6 +30,7 @@ describe('meet words', () => {
   it('a Barbell bench goes to a referee (3.4b): "To a referee", unlit lamps, the plan\'s sentence', () => {
     expect(meetResult(a({ call: 'close', reason: 'bench_referee', lift: 'bench' }))).toEqual({
       title: 'To a referee',
+      bench: true,
       body: 'A referee judges every bench from your video, usually within 15 minutes. You can take your next attempt while you wait.',
       lamps: ['off', 'off', 'off'],
     });
@@ -46,8 +47,6 @@ describe('meet words', () => {
       voidTitle: 'We lost the bar',
       voidBody: "So we couldn't give you the start. This one doesn't count against you.",
       filmAgain: 'Film again',
-      sending: 'Sending to the referee',
-      looking: 'A referee is looking at this one',
     });
   });
 

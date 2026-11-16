@@ -3,6 +3,7 @@
 import type { Lift } from '@/db/schema';
 import { LIFTS, attemptScore, type MeetAttempt, type Units } from '@/lib/meet';
 import { liftCaps, liftLower, liftWord } from '@/lib/stage/meet-words';
+import { refereeWords } from '@/lib/referee/words';
 
 type Division = 'barbell' | 'home';
 type Link = { label: string; href: string };
@@ -62,6 +63,6 @@ export function bombedWords(lift: Lift, division: Division, demo: boolean) {
   };
 }
 
-/** Waiting on a referee (5.28). */
-export const waitingBody = (on: Pick<MeetAttempt, 'lift' | 'number'>, division: Division) =>
-  `A referee is still looking at ${liftWord(on.lift, division)} ${on.number}. Your total lands as soon as they're done. Usually within 15 minutes.`;
+/** Waiting on a referee (5.28): a referee, or the referee bot once it's on (item 88). */
+export const waitingBody = (on: Pick<MeetAttempt, 'lift' | 'number'>, division: Division, bot = false) =>
+  refereeWords(bot).waitingBody(`${liftWord(on.lift, division)} ${on.number}`);

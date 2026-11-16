@@ -25,6 +25,8 @@ import { DeepestFrames, liftMarks, type LiftMarks, type Snap } from '@/lib/stage
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { heldFrameMs } from '@/lib/stage/held-frame';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
+import { useRefereeBot } from '@/components/referee-bot';
+import { refereeWords } from '@/lib/referee/words';
 import {
   COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
   setupLine, spotLineShown, standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
@@ -135,6 +137,9 @@ async function getJson(path: string, init?: RequestInit) {
 
 export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = false, strip, onBusy, closesAt = null, anyJudged = false }: MeetAttemptProps) {
   const [win, setWin] = useState<WindowStop | null>(null);
+  // item 88: close calls and benches go to the referee bot once REFEREE_BOT is on (item 103)
+  const bot = useRefereeBot();
+  const rw = refereeWords(bot);
   // "Use a sample lift instead" is the demo meet's only (5.36): a real meet's lifts are filmed
   const demo = demoReferee;
   const first = attempt;
@@ -281,8 +286,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // 45 s or 90 s lines; it waits, pulsing, for the referee's lights
     let lookingAt = closeNow ? -Infinity : t0;
     if (!closeNow) {
-    // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee", with no panel
-    setPhase('held'); setCommand(null); setWaitLine(bench ? MEET_WORDS.bench.sending : MEET_WORDS.sending);
+    // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee (bot)", with no panel
+    setPhase('held'); setCommand(null); setWaitLine(bench ? rw.benchSending : MEET_WORDS.sending);
     const ok = await sent;
     if (!ok || !alive()) return;
     await sleep(Math.max(0, SENDING_MIN_MS - (performance.now() - t0)));
@@ -292,8 +297,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // once it's sent: the close call's pulse and line, and "To a referee" in the panel, with no
       // thock, spill or total drop (nothing was judged). Then her clip: the last 2 s, and the
       // "Press!" frame held with the bar's path.
-      setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(MEET_WORDS.bench.looking);
-      setResult(meetResult({ call: 'close', lights: null, reason: 'bench_referee', red_rep: null, reps_declared: null, lift: attempt.lift }));
+      setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(rw.looking);
+      setResult(meetResult({ call: 'close', lights: null, reason: 'bench_referee', red_rep: null, reps_declared: null, lift: attempt.lift }, bot));
       setPhase('close'); setResultOn(true);
       await wait(900);
       if (!alive()) return;
@@ -346,10 +351,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
           if (!alive()) return;
           clearTimeout(t45); clearTimeout(t90); clearInterval(every);
-          setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
+          setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(rw.looking);
           const shownC = s.shown_lift ?? attempt.lift;
           setShownLift(shownC);
-          setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+          setResult(meetResult({ ...s, lift: attempt.lift }, bot)); setPhase('close'); setResultOn(true);
           // look step 10 (LookieBot 1): while a referee looks, the stage holds the judged frame with its marks,
           // as after the lights: the server's judged moment when it says which, else the phone's own
           let judged = snap;
@@ -366,7 +371,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
       if (!alive()) return;
       const s = state as unknown as State;
-      const res = meetResult({ ...s, lift: attempt.lift })!;
+      const res = meetResult({ ...s, lift: attempt.lift }, bot)!;
       const shown = s.shown_lift ?? attempt.lift;
       setShownLift(shown);
       // a close call that opened settled lights its lamps, spill and result as any other (F-E); its
@@ -407,7 +412,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       if (bench && path) setBenchPath(path);
       setPhase('hold');
     } finally { stop(); }
-  }, [attempt.lift, bench]);
+  }, [attempt.lift, bench, bot, rw]);
 
   /** Sends the saved recording, telling the stage how it goes; resolves once the server has it. */
   const send = useCallback((alive: () => boolean, attemptId: string) => {
@@ -933,7 +938,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (st?.sample) { setResumedSample(true); if (st.sample_clip) setSample({ credit: st.sample_clip.credit, reps: st.sample_clip.reps }); }
     if (st?.call === 'white' || st?.call === 'red') {
       const shown = st.shown_lift ?? attempt.lift;
-      const res = meetResult({ ...st, lift: attempt.lift })!;
+      const res = meetResult({ ...st, lift: attempt.lift }, bot)!;
       setShownLift(shown); setSettledOpen(true);
       setResult(res); setLamps(res.lamps); setSpill(st.call === 'white' ? 'white' : 'red');
       setResultOn(true); setWaitLine(''); setBusy(false); setPhase('hold');
@@ -947,8 +952,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (st?.call === 'close') {
       setShownLift(st.shown_lift ?? attempt.lift); setSettledOpen(true);
       setLamps(['pulse', 'pulse', 'pulse']); setCommand(null);
-      setWaitLine(bench ? MEET_WORDS.bench.looking : 'A referee is looking at this one');
-      setResult(meetResult({ ...st, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+      setWaitLine(rw.looking);
+      setResult(meetResult({ ...st, lift: attempt.lift }, bot)); setPhase('close'); setResultOn(true);
       // the judged frame and its marks (LookieBot 1), else the held frame
       const judged = bench ? null : await snapAt().catch(() => null);
       if (!alive()) return;
@@ -964,7 +969,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (!alive()) return;
     freeze(snap);
     await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt);
-  }, [attempt.id, attempt.lift, bench, send, awaitLights]);
+  }, [attempt.id, attempt.lift, bench, send, awaitLights, bot, rw]);
 
   const start = (m: Mode) => {
     // her tap: an iPhone that allowed motion before gets it back with no question (look 4b)
@@ -1218,7 +1223,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               {sound ? <SpeakerHigh weight="bold" /> : <SpeakerSlash weight="bold" />}
             </button>
           </div>
-          <Lamps states={lamps} settled={settledOpen} />
+          <Lamps states={lamps} settled={settledOpen} bot={bot} />
           <WaitLine text={waitLine} lineRef={waitLineRef} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
@@ -1321,7 +1326,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
                 <hr className="rule" />
                 <div className="try-actions">
                   {onNext && <button className={nextGhost ? 'btn ghost' : 'btn'} type="button" onClick={onNext}>{nextLabel}</button>}
-                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{result?.title === 'To a referee' ? MEET_WORDS.bench.refereeLink : MEET_WORDS.refereeLink}</Link>}
+                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{result?.bench ? rw.benchRefereeLink : rw.refereeLink}</Link>}
                 </div>
               </div>
             )}
