@@ -5,8 +5,8 @@
 //
 // Usage (from the repo root):
 //   TSX_TSCONFIG_PATH=web/tsconfig.json npx tsx tests/referee-bot/run.ts --set tests/referee-bot/calls.json \
-//     --frames <recut.py --out folder> --out tests/referee-bot/results/run-1.json [--holdout] [--test red_white_white] [--only ID,...]
-// Without --holdout the held-back attempts (holdout.json) are skipped; with it, only they run.
+//     --frames <recut.py --out folder> --out tests/referee-bot/results/run-1.json [--holdout | --all] [--test red_white_white] [--only ID,...]
+// Run 1 skips the held-back attempts (holdout.json); --holdout runs only them; --all (the final runs) runs the whole set.
 // --test fakes only Anthropic's answers (lamps.ts's staging test answers), so the whole path runs with no key and no cost.
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -45,6 +45,8 @@ async function main() {
   if (frames.set_sha256 !== sha(setRaw)) throw new Error('frames.json was cut from a different set file: run recut.py again');
   const holdout: string[] = JSON.parse(readFileSync(join(dirname(setPath), 'holdout.json'), 'utf8')).attempts;
   const heldBack = process.argv.includes('--holdout');
+  const all = process.argv.includes('--all');
+  if (all && heldBack) throw new Error('--all or --holdout, not both');
   const only = arg('only')?.split(',');
   const test = (arg('test') ?? null) as TestAnswers | null;
   if (test && !(TEST_ANSWERS as readonly string[]).includes(test)) throw new Error(`--test is one of ${TEST_ANSWERS.join(', ')}`);
@@ -53,7 +55,7 @@ async function main() {
 
   const rows = [];
   for (const a of set.attempts) {
-    if (only ? !only.includes(a.id) : holdout.includes(a.id) !== heldBack) continue;
+    if (only ? !only.includes(a.id) : !all && holdout.includes(a.id) !== heldBack) continue;
     const got = frames.attempts[a.id];
     if (!got) throw new Error(`${a.id}: not in frames.json`);
     // the store the prefix reads: recut.py's JPEGs, each checked against its hash
@@ -82,11 +84,11 @@ async function main() {
     const cost = out.calls.reduce((s, c) => s + c.cost_usd, 0);
     const row = out.kind === 'lamps'
       ? {
-          id: a.id, group: a.group, key: a.call, eye_pause_s: a.eye_pause_s ?? null, measured, frames: refFrames.length, words,
+          id: a.id, group: a.group, key: a.call, held_back: holdout.includes(a.id), eye_pause_s: a.eye_pause_s ?? null, measured, frames: refFrames.length, words,
           lights: out.lamps.map(l => l.answer.light), call: callOf(out.lamps.map(l => l.answer.light)),
           answers: out.lamps.map(l => ({ lamp: l.lamp, ...l.answer })), cost_usd: +cost.toFixed(4), ms: Date.now() - t0, calls: out.calls,
         }
-      : { id: a.id, group: a.group, key: a.call, eye_pause_s: a.eye_pause_s ?? null, measured, frames: refFrames.length, words, failed: out.why, cost_usd: +cost.toFixed(4), calls: out.calls };
+      : { id: a.id, group: a.group, key: a.call, held_back: holdout.includes(a.id), eye_pause_s: a.eye_pause_s ?? null, measured, frames: refFrames.length, words, failed: out.why, cost_usd: +cost.toFixed(4), calls: out.calls };
     rows.push(row);
     console.log(`${a.id} (${a.call}): ${out.kind === 'lamps' ? `${out.lamps.map(l => l.answer.light).join(' ')} -> ${callOf(out.lamps.map(l => l.answer.light))}` : `failed: ${out.why}`}, $${row.cost_usd}`);
   }
@@ -95,7 +97,7 @@ async function main() {
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, JSON.stringify({
     calls_sha256: sha(setRaw), prompt_sha256: sha(readFileSync(join(__dirname, '../../web/lib/referee/prompt.md'))),
-    model: MODEL, test, held_back: heldBack, commit, at: new Date().toISOString(),
+    model: MODEL, test, runs: all ? 'all' : heldBack ? 'held_back' : only ? 'only' : 'run_1', commit, at: new Date().toISOString(),
     cost_usd: +rows.reduce((s, r) => s + r.cost_usd, 0).toFixed(4), attempts: rows,
   }, null, 1));
 }

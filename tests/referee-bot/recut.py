@@ -4,8 +4,9 @@ Reads a set file (calls.json) and, for each attempt, runs the worker's own frame
 `referee_frames.make_frames`, on the attempt's stretch of its clip. So the frames here are
 exactly the ones the product sends: the same picks, stamps, size and JPEG quality, and on the
 bench the same poses. Writes frames.json: for each attempt the frame times and each JPEG's
-SHA-256, so any later run can show it used the same frames. JPEGs are written only for clips
-the repo may hold (`free: true`); the rest are fetched again by whoever reruns this.
+SHA-256, so any later run can show it used the same frames. Every attempt's JPEGs are written,
+since run.ts reads them all, but only those of clips the repo may hold (`free: true`) are
+committed (5.2); the rest are made again from the clip by whoever reruns this.
 
 Each attempt in the set file:
   {"id": "...", "clip": "<path, from the repo root or the clips folder>", "free": true|false,
@@ -69,12 +70,11 @@ def main(argv: list[str] | None = None) -> int:
             'bench_poses': bench_poses,
             'frames': [{'n': n, 't_ms': t, 'sha256': hashlib.sha256(j).hexdigest()} for n, (t, j) in enumerate(frames)],
         }
-        if a.get('free'):
-            d = os.path.join(o.out, 'jpeg', a['id'])
-            os.makedirs(d, exist_ok=True)
-            for n, (_, j) in enumerate(frames):
-                with open(os.path.join(d, f'{n:02d}.jpg'), 'wb') as f:
-                    f.write(j)
+        d = os.path.join(o.out, 'jpeg', a['id'])
+        os.makedirs(d, exist_ok=True)
+        for n, (_, j) in enumerate(frames):
+            with open(os.path.join(d, f'{n:02d}.jpg'), 'wb') as f:
+                f.write(j)
         print(f"{a['id']}: {len(frames)} frames" + ('' if bench_poses is None else f", bench poses {'found' if bench_poses else 'not found'}"), flush=True)
         with open(out_json, 'w') as f:
             json.dump(done, f, indent=1, sort_keys=True)

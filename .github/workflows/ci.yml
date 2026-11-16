@@ -81,6 +81,8 @@ jobs:
       # and neither the runner nor Render's native runtime has them (worker/vendor_gl.py)
       - run: pip install -r worker/requirements.txt && python worker/vendor_gl.py
       - run: python -m unittest discover worker/tests
+      # the referee bot test's score.py recounts every line (plan 3.4d step 11)
+      - run: python -m unittest discover tests/referee-bot
       - run: npx vitest run -c tests/worker/vitest.config.ts --silent=false
         env:
           WORKER_PYTHON: python
