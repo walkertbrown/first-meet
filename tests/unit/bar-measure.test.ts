@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BarCaller, checkCommandTimes, measureBar, plateTap, shadowLights, type BarPoint } from '../../web/lib/judge';
+import { BAR_RULES, BarCaller, checkCommandTimes, markStuck, measureBar, plateTap, shadowLights, stuckStretches, type BarPoint } from '../../web/lib/judge';
 
 const DIMS = { w: 284, h: 160 };
 const TAP = { x: 0.5, y: 0.3, size: 0.08 };
@@ -146,5 +146,144 @@ describe('measureBar', () => {
     const e = measureBar(ec.pts, ecCt, ec);
     expect(e.shadow).toEqual({ light: 'red', reason: 'no_pause' });
     expect(e.server_commands.map(x => [x.cmd, x.t])).toEqual([['start', ecCt.start], ['press', ecCt.press], ['rack', ecCt.rack]]);
+  });
+});
+
+// 3.4b, item 108: a track that sticks at a lower score, found after the lift. Still to 0.002 in x and y for 0.8 s
+// or more, counted on frames between Start! and Rack! only (reading (a)), the length in frames × the frame time.
+describe('the stuck-track guard (item 108)', () => {
+  /** GOOD's path with the bar frozen dead still (the tracker stuck) over [a, b] ms. */
+  const frozen = (a: number, b: number, y = GOOD): BarPoint[] =>
+    path(y).map(p => (p[0] >= a && p[0] <= b ? [p[0], 0.5, 0.42, 0.6] : p));
+  const frames = (pts: BarPoint[], [a, b]: [number, number]) => pts.filter(p => p[0] >= a && p[0] <= b).length;
+
+  it('12 frames at 15 fps is 0.8 s and caught; 11 is not; a moving bar never is', () => {
+    expect(BAR_RULES.stuckMs).toBe(800);
+    expect(BAR_RULES.stuckStill).toBe(0.002);
+    // 12 frames is 733 ms last-to-first on rounded ms: by frames × frame time it is 800 ms
+    const p12 = frozen(3000, 3000 + 11 * STEP + 1);
+    const s12 = stuckStretches(p12, CT);
+    expect(s12).toHaveLength(1);
+    expect(frames(p12, s12[0])).toBe(12);
+    // an 11-frame still inside the window isn't marked
+    const p11 = frozen(3000, 3000 + 10 * STEP + 1);
+    expect(p11.filter(q => q[1] === 0.5 && q[2] === 0.42)).toHaveLength(11);
+    expect(stuckStretches(p11, CT)).toEqual([]);
+    expect(stuckStretches(path(GOOD), CT)).toEqual([]);
+    // still, but only within 0.003: not stuck
+    const wobble = path(GOOD).map((p, i) => (p[0] >= 3000 && p[0] <= 4500 ? [p[0], 0.5 + (i % 2) * 0.003, 0.42, 0.9] : p)) as BarPoint[];
+    expect(stuckStretches(wobble, CT)).toEqual([]);
+  });
+
+  it('whatever the score: a stuck stretch at a perfect match is still caught', () => {
+    const p = path(GOOD).map(q => (q[0] >= 3000 && q[0] <= 4400 ? [q[0], 0.5, 0.42, 1] : q)) as BarPoint[];
+    expect(stuckStretches(p, CT)).toHaveLength(1);
+  });
+
+  it('only frames inside Start!–Rack! count: a still bar on the hooks, or across Start!, counts only its part inside', () => {
+    // dead still from 0 to 2.6 s: 1.6 s of it before Start! (2.0 s), 0.6 s after
+    const hooks = path(GOOD).map(q => (q[0] <= 2600 ? [q[0], 0.5, 0.3, 0.9] : q)) as BarPoint[];
+    expect(stuckStretches(hooks, CT)).toEqual([]);
+    // with Start! at 1.0 s, 1.6 s of it is inside: caught, from Start! on
+    const s = stuckStretches(hooks, ct({ start: 1000, press: 4300 }));
+    expect(s).toHaveLength(1);
+    expect(s[0][0]).toBeGreaterThanOrEqual(1000);
+    // and after Rack! (6.2 s), or with no Start!, nothing is looked at
+    const racked = path(GOOD).map(q => (q[0] >= 5800 ? [q[0], 0.5, 0.3, 0.9] : q)) as BarPoint[];
+    expect(stuckStretches(racked, CT)).toEqual([]);
+    expect(stuckStretches(frozen(3000, 4500), ct({ start: null }))).toEqual([]);
+  });
+
+  // Her lockout hold (The Playner, 2:27 AM): after Press! (or the lowest point), within the back-up band of Start!
+  // height, it's left alone. GOOD is back at 0.30 by 5.5 s; the band is 5% of its 0.15 travel, 0.0075.
+  const LONG = ct({ press: 4300, rack: 7600 });
+  const held = (a: number, b: number, y: number, f = GOOD): BarPoint[] => path(f).map(q => (q[0] >= a && q[0] <= b ? [q[0], 0.5, y, 0.9] : q));
+  it('her lockout hold after Press!, within the back-up band, is never marked; with no Press!, after the lowest point', () => {
+    const p = held(5600, 7500, 0.3);
+    expect(stuckStretches(p, LONG, { ...BAR_RULES, rackRel: -1e9 })).toHaveLength(1); // still enough to be caught
+    expect(stuckStretches(p, LONG)).toEqual([]);
+    expect(markStuck(p, LONG).stuck).toEqual([]);
+    expect(stuckStretches(p, ct({ rack: 7600 }))).toEqual([]);
+    // the same still bar starting before Press! is a stick, and caught
+    expect(stuckStretches(held(4200, 5500, 0.42), LONG)).toHaveLength(1);
+  });
+  it('a still stretch after Press! below the back-up band, on the way up, is still marked', () => {
+    // up from the bottom to 0.40 by 4.8 s, stuck there to 5.8 s, then on up to 0.30 by 6.5 s
+    const up = knots([[0, 0.3], [2000, 0.3], [3500, 0.45], [4500, 0.45], [4800, 0.4], [5800, 0.4], [6500, 0.3]]);
+    const p = held(4800, 5800, 0.4, up);
+    const st = stuckStretches(p, LONG);
+    expect(st).toHaveLength(1);
+    expect(st[0][0]).toBeGreaterThan(4300);
+    // just inside the band (0.3 + 0.0075) it would be a hold
+    expect(stuckStretches(held(4800, 5800, 0.307, knots([[0, 0.3], [2000, 0.3], [3500, 0.45], [4500, 0.45], [4800, 0.307], [5800, 0.307], [6500, 0.3]])), LONG)).toEqual([]);
+  });
+
+  it('markStuck marks the stuck frames lost (score 0) and nothing else', () => {
+    const p = frozen(3000, 4400);
+    const { path: g, stuck } = markStuck(p, CT);
+    expect(stuck).toHaveLength(1);
+    g.forEach((q, i) => {
+      const inside = q[0] >= stuck[0][0] && q[0] <= stuck[0][1];
+      expect(q[3]).toBe(inside ? 0 : p[i][3]);
+      expect(q.slice(0, 3)).toEqual(p[i].slice(0, 3));
+    });
+    const clean = path(GOOD);
+    expect(markStuck(clean, CT)).toEqual({ path: clean, stuck: [] });
+  });
+
+  it('a stuck frame near the pause: pause_lost, no pause and no sink; the same path unguarded measured a wrong pause', () => {
+    // stuck on the way down at 0.42 from 3.2 s to 4.4 s; Press! at 4.3 s
+    const p = frozen(3200, 4400);
+    const bad = measureBar(p, CT, DIMS);
+    expect(bad.pause_lost).toBe(false);
+    const { path: g } = markStuck(p, CT);
+    const m = measureBar(g, CT, DIMS);
+    expect(m.pause_lost).toBe(true);
+    expect(m.pause_s).toBeNull();
+    expect(m.sink).toBeNull();
+    expect(m.press_while_sinking).toBe(false);
+    expect(measureBar(path(GOOD), CT, DIMS).pause_lost).toBe(false);
+  });
+
+  it('a lost frame more than 0.5 s before the lowest point leaves the pause measured', () => {
+    // lost from 2.3 s to 2.6 s on the way down; the lowest point is at about 3.5 s or later
+    const m = measureBar(path(GOOD, 8000, t => t > 2300 && t < 2600), CT, DIMS);
+    expect(m.pause_lost).toBe(false);
+    expect(m.pause_s!).toBeGreaterThan(0.5);
+    // lost at the bottom, before Press!: pause_lost
+    expect(measureBar(path(GOOD, 8000, t => t > 3900 && t < 4100), CT, DIMS).pause_lost).toBe(true);
+  });
+
+  // The server's own plate tracks (tests/bench-commands/server.py): IA0P sticks on reps 1 and 3, z838 from rep 1's way
+  // down to its end. Rep 3 of IA0P is 16 frames, 1.07 s by frames: NerdCider's edge, pinned (Nov 16, 2:20 AM).
+  const server = (id: string) => JSON.parse(readFileSync(join(__dirname, `../bench-commands/data/server/${id}.json`), 'utf8')) as BarPoint[];
+  const near = (got: [number, number][], want: [number, number][]) => {
+    expect(got).toHaveLength(want.length);
+    got.forEach(([a, b], i) => { expect(Math.abs(a - want[i][0])).toBeLessThan(40); expect(Math.abs(b - want[i][1])).toBeLessThan(40); });
+  };
+  it("the server's tracks: IA0P's reps 1 and 3, z838's long stick, and none on a real 1 s pause", () => {
+    const ia = server('IA0PhDBzsz0');
+    const st = stuckStretches(ia, ct({ start: 6800, rack: 18880 }));
+    near(st, [[8600, 9867], [16533, 17533]]);
+    expect(frames(ia, st[1])).toBe(16);
+    // each rep's own cut (the set), and the whole clip, agree on rep 3
+    near(stuckStretches(ia, ct({ start: 14600, rack: 18880 })), [[16533, 17533]]);
+    // marked lost, so the cut's pause is not measured
+    const { path: g } = markStuck(ia, ct({ start: 14600, rack: 18880 }));
+    expect(g.filter(p => p[0] >= 16533 && p[0] <= 17533).every(p => p[3] === 0)).toBe(true);
+    near(stuckStretches(server('z838WQVSBmk'), ct({ start: 0, rack: 13900 })), [[2133, 13867]]);
+    // rep 3 cut with the phone caller's own calls (the set's IA0P-r3-stuck): caught, and Press! (16.82 s) falls in it
+    const cut3 = ct({ start: 15210, press: 16820, rack: 18890 });
+    near(stuckStretches(ia, cut3), [[16533, 17533]]);
+    expect(measureBar(markStuck(ia, cut3).path, cut3, DIMS).pause_lost).toBe(true);
+    // hIuj's lost-track cut: her 1.67 s hold at arm's length for a late Rack! is left alone (NerdCider, 2:23 AM)
+    const hi = server('hIuj1H1WOxM'), hiLost = ct({ start: 1035, press_late: 3535, press_late_why: 'lost', rack: 6535 });
+    expect(stuckStretches(hi, hiLost)).toEqual([]);
+    near(stuckStretches(hi, hiLost, { ...BAR_RULES, rackRel: -1e9 }), [[4267, 5867]]);
+    // the three real pauses of 1.0 s or more (KrDo, uGCh, Nazt), the whole clip: nothing caught
+    for (const id of ['KrDo', 'uGCh', 'Nazt']) {
+      const tr = server(id);
+      expect(stuckStretches(tr, ct({ start: tr[0][0], rack: tr.at(-1)![0] }))).toEqual([]);
+    }
   });
 });

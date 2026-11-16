@@ -49,6 +49,10 @@ def lost(a):
     return a.get('cut') == 'lost' or (a.get('command_times') or {}).get('press_late_why') == 'lost'
 
 
+def pause_lost(a):
+    return bool((a.get('measures') or {}).get('pause_lost'))
+
+
 def cost_of(c):
     return (c['input'] * PRICE['input'] + c['cache_write'] * PRICE['cache_write']
             + c['cache_read'] * PRICE['cache_read'] + c['output'] * PRICE['output']) / 1e6
@@ -138,9 +142,16 @@ def lines(rows, set_by_id, label):
     total = sum(cost_of(c) for r in rows for c in r.get('calls') or [])
     out.append(('cost written matches the tokens', not off, f'${total:.2f} at step 10 prices; {len(off)} off: {"; ".join(off[:5])}'))
 
-    # the guard: a lost-track bench is never sent a pause figure or the sinking line
-    leaks = [r['id'] for r in rows if lost(set_by_id[r['id']]) and any(m.startswith(LOST_FORBIDDEN) for m in r.get('measured') or [])]
+    # the guard: a lost-track bench, or one whose server path lost or stuck near the pause (item 108), is never sent
+    # a pause figure or the sinking line
+    leaks = [r['id'] for r in rows if (lost(set_by_id[r['id']]) or pause_lost(set_by_id[r['id']]))
+             and any(m.startswith(LOST_FORBIDDEN) for m in r.get('measured') or [])]
     out.append(('no pause figure or sinking line on a lost bar', not leaks, f'{len(leaks)}: {", ".join(leaks) or "none"}'))
+
+    # 3.4d step 11, item 108: "Press! inside a stuck stretch" counts like any bench, and the results name it
+    for r in rows:
+        if set_by_id[r['id']].get('cut') == 'stuck':
+            notes.append(f'Press! inside a stuck stretch: {r["id"]} -> {call[r["id"]] or "failed"} (answer {r["key"]})')
 
     failed = [r['id'] for r in rows if 'failed' in r]
     if failed:

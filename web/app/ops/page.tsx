@@ -64,6 +64,7 @@ export default async function Page() {
           <section className="ops-section ops-errors" aria-labelledby="ops-ERRORS">
             <h2 className="eyebrow" id="ops-ERRORS">ERRORS</h2>
             {n.clipsFailed > 0 && <p className="ops-row"><span>Clips that failed · <span className="num">{n.clipsFailed}</span></span></p>}
+            <p className="ops-row"><span>Stuck bar tracks · <span className="num">{n.stuckTracks}</span></span></p>
             {n.errors.length === 0 ? <p className="small">No errors yet.</p> : (
               <ol>
                 {n.errors.map((e, i) => (

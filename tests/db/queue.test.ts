@@ -118,12 +118,37 @@ describe.skipIf(!URL_)('the judge queue', () => {
       expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', lights: null, barKey: `bar/${id}.json`, shadowLights: ['white', 'white', 'white'] });
       expect(a.measures).toMatchObject({ press_while_sinking: false, lost_share: 0, lost_after_start: false, shadow: { light: 'white' }, commit: 'abc1234' });
       expect((a.measures as { pause_s: number }).pause_s).toBeGreaterThan(0.5);
-      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ tap, path: tr.pts });
+      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ tap, path: tr.pts, stuck: [] });
+      expect(a.measures).toMatchObject({ stuck: [], pause_lost: false });
       expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
       const [ev] = await db.select().from(events).where(sql`${events.kind} = 'close_call' and ${events.attemptId} = ${id}`);
-      expect(ev.detail).toMatchObject({ reason: 'bench_referee', shadow: { light: 'white' }, bar_secs: 1.5 });
+      expect(ev.detail).toMatchObject({ reason: 'bench_referee', shadow: { light: 'white' }, bar_secs: 1.5, stuck: 0 });
       // posting it again changes nothing
       expect(await takeBar(db, store, post!)).toMatchObject({ status: 404 });
+    });
+
+    it("a track stuck at the bottom (item 108): marked lost before it's saved or measured, so the pause isn't measured", async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await markUploaded(db, store, id, BENCH_CT);
+      const w = await worker('w-bench-stuck');
+      await claimNext(db, store, w);
+      // the tracker sticks from 0.6 s before Press! to 0.6 s after it
+      const at = BENCH_CT.press, y = tr.pts.find(p => p[0] >= at)![2];
+      const stuckPath = tr.pts.map(p => (p[0] >= at - 600 && p[0] <= at + 600 ? [p[0], 0.5, y, 0.8] : p)) as BarPoint[];
+      expect(await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: stuckPath })).toEqual({ status: 200, call: 'close' });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      const m = a.measures as { stuck: [number, number][]; pause_lost: boolean; pause_s: number | null; sink: number | null };
+      expect(m.stuck).toHaveLength(1);
+      expect(m.stuck[0][0]).toBeGreaterThanOrEqual(at - 600);
+      expect(m.stuck[0][1]).toBeLessThanOrEqual(at + 600);
+      expect([m.pause_lost, m.pause_s, m.sink]).toEqual([true, null, null]);
+      const saved = store.objects.get(`bar/${id}.json`) as { path: BarPoint[]; stuck: [number, number][] };
+      expect(saved.stuck).toEqual(m.stuck);
+      expect(saved.path.filter(p => p[0] >= m.stuck[0][0] && p[0] <= m.stuck[0][1]).every(p => p[3] === 0)).toBe(true);
+      expect(saved.path.filter(p => p[0] < at - 600).map(p => p[3])).toEqual(tr.pts.filter(p => p[0] < at - 600).map(p => p[3]));
+      const [ev] = await db.select().from(events).where(sql`${events.kind} = 'close_call' and ${events.attemptId} = ${id}`);
+      expect(ev.detail).toMatchObject({ reason: 'bench_referee', stuck: 1 });
     });
 
     it('broken command times: still to a referee, as a command_times close call', async () => {

@@ -5,7 +5,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '@/db/schema';
-import { checkCommandTimes, judgeAttempt, measureBar, mergePasses, plateTap, shadowLights, zoomWindows, type BarPoint, type Frame, type MeetLift, type PlateTap } from '@/lib/judge';
+import { checkCommandTimes, judgeAttempt, markStuck, measureBar, mergePasses, plateTap, shadowLights, zoomWindows, type BarPoint, type Frame, type MeetLift, type PlateTap } from '@/lib/judge';
 import { keys } from '@/lib/r2';
 import { sampleJudgedMs, sampleOfAttempt } from '@/lib/sample-clip';
 
@@ -256,11 +256,13 @@ export async function takeBar(db: Db, store: Store, p: BarPost):
   const a = held.a;
   const ct = a.commandTimes;
   const problem = checkCommandTimes(ct, 'bench', Math.round(p.duration * 1000));
-  const m = !problem && ct ? measureBar(p.path, ct, { w: p.w, h: p.h }) : null;
+  // item 108: the stuck stretches between Start! and Rack! are marked lost before anything reads the path
+  const { path, stuck } = !problem && ct ? markStuck(p.path, ct) : { path: p.path, stuck: [] };
+  const m = !problem && ct ? measureBar(path, ct, { w: p.w, h: p.h }) : null;
   const barKey = keys.bar(a.id);
-  await store.putJson(barKey, { w: p.w, h: p.h, duration: p.duration, tap: plateTap(ct), path: p.path, commit: p.commit ?? null });
+  await store.putJson(barKey, { w: p.w, h: p.h, duration: p.duration, tap: plateTap(ct), path, stuck, commit: p.commit ?? null });
   const reason = problem ? 'command_times' : 'bench_referee';
-  const measures = problem ? { command_times: problem, commit: p.commit ?? null } : { ...m!, commit: p.commit ?? null };
+  const measures = problem ? { command_times: problem, commit: p.commit ?? null } : { ...m!, stuck, commit: p.commit ?? null };
   const done = await db.transaction(async tx => {
     const gone = await tx.delete(judgeQueue)
       .where(and(eq(judgeQueue.attemptId, a.id), eq(judgeQueue.kind, 'poses'), eq(judgeQueue.workerId, p.worker_id)))
@@ -276,7 +278,7 @@ export async function takeBar(db: Db, store: Store, p: BarPost):
   });
   if (!done) return { status: 409, error: 'not held by this worker' };
   await logEvent(db, 'close_call', {
-    reason, ...(problem ? { command_times: problem } : {}), shadow: m?.shadow ?? null, press_while_sinking: m?.press_while_sinking ?? null,
+    reason, ...(problem ? { command_times: problem } : {}), shadow: m?.shadow ?? null, press_while_sinking: m?.press_while_sinking ?? null, stuck: stuck.length,
     bar_secs: p.secs ?? null, download_secs: p.download_secs ?? null, clip_s: p.duration, commit: p.commit ?? null, worker_id: p.worker_id,
   }, a.id);
   console.log(JSON.stringify({ msg: 'bench to a referee', attempt_id: a.id, reason, bar_secs: p.secs }));

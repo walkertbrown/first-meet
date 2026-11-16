@@ -58,11 +58,92 @@ export type BarMeasures = {
   lost_share: number | null;
   /** The phone called a late Press! after losing the bar (`press_late_why: lost`). */
   lost_after_start: boolean;
+  /**
+   * A lost or stuck frame fell from `pauseLostMs` before the path's lowest seen point to Press! (or Rack!), so the
+   * pause isn't measured across it (item 108): "Pause: not measured. The phone lost the bar.", and no sinking line.
+   */
+  pause_lost: boolean;
   /** The bar's own call, by item 70's rules. */
   shadow: ShadowCall;
   /** What the server's own caller called on its path, for information. */
   server_commands: { cmd: BarCmd['cmd']; t: number; late?: boolean; why?: PressLateWhy; void?: boolean }[];
 };
+
+/**
+ * 3.4b, item 108, "A track that sticks at a lower score, found after the lift": the stretches between "Start!" and
+ * "Rack!" (or the path's end) where x and y both stay within `stuckStill` of the frame for `stuckMs` or more,
+ * whatever the score. A racked bar or her setting up is still too, so only that window is checked. A stretch's
+ * length is its number of frames times the frame time (the mean gap between the window's frames, dropped frames left out), never last time
+ * minus first on rounded ms (The Playner, Nov 16, 2:21 AM): 16 frames at 15 fps is 1.07 s.
+ *
+ * Her lockout hold is never marked (The Playner, 2:27 AM; NerdCider, 2:23 AM: hIuj's lost-track cut holds still
+ * 1.67 s at arm's length for a late "Rack!"): a stretch that starts after "Press!" (or after the path's lowest seen
+ * point when there's no "Press!") and stays within the back-up band, `rackRel` of the rep's travel from its Start!
+ * height, is left alone. A still stretch after "Press!" below that band, on the way up, is still marked.
+ * Returns [first, last] ms of each stretch.
+ */
+export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES): [number, number][] {
+  const start = ct.start ?? null;
+  if (start === null || !path.length) return [];
+  const end = ct.rack ?? path[path.length - 1][0];
+  const w = path.filter(([t]) => t >= start && t <= end);
+  const out: [number, number][] = [];
+  if (w.length < 2) return out;
+  const gaps = w.slice(1).map(([t], k) => t - w[k][0]).sort((a, b) => a - b);
+  // the mean of the gaps near the median, so ms rounding (66, 67, 67…) and a dropped frame don't move it
+  const med = gaps[Math.floor(gaps.length / 2)], even = gaps.filter(g => g <= med * 1.5);
+  const frame = even.reduce((a, g) => a + g, 0) / even.length;
+  const eps = 1e-9;
+  for (let i = 0, j = 0; i < w.length; i++) {
+    // the furthest j with every point i..j inside a still box
+    if (j < i) j = i;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (let k = i; k <= j; k++) {
+      x0 = Math.min(x0, w[k][1]); x1 = Math.max(x1, w[k][1]); y0 = Math.min(y0, w[k][2]); y1 = Math.max(y1, w[k][2]);
+    }
+    while (j + 1 < w.length) {
+      const [, x, y] = w[j + 1];
+      if (Math.max(x1, x) - Math.min(x0, x) > r.stuckStill + eps || Math.max(y1, y) - Math.min(y0, y) > r.stuckStill + eps) break;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      j++;
+    }
+    if ((j - i + 1) * frame < r.stuckMs - eps) continue;
+    const last = out[out.length - 1];
+    if (last && w[i][0] <= last[1]) last[1] = Math.max(last[1], w[j][0]);
+    else out.push([w[i][0], w[j][0]]);
+  }
+  if (!out.length) return out;
+  const hold = lockoutHold(w, ct, r);
+  return hold ? out.filter(([a, b]) => !hold(a, b)) : out;
+}
+
+/**
+ * Whether a still stretch [a, b] is her lockout hold: it starts after "Press!" (else after the lowest seen point)
+ * and every point in it is within the back-up band of the Start! height. Measured on the seen points' 3-frame
+ * median, as `measureBar` does. Null when there's no Start! height or travel to measure the band by.
+ */
+function lockoutHold(w: BarPoint[], ct: CommandTimes, r: BarRel): ((a: number, b: number) => boolean) | null {
+  const s = smooth(w.map(([t, , y, score]) => ({ t, y, ok: score >= r.lostScore })));
+  if (!s.length) return null;
+  const startY = yNear(s, ct.start!, 1000 / 15 * 3);
+  if (startY === null) return null;
+  const low = Math.max(...s.map(p => p.y));
+  const lowAt = s.find(p => p.y === low)!.t;
+  const after = ct.press ?? ct.press_late ?? lowAt;
+  const back = r.rackRel * Math.max(0, low - startY);
+  return (a, b) => a > after && w.every(([t, , y]) => t < a || t > b || y - startY <= back);
+}
+
+/**
+ * The server's path with its stuck frames marked the way lost frames are (score 0), so the path breaks there on
+ * the referee's page (look 5.14c), `measureBar` reads them as lost, and no point in them counts for the frames job
+ * (3.4d step 1). Run on the server's path after the lift, before it's saved: it never changes a live command.
+ */
+export function markStuck(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES): { path: BarPoint[]; stuck: [number, number][] } {
+  const stuck = stuckStretches(path, ct, r);
+  if (!stuck.length) return { path, stuck };
+  return { path: path.map(p => (stuck.some(([a, b]) => p[0] >= a && p[0] <= b) ? [p[0], p[1], p[2], 0] : p)), stuck };
+}
 
 type Pt = { t: number; y: number; ok: boolean };
 
@@ -127,7 +208,7 @@ export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number
   const gap = 1000 / 15 * 3; // three of the server's frames
   const out: BarMeasures = {
     pause_s: null, sink: null, press_while_sinking: false, lost_share: null, lost_after_start: why === 'lost',
-    shadow: { light: 'close', reason: 'visibility' }, server_commands: server,
+    pause_lost: false, shadow: { light: 'close', reason: 'visibility' }, server_commands: server,
   };
   if (start === null || end === null || !s.length) return out;
 
@@ -135,9 +216,19 @@ export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number
   out.lost_share = inWin.length ? +(inWin.filter(p => !p.ok).length / inWin.length).toFixed(3) : 1;
   const startY = yNear(s, start, gap);
 
+  // Item 108: any lost or stuck frame from pauseLostMs before the lowest seen point to Press! (or Rack!) means the
+  // pause isn't measured across it. No seen point there at all is the same.
+  const to = press ?? end;
+  const seenTo = s.filter(p => p.t >= start && p.t <= to);
+  if (seenTo.length) {
+    const low = Math.max(...seenTo.map(p => p.y));
+    const lowAt = seenTo.find(p => p.y === low)!.t;
+    out.pause_lost = pts.some(p => !p.ok && p.t >= lowAt - r.pauseLostMs && p.t <= to);
+  } else out.pause_lost = pts.some(p => p.t >= start && p.t <= to);
+
   // After a lost track (`press_late_why: lost`) the phone had no bar at Press!, so neither the pause nor a sink
   // after it can be known (5.33, item 107): a path the tracker found again later isn't measured across the gap.
-  if (press !== null && why !== 'lost') {
+  if (press !== null && why !== 'lost' && !out.pause_lost) {
     // the pause: back from Press!, the stretch the bar stayed within 5% of the rep's travel of its lowest point
     const before = s.filter(p => p.t >= start && p.t <= press);
     if (startY !== null && before.length) {

@@ -47,6 +47,7 @@ export const BENCH_LINES = {
   lateStill: 'The phone called Press! late, after 1.5 s still.',
   lateLost: 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.',
   pauseLost: 'Pause: not measured. The phone lost the bar.',
+  lostNear: "The phone lost the bar around the pause, so its Press! may have come early. If she pressed on or after the call, don't give a red for the pause.",
 } as const;
 
 /**
@@ -65,13 +66,17 @@ export function measuredLines(reason: string | null, m: Record<string, unknown> 
   if (bench) {
     const why = pressLateWhy(bench.commandTimes as never);
     const pause = n('pause_s');
-    // a lost bar (5.33, item 107): no pause and no sinking line, even from measures stored before this rule
-    if (why === 'lost') out.push(BENCH_LINES.pauseLost);
+    // a lost bar (5.33, item 107), or a lost or stuck frame near the bottom (item 108): no pause and no sinking
+    // line, even from measures stored before these rules
+    const lost = why === 'lost' || m?.pause_lost === true;
+    if (lost) out.push(BENCH_LINES.pauseLost);
     else if (pause !== null) out.push(`Pause: the bar was still ${pause.toFixed(1)} s before Press!`);
     out.push(BENCH_LINES.every);
-    if (why !== 'lost' && m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
+    if (!lost && m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
     if (why === 'still') out.push(BENCH_LINES.lateStill);
     if (why === 'lost') out.push(BENCH_LINES.lateLost);
+    // item 108: the server's path lost or stuck near the pause, with Press! not late from a loss
+    else if (m?.pause_lost === true) out.push(BENCH_LINES.lostNear);
     return out;
   }
   const depth = n('depth');
@@ -139,7 +144,7 @@ export function barTrackOf(bar: BarFile | null, ct: Record<string, unknown> | nu
     ticks.push({ cmd, label, x, y, wide });
   };
   add('start', 'START!', time('start'));
-  add('press', 'PRESS!', time('press') ?? time('press_late'), m?.press_while_sinking === true);
+  add('press', 'PRESS!', time('press') ?? time('press_late'), m?.press_while_sinking === true && m?.pause_lost !== true);
   add('rack', 'RACK!', time('rack'));
   return { w, h, segs: segs.filter(sg => sg.length > 1), ticks };
 }

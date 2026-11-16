@@ -14,7 +14,7 @@
 // named <clip>.json. The bench data is in tests/bench-commands/data, the eye's other calls in tests/referee-bot/data.
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { measureBar, type BarPoint } from '../../web/lib/judge/bar-measure';
+import { markStuck, measureBar, type BarPoint } from '../../web/lib/judge/bar-measure';
 import { MeetLift, type MeetLiftName } from '../../web/lib/judge/meet-lift';
 import { judgeAttempt, checkCommandTimes, type MeetLift as JudgeLift } from '../../web/lib/judge/attempt';
 import { commandList, benchBlock } from '../../web/lib/referee/bot';
@@ -28,7 +28,7 @@ const AFTER_END_MS = 1500;
 
 export type Group = 'bench white' | 'bench red' | 'press' | 'squat and deadlift' | 'close calls';
 export type Attempt = {
-  id: string; group: Group; source: string; cut: 'one' | 'lost' | null;
+  id: string; group: Group; source: string; cut: 'one' | 'lost' | 'stuck' | null;
   // recut.py
   clip: string; free: boolean; window_ms: [number, number]; commands: [number, string][];
   moments: { ms: number; flagged: boolean }[]; bench: ReturnType<typeof benchBlock>;
@@ -54,17 +54,17 @@ const sure = (call: string) => call !== 'either';
 type Trace = { w: number; h: number; pts: BarPoint[] };
 type Rep = { descent: number; stop: number; end: number; backUp: number | null; call: string };
 
-/** The bar's path in the window, from its start, cut at `stopAt` (s, the clip's time) when the phone lost it. */
-function pathIn(tr: Trace, w0: number, w1: number, stopAt: number | null): BarPoint[] {
-  return tr.pts.filter(([t]) => t >= w0 && t <= w1 && (stopAt === null || t <= r3(stopAt)))
-    .map(([t, x, y, s]) => [t - w0, x, y, s]);
+/** A track's points in the window, from its start. */
+function pathIn(pts: BarPoint[], w0: number, w1: number): BarPoint[] {
+  return pts.filter(([t]) => t >= w0 && t <= w1).map(([t, x, y, s]) => [t - w0, x, y, s]);
 }
 
 /**
  * One bench cut. `ct` holds the clip's own times in s (keys loaded, start, press | press_late, rack); the window
- * is [w0, w1] in s. Returns the attempt's recut and run fields, every time from the window's start.
+ * is [w0, w1] in s. `server` is the server's track of the clip (tests/bench-commands/server.py, as one_bar makes it
+ * from the trace's own tap). Returns the attempt's recut and run fields, every time from the window's start.
  */
-function benchCut(tr: Trace, w0s: number, w1s: number, ct: Record<string, number>, lostAt: number | null) {
+function benchCut(tr: Trace, server: BarPoint[], w0s: number, w1s: number, ct: Record<string, number>, lostAt: number | null) {
   const w0 = r3(w0s), w1 = r3(w1s);
   const rel: Record<string, number | string> = {};
   for (const [k, v] of Object.entries(ct)) rel[k] = r3(v) - w0;
@@ -76,13 +76,14 @@ function benchCut(tr: Trace, w0s: number, w1s: number, ct: Record<string, number
   const times = Object.fromEntries(Object.entries(rel).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
   // as takeBar: broken command times make it a `command_times` close call, with nothing measured
   const problem = checkCommandTimes(rel as never, 'bench', w1 - w0);
-  // what the phone saw: on the lost-track cut it stops where the phone lost the bar, so nothing is measured
-  const path = pathIn(tr, w0, w1, lostAt);
-  const measures = problem ? { command_times: problem } : measureBar(path, rel as never, { w: tr.w, h: tr.h });
+  // as takeBar (3.4d step 11, item 108): the server's track, its stuck stretches inside Start!-Rack! marked lost,
+  // measured and saved. On the lost-track cut `press_late_why: lost` keeps the pause unmeasured; the server's track
+  // runs on, as the product's would
+  const { path, stuck } = problem ? { path: pathIn(server, w0, w1), stuck: [] } : markStuck(pathIn(server, w0, w1), rel as never);
+  const measures = problem ? { command_times: problem } : { ...measureBar(path, rel as never, { w: tr.w, h: tr.h }), stuck };
   return {
-    // as framesJob: the saved path goes with it, and the frames find the touch from it first. The product saves the
-    // server's own track (takeBar), not the phone's, so the lost-track cut gets the whole path here (3.4d step 11)
-    window_ms: [w0, w1] as [number, number], command_times: rel, commands: commandList(times), bench: benchBlock(rel, { path: pathIn(tr, w0, w1, null) }),
+    // as framesJob: the saved path goes with it, and the frames find the touch from it first
+    window_ms: [w0, w1] as [number, number], command_times: rel, commands: commandList(times), bench: benchBlock(rel, { path }),
     moments: [], measures: measures as unknown as Record<string, unknown>, reason: problem ? 'command_times' : 'bench_referee',
   };
 }
@@ -126,6 +127,7 @@ const GYM_BENCH_KG = 60;
 export function benchAttempts(): { attempts: Attempt[]; left_out: { id: string; why: string }[] } {
   const eye = json<Record<string, Eye>>(join(BENCH, 'eyetimes.json'));
   const trace = (id: string) => json<Trace>(join(BENCH, 'traces', `${id}.json`));
+  const server = (id: string) => json<BarPoint[]>(join(BENCH, 'server', `${id}.json`));
   const attempts: Attempt[] = [];
   const left_out: { id: string; why: string }[] = [];
   const base = { lift: 'bench' as const, division: 'barbell' as const, units: 'kg' as const, reps_declared: null, reason: 'bench_referee', free: false };
@@ -134,7 +136,7 @@ export function benchAttempts(): { attempts: Attempt[]; left_out: { id: string; 
   // back-up; each cut from 1.0 s before Start! to 1.0 s after Rack!
   for (const m of json<{ attempts: MeetCall[] }>(join(BENCH, 'calls-meet.json')).attempts) {
     const e = eye[m.id];
-    const tr = trace(m.id);
+    const tr = trace(m.id), sv = server(m.id);
     const [stop, end, call] = m.reps[0];
     const clip = `meet/${m.clip.split(' ')[0]}.mp4`;
     const backUp = e.backUp ?? end + 1.0;
@@ -144,7 +146,7 @@ export function benchAttempts(): { attempts: Attempt[]; left_out: { id: string; 
     attempts.push({
       id: m.id, group, source: m.clip.split(' ')[0], cut: 'one', clip, ...base, weight: BENCH_WEIGHT[m.id] ?? MEET_BENCH_KG,
       call, eye_pause_s: +(end - stop).toFixed(2),
-      ...benchCut(tr, start - 1.0, one.rack + 1.0, { loaded: start - 1.0, ...one }, null),
+      ...benchCut(tr, sv, start - 1.0, one.rack + 1.0, { loaded: start - 1.0, ...one }, null),
     });
     if (!sure(call)) continue;
     // lost at the descent; Press! 2 s later; Rack! 3 s after that, or at back-up if sooner
@@ -154,13 +156,13 @@ export function benchAttempts(): { attempts: Attempt[]; left_out: { id: string; 
     attempts.push({
       id: `${m.id}-lost`, group, source: m.clip.split(' ')[0], cut: 'lost', clip, ...base, weight: BENCH_WEIGHT[m.id] ?? MEET_BENCH_KG,
       call, eye_pause_s: +(end - stop).toFixed(2),
-      ...benchCut(tr, start - 1.0, rack + 1.0, { loaded: start - 1.0, start, press_late: press, rack }, e.descent),
+      ...benchCut(tr, sv, start - 1.0, rack + 1.0, { loaded: start - 1.0, start, press_late: press, rack }, e.descent),
     });
   }
 
   // the gym reps: each sure rep its own attempt, one rep a cut (The Playner, 11:20 PM)
   for (const g of json<{ attempts: GymCall[] }>(join(BENCH, 'calls-run1.json')).attempts) {
-    const tr = trace(g.id);
+    const tr = trace(g.id), sv = server(g.id);
     const reps = gymReps(g.id, tr, g.start[0], g.reps, eye);
     const group: Group = reps.some(r => r.call.startsWith('red')) ? 'bench red' : 'bench white';
     reps.forEach((r, i) => {
@@ -174,7 +176,7 @@ export function benchAttempts(): { attempts: Attempt[]; left_out: { id: string; 
       const red = r.call.startsWith('red');
       const one: Record<string, number> = { loaded: w0, start, ...(red ? {} : { press: pressAt(r.stop, r.end) }), rack };
       const common = { group, source: g.id, clip: `bench/${g.id}.webm`, ...base, weight: GYM_BENCH_KG, call: r.call, eye_pause_s: +(r.end - r.stop).toFixed(2) };
-      attempts.push({ id, cut: 'one', ...common, ...benchCut(tr, w0, Math.min(rack + 1.0, next?.descent ?? Infinity), one, null),
+      attempts.push({ id, cut: 'one', ...common, ...benchCut(tr, sv, w0, Math.min(rack + 1.0, next?.descent ?? Infinity), one, null),
         ...(r.backUp === null ? { note: 'no lockout found on the trace: Rack! 1.3 s after the pause end' } : {}) });
       const press = r.descent + 2;
       if (next && press > next.descent - 0.3) {
@@ -183,7 +185,25 @@ export function benchAttempts(): { attempts: Attempt[]; left_out: { id: string; 
       }
       const lrack = press + 3;
       attempts.push({ id: `${id}-lost`, cut: 'lost', ...common,
-        ...benchCut(tr, w0, Math.min(lrack + 1.0, next?.descent ?? Infinity), { loaded: w0, start, press_late: press, rack: lrack }, r.descent) });
+        ...benchCut(tr, sv, w0, Math.min(lrack + 1.0, next?.descent ?? Infinity), { loaded: w0, start, press_late: press, rack: lrack }, r.descent) });
+    });
+  }
+
+  // "Press! inside a stuck stretch" (3.4d step 11, item 108; VibeSearch, Nov 16, 2:23 AM): IA0P rep 3 with the calls
+  // the phone's caller gives when the rep is played as its own attempt (Buildnanafest, 2:21 AM). The phone's own stick
+  // calls Press! 0.23 s before the bar stops; the server's guarded track marks 16.53-17.53 s, so the pause isn't
+  // measured and the stuck line shows. She rose after the call, so the answer is white on the pause: the eye's call is
+  // "either", on a 0.30 s pause, and nothing else on the rep is red.
+  {
+    const id = 'IA0PhDBzsz0', tr = trace(id), sv = server(id);
+    const calls = { start: 15.21, press: 16.82, rack: 18.89 };
+    const dur = tr.pts[tr.pts.length - 1][0] / 1000;
+    const w0 = calls.start - 1.0, w1 = Math.min(calls.rack + 1.0, dur);
+    attempts.push({
+      id: 'IA0P-r3-stuck', cut: 'stuck', group: 'bench white', source: id, clip: `bench/${id}.webm`, ...base, weight: GYM_BENCH_KG,
+      call: 'white', eye_pause_s: +(17.35 - 17.05).toFixed(2),
+      note: "the phone's caller's own calls on rep 3 (Press! 0.23 s before the stop); the eye's call is either, so white on the pause",
+      ...benchCut(tr, sv, w0, w1, { loaded: w0, ...calls }, null),
     });
   }
 

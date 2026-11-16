@@ -36,6 +36,8 @@ export type OpsNumbers = {
   errors: { at: string; kind: string; attemptId: string | null; text: string }[];
   /** 5.39, item 102: clips that still couldn't be made after her "Try again" ("We've told the team."). */
   clipsFailed: number;
+  /** 5.39, item 108: bench attempts in the last 7 days whose server path had a stuck stretch, so a guard that catches real pauses shows up. */
+  stuckTracks: number;
   commits: { web: string | null; judge: string | null };
 };
 
@@ -168,6 +170,9 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     order by at desc, id desc limit 20`);
 
   const [cf] = await db.execute<{ n: number }>(sql`select count(*) as n from attempts where clip_status = 'failed' and clip_retried`);
+  // takeBar's close_call event carries the stretches it marked (`stuck`); events never change after the lights land
+  const [st] = await db.execute<{ n: number }>(sql`select count(distinct attempt_id) as n from events
+    where kind = 'close_call' and at > now() - interval '7 days' and coalesce((detail->>'stuck')::int, 0) > 0`);
 
   const [jc] = await db.execute<{ commit: string | null }>(sql`
     select commit from (
@@ -203,6 +208,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     },
     errors: errs.map(e => ({ at: new Date(e.at).toISOString(), kind: e.kind, attemptId: e.attempt_id, text: errorText(e.kind, e.detail) })),
     clipsFailed: num(cf?.n),
+    stuckTracks: num(st?.n),
     commits: { web: webCommit ? webCommit.slice(0, 7) : null, judge: jc?.commit ? jc.commit.slice(0, 7) : null },
   };
 }

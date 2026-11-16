@@ -63,6 +63,11 @@ describe.skipIf(!URL_)('/ops numbers', () => {
       { kind: 'close_call', attemptId: q2, detail: { reason: 'judge_unavailable', why: 'no worker' } },
       { kind: 'close_call', attemptId: q2, detail: { reason: 'depth' } },
       { kind: 'demo_run', detail: { lifter_id: 'x' } }, { kind: 'demo_run', detail: { lifter_id: 'y' } },
+      // stuck bar tracks (5.39, item 108): q1's bench stuck twice in 7 days counts once; none stuck, and 8 days old, never
+      { kind: 'close_call', attemptId: q1, detail: { reason: 'bench_referee', stuck: 1 } },
+      { kind: 'close_call', attemptId: q1, detail: { reason: 'bench_referee', stuck: 2 } },
+      { kind: 'close_call', attemptId: judged, detail: { reason: 'bench_referee', stuck: 0 } },
+      { kind: 'close_call', attemptId: djudged, detail: { reason: 'bench_referee', stuck: 1 }, at: sql`now() - interval '8 days'` as never },
     ]);
     // uploads (2.4): Chrome tried 3, one refused by the server (its device from its upload); Safari
     // tried 1 and the phone turned one down before it began; one from two days ago doesn't count
@@ -129,6 +134,10 @@ describe.skipIf(!URL_)('/ops numbers', () => {
     expect(n.errors[0].text).toBe("Close call, the judge couldn't run: no worker");
     expect(n.errors[3].text).toBe('Run start failed (429): Too many requests');
     expect(n.errors[1].attemptId).toBeTruthy();
+  });
+
+  it('ERRORS: stuck bar tracks, bench attempts in the last 7 days whose track stuck (5.39, item 108)', () => {
+    expect(n.stuckTracks).toBe(1);
   });
 
   it('commits: the web one passed in and the judge\'s newest, both shortened', () => {
