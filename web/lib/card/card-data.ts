@@ -7,7 +7,7 @@ import { meetAttempts, totalFor } from '@/lib/meet-flow';
 import { newCornerToken } from '@/lib/demo';
 import { CARD_WORDS } from '@/lib/card/card-words';
 import { attemptSheet, type Certificate } from '@/lib/card/certificate';
-import { cardLiftOf, cardView, type CardView } from '@/lib/card/card-view';
+import { cardView, type CardView } from '@/lib/card/card-view';
 import type { Units } from '@/lib/meet';
 
 type LifterRow = typeof lifters.$inferSelect;
@@ -58,7 +58,7 @@ export async function cardFor(db: Db, l: LifterRow, now = new Date()): Promise<C
   const t = await totalFor(db, l, undefined, now);
   if (t.kind !== 'total') return null;
   const [m] = await db.select({ name: meets.name }).from(meets).where(eq(meets.id, l.meetId));
-  const top = cardLiftOf(t.best, l.division);
+  const top = t.top;
   let clip: CardClip | null = null;
   if (top.id) {
     const [a] = await db.select({ status: attempts.clipStatus, key: attempts.clipKey, sharedAt: attempts.clipSharedAt }).from(attempts).where(eq(attempts.id, top.id));

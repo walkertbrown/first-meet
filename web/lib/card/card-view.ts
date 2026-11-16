@@ -1,7 +1,7 @@
 // The meet card's words and numbers (plan 5.30, look 9 "The meet card", look 5.14b for Home): one view
 // that the Story and Post PNGs, the clip's end card and the print page all draw from. No DB here.
 import type { Lift } from '@/db/schema';
-import { LIFTS, attemptScore, type MeetAttempt, type Units } from '@/lib/meet';
+import { LIFTS, bestLiftOf, type MeetAttempt, type Units } from '@/lib/meet';
 import { barLoading, liftLower, platesPerSide } from '@/lib/stage/meet-words';
 import { formatTotal, totalLifts, unitLine, type TotalLift } from '@/lib/total-view';
 
@@ -43,10 +43,7 @@ function eachSide(weight: number, units: Units): string {
  * attempt is the one `render_clip` films (3.9 step 6, "for her best lift"), so the clip and the card agree.
  */
 export function cardLiftOf(best: Record<Lift, MeetAttempt>, division: Division): MeetAttempt {
-  const list = LIFTS.map(l => best[l]);
-  return division === 'home'
-    ? list.reduce((b, a) => (attemptScore(a, 'home') >= attemptScore(b, 'home') ? a : b))
-    : list.reduce((b, a) => (a.weight >= b.weight ? a : b));
+  return bestLiftOf(LIFTS.map(l => best[l]), division)!;
 }
 
 /**
@@ -54,13 +51,11 @@ export function cardLiftOf(best: Record<Lift, MeetAttempt>, division: Division):
  * her three counted lifts; a tie goes to the later lift (the deadlift is the meet's last word).
  * Home (look 5.14b): "Best set · 25 lb bell × 10", the set that scored most; a pair is "dumbbells".
  */
-export function heaviestOf(best: Record<Lift, MeetAttempt>, division: Division, units: Units): CardView['heaviest'] {
+export function heaviestOf(best: Record<Lift, MeetAttempt>, division: Division, units: Units, top = cardLiftOf(best, division)): CardView['heaviest'] {
   if (division === 'home') {
-    const top = cardLiftOf(best, 'home');
     const pair = !!top.homeLoad && top.homeLoad !== top.weight;
     return { weight: null, plates: [], line: `Best set · ${num(top.weight)} ${units} ${pair ? 'dumbbells' : 'bell'} × ${top.repsDeclared ?? 0}` };
   }
-  const top = cardLiftOf(best, 'barbell');
   return {
     weight: top.weight,
     plates: platesPerSide(top.weight, units),
@@ -75,7 +70,7 @@ export function metaLine(l: { ageGroup: string | null; division: Division; homet
 export function cardView(
   l: { cardName: string; ageGroup: string | null; division: Division; hometown: string; units: Units },
   meetName: string | null,
-  t: { value: number; best: Record<Lift, MeetAttempt>; nineForNine: boolean },
+  t: { value: number; best: Record<Lift, MeetAttempt>; top?: MeetAttempt; nineForNine: boolean },
 ): CardView {
   return {
     name: l.cardName,
@@ -88,7 +83,7 @@ export function cardView(
     lifts: totalLifts(t.best, l.division),
     division: l.division,
     units: l.units,
-    heaviest: heaviestOf(t.best, l.division, l.units),
+    heaviest: heaviestOf(t.best, l.division, l.units, t.top),
   };
 }
 

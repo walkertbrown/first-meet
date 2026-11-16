@@ -5,7 +5,6 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, judgeQueue, judgeWorkers, lifters } from '@/db/schema';
 import { totalFor } from '@/lib/meet-flow';
-import { cardLiftOf } from '@/lib/card/card-view';
 import { ensureCardToken } from '@/lib/card/card-data';
 import { judgedLift, logEvent } from '@/lib/queue';
 import { keys } from '@/lib/r2';
@@ -93,7 +92,7 @@ export async function queueCardClip(db: Db, lifterId: string, now = new Date()):
   if (!l || l.deletedAt || !l.meetId) return null;
   const t = await totalFor(db, l, undefined, now);
   if (t.kind !== 'total') return null;
-  const top = cardLiftOf(t.best, l.division);
+  const top = t.top;
   if (!top.id) return null;
   const queued = await db.transaction(async tx => {
     const [a] = await tx.update(attempts).set({ clipStatus: 'queued' })

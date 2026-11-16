@@ -2,7 +2,7 @@
 // who can watch the clip, the certificate and its attempt sheet, the screens' words, and June's card.
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import type { MeetAttempt } from '@/lib/meet';
+import { meetTotal, ORDER, type MeetAttempt } from '@/lib/meet';
 import { cardLiftOf, fileStem, HONEST_LINE } from '@/lib/card/card-view';
 import { clipOnCardLink, clipVisibilityLine, CLIP_MAKING, type CardClip } from '@/lib/card/card-data';
 import { attemptSheet, CERT, type SheetAttempt } from '@/lib/card/certificate';
@@ -29,6 +29,17 @@ describe('the lift on her card, and in her clip (3.9 step 6)', () => {
       deadlift: at('deadlift', 20, { id: 'd', repsDeclared: 10 }),
     };
     expect(cardLiftOf(best, 'home').id).toBe('s');
+  });
+  it('item 101: a tie inside one lift goes to the later attempt too, and the total carries that pick', () => {
+    // Home: her second and third deadlifts both score 200 (20 × 10, 25 × 8); her best lift is the third
+    const sets: [number, number][] = [[15, 10], [15, 10], [15, 10], [10, 10], [10, 10], [10, 10], [15, 10], [20, 10], [25, 8]];
+    const list = ORDER.map((o, k) => at(o.lift, sets[k][0], { id: `a${k}`, number: o.number, repsDeclared: sets[k][1] }));
+    const t = meetTotal(list, 'home');
+    expect(t.kind === 'total' && t.top.id).toBe('a8');
+    // Barbell: the same weight twice in her squat, both good: the later one
+    const bar = ORDER.map((o, k) => at(o.lift, [185, 185, 185, 85, 90, 95, 135, 145, 155][k], { id: `b${k}`, number: o.number }));
+    const tb = meetTotal(bar, 'barbell');
+    expect(tb.kind === 'total' && tb.top.id).toBe('b2');
   });
 });
 
