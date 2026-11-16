@@ -12,7 +12,7 @@
     "prebuild": "node scripts/copy-content.mjs",
     "build": "next build web",
     "start": "node scripts/migrate.mjs && next start web -p ${PORT:-3000}",
-    "typecheck": "tsc -p web --noEmit",
+    "typecheck": "tsc -p web --noEmit && tsc -p tests/referee-bot",
     "lint": "eslint web tests scripts",
     "test": "vitest run",
     "test:judge": "playwright test -c tests/judge.config.ts",
