@@ -9,7 +9,7 @@ type Division = 'barbell' | 'home';
 
 export const CARD_FOOTER = 'Hosted by Love Soo · @lovesoostrong';
 /** The honest line (look 9, Walker's #soo-likeness answer): under the card, and on the certificate. */
-export const HONEST_LINE = "A prototype built for Love Soo's audience for Hack the Audience 2026.";
+export { HONEST_LINE } from '@/lib/site';
 
 export type CardView = {
   name: string;
@@ -39,18 +39,28 @@ function eachSide(weight: number, units: Units): string {
 }
 
 /**
+ * The lift on her card: the heaviest bar (Barbell) or the best set (Home), the later lift on a tie. Its
+ * attempt is the one `render_clip` films (3.9 step 6, "for her best lift"), so the clip and the card agree.
+ */
+export function cardLiftOf(best: Record<Lift, MeetAttempt>, division: Division): MeetAttempt {
+  const list = LIFTS.map(l => best[l]);
+  return division === 'home'
+    ? list.reduce((b, a) => (attemptScore(a, 'home') >= attemptScore(b, 'home') ? a : b))
+    : list.reduce((b, a) => (a.weight >= b.weight ? a : b));
+}
+
+/**
  * Barbell: "Heaviest bar · 155 lb deadlift · a blue 45 and a white 10 each side" (look 9). The heaviest of
  * her three counted lifts; a tie goes to the later lift (the deadlift is the meet's last word).
  * Home (look 5.14b): "Best set · 25 lb bell × 10", the set that scored most; a pair is "dumbbells".
  */
 export function heaviestOf(best: Record<Lift, MeetAttempt>, division: Division, units: Units): CardView['heaviest'] {
-  const list = LIFTS.map(l => best[l]);
   if (division === 'home') {
-    const top = list.reduce((b, a) => (attemptScore(a, 'home') >= attemptScore(b, 'home') ? a : b));
+    const top = cardLiftOf(best, 'home');
     const pair = !!top.homeLoad && top.homeLoad !== top.weight;
     return { weight: null, plates: [], line: `Best set · ${num(top.weight)} ${units} ${pair ? 'dumbbells' : 'bell'} × ${top.repsDeclared ?? 0}` };
   }
-  const top = list.reduce((b, a) => (a.weight >= b.weight ? a : b));
+  const top = cardLiftOf(best, 'barbell');
   return {
     weight: top.weight,
     plates: platesPerSide(top.weight, units),
@@ -86,3 +96,7 @@ export function cardView(
 export const ogTitle = (v: Pick<CardView, 'name' | 'total' | 'units'>) => `${v.name} totaled ${v.total} ${v.units} at First Meet`;
 /** 5.5's Body. */
 export const publicBody = (name: string) => `${name} did her first powerlifting meet at First Meet, hosted by Love Soo.`;
+
+/** "Diane R." → "diane-r", for a saved file's name ("Save to my phone"). */
+export const fileStem = (name: string) =>
+  name.normalize('NFKD').replace(/[^\w\s-]/g, '').trim().toLowerCase().replace(/[\s_]+/g, '-').slice(0, 40) || 'my';

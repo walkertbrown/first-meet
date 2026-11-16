@@ -1,0 +1,72 @@
+/* The meet card (plan 5.30, 5.5, look 9) and the certificate (look 9, "Certificate"). */
+
+/* ---------- /me/card and /card/<token> ---------- */
+.card-page .segments { margin: 16px 0 20px; }
+.card-frame { display: block; width: 100%; max-width: 360px; margin: 0 auto; border-radius: 4px; overflow: hidden; background: #0D0E13; box-shadow: 0 0 0 1px var(--rule); }
+.card-frame img, .card-frame video { display: block; width: 100%; height: auto; }
+.card-frame.story { aspect-ratio: 9 / 16; }
+.card-frame.post { aspect-ratio: 4 / 5; }
+.card-frame.story img, .card-frame.story video { height: 100%; object-fit: contain; }
+.card-making { display: grid; place-items: center; padding: 24px; text-align: center; }
+.card-making p { color: #F1EFE8; margin: 0; }
+.card-page .caption.honest { color: var(--ink-3); margin: 12px auto 0; max-width: 360px; text-align: center; }
+.card-page .clip-line { margin: 12px auto 0; max-width: 360px; }
+.card-print-frame { display: block; width: 100%; max-width: 360px; aspect-ratio: 8.5 / 11; margin: 0 auto; border: 0; border-radius: 4px; box-shadow: 0 0 0 1px var(--rule); background: #F3F4F1; position: relative; overflow: hidden; }
+.card-print-frame iframe { position: absolute; top: 0; left: 0; }
+.card-link-shown { word-break: break-all; }
+@media (min-width: 900px) {
+  .card-frame, .card-print-frame, .card-page .caption.honest, .card-page .clip-line { max-width: 420px; }
+}
+
+/* ---------- The certificate: ink on chalk, at any printer ---------- */
+.cert-page { background: #F3F4F1; color: #16181F; min-height: 100vh; }
+.cert-page .cert-actions { max-width: 8.5in; margin: 0 auto; padding: 16px 0.6in 0; display: flex; flex-direction: column; gap: 8px; }
+.cert-page .cert-actions .small { color: #4A4E5A; }
+.cert { --ink: #16181F; --ink-3: #6B6F7B; box-sizing: border-box; width: 8.5in; min-height: 11in; margin: 0 auto; padding: 0.6in; color: var(--ink); background: #F3F4F1;
+  display: flex; flex-direction: column; align-items: center; text-align: center; font-family: var(--font-body, "Atkinson Hyperlegible Next", sans-serif); }
+.cert-head { width: 100%; display: flex; justify-content: space-between; align-items: baseline; }
+.cert-mark { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; font-size: 16pt; }
+.cert-season { font-family: var(--font-display); font-weight: 700; font-stretch: 88%; font-size: 10pt; letter-spacing: .09em; }
+.cert-lamps { list-style: none; display: flex; gap: 0.35in; margin: 0.45in 0 0.3in; padding: 0; }
+.cert-lamps li { display: flex; flex-direction: column; align-items: center; gap: 6pt; }
+.cert-lamps i { width: 0.7in; height: 0.7in; border-radius: 50%; box-shadow: inset 0 0 0 2.5pt var(--ink); }
+.cert-lamps span { font-size: 9pt; letter-spacing: .04em; }
+.cert-name { font-family: var(--font-display); font-weight: 800; font-stretch: 104%; font-size: 40pt; line-height: 1.05; margin: 0; overflow-wrap: anywhere; }
+.cert-meta { font-size: 12pt; margin: 6pt 0 0; }
+.cert-total { font-family: var(--font-display); font-weight: 900; font-stretch: 130%; font-size: 160pt; line-height: 1; margin: 0.15in 0 0; letter-spacing: -.02em; }
+.cert-unit { font-family: var(--font-display); font-weight: 700; font-stretch: 100%; font-size: 13pt; letter-spacing: .09em; margin: 4pt 0 0; display: flex; gap: 10pt; align-items: center; }
+.cert-tag { font-stretch: 88%; font-weight: 800; font-size: 10pt; padding: 2pt 5pt; border-radius: 3px; box-shadow: inset 0 0 0 1.5pt var(--ink); }
+.cert-lifts { list-style: none; display: flex; gap: 0.4in; padding: 0; margin: 0.25in 0 0; }
+.cert-lifts li { display: flex; flex-direction: column; gap: 2pt; }
+.cert-label { font-family: var(--font-display); font-weight: 800; font-stretch: 88%; font-size: 9pt; letter-spacing: .09em; }
+.cert-lifts .num { font-weight: 800; font-stretch: 104%; font-size: 20pt; }
+.cert-quote { margin: 0.3in 0 0; font-style: italic; font-size: 14pt; line-height: 1.3; }
+.cert-quote p { margin: 0; }
+.cert-quote cite { display: block; font-style: normal; font-size: 9pt; margin-top: 4pt; color: var(--ink-3); }
+.cert-sheet { width: 100%; margin-top: auto; border-collapse: collapse; text-align: left; font-family: var(--font-display); font-weight: 600; font-stretch: 75%; font-size: 12pt; line-height: 1.4; letter-spacing: .01em; }
+.cert-sheet th, .cert-sheet td { padding: 6pt 8pt 6pt 0; border-bottom: 0.75pt solid var(--ink); vertical-align: middle; }
+.cert-sheet thead th { font-weight: 700; font-stretch: 88%; font-size: 8pt; letter-spacing: .09em; text-transform: uppercase; }
+.cert-sheet tbody th { font-weight: 700; }
+.cert-result { font-size: 9pt; font-weight: 600; }
+.cert-foot { width: 100%; margin-top: 12pt; font-size: 9pt; display: flex; flex-direction: column; gap: 4pt; }
+.cert-foot p { margin: 0; }
+.cert-foot .cert-honest { color: var(--ink-3); }
+
+/* the preview on /me/card: the same page, scaled to fit its frame */
+.cert-preview body, .cert-preview { margin: 0; }
+
+@page { size: letter portrait; margin: 0; }
+@media print {
+  .cert-page .cert-actions, .no-print { display: none !important; }
+  .cert-page { min-height: 0; }
+  .cert { width: 8.5in; height: 11in; min-height: 0; page-break-after: avoid; }
+  html, body { background: #F3F4F1 !important; }
+}
+@media screen and (max-width: 815px) {
+  .cert { width: 100%; min-height: 0; padding: 24px 16px; }
+  .cert-total { font-size: min(160pt, 34vw); }
+  .cert-name { font-size: min(40pt, 10vw); }
+  .cert-lamps { gap: 20px; }
+  .cert-lifts { gap: 20px; }
+  .cert-page .cert-actions { padding: 16px 16px 0; }
+}
