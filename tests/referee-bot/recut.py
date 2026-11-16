@@ -4,14 +4,15 @@ Reads a set file (calls.json) and, for each attempt, runs the worker's own frame
 `referee_frames.make_frames`, on the attempt's stretch of its clip. So the frames here are
 exactly the ones the product sends: the same picks, stamps, size and JPEG quality, and on the
 bench the same poses. Writes frames.json: for each attempt the frame times and each JPEG's
-SHA-256, so any later run can show it used the same frames. Every attempt's JPEGs are written,
+SHA-256, so any later run can show it used the same frames, and on the bench how its touch was found
+(`bench_path.bench_way`: the way, the touch and lockout in ms). Every attempt's JPEGs are written,
 since run.ts reads them all, but only those of clips the repo may hold (`free: true`) are
 committed (5.2); the rest are made again from the clip by whoever reruns this.
 
 Each attempt in the set file:
   {"id": "...", "clip": "<path, from the repo root or the clips folder>", "free": true|false,
    "window_ms": [w0, w1] | null, "commands": [[ms, "Press!"], ...],
-   "moments": [{"ms": ..., "flagged": true|false}], "bench": {"start_ms", "press_ms" | null, "rack_ms", "bar_low_ms"?} | null}
+   "moments": [{"ms": ..., "flagged": true|false}], "bench": {"start_ms", "press_ms" | null, "rack_ms", "path"?: [[ms, y, score], ...]} | null}
 Every time is from the window's start, as if the phone had filmed only that stretch.
 
 Usage (MediaPipe needs a CPU list in /sys; see README.md):
@@ -65,9 +66,9 @@ def main(argv: list[str] | None = None) -> int:
     for a in attempts:
         if o.only and a['id'] not in o.only:
             continue
-        frames, bench_poses = cut(a, o.clips)
+        frames, how = cut(a, o.clips)
         rows[a['id']] = {
-            'bench_poses': bench_poses,
+            'bench': how,
             'frames': [{'n': n, 't_ms': t, 'sha256': hashlib.sha256(j).hexdigest()} for n, (t, j) in enumerate(frames)],
         }
         d = os.path.join(o.out, 'jpeg', a['id'])
@@ -75,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         for n, (_, j) in enumerate(frames):
             with open(os.path.join(d, f'{n:02d}.jpg'), 'wb') as f:
                 f.write(j)
-        print(f"{a['id']}: {len(frames)} frames" + ('' if bench_poses is None else f", bench poses {'found' if bench_poses else 'not found'}"), flush=True)
+        print(f"{a['id']}: {len(frames)} frames" + ('' if how is None else f", touch from {how['way']}"), flush=True)
         with open(out_json, 'w') as f:
             json.dump(done, f, indent=1, sort_keys=True)
     return 0

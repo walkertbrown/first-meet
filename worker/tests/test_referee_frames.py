@@ -1,4 +1,5 @@
 """3.4d step 1: which frames the referee bot gets, and how each is stamped."""
+import json
 import os
 import sys
 import unittest
@@ -8,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from PIL import Image  # noqa: E402
 
+import bench_path  # noqa: E402
 import referee_frames as rf  # noqa: E402
 
 SQUAT = [(0, 'Bar is loaded.'), (1500, 'Squat!'), (6000, 'Rack!')]
@@ -63,18 +65,6 @@ class Stamp(unittest.TestCase):
         self.assertEqual(rf.jpeg(img)[:3], b'\xff\xd8\xff')
 
 
-class BenchMoments(unittest.TestCase):
-    def test_the_wrists_lowest_point_before_press_and_their_top_after(self):
-        def f(t, y):
-            p = [[0.5, 0.5, 0.9] for _ in range(33)]
-            p[15] = [0.4, y, 0.9]
-            p[16] = [0.6, y, 0.9]
-            return {'t': t, 'p': p}
-        ys = {1000: 0.3, 1500: 0.45, 2000: 0.6, 2500: 0.61, 3000: 0.6, 3500: 0.4, 4000: 0.25, 4500: 0.3}
-        self.assertEqual(rf.bench_moments([f(t, y) for t, y in ys.items()], 1000, 3000), (2500, 4000))
-        self.assertIsNone(rf.bench_moments([{'t': 1000, 'p': None}], 1000, 3000))
-
-
 CLIP = os.path.join(os.path.dirname(__file__), '..', '..', 'tests', 'clips', 'deadlift-demo.webm')
 
 
@@ -111,7 +101,7 @@ class MakeFrames(unittest.TestCase):
 
 
 BENCH_CLIP = os.path.join(os.path.dirname(__file__), '..', '..', 'tests', 'clips', 'bench-demo.webm')
-NO_PRESS = [(0, 'Bar is loaded.'), (1000, 'Start!'), (4000, 'Rack!')]
+TRACES = os.path.join(os.path.dirname(__file__), '..', '..', 'tests', 'bench-commands', 'data', 'traces')
 
 
 def wrists(t, y):
@@ -121,22 +111,147 @@ def wrists(t, y):
     return {'t': t, 'p': p}
 
 
+def unseen(t):
+    return {'t': t, 'p': None}
+
+
 def every_frame(a, b):
     """The 15-a-second frame times from a to b, as `pick` sees a 30 fps clip."""
     return [t for t in rf.frame_times(15, 7100) if a <= t <= b]
 
 
-class NoPressBench(unittest.TestCase):
-    """3.4d step 1: a bench with no "Press!" (the bar never stopped) still gets every frame around its touch
-    and lockout. Checked by where the frames fall, not only how many there are."""
+def rep(t, low=2000, top=3000, y0=0.3, y1=0.6):
+    """A bar down from y0 at 1.0 s to y1 at `low`, still to `press` if any, up to y0 - 0.05 at `top`."""
+    if t <= 1000:
+        return y0
+    if t <= low:
+        return y0 + (y1 - y0) * (t - 1000) / (low - 1000)
+    if t <= top:
+        return y1 - (y1 - y0 + 0.05) * (t - low) / (top - low)
+    return y0 - 0.05
 
-    def test_the_touch_is_the_lowest_point_to_rack_and_the_lockout_the_top_after_it(self):
-        ys = {1000: 0.3, 1500: 0.45, 2000: 0.6, 2500: 0.45, 3000: 0.25, 3500: 0.3, 4000: 0.3, 4500: 0.9, 4600: 0.1}
-        pts = [wrists(t, y) for t, y in ys.items()]
-        # nothing after Rack! counts, low or high
-        self.assertEqual(rf.bench_moments(pts, 1000, None, 4000), (2000, 3000))
 
-    def run_with(self, find_at, bench):
+def path_of(f, a=0, b=7000, step=1000 / 15, score=0.9):
+    return [[round(i * step), round(f(round(i * step)), 4), score] for i in range(int(a / step), int(b / step) + 1)]
+
+
+def grid(a, b):
+    return [round(i * 1000 / 15) for i in range(int(a * 15 / 1000), int(b * 15 / 1000) + 1)]
+
+
+class BenchWay(unittest.TestCase):
+    """3.4d step 1, the bar path first: which way the touch is found, and where (worker/bench_path.py)."""
+
+    def way(self, path, wrist_y, start=1000, press=None, rack=4000, duration=7000):
+        ran = []
+
+        def ws():
+            ran.append(1)
+            end = min(duration, press + 3000, rack) if press is not None else rack
+            return [wrists(t, y) if (y := wrist_y(t)) is not None else unseen(t) for t in grid(start, end)]
+        return bench_path.bench_way(path, ws, start, press, rack, duration), bool(ran)
+
+    def near(self, got, want, ms=70):
+        self.assertIsNotNone(got)
+        self.assertLessEqual(abs(got - want), ms, (got, want))
+
+    def test_the_path_without_press_lowest_point_to_rack_and_top_after_it_and_no_poses_run(self):
+        how, ran = self.way(path_of(rep), lambda t: None)
+        self.assertEqual(how['way'], 'path')
+        self.near(how['touch'], 2000)
+        self.near(how['lockout'], 3000)
+        self.assertFalse(ran)
+
+    def test_the_path_with_press_lowest_point_to_press_and_top_to_press_plus_3_s(self):
+        # held still at the bottom from 2.0 s to Press! at 2.6 s, up by 3.6 s; lower again after Rack! never counts
+        f = lambda t: rep(t, 2000, 3600) if t <= 2000 else (0.6 if t <= 2600 else rep(t - 600, 2000, 3000))  # noqa: E731
+        how, _ = self.way(path_of(f), lambda t: None, press=2600, rack=5500)
+        self.assertEqual(how['way'], 'path')
+        self.assertLessEqual(how['touch'], 2600)
+        self.assertGreaterEqual(how['touch'], 1930)
+        self.near(how['lockout'], 3600)
+
+    def test_wrists_when_there_is_no_path(self):
+        for press, rack in ((None, 4000), (2400, 5000)):
+            how, ran = self.way(None, lambda t: rep(t, 2100, 3100), press=press, rack=rack)
+            self.assertEqual(how['way'], 'wrists', press)
+            self.near(how['touch'], 2100)
+            self.near(how['lockout'], 3100)
+            self.assertTrue(ran)
+
+    def test_wrists_seen_on_under_half_the_frames_are_not_used(self):
+        seen = lambda t: rep(t) if (t // 67) % 3 == 0 else None  # noqa: E731  (a third of the frames)
+        for press in (None, 2400):
+            how, _ = self.way(None, seen, press=press, rack=5000)
+            self.assertEqual(how['way'], 'window', press)
+            self.assertIsNone(how['touch'])
+
+    def test_a_path_lost_partway_uses_its_points_before_the_loss_and_the_wrists_after(self):
+        # the plate tracker loses the bar at 1.5 s, on the way down; the wrists sit 0.1 higher than the plate
+        for press, rack in ((None, 4000), (2600, 5600)):
+            lost = [p for p in path_of(rep) if p[0] < 1500]
+            how, _ = self.way(lost, lambda t: rep(t) - 0.1, press=press, rack=rack)
+            self.assertEqual(how['way'], 'partway', press)
+            self.near(how['touch'], 2000)
+            self.near(how['lockout'], 3000)
+            self.near(how['lost'], 1500)
+
+    def test_a_path_lost_after_press_keeps_its_touch_and_takes_the_lockout_from_the_wrists(self):
+        lost = [p for p in path_of(lambda t: rep(t, 2000, 3600)) if p[0] < 2900]
+        how, _ = self.way(lost, lambda t: rep(t, 2000, 3600) - 0.1, press=2400, rack=6000)
+        self.assertEqual(how['way'], 'path')
+        self.near(how['touch'], 2000)
+        self.near(how['lockout'], 3600)
+
+    def test_neither_gives_no_touch(self):
+        for press in (None, 2400):
+            how, _ = self.way(path_of(rep, score=0.2), lambda t: None, press=press, rack=5000)
+            self.assertEqual(how['way'], 'window', press)
+
+    def trace(self, id_, w0, w1):
+        with open(os.path.join(TRACES, f'{id_}.json')) as f:
+            pts = json.load(f)['pts']
+        return [[t - w0, y, sc] for t, _, y, sc in pts if w0 <= t <= w1]
+
+    def depth(self, path, t):
+        return next(y for u, y, _ in path if u >= t)
+
+    def test_the_80_percent_rule_on_a_real_trace(self):
+        """IA0P rep 2 as the test set cuts it (window 9.811 s on, Start! 1.0 s, Press! 3.269 s, Rack! 5.137 s):
+        thinned to 90% of its points it takes the path; to 70%, the wrists."""
+        path = self.trace('IA0PhDBzsz0', 9811, 9811 + 6500)
+        whole, _ = self.way(path, lambda t: 0.5, press=3269, rack=5137, duration=6500)
+        self.assertEqual(whole['way'], 'path')
+        self.assertEqual(whole['cover'], 1.0)
+        ninety, _ = self.way([p for i, p in enumerate(path) if i % 10 < 9], lambda t: 0.5, press=3269, rack=5137, duration=6500)
+        self.assertEqual(ninety['way'], 'path')
+        self.assertLessEqual(self.depth(path, whole['touch']) - self.depth(path, ninety['touch']), 0.01)
+        seventy, _ = self.way([p for i, p in enumerate(path) if i % 10 < 7], lambda t: 0.5, press=3269, rack=5137, duration=6500)
+        self.assertEqual(seventy['way'], 'wrists')
+        self.assertLess(seventy['cover'], 0.8)
+
+    def test_points_under_0_5_confidence_count_as_missing(self):
+        """The same trace with confidence 0.49 from 0.3 s before its touch on: those points are missing, so the path
+        is lost there, before Press!, and its points before the loss and the wrists' after it are used. At 0.5
+        they still count."""
+        path = self.trace('IA0PhDBzsz0', 9811, 9811 + 6500)
+        whole, _ = self.way(path, lambda t: 0.5, press=3269, rack=5137, duration=6500)
+        for score, want in ((0.49, 'partway'), (0.5, 'path')):
+            weak = [[t, y, score if t >= whole['touch'] - 300 else sc] for t, y, sc in path]
+            how, _ = self.way(weak, lambda t: 0.5, press=3269, rack=5137, duration=6500)
+            self.assertEqual(how['way'], want, score)
+            if score < 0.5:
+                self.assertLessEqual(abs(how['lost'] - (whole['touch'] - 300)), 70)
+
+
+NO_PRESS = [(0, 'Bar is loaded.'), (1000, 'Start!'), (4000, 'Rack!')]
+PRESS = [(0, 'Bar is loaded.'), (1000, 'Start!'), (2600, 'Press!'), (5600, 'Rack!')]
+
+
+class BenchFrames(unittest.TestCase):
+    """make_frames on the bench, every way in, with and without "Press!": checked by where the frames fall."""
+
+    def run_with(self, find_at, bench, commands):
         import poses
         asked = []
 
@@ -144,50 +259,77 @@ class NoPressBench(unittest.TestCase):
             asked.extend(times)
             return [find_at(t) for t in times]
         with unittest.mock.patch.object(poses, 'find_at', fake):
-            frames, found = rf.make_frames(BENCH_CLIP, NO_PRESS, [], bench)
-        return [t for t, _ in frames], found, asked
+            frames, how = rf.make_frames(BENCH_CLIP, commands, [], bench)
+        return [t for t, _ in frames], how, asked
 
-    def test_poses_give_every_frame_0_4_s_either_side_of_the_touch_and_the_lockout(self):
-        def y(t):   # down to the chest at 2.0 s, no stop, locked out at 3.0 s
-            return 0.3 + 0.3 * t / 1000 - 0.3 if t <= 2000 else max(0.25, 0.6 - 0.35 * (t - 2000) / 1000)
-        times, found, asked = self.run_with(lambda t: wrists(t, 0.3 if t < 1000 else y(t)),
-                                            {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000})
-        self.assertTrue(found)
-        # the poses are looked for from Start! all the way to Rack!, not to a Press! that never came
-        self.assertEqual(min(asked), 1000)
-        self.assertGreaterEqual(max(asked), 4000 - 67)
-        for t in every_frame(1600, 2400) + every_frame(2600, 3400):
-            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
-        self.assertGreaterEqual(len(times), 20)
-
-    def test_no_usable_poses_uses_the_bar_paths_lowest_point_and_the_rack(self):
-        times, found, _ = self.run_with(lambda t: {'t': t, 'p': None},
-                                        {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000, 'bar_low_ms': 2200})
-        self.assertFalse(found)
-        for t in every_frame(1800, 2600) + every_frame(3400, 4000):
-            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
-        self.assertFalse([t for t in every_frame(1000, 1700) if t in times and t % 500])   # nothing extra before the touch
-
-    def test_no_poses_and_no_bar_path_takes_1_5_s_from_0_5_s_after_start_and_the_rack(self):
-        times, found, _ = self.run_with(lambda t: {'t': t, 'p': None},
-                                        {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000, 'bar_low_ms': None})
-        self.assertFalse(found)
-        for t in every_frame(1500, 3000) + every_frame(3400, 4000):
+    def has(self, times, a, b):
+        for t in every_frame(a, b):
             self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
 
-    def test_a_bench_with_a_press_is_as_before(self):
-        times, found, asked = self.run_with(lambda t: {'t': t, 'p': None}, {'start_ms': 1000, 'press_ms': 2500, 'rack_ms': 4000})
-        self.assertFalse(found)
-        self.assertLessEqual(max(asked), 2500 + 3000)
-        for t in every_frame(1500, 3000) + every_frame(3400, 4000):
-            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
+    def around(self, times, how, touch, lockout):
+        """The touch and lockout found within a frame of where the bar was, and every frame 0.4 s either side."""
+        self.assertLessEqual(abs(how['touch'] - touch), 70, how)
+        self.assertLessEqual(abs(how['lockout'] - lockout), 70, how)
+        self.has(times, how['touch'] - 400, how['touch'] + 400)
+        self.has(times, how['lockout'] - 400, how['lockout'] + 400)
+
+    def extra(self, times, a, b):
+        """Frames between a and b beyond the 2-a-second ones."""
+        return [t for t in times if a <= t <= b and t % 500]
+
+    def test_from_the_path_every_frame_0_4_s_either_side_of_the_touch_and_the_lockout(self):
+        cases = ((NO_PRESS, {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000}),
+                 (PRESS, {'start_ms': 1000, 'press_ms': 2600, 'rack_ms': 5600}))
+        for commands, bench in cases:
+            f = (lambda t: rep(t)) if bench['press_ms'] is None else (lambda t: rep(t, 2000, 3600) if t <= 2000 else (0.6 if t <= 2600 else rep(t - 600)))
+            times, how, asked = self.run_with(unseen, {**bench, 'path': path_of(f)}, commands)
+            self.assertEqual(how['way'], 'path')
+            self.assertEqual(asked, [])   # the path gave both moments: no poses run
+            lock = 3000 if bench['press_ms'] is None else 3600
+            self.around(times, how, 2000, lock)
+            if bench['press_ms'] is not None:
+                self.has(times, how['touch'], 2900)   # the pause: the touch to 0.3 s after Press!
+            self.assertFalse(self.extra(times, 1000, 1550))
+
+    def test_from_the_wrists(self):
+        for commands, bench in ((NO_PRESS, {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000}),
+                                (PRESS, {'start_ms': 1000, 'press_ms': 2600, 'rack_ms': 5600})):
+            times, how, asked = self.run_with(lambda t: wrists(t, rep(t, 2100, 3100)), bench, commands)
+            self.assertEqual(how['way'], 'wrists')
+            self.assertEqual(min(asked), 1000)
+            self.assertGreaterEqual(max(asked), (4000 if bench['press_ms'] is None else 5600) - 67)
+            self.around(times, how, 2100, 3100)
+            self.assertFalse(self.extra(times, 1000, 1650))
+
+    def test_partway(self):
+        for commands, bench in ((NO_PRESS, {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000}),
+                                (PRESS, {'start_ms': 1000, 'press_ms': 2600, 'rack_ms': 5600})):
+            path = [p for p in path_of(rep) if p[0] < 1500]
+            times, how, _ = self.run_with(lambda t: wrists(t, rep(t) - 0.1), {**bench, 'path': path}, commands)
+            self.assertEqual(how['way'], 'partway')
+            self.around(times, how, 2000, 3000)
+
+    def test_neither_without_press_takes_1_5_s_from_0_5_s_after_start_and_the_rack(self):
+        times, how, _ = self.run_with(unseen, {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000}, NO_PRESS)
+        self.assertEqual(how['way'], 'window')
+        self.has(times, 1500, 3000)
+        self.has(times, 3400, 4000)
+
+    def test_neither_with_press_takes_1_s_before_to_0_5_s_after_it_and_the_rack(self):
+        times, how, asked = self.run_with(unseen, {'start_ms': 1000, 'press_ms': 2600, 'rack_ms': 5600}, PRESS)
+        self.assertEqual(how['way'], 'window')
+        self.assertLessEqual(max(asked), 5600)
+        self.has(times, 1600, 3100)
+        self.has(times, 5000, 5600)
+        self.assertFalse(self.extra(times, 3200, 4950))
 
     def test_the_demo_benchs_rep_2_with_its_press_taken_out_gets_at_least_20_frames(self):
-        """Real poses on a real bench: rep 2 of the bench demo (window 0.6–5.07 s), sent as a phone with no Press! would."""
+        """Real poses on a real bench: rep 2 of the bench demo (window 0.6–5.07 s), sent as a phone with no Press!
+        would. The demo's clip cuts between camera angles, so it has no bar path: the wrists find the touch."""
         commands = [(0, 'Bar is loaded.'), (270, 'Start!'), (3430, 'Rack!')]
-        frames, found = rf.make_frames(BENCH_CLIP, commands, [], {'start_ms': 270, 'press_ms': None, 'rack_ms': 3430},
-                                       window=(600, 5070))
-        self.assertTrue(found)
+        frames, how = rf.make_frames(BENCH_CLIP, commands, [], {'start_ms': 270, 'press_ms': None, 'rack_ms': 3430},
+                                     window=(600, 5070))
+        self.assertEqual(how['way'], 'wrists')
         self.assertGreaterEqual(len(frames), 20)
 
 

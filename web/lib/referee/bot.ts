@@ -10,7 +10,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, lifters, meets, opsSettings, refereeJobs, reviews, type Light, type RefereeCall, type RefereeFrame } from '@/db/schema';
 import { judgeAttempt, type Frame, type MeetLift } from '@/lib/judge';
-import { barLowestMs, type BarPoint } from '@/lib/judge/bar-measure';
+import type { BarPoint } from '@/lib/judge/bar-measure';
 import type { CommandTimes } from '@/lib/judge/zoom';
 import { attemptReason, callOf } from '@/lib/lights';
 import { benchByBar, judgedLift, logEvent, publish } from '@/lib/queue';
@@ -118,21 +118,23 @@ export function commandList(ct: Record<string, number> | null): [number, string]
   }).sort((a, b) => a[0] - b[0]);
 }
 
-export type BenchBlock = { start_ms: number; press_ms: number | null; rack_ms: number | null; bar_low_ms?: number | null };
+/** A saved path point as the worker reads it for the frames: [t ms, y (fraction of the frame, down), confidence]. */
+export type PathPoint = [number, number, number];
+export type BenchBlock = { start_ms: number; press_ms: number | null; rack_ms: number | null; path?: PathPoint[] };
 
 /**
- * The bench's pause frames (step 1): "Start!", "Press!" (on time, or late: `press_late`) and "Rack!" in ms,
- * or null with no Start!. Only number-valued keys count: `press_late_why` ("lost", "still") is a word, not a time.
- * With no Press! (the bar never stopped), `press_ms` is null and the worker finds the touch and lockout from
- * "Start!" to "Rack!"; `bar_low_ms`, the bar path's lowest point there, is its touch if the wrists can't be seen.
+ * The bench's frames (step 1): "Start!", "Press!" (on time, or late: `press_late`) and "Rack!" in ms, or null with no
+ * Start!. Only number-valued keys count: `press_late_why` ("lost", "still") is a word, not a time. With no Press! (the
+ * bar never stopped), `press_ms` is null. `path` is the saved bar path (`attempts.barKey`), on every bench that has
+ * one: the worker finds the touch and lockout from it first (worker/bench_path.py), the wrists only standing in.
  */
-export function benchBlock(ct: Record<string, unknown> | null, bar?: { path: BarPoint[]; w: number; h: number } | null): BenchBlock | null {
+export function benchBlock(ct: Record<string, unknown> | null, bar?: { path: BarPoint[] } | null): BenchBlock | null {
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
   const start = num(ct?.start);
   if (start === undefined) return null;
   const press = num(ct?.press) ?? num(ct?.press_late) ?? null;
   const out: BenchBlock = { start_ms: start, press_ms: press, rack_ms: num(ct?.rack) ?? null };
-  if (press === null) out.bar_low_ms = bar?.path?.length ? barLowestMs(bar.path, ct as CommandTimes, { w: bar.w, h: bar.h }) : null;
+  if (bar?.path?.length) out.path = bar.path.map(([t, , y, score]) => [Math.round(t), +y.toFixed(4), +score.toFixed(3)]);
   return out;
 }
 
@@ -151,10 +153,8 @@ export async function framesJob(db: Db, store: FrameStore, jobId: string, env: R
   const a = row.a;
   const ct = a.commandTimes as Record<string, number> | null;
   const moments: { ms: number; flagged: boolean }[] = [];
-  let bar: { path: BarPoint[]; w: number; h: number } | null = null;
-  if (benchByBar(a) && a.barKey && ct && ct.press == null && ct.press_late == null) {
-    bar = await store.getJson<{ path: BarPoint[]; w: number; h: number }>(a.barKey).catch(() => null);
-  }
+  let bar: { path: BarPoint[] } | null = null;
+  if (benchByBar(a) && a.barKey) bar = await store.getJson<{ path: BarPoint[] }>(a.barKey).catch(() => null);
   const bench = benchByBar(a) ? benchBlock(ct, bar) : null;
   if (!benchByBar(a) && a.posesKey) {
     const poses = await store.getJson<{ w: number; h: number; duration: number; frames: Frame[] }>(a.posesKey).catch(() => null);
@@ -175,7 +175,7 @@ export async function framesJob(db: Db, store: FrameStore, jobId: string, env: R
   };
 }
 
-export type FramesPost = { job_id: string; ok: boolean; frames?: { n: number; t_ms: number; sha256?: string }[]; error?: string; bench_poses?: boolean | null; secs?: number; commit?: string | null };
+export type FramesPost = { job_id: string; ok: boolean; frames?: { n: number; t_ms: number; sha256?: string }[]; error?: string; bench_way?: 'path' | 'partway' | 'wrists' | 'window' | null; secs?: number; commit?: string | null };
 
 /** POST /api/internal/referee-frames: the frames are ready, or the run failed (a retry, then `no_frames`). */
 export async function takeFrames(db: Db, p: FramesPost) {
@@ -184,7 +184,7 @@ export async function takeFrames(db: Db, p: FramesPost) {
   if (row.j.status !== 'waiting_frames') return { status: 409 as const };
   const frames: RefereeFrame[] = p.ok ? (p.frames ?? []).filter(f => Number.isInteger(f.n) && f.n >= 0 && f.n < FRAME_CAP && Number.isFinite(f.t_ms))
     .map(f => ({ n: f.n, t_ms: Math.round(f.t_ms), key: keys.refereeFrame(row.j.attemptId!, f.n), ...(f.sha256 ? { sha256: String(f.sha256).slice(0, 64) } : {}) })) : [];
-  await logEvent(db, 'referee_frames', { job_id: p.job_id, ok: p.ok && frames.length > 0, frames: frames.length, secs: p.secs ?? null, bench_poses: p.bench_poses ?? null, error: p.error?.slice(0, 300), commit: p.commit ?? null }, row.j.attemptId);
+  await logEvent(db, 'referee_frames', { job_id: p.job_id, ok: p.ok && frames.length > 0, frames: frames.length, secs: p.secs ?? null, bench_way: p.bench_way ?? null, error: p.error?.slice(0, 300), commit: p.commit ?? null }, row.j.attemptId);
   if (p.ok && frames.length) {
     await db.update(refereeJobs).set({ status: 'ready', frames, framesReadyAt: sql`now()` })
       .where(and(eq(refereeJobs.id, p.job_id), eq(refereeJobs.status, 'waiting_frames')));

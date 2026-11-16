@@ -1,8 +1,8 @@
-// The bench's pause frames (3.4d step 1): framesJob's "Start!", "Press!" and "Rack!" for make_frames.
+// The bench's frames (3.4d step 1): framesJob's "Start!", "Press!", "Rack!" and saved bar path for make_frames.
 // A late Press! after a lost track (3.4b) is `press_late`, next to `press_late_why: "lost"`, a word, not a time.
 import { describe, expect, it } from 'vitest';
 import { benchBlock, commandList } from '@/lib/referee/bot';
-import { barLowestMs, type BarPoint } from '@/lib/judge/bar-measure';
+import type { BarPoint } from '@/lib/judge/bar-measure';
 
 describe('benchBlock', () => {
   it('takes an on-time Press!', () => {
@@ -18,12 +18,18 @@ describe('benchBlock', () => {
     expect(benchBlock(null)).toBeNull();
   });
   it('with no Press! (the bar never stopped) still goes, so the worker finds the touch and lockout to Rack!', () => {
-    expect(benchBlock({ loaded: 0, start: 1500, rack: 6100 })).toEqual({ start_ms: 1500, press_ms: null, rack_ms: 6100, bar_low_ms: null });
-    // the saved plate path's lowest point, for when her wrists can't be seen
-    expect(near(benchBlock({ loaded: 0, start: 1500, rack: 6100 }, { path: BOUNCE, w: 1280, h: 720 })!.bar_low_ms ?? null, 3000)).toBe(true);
+    expect(benchBlock({ loaded: 0, start: 1500, rack: 6100 })).toEqual({ start_ms: 1500, press_ms: null, rack_ms: 6100 });
   });
-  it('sends no bar_low_ms when there is a Press!, even with a path', () => {
-    expect(benchBlock({ loaded: 0, start: 1500, press: 3400, rack: 6100 }, { path: BOUNCE, w: 1280, h: 720 })).not.toHaveProperty('bar_low_ms');
+  it('sends the saved bar path on every bench, with or without Press!, as [t, y, confidence]', () => {
+    for (const ct of [{ loaded: 0, start: 1500, rack: 6100 }, { loaded: 0, start: 1500, press: 3400, rack: 6100 }]) {
+      const b = benchBlock(ct, { path: BOUNCE })!;
+      expect(b.path).toHaveLength(BOUNCE.length);
+      expect(b.path![45]).toEqual([BOUNCE[45][0], BOUNCE[45][2], 0.9]);
+    }
+  });
+  it('sends no path when there is none saved', () => {
+    expect(benchBlock({ loaded: 0, start: 1500, press: 3400, rack: 6100 }, { path: [] })).not.toHaveProperty('path');
+    expect(benchBlock({ loaded: 0, start: 1500, press: 3400, rack: 6100 }, null)).not.toHaveProperty('path');
   });
   it('has no Rack! when the phone gave none', () => {
     expect(benchBlock({ loaded: 0, start: 1500, press: 4200 })).toEqual({ start_ms: 1500, press_ms: 4200, rack_ms: null });
@@ -35,22 +41,6 @@ const BOUNCE: BarPoint[] = Array.from({ length: 100 }, (_, i) => {
   const t = Math.round(i * 1000 / 15);
   const y = t <= 1500 ? 0.3 : t <= 3000 ? 0.3 + 0.3 * (t - 1500) / 1500 : Math.max(0.3, 0.6 - 0.3 * (t - 3000) / 1500);
   return [t, 0.5, +y.toFixed(4), 0.9];
-});
-const near = (t: number | null, want: number) => t !== null && Math.abs(t - want) <= 70;
-
-describe('barLowestMs (3.4d step 1, no Press! and no usable poses)', () => {
-  it('is the bar path\'s lowest point between Start! and Rack!', () => {
-    expect(near(barLowestMs(BOUNCE, { loaded: 0, start: 1500, rack: 6100 }, { w: 1280, h: 720 }), 3000)).toBe(true);
-  });
-  it('looks no further than Rack!', () => {
-    const lowAfter: BarPoint[] = [...BOUNCE.filter(p => p[0] <= 6100), [6200, 0.5, 0.9, 0.9], [6267, 0.5, 0.9, 0.9], [6333, 0.5, 0.9, 0.9]];
-    expect(near(barLowestMs(lowAfter, { loaded: 0, start: 1500, rack: 6100 }, { w: 1280, h: 720 }), 3000)).toBe(true);
-  });
-  it('is null with no Start!, no path, or a bar the tracker never saw', () => {
-    expect(barLowestMs(BOUNCE, { loaded: 0, rack: 6100 }, { w: 1280, h: 720 })).toBeNull();
-    expect(barLowestMs([], { loaded: 0, start: 1500, rack: 6100 }, { w: 1280, h: 720 })).toBeNull();
-    expect(barLowestMs(BOUNCE.map(([t, x, y]) => [t, x, y, 0] as BarPoint), { loaded: 0, start: 1500, rack: 6100 }, { w: 1280, h: 720 })).toBeNull();
-  });
 });
 
 describe('commandList on a lost track', () => {

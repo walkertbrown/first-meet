@@ -76,11 +76,13 @@ function benchCut(tr: Trace, w0s: number, w1s: number, ct: Record<string, number
   const times = Object.fromEntries(Object.entries(rel).filter(([, v]) => typeof v === 'number')) as Record<string, number>;
   // as takeBar: broken command times make it a `command_times` close call, with nothing measured
   const problem = checkCommandTimes(rel as never, 'bench', w1 - w0);
+  // what the phone saw: on the lost-track cut it stops where the phone lost the bar, so nothing is measured
   const path = pathIn(tr, w0, w1, lostAt);
   const measures = problem ? { command_times: problem } : measureBar(path, rel as never, { w: tr.w, h: tr.h });
   return {
-    // as framesJob: the saved plate path goes with it, for a bench with no Press! whose wrists can't be seen
-    window_ms: [w0, w1] as [number, number], command_times: rel, commands: commandList(times), bench: benchBlock(rel, { path, w: tr.w, h: tr.h }),
+    // as framesJob: the saved path goes with it, and the frames find the touch from it first. The product saves the
+    // server's own track (takeBar), not the phone's, so the lost-track cut gets the whole path here (3.4d step 11)
+    window_ms: [w0, w1] as [number, number], command_times: rel, commands: commandList(times), bench: benchBlock(rel, { path: pathIn(tr, w0, w1, null) }),
     moments: [], measures: measures as unknown as Record<string, unknown>, reason: problem ? 'command_times' : 'bench_referee',
   };
 }

@@ -238,7 +238,7 @@ def one_referee_frames(job: dict) -> dict:
     with tempfile.TemporaryDirectory() as d:
         video = os.path.join(d, 'attempt')
         urllib.request.urlretrieve(job['video_url'], video)
-        frames, bench_poses = rf.make_frames(video, commands, job.get('moments') or [], job.get('bench'), cap=min(rf.CAP, len(urls)))
+        frames, how = rf.make_frames(video, commands, job.get('moments') or [], job.get('bench'), cap=min(rf.CAP, len(urls)))
         out = []
         for n, (t, data) in enumerate(frames):
             put = urllib.request.Request(urls[n], data=data, method='PUT', headers={'content-type': 'image/jpeg', 'content-length': str(len(data))})
@@ -246,7 +246,7 @@ def one_referee_frames(job: dict) -> dict:
                 if r.status >= 300:
                     raise RuntimeError(f'upload {n}: {r.status}')
             out.append({'n': n, 't_ms': t, 'sha256': hashlib.sha256(data).hexdigest()})
-    return {'frames': out, 'bench_poses': bench_poses, 'secs': round(time.monotonic() - t0, 2)}
+    return {'frames': out, 'bench_way': how and how['way'], 'secs': round(time.monotonic() - t0, 2)}
 
 
 def referee_frames_or_report(job_id: str, run=None) -> dict:
@@ -259,7 +259,7 @@ def referee_frames_or_report(job_id: str, run=None) -> dict:
             raise RuntimeError('FAULT=referee set')
         out = (run or one_referee_frames)(job)
         posted, _ = post('/api/internal/referee-frames', {'job_id': job_id, 'ok': True, 'frames': out['frames'],
-                                                         'bench_poses': out.get('bench_poses'), 'secs': out.get('secs'), 'commit': COMMIT})
+                                                         'bench_way': out.get('bench_way'), 'secs': out.get('secs'), 'commit': COMMIT})
         return {'job_id': job_id, 'frames': len(out['frames']), 'posted': posted}
     except Exception as e:  # noqa: BLE001 - the web service decides what a failure means
         why = f'{type(e).__name__}: {e}'[:300]

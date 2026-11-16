@@ -114,21 +114,6 @@ export function callPath(path: BarPoint[], ct: CommandTimes, dims: { w: number; 
   return { server, seen };
 }
 
-/**
- * 3.4d step 1, a bench with no "Press!" whose wrists can't be seen: the bar's lowest point (its touch)
- * between "Start!" and "Rack!" (or the path's end), from the frames the tracker saw. Null without a
- * Start!, or with fewer than three seen points there.
- */
-export function barLowestMs(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES): number | null {
-  const start = ct.start ?? null;
-  if (start === null || !path.length) return null;
-  const end = ct.rack ?? path[path.length - 1][0];
-  const { seen } = callPath(path, ct, dims, r);
-  const win = smooth(path.map(([t, , y], i) => ({ t, y, ok: seen[i] }))).filter(p => p.t >= start && p.t <= end);
-  if (win.length < 3) return null;
-  return win.reduce((a, b) => (b.y > a.y ? b : a)).t;
-}
-
 export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES): BarMeasures {
   const { server, seen } = callPath(path, ct, dims, r);
   const pts: Pt[] = path.map(([t, , y], i) => ({ t, y, ok: seen[i] }));

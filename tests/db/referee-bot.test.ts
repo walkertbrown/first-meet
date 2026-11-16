@@ -142,7 +142,7 @@ describe.skipIf(!URL_)('the referee bot', () => {
     expect(await framesToStart(db, 5)).toEqual([]);
   });
 
-  it('the frames job for a bench with no Press!: the bench still goes, with the saved bar path\'s lowest point', async () => {
+  it('the frames job sends the saved bar path on a bench, with no Press! too', async () => {
     const be = await closeCall('bench');
     const path = Array.from({ length: 90 }, (_, i) => {
       const t = Math.round(i * 1000 / 15);
@@ -155,7 +155,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
     const j = await framesJob(db, store, id, {});
     expect(j!.commands).toEqual([[200, 'Bar is loaded.'], [1000, 'Start!'], [5000, 'Rack!']]);
     expect(j!.bench).toMatchObject({ start_ms: 1000, press_ms: null, rack_ms: 5000 });
-    expect(Math.abs(j!.bench!.bar_low_ms! - 2500)).toBeLessThanOrEqual(70);
+    expect(j!.bench!.path).toHaveLength(90);
+    expect(j!.bench!.path![30]).toEqual([2000, 0.5, 0.9]);
   });
 
   it('frames that fail get one more run after 5 minutes, then the job is doubt "no_frames"', async () => {

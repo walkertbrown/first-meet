@@ -71,30 +71,103 @@ attempt in it.
 - **The builder's check:** `build-set.ts` stops if any bench would go out with reason
   `command_times`, so every bench gets its usual lines.
 
-**The bench's frames** (3.4d step 1; with no Press!, as ruled for item 107, The Playner, Nov 16):
-- **With a Press!:** the touch is the wrists' lowest point between Start! and Press!, and the
-  lockout their top after Press!.
-- **With no Press!** (the bar never stopped, so the phone never called it):
-  - the touch is the wrists' lowest point between Start! and Rack! (or the end);
-  - the lockout is their top after the touch;
-  - the poses are looked for all the way to Rack!.
-- **Either way:** every frame from 0.4 s before to 0.4 s after each, within the 60 cap.
-- **No usable poses:**
-  - with a Press!, every frame from 1 s before it to 0.5 s after;
-  - with none, every frame 0.4 s either side of the saved bar path's lowest point between Start!
-    and Rack! (`bar_low_ms`, which the frames job reads from `attempts.barKey`);
-  - with no bar path either, every frame from Start! + 0.5 s for 1.5 s;
-  - each time, plus every frame from 0.6 s before Rack!.
+**The bench's frames** (3.4d step 1, "the bar path first", The Playner, Nov 16). The frames job
+sends the saved bar path (`attempts.barKey`) on every bench; `worker/bench_path.py` picks the way in:
+- **The bar path:**
+  - the window runs from Start! to Press! + 3 s, or to Rack! (or the end) with no Press!;
+  - the touch is the path's lowest point from Start! to Press! (or Rack!, or the end), and the
+    lockout its top after the touch, within the window;
+  - it's usable when it isn't lost before Press! (or Rack!) and has a point on at least 80% of the
+    frames from Start! to the touch. A point counts at confidence 0.5 or more.
+- **Lost partway** (before Press!, or Rack!): the path's points before the loss and the wrists'
+  after it. A path lost after Press! keeps its touch; the lockout uses the wrists after the loss.
+- **Else the wrists:** when seen on at least half the frames from Start! to Press! (or Rack!).
+- **Either way:** every frame from 0.4 s before to 0.4 s after the touch and the lockout, and with
+  a Press!, from the touch to 0.3 s after Press!, within the 60 cap.
+- **Else a fixed window:** with a Press!, every frame from 1 s before it to 0.5 s after; without
+  one, from Start! + 0.5 s for 1.5 s; either way, plus every frame from 0.6 s before Rack!.
+- **The builder's choices,** where the plan gives none:
+  - the path is "lost" when it has no point that counts for its last 0.5 s or more before the
+    window's end;
+  - "isn't lost before its lowest point" is read as "isn't lost before Press! (or Rack!)", since a
+    path lost earlier can't show the bar went no lower;
+  - lost partway needs 80% cover from Start! to the loss;
+  - the wrists are smoothed by a 3-point median, as `measureBar` smooths the path;
+  - the poses run only when the path isn't enough.
+- **The lost-track cut** sends the whole saved path: the product saves the server's own track
+  (`takeBar` re-tracks from the plate tap on the server's frames), and the phone losing the bar
+  doesn't cut it short. `measureBar` and the drawn lines still stop where the phone lost it.
+
+**The touch against the reference** (`test_touch.py`, in CI once `calls.json` is committed): on
+every bench with a reference track whose touch came from the path, the touch must be within 0.2 s
+of the reference's lowest point from Start! to Press! (or Rack!). Every cut-1 path here is whole,
+so this table is no proof of the 80% rule; the worker tests thin a real trace for that.
+
+Each bench's way in and its touch minus the reference's lowest point (negative: earlier). A lost-track cut always has its own late Press!; — is a bench with no lost-track cut
+(see "Left out").
+
+| bench | Press! | cut 1: way, ms from the reference | lost track: way, ms |
+|---|---|---|---|
+| AMih | yes | path, -100 | — |
+| ak3m2 | yes | path, -67 | — |
+| ak3m3 | yes | path, +133 | path, +133 |
+| cE2t | yes | path, +167 | path, +167 |
+| Ecs1 | yes | path, +33 | path, +67 |
+| Ecs2 | yes | path, -33 | path, +33 |
+| KrDo | yes | path, -100 | path, 0 |
+| Lj0X | yes | path, 0 | path, 0 |
+| Nazt | yes | path, -33 | path, -267 **(over 0.2 s)** |
+| uGCh | yes | path, +167 | path, +167 |
+| 6K8v-r2 | no | path, -34 | — |
+| 6K8v-r3 | no | wrists, +67 | path, 0 |
+| 83WA-r1 | yes | path, +67 | path, +67 |
+| 83WA-r2 | yes | path, +66 | path, +66 |
+| 8qzW-r1 | yes | path, -33 | path, -33 |
+| hIuj-r1 | yes | path, +67 | path, +67 |
+| IA0P-r2 | yes | path, -934 **(over 0.2 s)** | path, -934 **(over 0.2 s)** |
+| IKuX-r2 | no | path, 0 | — |
+| IKuX-r3 | no | path, +67 | — |
+| IKuX-r4 | no | path, 0 | — |
+| IKuX-r5 | no | path, 0 | path, 0 |
+| m-k8-r1 | no | path, -33 | path, -33 |
+| NFjK-r3 | no | path, -33 | path, -33 |
+| Nv9h-r1 | no | path, +200 | path, +200 |
+| Nv9h-r2 | no | path, -33 | — |
+| Nv9h-r3 | no | path, 0 | — |
+| Nv9h-r4 | no | path, 0 | — |
+| Nv9h-r5 | no | path, 0 | path, 0 |
+| VM_y-r1 | no | path, +33 | — |
+| VM_y-r2 | no | path, +33 | — |
+| VM_y-r3 | no | path, 0 | — |
+| VM_y-r4 | no | path, 0 | path, 0 |
+| xXFj-r1 | no | path, -33 | path, -33 |
+| xXFj-r2 | no | path, -133 | — |
+| xXFj-r3 | no | path, 0 | — |
+| xXFj-r4 | no | path, 0 | — |
+| z838-r1 | yes | path, +34 | path, -34 |
+| bench-demo-r1 | yes | wrists, no reference | — |
+| bench-demo-r2 | yes | wrists, no reference | — |
+| bench-demo-r3 | yes | wrists, no reference | — |
+
+**Over 0.2 s, so the check fails** (The Playner told before any paid run):
+- **IA0P rep 2, both cuts (934 ms early):** the phone's path holds still at the bottom from 2.3 s, while the
+  reference keeps sinking slowly (about 4% of the frame's height) to 3.0 s. The frames still hold every frame
+  within 0.2 s of the reference's touch, since the bench gets every frame from the touch to 0.3 s after Press!.
+- **Nazt, lost track (267 ms early):** the late Press! comes while the bar is still sinking slowly, so both lowest
+  points fall near the window's end, 0.3% of the frame's height apart.
+
+On every bench the frames hold every frame within 0.2 s of the reference's touch.
 
 **Frames per bench**, as `recut.py` cuts them:
 
 | bench attempts | attempts | frames (min, median, max) |
 |---|---|---|
-| with a Press!, cut 1 | 19 | 22, 35, 57 |
-| lost track (Press! late) | 22 | 19, 38.5, 56 |
-| no Press! (gym reds, cut 1) | 21 | 15, 23, 30 (5, 7, 9 before the no-Press! rule) |
+| with a Press!, cut 1 | 19 | 22, 32, 43 |
+| lost track (Press! late) | 22 | 28, 36.5, 47 |
+| no Press! (gym reds, cut 1) | 21 | 20, 27, 30 (5, 7, 9 before the no-Press! rule) |
 
-The shortest are IKuX reps 2 and 3, at 15. Their reps last 1.6 s, so the windows overlap.
+The shortest are IKuX rep 2 and VM_y rep 2, at 20. Their reps last 1.6 s, so the windows overlap. No other
+attempt's frames changed with the bar-path rule.
 
 **Held back:** 15 clips, 27 attempts (seed 1: a third of each group's clips, rounded up, with at
 least 2 sure reds).
