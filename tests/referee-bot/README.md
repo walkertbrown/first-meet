@@ -86,24 +86,27 @@ sends the saved bar path (`attempts.barKey`) on every bench; `worker/bench_path.
   a Press!, from the touch to 0.3 s after Press!, within the 60 cap.
 - **Else a fixed window:** with a Press!, every frame from 1 s before it to 0.5 s after; without
   one, from Start! + 0.5 s for 1.5 s; either way, plus every frame from 0.6 s before Rack!.
-- **The builder's choices,** where the plan gives none:
+- **The readings,** now in the plan's 3.4d step 1 word for word:
   - the path is "lost" when it has no point that counts for its last 0.5 s or more before the
     window's end;
-  - "isn't lost before its lowest point" is read as "isn't lost before Press! (or Rack!)", since a
-    path lost earlier can't show the bar went no lower;
-  - lost partway needs 80% cover from Start! to the loss;
+  - "usable" means it isn't lost before Press! (or Rack!, or the window's end);
+  - lost partway needs 80% cover from Start! to the loss, and the wrists seen on half the frames
+    after it;
   - the wrists are smoothed by a 3-point median, as `measureBar` smooths the path;
-  - the poses run only when the path isn't enough.
+  - the poses run only when the path isn't usable.
 - **The lost-track cut** sends the whole saved path: the product saves the server's own track
   (`takeBar` re-tracks from the plate tap on the server's frames), and the phone losing the bar
   doesn't cut it short. `measureBar` and the drawn lines still stop where the phone lost it.
 
-**The touch against the reference** (`test_touch.py`, in CI once `calls.json` is committed): on
-every bench with a reference track whose touch came from the path, the touch must be within 0.2 s
-of the reference's lowest point from Start! to Press! (or Rack!). Every cut-1 path here is whole,
-so this table is no proof of the 80% rule; the worker tests thin a real trace for that.
+**The frames against the reference** (`test_touch.py`, in CI once `calls.json` and
+`frames/frames.json` are committed): on every bench with a reference track (CSRT, not our
+tracker), the frames sent must hold every frame within 0.2 s of the reference's lowest point from
+Start! to Press! (or Rack!). It checks what the bot sees, not where the frames job put its touch.
+It passes on every bench. On the frames cut before the bar-path rule it fails on 15 benches.
 
-Each bench's way in and its touch minus the reference's lowest point (negative: earlier). A lost-track cut always has its own late Press!; — is a bench with no lost-track cut
+The table below isn't checked; it shows how far each touch is from the reference. Every cut-1
+path here is whole, so it is no proof of the 80% rule; the worker tests thin a real trace for
+that. Each bench's way in and its touch minus the reference's lowest point (negative: earlier). A lost-track cut always has its own late Press!; — is a bench with no lost-track cut
 (see "Left out").
 
 | bench | Press! | cut 1: way, ms from the reference | lost track: way, ms |
@@ -116,7 +119,7 @@ Each bench's way in and its touch minus the reference's lowest point (negative: 
 | Ecs2 | yes | path, -33 | path, +33 |
 | KrDo | yes | path, -100 | path, 0 |
 | Lj0X | yes | path, 0 | path, 0 |
-| Nazt | yes | path, -33 | path, -267 **(over 0.2 s)** |
+| Nazt | yes | path, -33 | path, -267 |
 | uGCh | yes | path, +167 | path, +167 |
 | 6K8v-r2 | no | path, -34 | — |
 | 6K8v-r3 | no | wrists, +67 | path, 0 |
@@ -124,7 +127,7 @@ Each bench's way in and its touch minus the reference's lowest point (negative: 
 | 83WA-r2 | yes | path, +66 | path, +66 |
 | 8qzW-r1 | yes | path, -33 | path, -33 |
 | hIuj-r1 | yes | path, +67 | path, +67 |
-| IA0P-r2 | yes | path, -934 **(over 0.2 s)** | path, -934 **(over 0.2 s)** |
+| IA0P-r2 | yes | path, -934 **(the phone's trace froze)** | path, -934 **(the phone's trace froze)** |
 | IKuX-r2 | no | path, 0 | — |
 | IKuX-r3 | no | path, +67 | — |
 | IKuX-r4 | no | path, 0 | — |
@@ -149,14 +152,22 @@ Each bench's way in and its touch minus the reference's lowest point (negative: 
 | bench-demo-r2 | yes | wrists, no reference | — |
 | bench-demo-r3 | yes | wrists, no reference | — |
 
-**Over 0.2 s, so the check fails** (The Playner told before any paid run):
-- **IA0P rep 2, both cuts (934 ms early):** the phone's path holds still at the bottom from 2.3 s, while the
-  reference keeps sinking slowly (about 4% of the frame's height) to 3.0 s. The frames still hold every frame
-  within 0.2 s of the reference's touch, since the bench gets every frame from the touch to 0.3 s after Press!.
-- **Nazt, lost track (267 ms early):** the late Press! comes while the bar is still sinking slowly, so both lowest
-  points fall near the window's end, 0.3% of the frame's height apart.
+**More than 0.4 s off:**
+- **IA0P rep 2, both cuts (934 ms early):** the phone's plate trace froze for 1.5 s (x and y still
+  to 0.002, confidence 0.85 or more) and rose 0.4–0.5 s late, with a sideways jump. The reference
+  keeps sinking through it. Don't tune toward the stuck track. Its frames still hold every frame
+  within 0.2 s of the reference's touch, since the bench gets every frame from the touch to 0.3 s
+  after Press!.
 
-On every bench the frames hold every frame within 0.2 s of the reference's touch.
+**6K8v rep 3, cut 1, takes the wrists** only because the committed trace ends at 11.2 s of the
+clip, before the cut does (12.77 s). It isn't a tracker loss. In the product the server's path
+would go on, and this bench would take the path.
+
+**These paths are the phone's** (`data/traces`). In a meet the Pause line and the saved path come
+from the server's re-track (`worker/plate.py`, the same tracking code on the server's 15 fps
+frames), which drifts apart from the phone's on the same clip. On these 22 clips it sticks on
+IA0P reps 1 and 3 (not rep 2), and on z838 for 14 s at confidence 0.55. The Playner rules on a
+guard before any paid run.
 
 **Frames per bench**, as `recut.py` cuts them:
 

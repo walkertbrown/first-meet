@@ -1,11 +1,12 @@
-"""The committed check on the bench's touch (plan 3.4d step 1, "the bar path first").
+"""The committed check on the bench's frames (plan 3.4d step 1, "the bar path first").
 
-On every bench in `calls.json` whose touch comes from the bar path and that has a reference track
-(`tests/bench-commands/data/reference/`, CSRT, not the phone's tracker), the touch must be within 0.2 s of the
-reference's lowest point from Start! to Press! (or Rack!). If one isn't, The Playner hears of it before any paid run.
+On every bench in `calls.json` with a reference track (`tests/bench-commands/data/reference/`, CSRT, not the
+phone's tracker), the frames sent (`frames.json`, from `recut.py`) must hold every frame within 0.2 s of the
+reference's lowest point from Start! to Press! (or Rack!). It checks what the bot sees, not where the frames job put
+its touch: two trackers can disagree about where the bar stopped (IA0P rep 2), and the frames must show both.
 
-`calls.json` is committed with Walker's yes to item 107; until then this skips, unless REFEREE_SET points at a
-built set (`build-set.ts --out`).
+`calls.json` and `frames/frames.json` are committed with Walker's yes to item 107; until then this skips, unless
+REFEREE_SET points at a built set (`build-set.ts --out`) and REFEREE_FRAMES at the folder `recut.py --out` wrote.
 
     python3 -m unittest discover tests/referee-bot
 """
@@ -22,7 +23,9 @@ import bench_path  # noqa: E402  (stdlib only: no MediaPipe needed)
 
 REFS = os.path.join(ROOT, 'tests', 'bench-commands', 'data', 'reference')
 CALLS = os.environ.get('REFEREE_SET') or os.path.join(HERE, 'calls.json')
-TOUCH_MS = 200
+FRAMES = os.path.join(os.environ.get('REFEREE_FRAMES') or os.path.join(HERE, 'frames'), 'frames.json')
+AROUND_MS = 200
+FRAME_MS = 1000 / 15   # the server's frames
 
 
 def reference(a):
@@ -61,16 +64,46 @@ def touches(attempts):
     return out
 
 
-@unittest.skipUnless(os.path.exists(CALLS), 'calls.json waits for Walker\'s yes to item 107 (or set REFEREE_SET)')
-class TouchFromThePath(unittest.TestCase):
+def missing(times, low, length):
+    """Where the sent frames leave a gap of more than a frame within 0.2 s of `low` (clipped to the cut)."""
+    a, b = max(0, low - AROUND_MS), min(length, low + AROUND_MS)
+    near = sorted(t for t in times if a - FRAME_MS <= t <= b + FRAME_MS)
+    edges = [a - FRAME_MS / 2] + near + [b + FRAME_MS / 2]
+    return [(round(x), round(y)) for x, y in zip(edges, edges[1:]) if y - x > 1.5 * FRAME_MS and y > a and x < b]
 
-    def test_every_touch_from_the_path_is_within_0_2_s_of_the_reference(self):
+
+@unittest.skipUnless(os.path.exists(CALLS) and os.path.exists(FRAMES),
+                     'calls.json and frames.json wait for Walker\'s yes to item 107 (or set REFEREE_SET and REFEREE_FRAMES)')
+class FramesShowTheTouch(unittest.TestCase):
+
+    def test_every_frame_within_0_2_s_of_the_references_lowest_point_is_sent(self):
         with open(CALLS) as f:
             attempts = json.load(f)['attempts']
-        rows = [r for r in touches(attempts) if r[1] == 'path' and r[3] is not None]
-        self.assertTrue(rows, 'no bench took its touch from the path')
-        off = [(a['id'], a['cut'], touch - low) for a, _, touch, low in rows if abs(touch - low) > TOUCH_MS]
-        self.assertEqual(off, [], 'touch more than 0.2 s from the reference: mail The Playner before any paid run')
+        with open(FRAMES) as f:
+            frames = json.load(f)['attempts']
+        rows = [r for r in touches(attempts) if r[3] is not None]
+        self.assertTrue(rows, 'no bench has a reference')
+        gaps = []
+        for a, _, _, low in rows:
+            times = [x['t_ms'] for x in frames[a['id']]['frames']]
+            if (g := missing(times, low, a['window_ms'][1] - a['window_ms'][0])):
+                gaps.append((a['id'], round(low), g))
+        self.assertEqual(gaps, [], 'frames missing near the reference\'s touch: mail The Playner before any paid run')
+
+
+class Missing(unittest.TestCase):
+    """The gap finder itself, on made-up frame times."""
+
+    def test_every_frame_passes_and_one_dropped_frame_fails(self):
+        every = [round(i * FRAME_MS) for i in range(90)]
+        self.assertEqual(missing(every, 3000, 6000), [])
+        self.assertTrue(missing([t for t in every if t != 3067], 3000, 6000))
+        self.assertTrue(missing([t for t in every if t != 2800], 3000, 6000))   # the first frame inside 0.2 s
+
+    def test_only_the_2_a_second_frames_fail_and_the_cuts_end_is_allowed(self):
+        self.assertTrue(missing(list(range(0, 6001, 500)), 3000, 6000))
+        every = [round(i * FRAME_MS) for i in range(76)]   # to 5000 ms
+        self.assertEqual(missing(every, 4900, 5000), [])
 
 
 if __name__ == '__main__':
