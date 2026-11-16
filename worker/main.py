@@ -227,51 +227,26 @@ def render_clip(ctx: TaskContext, worker_id: str) -> dict:
     return {'commit': COMMIT, 'worker_id': worker_id, 'process_secs': round(begun - STARTED, 2), 'clips': done}
 
 
-BENCH_POSE_FPS = 15
+BENCH_POSE_FPS = rf.BENCH_POSE_FPS
 
 
 def one_referee_frames(job: dict) -> dict:
     """3.4d step 1: the attempt's frames, picked, stamped and PUT to R2 (the web service says where)."""
-    import av
     t0 = time.monotonic()
     commands = [(int(t), w) for t, w in job['commands']]
+    urls = job['upload_urls']
     with tempfile.TemporaryDirectory() as d:
         video = os.path.join(d, 'attempt')
         urllib.request.urlretrieve(job['video_url'], video)
-        info = poses.clip_info(video)
-        with av.open(video) as c:
-            rate = c.streams.video[0].average_rate
-        fps = min(float(rate) if rate else 15.0, 15.0)
-        duration_ms = int(info.duration * 1000)
-        moments = list(job.get('moments') or [])
-        pause = None
-        fallback = None
-        bench = job.get('bench')
-        if bench:
-            press = int(bench['press_ms'])
-            grid = poses.grid(info.duration, BENCH_POSE_FPS, int(bench['start_ms']), min(duration_ms, press + 3000))
-            found = rf.bench_moments(poses.find_at(video, grid), int(bench['start_ms']), press)
-            if found:
-                low, top = found
-                pause = (low, press)
-                moments.append({'ms': low, 'flagged': True})
-                if top is not None:
-                    moments.append({'ms': top, 'flagged': True})
-            else:
-                rack = bench.get('rack_ms')
-                fallback = [(press - 1000, press + 500)] + ([(int(rack) - 600, int(rack))] if rack is not None else [])
-        times = rf.pick(fps, duration_ms, commands, moments, pause=pause, fallback=fallback)
-        urls = job['upload_urls']
-        times = times[:len(urls)]
+        frames, bench_poses = rf.make_frames(video, commands, job.get('moments') or [], job.get('bench'), cap=min(rf.CAP, len(urls)))
         out = []
-        for n, (t, img) in enumerate(zip(times, rf.grab(video, times))):
-            data = rf.jpeg(rf.burn(img, rf.label(t, commands)))
+        for n, (t, data) in enumerate(frames):
             put = urllib.request.Request(urls[n], data=data, method='PUT', headers={'content-type': 'image/jpeg', 'content-length': str(len(data))})
             with urllib.request.urlopen(put, timeout=60) as r:
                 if r.status >= 300:
                     raise RuntimeError(f'upload {n}: {r.status}')
             out.append({'n': n, 't_ms': t, 'sha256': hashlib.sha256(data).hexdigest()})
-    return {'frames': out, 'bench_poses': bool(pause) if bench else None, 'secs': round(time.monotonic() - t0, 2)}
+    return {'frames': out, 'bench_poses': bench_poses, 'secs': round(time.monotonic() - t0, 2)}
 
 
 def referee_frames_or_report(job_id: str, run=None) -> dict:

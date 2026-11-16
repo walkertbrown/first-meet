@@ -164,6 +164,42 @@ def bench_moments(points: list[dict], start_ms: int, press_ms: int) -> tuple[int
     return low, top
 
 
+BENCH_POSE_FPS = 15
+
+
+def make_frames(video: str, commands: list[tuple[int, str]], moments: list[dict], bench: dict | None,
+                cap: int = CAP) -> tuple[list[tuple[int, bytes]], bool | None]:
+    """One attempt's frames from a clip on disk: [(t_ms, jpeg)] in time order, and whether the bench's
+    poses were usable (None off the bench). The worker's job and tests/referee-bot/recut.py both run
+    this, so the referee bot test sees exactly the frames the product sends."""
+    import av
+    import poses
+    info = poses.clip_info(video)
+    with av.open(video) as c:
+        rate = c.streams.video[0].average_rate
+    fps = min(float(rate) if rate else 15.0, 15.0)
+    duration_ms = int(info.duration * 1000)
+    moments = list(moments or [])
+    pause = None
+    fallback = None
+    if bench:
+        press = int(bench['press_ms'])
+        grid = poses.grid(info.duration, BENCH_POSE_FPS, int(bench['start_ms']), min(duration_ms, press + 3000))
+        found = bench_moments(poses.find_at(video, grid), int(bench['start_ms']), press)
+        if found:
+            low, top = found
+            pause = (low, press)
+            moments.append({'ms': low, 'flagged': True})
+            if top is not None:
+                moments.append({'ms': top, 'flagged': True})
+        else:
+            rack = bench.get('rack_ms')
+            fallback = [(press - 1000, press + 500)] + ([(int(rack) - 600, int(rack))] if rack is not None else [])
+    times = pick(fps, duration_ms, commands, moments, pause=pause, fallback=fallback, cap=cap)
+    out = [(t, jpeg(burn(img, label(t, commands)))) for t, img in zip(times, grab(video, times))]
+    return out, (bool(pause) if bench else None)
+
+
 def grab(path: str, times_ms: list[int]) -> list[Image.Image]:
     """The frame showing at each time (the one at or before it), upright."""
     import av

@@ -74,5 +74,31 @@ class BenchMoments(unittest.TestCase):
         self.assertIsNone(rf.bench_moments([{'t': 1000, 'p': None}], 1000, 3000))
 
 
+CLIP = os.path.join(os.path.dirname(__file__), '..', '..', 'tests', 'clips', 'deadlift-demo.webm')
+
+
+class MakeFrames(unittest.TestCase):
+    """The one path the worker's job and tests/referee-bot/recut.py share."""
+
+    def test_a_clip_on_disk_gives_stamped_jpegs_at_the_picked_times_the_same_every_run(self):
+        commands = [(0, 'Bar is loaded.'), (2000, 'Down!')]
+        moments = [{'ms': 1200, 'flagged': True}]
+        frames, bench = rf.make_frames(CLIP, commands, moments, None)
+        self.assertIsNone(bench)
+        times = [t for t, _ in frames]
+        self.assertEqual(times, sorted(times))
+        self.assertEqual(times[0], 0)
+        self.assertIn(2000, times)  # 2 a second up to "Down!"
+        self.assertTrue(all(800 <= t <= 1600 for t in times if t not in (0, 500, 1000, 1500, 2000)))
+        self.assertTrue(all(j[:3] == b'\xff\xd8\xff' for _, j in frames))
+        self.assertEqual(Image.open(__import__('io').BytesIO(frames[0][1])).size[0], rf.WIDTH)
+        again, _ = rf.make_frames(CLIP, commands, moments, None)
+        self.assertEqual(frames, again)
+
+    def test_the_cap_holds(self):
+        frames, _ = rf.make_frames(CLIP, [(0, 'Bar is loaded.')], [], None, cap=5)
+        self.assertEqual(len(frames), 5)
+
+
 if __name__ == '__main__':
     unittest.main()
