@@ -68,6 +68,22 @@ describe.skipIf(!URL_)('the demo meet and the referee', () => {
     expect(await attemptState(db, filmed.attempt.id, filmed.lifter.id)).toMatchObject({ status: 200, attempt: { sample: false, sample_clip: null } });
   });
 
+  it('a sample missing from the bucket answers 503, and the attempt and the demo count are left as they were (item 100)', async () => {
+    const { lifter, attempt } = await startDemo(db, { division: 'barbell' });
+    const k = keys.sample(DEMO_SAMPLES[0].file);
+    const kept = store.objects.get(k)!;
+    store.objects.delete(k);
+    try {
+      expect(await sampleLift(db, store, lifter.id, attempt.id)).toMatchObject({ status: 503, error: 'sample missing' });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, attempt.id));
+      expect(a).toMatchObject({ status: 'declared', videoKey: null, isSampleClip: false });
+      expect(await db.select().from(events).where(eq(events.attemptId, attempt.id))).toHaveLength(0);
+    } finally {
+      store.objects.set(k, kept);
+    }
+    expect(await sampleLift(db, store, lifter.id, attempt.id)).toMatchObject({ status: 200, sample: { kind: 'good' } });
+  });
+
   it('a Home sample is judged on the clip\'s reps', async () => {
     const { lifter, attempt } = await startDemo(db, { division: 'home' });
     await sampleLift(db, store, lifter.id, attempt.id);
