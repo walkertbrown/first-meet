@@ -29,15 +29,15 @@ describe('You totaled (5.28)', () => {
     expect(unitLine('lb', 'home')).toBe('LB LIFTED');
   });
 
-  it('item 75: a demo lifter is told about a real meet night; "See my lifts" until phase 4', () => {
+  it('item 75: a demo lifter is told about a real meet night; the Primary is "See my meet card" (phase 4)', () => {
     expect(totalWords(true)).toEqual({
       body: "That's your first total. On a real meet night, every woman who totaled is on the host's screen.",
-      primary: { label: 'See my lifts', href: '/platform' },
+      primary: { label: 'See my meet card', href: '/me/card' },
       ghost: { label: 'Watch a meet night', href: '/sample' },
     });
     const real = totalWords(false);
     expect(real.body).toBe("That's your first total. Soo is live at 8 pm Eastern tonight. Every woman who totaled is on her screen. Watch for your name.");
-    expect(real.primary).toEqual({ label: 'See my lifts', href: '/platform' });
+    expect(real.primary).toEqual({ label: 'See my meet card', href: '/me/card' });
     expect(real.ghost).toEqual({ label: 'Watch meet night', href: '/live' });
   });
 

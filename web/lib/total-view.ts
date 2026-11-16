@@ -42,12 +42,12 @@ export const DEMO_LINE = 'That\'s your first total. On a real meet night, every 
 
 /**
  * The total's words (5.28): a demo lifter isn't in a real meet, so she isn't told Soo will read her
- * name, and the Primary is "See my lifts" until the meet card (phase 4) exists.
+ * name. The Primary opens her meet card (5.30).
  */
 export function totalWords(demo: boolean): { body: string; primary: Link; ghost: Link } {
   return {
     body: demo ? DEMO_LINE : SOO_LINE,
-    primary: { label: 'See my lifts', href: '/platform' },
+    primary: { label: 'See my meet card', href: '/me/card' },
     ghost: demo ? { label: 'Watch a meet night', href: '/sample' } : { label: 'Watch meet night', href: '/live' },
   };
 }
