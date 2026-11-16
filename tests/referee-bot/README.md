@@ -71,6 +71,31 @@ attempt in it.
 - **The builder's check:** `build-set.ts` stops if any bench would go out with reason
   `command_times`, so every bench gets its usual lines.
 
+**The bench's frames** (3.4d step 1; with no Press!, as ruled for item 107, The Playner, Nov 16):
+- **With a Press!:** the touch is the wrists' lowest point between Start! and Press!, and the
+  lockout their top after Press!.
+- **With no Press!** (the bar never stopped, so the phone never called it):
+  - the touch is the wrists' lowest point between Start! and Rack! (or the end);
+  - the lockout is their top after the touch;
+  - the poses are looked for all the way to Rack!.
+- **Either way:** every frame from 0.4 s before to 0.4 s after each, within the 60 cap.
+- **No usable poses:**
+  - with a Press!, every frame from 1 s before it to 0.5 s after;
+  - with none, every frame 0.4 s either side of the saved bar path's lowest point between Start!
+    and Rack! (`bar_low_ms`, which the frames job reads from `attempts.barKey`);
+  - with no bar path either, every frame from Start! + 0.5 s for 1.5 s;
+  - each time, plus every frame from 0.6 s before Rack!.
+
+**Frames per bench**, as `recut.py` cuts them:
+
+| bench attempts | attempts | frames (min, median, max) |
+|---|---|---|
+| with a Press!, cut 1 | 19 | 22, 35, 57 |
+| lost track (Press! late) | 22 | 19, 38.5, 56 |
+| no Press! (gym reds, cut 1) | 21 | 15, 23, 30 (5, 7, 9 before the no-Press! rule) |
+
+The shortest are IKuX reps 2 and 3, at 15. Their reps last 1.6 s, so the windows overlap.
+
 **Held back:** 15 clips, 27 attempts (seed 1: a third of each group's clips, rounded up, with at
 least 2 sure reds).
 

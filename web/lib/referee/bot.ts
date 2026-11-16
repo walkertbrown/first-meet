@@ -10,6 +10,8 @@ import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, lifters, meets, opsSettings, refereeJobs, reviews, type Light, type RefereeCall, type RefereeFrame } from '@/db/schema';
 import { judgeAttempt, type Frame, type MeetLift } from '@/lib/judge';
+import { barLowestMs, type BarPoint } from '@/lib/judge/bar-measure';
+import type { CommandTimes } from '@/lib/judge/zoom';
 import { attemptReason, callOf } from '@/lib/lights';
 import { benchByBar, judgedLift, logEvent, publish } from '@/lib/queue';
 import { keys } from '@/lib/r2';
@@ -116,17 +118,22 @@ export function commandList(ct: Record<string, number> | null): [number, string]
   }).sort((a, b) => a[0] - b[0]);
 }
 
+export type BenchBlock = { start_ms: number; press_ms: number | null; rack_ms: number | null; bar_low_ms?: number | null };
+
 /**
  * The bench's pause frames (step 1): "Start!", "Press!" (on time, or late: `press_late`) and "Rack!" in ms,
- * or null with no Start! or no Press!. Only number-valued keys count: `press_late_why` ("lost", "still")
- * is a word, not a time.
+ * or null with no Start!. Only number-valued keys count: `press_late_why` ("lost", "still") is a word, not a time.
+ * With no Press! (the bar never stopped), `press_ms` is null and the worker finds the touch and lockout from
+ * "Start!" to "Rack!"; `bar_low_ms`, the bar path's lowest point there, is its touch if the wrists can't be seen.
  */
-export function benchBlock(ct: Record<string, unknown> | null): { start_ms: number; press_ms: number; rack_ms: number | null } | null {
+export function benchBlock(ct: Record<string, unknown> | null, bar?: { path: BarPoint[]; w: number; h: number } | null): BenchBlock | null {
   const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined);
   const start = num(ct?.start);
-  const press = num(ct?.press) ?? num(ct?.press_late);
-  if (start === undefined || press === undefined) return null;
-  return { start_ms: start, press_ms: press, rack_ms: num(ct?.rack) ?? null };
+  if (start === undefined) return null;
+  const press = num(ct?.press) ?? num(ct?.press_late) ?? null;
+  const out: BenchBlock = { start_ms: start, press_ms: press, rack_ms: num(ct?.rack) ?? null };
+  if (press === null) out.bar_low_ms = bar?.path?.length ? barLowestMs(bar.path, ct as CommandTimes, { w: bar.w, h: bar.h }) : null;
+  return out;
 }
 
 export interface FrameStore {
@@ -144,7 +151,11 @@ export async function framesJob(db: Db, store: FrameStore, jobId: string, env: R
   const a = row.a;
   const ct = a.commandTimes as Record<string, number> | null;
   const moments: { ms: number; flagged: boolean }[] = [];
-  const bench = benchByBar(a) ? benchBlock(ct) : null;
+  let bar: { path: BarPoint[]; w: number; h: number } | null = null;
+  if (benchByBar(a) && a.barKey && ct && ct.press == null && ct.press_late == null) {
+    bar = await store.getJson<{ path: BarPoint[]; w: number; h: number }>(a.barKey).catch(() => null);
+  }
+  const bench = benchByBar(a) ? benchBlock(ct, bar) : null;
   if (!benchByBar(a) && a.posesKey) {
     const poses = await store.getJson<{ w: number; h: number; duration: number; frames: Frame[] }>(a.posesKey).catch(() => null);
     if (poses) {

@@ -11,7 +11,7 @@ committed (5.2); the rest are made again from the clip by whoever reruns this.
 Each attempt in the set file:
   {"id": "...", "clip": "<path, from the repo root or the clips folder>", "free": true|false,
    "window_ms": [w0, w1] | null, "commands": [[ms, "Press!"], ...],
-   "moments": [{"ms": ..., "flagged": true|false}], "bench": {"start_ms", "press_ms", "rack_ms"} | null}
+   "moments": [{"ms": ..., "flagged": true|false}], "bench": {"start_ms", "press_ms" | null, "rack_ms", "bar_low_ms"?} | null}
 Every time is from the window's start, as if the phone had filmed only that stretch.
 
 Usage (MediaPipe needs a CPU list in /sys; see README.md):

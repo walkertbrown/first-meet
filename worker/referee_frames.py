@@ -11,6 +11,12 @@ Which frames:
   The bench's moments come from poses run here: the wrists' lowest point between "Start!" and
   "Press!", and their top after "Press!". With no usable poses: every frame from 1.0 s before
   "Press!" to 0.5 s after, and from 0.6 s before "Rack!".
+- A bench with no "Press!" (the bar never stopped): the touch is the wrists' lowest point between
+  "Start!" and "Rack!" (or the end), the lockout their top after it, and every frame 0.4 s either
+  side of each, the grid of poses running from "Start!" to "Rack!". With no usable poses, the touch is
+  the bar path's lowest point there (`bar_low_ms`, from the web service): every frame 0.4 s either side
+  of it, and from 0.6 s before "Rack!". With no bar path either: every frame from 0.5 s after
+  "Start!" for 1.5 s, then the rack frames.
 - At most 60: the 2-a-second frames thin evenly first, then the moments of reps the judge passed
   cleanly. The flagged rep's frames are always kept.
 """
@@ -147,24 +153,31 @@ def jpeg(img: Image.Image) -> bytes:
     return buf.getvalue()
 
 
-def bench_moments(points: list[dict], start_ms: int, press_ms: int) -> tuple[int, int | None] | None:
-    """From poses: the wrists' lowest point between "Start!" and "Press!" (image y grows down), and their top after."""
+def bench_moments(points: list[dict], start_ms: int, press_ms: int | None, end_ms: int | None = None) -> tuple[int, int | None] | None:
+    """From poses: the wrists' lowest point between "Start!" and "Press!" (image y grows down), and their top after.
+    With no "Press!" (`press_ms` None): the lowest point between "Start!" and `end_ms` ("Rack!" or the end),
+    and their top after that point."""
     def wrist_y(f):
         p = f.get('p')
         if not p:
             return None
         ys = [p[i][1] for i in (15, 16) if p[i][2] >= 0.5]
         return sum(ys) / len(ys) if ys else None
-    before = [(f['t'], y) for f in points if start_ms <= f['t'] <= press_ms and (y := wrist_y(f)) is not None]
-    after = [(f['t'], y) for f in points if f['t'] > press_ms and (y := wrist_y(f)) is not None]
+    ys = [(f['t'], y) for f in points if (y := wrist_y(f)) is not None]
+    stop = press_ms if press_ms is not None else (end_ms if end_ms is not None else float('inf'))
+    before = [(t, y) for t, y in ys if start_ms <= t <= stop]
     if len(before) < 3:
         return None
     low = max(before, key=lambda x: x[1])[0]
+    after = [(t, y) for t, y in ys if (t > press_ms if press_ms is not None else low < t <= stop)]
     top = min(after, key=lambda x: x[1])[0] if after else None
     return low, top
 
 
 BENCH_POSE_FPS = 15
+# a bench with no Press!, no usable poses and no bar path: every frame from 0.5 s after Start! for 1.5 s
+NO_PRESS_FROM_MS = 500
+NO_PRESS_FOR_MS = 1500
 
 
 def make_frames(video: str, commands: list[tuple[int, str]], moments: list[dict], bench: dict | None,
@@ -186,24 +199,36 @@ def make_frames(video: str, commands: list[tuple[int, str]], moments: list[dict]
     moments = list(moments or [])
     pause = None
     fallback = None
+    found = None
     if bench:
-        press = int(bench['press_ms'])
-        grid = poses.grid(info.duration, BENCH_POSE_FPS, w0 + int(bench['start_ms']), w0 + min(duration_ms, press + 3000))
+        start = int(bench['start_ms'])
+        press = int(bench['press_ms']) if bench.get('press_ms') is not None else None
+        rack = int(bench['rack_ms']) if bench.get('rack_ms') is not None else None
+        # with no Press!, the touch and lockout are looked for from Start! to Rack! (or the end)
+        end = min(duration_ms, press + 3000) if press is not None else min(duration_ms, rack if rack is not None else duration_ms)
+        grid = poses.grid(info.duration, BENCH_POSE_FPS, w0 + start, w0 + end)
         points = [{**f, 't': f['t'] - w0} for f in poses.find_at(video, grid)]
-        found = bench_moments(points, int(bench['start_ms']), press)
+        found = bench_moments(points, start, press, end)
         if found:
             low, top = found
-            pause = (low, press)
+            if press is not None:
+                pause = (low, press)
             moments.append({'ms': low, 'flagged': True})
             if top is not None:
                 moments.append({'ms': top, 'flagged': True})
         else:
-            rack = bench.get('rack_ms')
-            fallback = [(press - 1000, press + 500)] + ([(int(rack) - 600, int(rack))] if rack is not None else [])
+            racked = [(rack - 600, rack)] if rack is not None else []
+            if press is not None:
+                fallback = [(press - 1000, press + 500)] + racked
+            elif bench.get('bar_low_ms') is not None:
+                low = int(bench['bar_low_ms'])
+                fallback = [(low - AROUND_MS, low + AROUND_MS)] + racked
+            else:
+                fallback = [(start + NO_PRESS_FROM_MS, start + NO_PRESS_FROM_MS + NO_PRESS_FOR_MS)] + racked
     times = pick(fps, duration_ms, commands, moments, pause=pause, fallback=fallback, cap=cap)
     imgs = grab(video, [t + w0 for t in times])
     out = [(t, jpeg(burn(img, label(t, commands)))) for t, img in zip(times, imgs)]
-    return out, (bool(pause) if bench else None)
+    return out, (found is not None if bench else None)
 
 
 def grab(path: str, times_ms: list[int]) -> list[Image.Image]:

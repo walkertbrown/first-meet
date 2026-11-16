@@ -2,6 +2,7 @@
 import os
 import sys
 import unittest
+import unittest.mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
@@ -106,6 +107,88 @@ class MakeFrames(unittest.TestCase):
     def test_the_cap_holds(self):
         frames, _ = rf.make_frames(CLIP, [(0, 'Bar is loaded.')], [], None, cap=5)
         self.assertEqual(len(frames), 5)
+
+
+
+BENCH_CLIP = os.path.join(os.path.dirname(__file__), '..', '..', 'tests', 'clips', 'bench-demo.webm')
+NO_PRESS = [(0, 'Bar is loaded.'), (1000, 'Start!'), (4000, 'Rack!')]
+
+
+def wrists(t, y):
+    p = [[0.5, 0.5, 0.9] for _ in range(33)]
+    p[15] = [0.4, y, 0.9]
+    p[16] = [0.6, y, 0.9]
+    return {'t': t, 'p': p}
+
+
+def every_frame(a, b):
+    """The 15-a-second frame times from a to b, as `pick` sees a 30 fps clip."""
+    return [t for t in rf.frame_times(15, 7100) if a <= t <= b]
+
+
+class NoPressBench(unittest.TestCase):
+    """3.4d step 1: a bench with no "Press!" (the bar never stopped) still gets every frame around its touch
+    and lockout. Checked by where the frames fall, not only how many there are."""
+
+    def test_the_touch_is_the_lowest_point_to_rack_and_the_lockout_the_top_after_it(self):
+        ys = {1000: 0.3, 1500: 0.45, 2000: 0.6, 2500: 0.45, 3000: 0.25, 3500: 0.3, 4000: 0.3, 4500: 0.9, 4600: 0.1}
+        pts = [wrists(t, y) for t, y in ys.items()]
+        # nothing after Rack! counts, low or high
+        self.assertEqual(rf.bench_moments(pts, 1000, None, 4000), (2000, 3000))
+
+    def run_with(self, find_at, bench):
+        import poses
+        asked = []
+
+        def fake(video, times):
+            asked.extend(times)
+            return [find_at(t) for t in times]
+        with unittest.mock.patch.object(poses, 'find_at', fake):
+            frames, found = rf.make_frames(BENCH_CLIP, NO_PRESS, [], bench)
+        return [t for t, _ in frames], found, asked
+
+    def test_poses_give_every_frame_0_4_s_either_side_of_the_touch_and_the_lockout(self):
+        def y(t):   # down to the chest at 2.0 s, no stop, locked out at 3.0 s
+            return 0.3 + 0.3 * t / 1000 - 0.3 if t <= 2000 else max(0.25, 0.6 - 0.35 * (t - 2000) / 1000)
+        times, found, asked = self.run_with(lambda t: wrists(t, 0.3 if t < 1000 else y(t)),
+                                            {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000})
+        self.assertTrue(found)
+        # the poses are looked for from Start! all the way to Rack!, not to a Press! that never came
+        self.assertEqual(min(asked), 1000)
+        self.assertGreaterEqual(max(asked), 4000 - 67)
+        for t in every_frame(1600, 2400) + every_frame(2600, 3400):
+            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
+        self.assertGreaterEqual(len(times), 20)
+
+    def test_no_usable_poses_uses_the_bar_paths_lowest_point_and_the_rack(self):
+        times, found, _ = self.run_with(lambda t: {'t': t, 'p': None},
+                                        {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000, 'bar_low_ms': 2200})
+        self.assertFalse(found)
+        for t in every_frame(1800, 2600) + every_frame(3400, 4000):
+            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
+        self.assertFalse([t for t in every_frame(1000, 1700) if t in times and t % 500])   # nothing extra before the touch
+
+    def test_no_poses_and_no_bar_path_takes_1_5_s_from_0_5_s_after_start_and_the_rack(self):
+        times, found, _ = self.run_with(lambda t: {'t': t, 'p': None},
+                                        {'start_ms': 1000, 'press_ms': None, 'rack_ms': 4000, 'bar_low_ms': None})
+        self.assertFalse(found)
+        for t in every_frame(1500, 3000) + every_frame(3400, 4000):
+            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
+
+    def test_a_bench_with_a_press_is_as_before(self):
+        times, found, asked = self.run_with(lambda t: {'t': t, 'p': None}, {'start_ms': 1000, 'press_ms': 2500, 'rack_ms': 4000})
+        self.assertFalse(found)
+        self.assertLessEqual(max(asked), 2500 + 3000)
+        for t in every_frame(1500, 3000) + every_frame(3400, 4000):
+            self.assertTrue(any(abs(t - u) <= 34 for u in times), t)   # within half a frame: pick merges closer ones
+
+    def test_the_demo_benchs_rep_2_with_its_press_taken_out_gets_at_least_20_frames(self):
+        """Real poses on a real bench: rep 2 of the bench demo (window 0.6–5.07 s), sent as a phone with no Press! would."""
+        commands = [(0, 'Bar is loaded.'), (270, 'Start!'), (3430, 'Rack!')]
+        frames, found = rf.make_frames(BENCH_CLIP, commands, [], {'start_ms': 270, 'press_ms': None, 'rack_ms': 3430},
+                                       window=(600, 5070))
+        self.assertTrue(found)
+        self.assertGreaterEqual(len(frames), 20)
 
 
 if __name__ == '__main__':

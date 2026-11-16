@@ -142,6 +142,22 @@ describe.skipIf(!URL_)('the referee bot', () => {
     expect(await framesToStart(db, 5)).toEqual([]);
   });
 
+  it('the frames job for a bench with no Press!: the bench still goes, with the saved bar path\'s lowest point', async () => {
+    const be = await closeCall('bench');
+    const path = Array.from({ length: 90 }, (_, i) => {
+      const t = Math.round(i * 1000 / 15);
+      return [t, 0.5, t <= 1000 ? 0.3 : t <= 2500 ? 0.3 + 0.3 * (t - 1000) / 1500 : Math.max(0.3, 0.6 - 0.3 * (t - 2500) / 1500), 0.9];
+    });
+    await store.putJson(keys.bar(be), { w: 1280, h: 720, duration: 6, tap: null, path });
+    await db.update(attempts).set({ commandTimes: { loaded: 200, start: 1000, rack: 5000 }, barKey: keys.bar(be) }).where(eq(attempts.id, be));
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const [id] = await enqueue(db, STAGING);
+    const j = await framesJob(db, store, id, {});
+    expect(j!.commands).toEqual([[200, 'Bar is loaded.'], [1000, 'Start!'], [5000, 'Rack!']]);
+    expect(j!.bench).toMatchObject({ start_ms: 1000, press_ms: null, rack_ms: 5000 });
+    expect(Math.abs(j!.bench!.bar_low_ms! - 2500)).toBeLessThanOrEqual(70);
+  });
+
   it('frames that fail get one more run after 5 minutes, then the job is doubt "no_frames"', async () => {
     const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
