@@ -7,6 +7,7 @@ import type { Db } from '@/db';
 import { events, judgeWorkers } from '@/db/schema';
 import { expireLeases, giveUpWaiting } from '@/lib/queue';
 import { CLIP_WORKER, clipCounts, expireClipLeases } from '@/lib/card/clip-job';
+import { framesStarted, framesToStart } from '@/lib/referee/bot';
 
 export const LOCK_KEY = 0x46_4d_44_31; // "FMD1"
 /** The Workflow's instance: 2 CPU, so each run start uses 2 of the CPU budget (3.9). */
@@ -16,7 +17,8 @@ export const BACKOFF_S = [5, 15, 45, 120];
 /** Lift clips (3.9 step 6): at most this many render_clip runs at once, and only while no attempt waits. */
 export const CLIP_RUNS_MAX = 2;
 
-export type Task = 'find_poses' | 'render_clip';
+/** `referee_frames` takes the referee job's id as its input (3.4d step 1). */
+export type Task = 'find_poses' | 'render_clip' | 'referee_frames';
 
 export type Budgets = { runStartsPerMin: number; cpuPerMin: number; workersMax: number };
 
@@ -70,6 +72,8 @@ export type TickResult = {
   started: string[]; failed: number; requeued: string[]; closeCalls: string[];
   /** render_clip runs started, and clip leases that ran out */
   clipStarted: string[]; clipExpired: string[];
+  /** referee jobs whose `referee_frames` run started */
+  framesStarted: string[];
   blockedBy?: 'run_starts' | 'cpu' | 'workers_max' | 'backoff';
 };
 
@@ -82,7 +86,7 @@ const n = (v: unknown) => Number(v ?? 0);
 export async function tick(db: Db, runner: Runner, budgets: Budgets, now = () => Date.now()): Promise<TickResult> {
   return db.transaction(async tx => {
     const [{ locked }] = await tx.execute<{ locked: boolean }>(sql`select pg_try_advisory_xact_lock(${LOCK_KEY}) as locked`);
-    const out: TickResult = { locked, waiting: 0, starting: 0, idle: 0, alive: 0, started: [], failed: 0, requeued: [], closeCalls: [], clipStarted: [], clipExpired: [] };
+    const out: TickResult = { locked, waiting: 0, starting: 0, idle: 0, alive: 0, started: [], failed: 0, requeued: [], closeCalls: [], clipStarted: [], clipExpired: [], framesStarted: [] };
     if (!locked) return out;
     const txDb = tx as unknown as Db;
 
@@ -127,8 +131,10 @@ export async function tick(db: Db, runner: Runner, budgets: Budgets, now = () =>
     const aliveLeft = budgets.workersMax - out.alive;
     const can = Math.min(startsLeft, cpuLeft, aliveLeft);
     if (want <= 0) {
-      // nothing waits for poses: her lift clips may use what's left (3.9 step 6)
-      if (out.waiting === 0 && can > 0 && backoff.until <= now()) await startClipRun(tx, txDb, runner, out, now);
+      // nothing waits for poses: the referee bot's frames, then her lift clips, may use what's left (3.9 step 6)
+      if (backoff.until > now()) return out;
+      const left = can - await startFramesRuns(tx, txDb, runner, out, can, now);
+      if (out.waiting === 0 && left > 0 && backoff.until <= now()) await startClipRun(tx, txDb, runner, out, now);
       return out;
     }
     if (backoff.until > now()) { out.blockedBy = 'backoff'; return out; }
@@ -157,8 +163,29 @@ export async function tick(db: Db, runner: Runner, budgets: Budgets, now = () =>
       }
     }
     if (backoff.failures > 0) out.closeCalls.push(...await giveUpWaiting(txDb));
+    else await startFramesRuns(tx, txDb, runner, out, can - out.started.length, now);
     return out;
   });
+}
+
+/** `referee_frames` runs for referee jobs waiting for frames, within what's left of the budget. Returns how many started. */
+async function startFramesRuns(tx: { insert: Db['insert']; execute: Db['execute'] }, db: Db, runner: Runner, out: TickResult, can: number, now: () => number) {
+  const ids = await framesToStart(db, can);
+  for (const jobId of ids) {
+    const r = await runner.start(jobId, 'referee_frames');
+    if (r.ok) {
+      await framesStarted(db, jobId);
+      await tx.insert(events).values({ kind: 'run_start', detail: { job_id: jobId, run_id: r.runId, task: 'referee_frames' } });
+      out.framesStarted.push(jobId);
+    } else {
+      await tx.insert(events).values({ kind: 'run_start_failed', detail: { job_id: jobId, status: r.status, error: r.error.slice(0, 200), task: 'referee_frames' } });
+      out.failed++;
+      backoff.until = now() + BACKOFF_S[Math.min(backoff.failures, BACKOFF_S.length - 1)] * 1000;
+      backoff.failures++;
+      break;
+    }
+  }
+  return out.framesStarted.length;
 }
 
 /** One render_clip run when a clip waits and fewer than CLIP_RUNS_MAX are going; it takes clips until none wait. */
@@ -192,7 +219,7 @@ export function startDispatcher(db: Db, runner: Runner = new RenderRunner(), bud
     busy = true;
     try {
       const r = await tick(db, runner, budgets);
-      if (r.started.length || r.clipStarted.length || r.clipExpired.length || r.failed || r.requeued.length || r.closeCalls.length) console.log(JSON.stringify({ msg: 'dispatch', ...r }));
+      if (r.started.length || r.clipStarted.length || r.framesStarted.length || r.clipExpired.length || r.failed || r.requeued.length || r.closeCalls.length) console.log(JSON.stringify({ msg: 'dispatch', ...r }));
       for (const id of [...r.requeued, ...r.closeCalls]) {
         await db.execute(sql`select pg_notify('fm_live', ${JSON.stringify({ kind: 'attempt', attempt_id: id, status: 'changed' })})`);
       }

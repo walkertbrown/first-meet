@@ -23,6 +23,7 @@
     "test:db": "vitest run -c tests/db/vitest.config.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "1.8.0",
     "@mediapipe/tasks-vision": "1.2.2",
     "@phosphor-icons/react": "2.1.10",
     "aws4fetch": "1.0.20",

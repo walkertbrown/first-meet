@@ -64,6 +64,13 @@
       "when": 1794800571405,
       "tag": "0008_clip_retried",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794801285998,
+      "tag": "0009_referee_bot_frames_and_settings",
+      "breakpoints": true
     }
   ]
 }

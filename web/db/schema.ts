@@ -210,6 +210,11 @@ export const refereeJobs = pgTable('referee_jobs', {
   /** [{ n, t_ms, key, attempt_id?, sha256 }]: the JPEGs at `referee/<attempt>/<n>.jpg` */
   frames: jsonb('frames').$type<RefereeFrame[]>(),
   framesReadyAt: at('frames_ready_at'),
+  /** `referee_frames` runs started for this job, and when the last began: a second try after 5 minutes, then `no_frames` */
+  framesTries: integer('frames_tries').notNull().default(0),
+  framesStartedAt: at('frames_started_at'),
+  /** after a try whose calls all errored, not before this (step 7's 30 minutes of errors) */
+  nextTryAt: at('next_try_at'),
   workerId: text('worker_id'),
   leaseUntil: at('lease_until'),
   tries: integer('tries').notNull().default(0),
@@ -230,6 +235,13 @@ export const refereeJobs = pgTable('referee_jobs', {
   index('referee_jobs_ready').on(t.status, t.framesReadyAt),
   uniqueIndex('referee_jobs_one_open').on(t.attemptId, t.kind).where(sql`${t.status} in ('waiting_frames', 'ready', 'running')`),
 ]);
+
+/** Small settings an admin sets on /ops: staging's "Referee bot test answers" (3.4d step 7). */
+export const opsSettings = pgTable('ops_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: at('updated_at').notNull().defaultNow(),
+});
 
 export type RefereeFrame = { n: number; t_ms: number; key: string; attempt_id?: string; sha256?: string; note?: string };
 export type RefereeCall = {

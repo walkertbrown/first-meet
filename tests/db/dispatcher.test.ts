@@ -2,18 +2,20 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
-import { attempts, events, judgeQueue, judgeWorkers } from '../../web/db/schema';
+import { attempts, events, judgeQueue, judgeWorkers, refereeJobs } from '../../web/db/schema';
 import { LOCK_KEY, resetBackoff, tick, type Runner } from '../../web/lib/dispatcher';
 import { markUploaded } from '../../web/lib/queue';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
 class FakeRunner implements Runner {
   starts: string[] = [];
+  tasks: string[] = [];
   fail: { status: number; error: string } | null = null;
   statuses = new Map<string, string>();
-  async start(workerId: string) {
+  async start(workerId: string, task?: string) {
     if (this.fail) return { ok: false as const, ...this.fail };
     this.starts.push(workerId);
+    this.tasks.push(task ?? 'judge_attempt');
     return { ok: true as const, runId: `run-${workerId}` };
   }
   async status(runId: string) { return this.statuses.get(runId) ?? 'running'; }
@@ -121,5 +123,20 @@ describe.skipIf(!URL_)('the dispatcher', () => {
       expect(other.locked).toBe(false);
     });
     expect(r.starts).toHaveLength(0);
+  });
+
+  it("3.4d step 1: a referee job waiting for frames gets a referee_frames run, once, beside the judge's runs", async () => {
+    const [a] = await queue(1);
+    const [j] = await db.insert(refereeJobs).values({ attemptId: a, kind: 'lamps', status: 'waiting_frames' }).returning();
+    const r = new FakeRunner();
+    const t = await tick(db, r, BIG);
+    expect(t.framesStarted).toEqual([j.id]);
+    expect(r.starts).toContain(j.id);
+    expect(r.tasks.filter(x => x === 'referee_frames')).toHaveLength(1);
+    expect(r.starts).toHaveLength(2);   // and the attempt's own judge run
+    const [started] = await db.select().from(refereeJobs);
+    expect(started.framesStartedAt).not.toBeNull();
+    const t2 = await tick(db, r, BIG);
+    expect(t2.framesStarted).toEqual([]);
   });
 });
