@@ -170,9 +170,53 @@ describe('the stuck-track guard (item 108)', () => {
     expect(p11.filter(q => q[1] === 0.5 && q[2] === 0.42)).toHaveLength(11);
     expect(stuckStretches(p11, CT)).toEqual([]);
     expect(stuckStretches(path(GOOD), CT)).toEqual([]);
-    // still, but only within 0.003: not stuck
-    const wobble = path(GOOD).map((p, i) => (p[0] >= 3000 && p[0] <= 4500 ? [p[0], 0.5 + (i % 2) * 0.003, 0.42, 0.9] : p)) as BarPoint[];
+    // still, but only within 0.003, two frames at each spot: not stuck
+    const wobble = path(GOOD).map((p, i) => (p[0] >= 3000 && p[0] <= 4500 ? [p[0], 0.5 + (Math.floor(i / 2) % 2) * 0.003, 0.42, 0.9] : p)) as BarPoint[];
     expect(stuckStretches(wobble, CT)).toEqual([]);
+  });
+
+  // Item 113 (3.4b, "One off frame doesn't end a stretch"; The Playner, Nov 20, 9:58 AM)
+  describe('one off frame does not end a stretch (item 113)', () => {
+    const A = 3000, N = 7; // two 7-frame halves at 15 fps: each 0.47 s, under 0.8 s alone
+    const blip = (offs: number[], dy = 0.05) => {
+      const p = frozen(A, A + (2 * N + offs.length) * STEP);
+      const first = p.findIndex(q => q[0] >= A);
+      for (const k of offs) p[first + N + k] = [p[first + N + k][0], 0.5, 0.42 + dy, 0.6];
+      return { p, off: offs.map(k => p[first + N + k][0]) };
+    };
+    it('one frame outside the box, with the frames either side back in it, is part of the stretch and marked', () => {
+      for (const dy of [0.05, -0.05]) {
+        const { p, off } = blip([0], dy);
+        const s = stuckStretches(p, CT);
+        expect(s).toHaveLength(1);
+        expect(s[0][0]).toBeLessThan(off[0]);
+        expect(s[0][1]).toBeGreaterThan(off[0]);
+        const g = markStuck(p, CT).path;
+        expect(g.find(q => q[0] === off[0])![3]).toBe(0);
+      }
+    });
+    it('two off frames in a row end it: each half alone is under 0.8 s, so nothing is marked', () => {
+      expect(stuckStretches(blip([0, 1]).p, CT)).toEqual([]);
+    });
+    it("the off frame's own x and y never widen the box", () => {
+      // the frame after the off one is 0.0015 from the stretch and 0.0485 from the off frame: it's in the stretch
+      const { p } = blip([0]);
+      const first = p.findIndex(q => q[0] >= A);
+      p[first + N + 1] = [p[first + N + 1][0], 0.5, 0.4215, 0.6];
+      expect(stuckStretches(p, CT)).toHaveLength(1);
+    });
+    it('at the live tick, one camera frame fed 2–4 times is still one off frame; two different ones end it (NerdCider, 10:00 AM)', () => {
+      // each camera frame at every 16.7 ms tick: the off frame is a run of points with its own x and y
+      const fed = (p: BarPoint[], n: number) => p.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (STEP / n), q[1], q[2], q[3]] as BarPoint));
+      for (const n of [2, 3, 4]) {
+        expect(stuckStretches(fed(blip([0]).p, n), CT)).toHaveLength(1);
+        expect(stuckStretches(fed(blip([0, 1]).p, n), CT)).toEqual([]);
+      }
+    });
+    it('as the rule reads, a bar 0.003 apart on every other frame is one stretch: each off frame stands alone', () => {
+      const flip = path(GOOD).map((q, i) => (q[0] >= 3000 && q[0] <= 4500 ? [q[0], 0.5 + (i % 2) * 0.003, 0.42, 0.9] : q)) as BarPoint[];
+      expect(stuckStretches(flip, CT)).toHaveLength(1);
+    });
   });
 
   it('whatever the score: a stuck stretch at a perfect match is still caught', () => {
@@ -255,7 +299,8 @@ describe('the stuck-track guard (item 108)', () => {
   });
 
   // The server's own plate tracks (tests/bench-commands/server.py): IA0P sticks on reps 1 and 3, z838 from rep 1's way
-  // down to its end. Rep 3 of IA0P is 16 frames, 1.07 s by frames: NerdCider's edge, pinned (Nov 16, 2:20 AM).
+  // down to its end. Rep 3 of IA0P was 16 frames, 1.07 s by frames: NerdCider's edge, pinned (Nov 16, 2:20 AM). Item
+  // 113 carries it through one off camera frame at 17.57 s, to 18 frames.
   const server = (id: string) => JSON.parse(readFileSync(join(__dirname, `../bench-commands/data/server/${id}.json`), 'utf8')) as BarPoint[];
   const near = (got: [number, number][], want: [number, number][]) => {
     expect(got).toHaveLength(want.length);
@@ -264,17 +309,17 @@ describe('the stuck-track guard (item 108)', () => {
   it("the server's tracks: IA0P's reps 1 and 3, z838's long stick, and none on a real 1 s pause", () => {
     const ia = server('IA0PhDBzsz0');
     const st = stuckStretches(ia, ct({ start: 6800, rack: 18880 }));
-    near(st, [[8600, 9867], [16533, 17533]]);
-    expect(frames(ia, st[1])).toBe(16);
+    near(st, [[8600, 9867], [16533, 17667]]); // item 113: rep 3 runs 2 frames on, through one off frame
+    expect(frames(ia, st[1])).toBe(18);
     // each rep's own cut (the set), and the whole clip, agree on rep 3
-    near(stuckStretches(ia, ct({ start: 14600, rack: 18880 })), [[16533, 17533]]);
+    near(stuckStretches(ia, ct({ start: 14600, rack: 18880 })), [[16533, 17667]]);
     // marked lost, so the cut's pause is not measured
     const { path: g } = markStuck(ia, ct({ start: 14600, rack: 18880 }));
-    expect(g.filter(p => p[0] >= 16533 && p[0] <= 17533).every(p => p[3] === 0)).toBe(true);
+    expect(g.filter(p => p[0] >= 16533 && p[0] <= 17667).every(p => p[3] === 0)).toBe(true);
     near(stuckStretches(server('z838WQVSBmk'), ct({ start: 0, rack: 13900 })), [[2133, 13867]]);
     // rep 3 cut with the phone caller's own calls (the set's IA0P-r3-stuck): caught, and Press! (16.82 s) falls in it
     const cut3 = ct({ start: 15210, press: 16820, rack: 18890 });
-    near(stuckStretches(ia, cut3), [[16533, 17533]]);
+    near(stuckStretches(ia, cut3), [[16533, 17667]]);
     expect(measureBar(markStuck(ia, cut3).path, cut3, DIMS).pause_lost).toBe(true);
     // hIuj's lost-track cut: her 1.67 s hold at arm's length for a late Rack! is left alone (NerdCider, 2:23 AM)
     const hi = server('hIuj1H1WOxM'), hiLost = ct({ start: 1035, press_late: 3535, press_late_why: 'lost', rack: 6535 });

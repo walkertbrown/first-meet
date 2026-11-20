@@ -126,6 +126,30 @@ class ScoreLines(unittest.TestCase):
             self.assertEqual(other.returncode, 1)
             self.assertIn('different calls.json', other.stdout)
 
+    def test_a_recorded_row_counts_in_no_line_and_its_pause_red_is_named(self):
+        # item 113: the planted cuts are run and printed; a red for the pause on one, or on a pause on the line, goes
+        # to The Playner, and fails nothing
+        with tempfile.TemporaryDirectory() as d:
+            planted = dict(attempt('ak3m3-planted', 'white', cut='planted'), recorded=True, eye_pause_s=0.5)
+            line = dict(attempt('AMih', 'white'), eye_pause_s=0.57)
+            set_path = os.path.join(d, 'calls.json')
+            with open(set_path, 'w') as f:
+                json.dump({'attempts': SET + [planted, line]}, f)
+            with open(os.path.join(d, 'holdout.json'), 'w') as f:
+                json.dump({'attempts': []}, f)
+            red = row('ak3m3-planted', R, measured=['- Pause: the bar was still 0.2 s before Press!'])
+            for a in red['answers']:
+                a['reason'] = 'no_pause'
+            run = os.path.join(d, 'run-1.json')
+            with open(run, 'w') as f:
+                json.dump({'calls_sha256': score.sha256(set_path), 'runs': 'run_1',
+                           'attempts': [dict(r) for r in GOOD] + [red, row('AMih', W)]}, f)
+            out = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'score.py'), '--set', set_path, run], capture_output=True, text=True)
+            self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+            self.assertIn('10 attempts', out.stdout)  # 9 counted + AMih; the planted cut isn't
+            self.assertIn('TO THE PLAYNER before the bot is switched on: red for the pause on ak3m3-planted', out.stdout)
+            self.assertIn('AMih             counted   eye 0.57 s', out.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

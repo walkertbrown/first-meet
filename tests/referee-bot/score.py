@@ -24,6 +24,9 @@ MODEL = 'claude-opus-5-5'
 MEDIAN_LIMIT_MS = 120_000
 # 5.33 and item 107: on a lost bar the bot is told the phone lost it, with no pause figure and no sinking line
 LOST_FORBIDDEN = ('- Pause: the bar was still', '- The phone called Press! while the bar was still going down')
+# Item 113 (3.4b, the smoothing test's "The lines"): the three real pauses on the eye check's line with no bad frame.
+# Their lamps are printed with the recorded planted cuts' (VibeSearch and The Playner, Nov 20, 10:01-10:03 AM).
+ON_THE_LINE = ('AMih', 'ak3m3', '83WA-r2')
 
 
 def sha256(path):
@@ -162,6 +165,26 @@ def lines(rows, set_by_id, label):
     return out, notes
 
 
+def allowance(rows, set_by_id):
+    """Item 113's allowance tried: the lamps on the recorded planted cuts and on the three pauses on the line.
+
+    Returns (lines, reds): a red for the pause (reason no_pause) on any of them goes to The Playner before the bot is
+    switched on. It fails no line: the plan sends it to The Playner, not to the score."""
+    out, reds = [], []
+    for r in rows:
+        a = set_by_id[r['id']]
+        if not (a.get('recorded') or r['id'] in ON_THE_LINE):
+            continue
+        answers = r.get('answers') or []
+        sent = next((m[2:] for m in r.get('measured') or [] if m.startswith('- Pause')), '(no pause line)')
+        lamps = ', '.join(f'{x["lamp"]} {x["light"]}{" (" + x["reason"] + ")" if x.get("reason") else ""}' for x in answers) or 'failed'
+        if any(x.get('light') == 'red' and x.get('reason') == 'no_pause' for x in answers):
+            reds.append(r['id'])
+        eye = a.get('eye_pause_s')
+        out.append(f'  {r["id"]:<16} {"recorded" if a.get("recorded") else "counted":<9} eye {eye:.2f} s, sent: {sent}  ->  {lamps}')
+    return out, reds
+
+
 def bench_pause_table(rows, set_by_id):
     """For each bench: the Pause line it was sent, next to the eye's pause (NerdCider, Nov 15)."""
     t = []
@@ -214,9 +237,11 @@ def main():
             passed = False
         for r in rows:
             r['key'] = set_by_id[r['id']]['call']  # always the committed key, never the copy in the results
-        groups = [('whole set' if final else 'run', rows)]
+        # a recorded row (item 113's planted cuts) is run and printed, and counted in no line
+        counted = [r for r in rows if not set_by_id[r['id']].get('recorded')]
+        groups = [('whole set' if final else 'run', counted)]
         if final:
-            groups.append(('held back', [r for r in rows if r['id'] in held]))
+            groups.append(('held back', [r for r in counted if r['id'] in held]))
         for label, rs in groups:
             res_lines, notes = lines(rs, set_by_id, label)
             print(f'   -- {label}: {len(rs)} attempts')
@@ -225,6 +250,11 @@ def main():
                 passed &= ok
             for n in notes:
                 print(f'   note: {n}')
+        a_lines, a_reds = allowance(rows, set_by_id)
+        if a_lines:
+            print("   -- item 113's allowance: the planted cuts (recorded) and the three pauses on the line")
+            print('\n'.join(a_lines))
+            print(f'   {"TO THE PLAYNER before the bot is switched on: red for the pause on " + ", ".join(a_reds) if a_reds else "no red for the pause on any of them"}')
         print(f'   cost written: ${res.get("cost_usd", 0):.2f}')
         if o.pauses:
             print('   -- each bench: the Pause line it was sent, next to the eye')

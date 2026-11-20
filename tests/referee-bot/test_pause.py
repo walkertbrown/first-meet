@@ -7,12 +7,18 @@ run, so the bot is never sent "0.0 s" on a real pause.
 The lines come from `pauses.ts`: every bench of the set, measured on the phone's own path as takeBar does, at 30, 20
 and 15 fps cameras, each on the grid, at the live tick and fed 3 times, and with one bad frame planted in each real
 pause, 0.05 lower and higher (3.4b, "The smoothing is in time, not points"). Each planted run's Pause line must stay
-within one camera frame of the same camera and tick unplanted (pause_s is rounded to 0.01 s, so 10 ms more).
+moved by more than one camera frame from the same camera and tick unplanted is printed, not failed: on a bar still
+sinking into her stop the 5% band's edge moves with any small change in y (z838, ak3m3; 3.4b, the smoothing test's "The
+lines", Nov 20, 9:58 AM). The hard line on a planted run is the eye check.
 
-8qzW rep 1 is recorded, not checked (Nov 20, 8:44 AM): its number is printed on every run, so a change shows.
+8qzW rep 1 is recorded, not checked (Nov 20, 8:44 AM): its number is printed on every run, so a change shows. At 15 fps
+with a frame 0.05 higher it's sent "still 0.0 s" on 0.67 s, the second allowed miss (VibeSearch, 10:01 AM).
 
-KNOWN holds the planted runs that miss today, sent to The Playner to rule on (Nov 20): each is printed on every run,
-and any miss not in it fails. A known miss that stops missing fails too, so the list never goes stale.
+KNOWN holds the one allowed miss of the eye check: ak3m3 at 15 fps, 0.05 lower, on all three ticks. Any other miss
+fails, and so does a known one that stops missing, so the list never goes stale.
+
+Item 113: IA0P rep 2 (its track froze through the pause) and IA0P-r3-stuck read "not measured" on every camera, tick
+and plant, since item 108's guard carries a stuck stretch through one off camera frame.
 
     python3 -m unittest discover tests/referee-bot
 """
@@ -26,26 +32,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, '..', '..')
 RECORDED = ('8qzW-r1',)
 
-# (bench, camera, tick, plant): the planted runs that miss today, by kind ('eye': against the eye; 'frame': more than a
-# camera frame from the unplanted run). A plant of 0 is never here: the unplanted runs have no known misses.
+# (bench, camera, tick, plant): the planted runs allowed to miss the eye check. A plant of 0 is never here: the
+# unplanted runs have no known misses.
 _TICKS = ('grid', 'tick', 'three')
 KNOWN = {
-    # the bar still sinks slowly into her stop: at 15 fps the 3-point median takes a neighbour's y, and the pause's
-    # start moves one frame (0.30 to 0.23 s), under 0.3 s on a 0.5 s pause
+    # the bar still sinks slowly into her stop: at 15 fps the median takes a neighbour's y, and the pause's start moves
+    # one frame (0.30 to 0.23 s), under 0.3 s on a 0.5 s pause (3.4b: the allowed miss)
     **{('ak3m3', 15, t, 0.05): 'eye' for t in _TICKS},
-    # the bar creeps 0.018 of the frame down through the eye's pause; the median's low before Press! rises 0.002
-    # against a 5% band of about 0.0025, so the pause moves 0.13-0.20 s
-    ('z838-r1', 30, 'tick', 0.05): 'frame',
-    **{('z838-r1', 20, t, 0.05): 'frame' for t in _TICKS},
-    ('z838-r1', 15, 'tick', 0.05): 'frame',
-    # the phone's track froze through the pause (item 108 marks it lost): one planted frame splits the frozen stretch,
-    # the guard no longer catches it, and a pause is measured on a stuck track
-    **{('IA0P-r2', 20, 'grid', d): 'frame' for d in (0.05, -0.05)},
-    **{('IA0P-r2', 15, t, d): 'frame' for t in _TICKS for d in (0.05, -0.05)},
-    **{('IA0P-r3-stuck', 20, 'grid', d): 'frame' for d in (0.05, -0.05)},
-    # 0.95 to 1.0 s at the tick, 50 ms on a 33 ms frame
-    ('uGCh', 30, 'tick', -0.05): 'frame',
 }
+# item 113: read "not measured" on every run
+STUCK = ('IA0P-r2', 'IA0P-r3-stuck')
 
 _runs = None
 
@@ -91,7 +87,8 @@ def name(r):
 
 
 def misses():
-    """{(bench, camera, tick, plant): (kind, why)} for every checked row that misses."""
+    """{(bench, camera, tick, plant): (kind, why)} for every checked row that misses: 'eye' against the eye (fails
+    unless known), 'frame' a planted line more than a camera frame from the unplanted one (printed)."""
     rs = runs()
     base = {(r['camera'], r['tick']): {x['id']: x for x in r['rows']} for r in rs if not r['plant']}
     out = {}
@@ -108,6 +105,10 @@ def misses():
                 if why:
                     out[k] = ('frame', why)
     return out
+
+
+def key(k):
+    return f'{k[0]} at {k[1]} fps, {k[2]}, planted {k[3]:+.2f}'
 
 
 class PauseAgainstEye(unittest.TestCase):
@@ -127,14 +128,28 @@ class PauseAgainstEye(unittest.TestCase):
 
     def test_planted_runs_only_the_known_misses(self):
         m = misses()
-        new = [f'{k[0]} at {k[1]} fps, {k[2]}, planted {k[3]:+.2f}: {why}' for k, (kind, why) in m.items() if KNOWN.get(k) != kind]
-        gone = [f'{k[0]} at {k[1]} fps, {k[2]}, planted {k[3]:+.2f} ({kind})' for k, kind in KNOWN.items() if m.get(k, (None,))[0] != kind]
-        if m:
-            print(f'\n   -- test_pause.py: {len(m)} known planted misses, with The Playner to rule on', file=sys.stderr)
-            for k, (kind, why) in sorted(m.items(), key=lambda kv: (kv[0][0], -kv[0][1], kv[0][2], kv[0][3])):
-                print(f'      {k[0]} at {k[1]} fps, {k[2]}, planted {k[3]:+.2f}: {why}', file=sys.stderr)
-        self.assertEqual(new, [], 'new misses:\n' + '\n'.join(new))
+        eye = {k: why for k, (kind, why) in m.items() if kind == 'eye'}
+        moved_ = {k: why for k, (kind, why) in m.items() if kind == 'frame'}
+        order = lambda kv: (kv[0][0], -kv[0][1], kv[0][2], kv[0][3])  # noqa: E731
+        if eye:
+            print(f'\n   -- test_pause.py: {len(eye)} allowed misses of the eye check (3.4b)', file=sys.stderr)
+            for k, why in sorted(eye.items(), key=order):
+                print(f'      {key(k)}: {why}', file=sys.stderr)
+        if moved_:
+            print(f'\n   -- test_pause.py: {len(moved_)} planted lines more than a camera frame from unplanted, within the eye check (recorded)', file=sys.stderr)
+            for k, why in sorted(moved_.items(), key=order):
+                print(f'      {key(k)}: {why}', file=sys.stderr)
+        new = [f'{key(k)}: {why}' for k, why in eye.items() if k not in KNOWN]
+        gone = [key(k) for k in KNOWN if k not in eye]
+        self.assertEqual(new, [], 'new misses of the eye check:\n' + '\n'.join(new))
         self.assertEqual(gone, [], 'known misses that no longer miss (take them out of KNOWN):\n' + '\n'.join(gone))
+
+    def test_the_stuck_tracks_read_not_measured_on_every_run(self):
+        # item 113: one off camera frame no longer lets a pause be measured on a frozen track
+        bad = [f'{x["id"]} at {name(r)}: {x["pause_s"]} s' for r in runs() for x in r['rows']
+               if x['id'] in STUCK and x['pause_s'] is not None]
+        self.assertEqual(bad, [], '\n'.join(bad))
+        self.assertEqual({x['id'] for r in runs() for x in r['rows'] if x['id'] in STUCK}, set(STUCK))
 
     def test_8qzw_rep_1_is_recorded(self):
         line = []

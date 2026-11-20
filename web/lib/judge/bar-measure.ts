@@ -96,18 +96,45 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
   const med = gaps[Math.floor(gaps.length / 2)], even = gaps.filter(g => g <= med * 1.5);
   const frame = even.reduce((a, g) => a + g, 0) / even.length;
   const eps = 1e-9;
-  for (let i = 0, j = 0; i < w.length; i++) {
-    // the furthest j with every point i..j inside a still box
-    if (j < i) j = i;
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (let k = i; k <= j; k++) {
-      x0 = Math.min(x0, w[k][1]); x1 = Math.max(x1, w[k][1]); y0 = Math.min(y0, w[k][2]); y1 = Math.max(y1, w[k][2]);
-    }
-    while (j + 1 < w.length) {
-      const [, x, y] = w[j + 1];
-      if (Math.max(x1, x) - Math.min(x0, x) > r.stuckStill + eps || Math.max(y1, y) - Math.min(y0, y) > r.stuckStill + eps) break;
+  // One camera frame's time (item 113): how long each point's x and y lasts before the next, the mean of those near
+  // the median (a stuck run is far longer, and the 20 fps cut's 33/67 ms is one frame of 50 ms). On the grid it's the
+  // gap; at the live tick, which repeats each camera frame at every refresh, it's the camera's frame, not 16.7 ms.
+  const same = (a: number, b: number) => w[a][1] === w[b][1] && w[a][2] === w[b][2];
+  const lasts: number[] = [];
+  for (let k = 0; k < w.length;) {
+    let e = k;
+    while (e + 1 < w.length && same(e + 1, k)) e++;
+    if (e + 1 < w.length) lasts.push(w[e + 1][0] - w[k][0]);
+    k = e + 1;
+  }
+  const lmed = [...lasts].sort((a, b) => a - b)[Math.floor(lasts.length / 2)] ?? frame;
+  const near = lasts.filter(g => g <= lmed * 3);
+  const camera = near.length ? near.reduce((a, g) => a + g, 0) / near.length : frame;
+  for (let i = 0; i < w.length; i++) {
+    // the furthest j with every point i..j inside a still box (each start grows its own box, so an off frame
+    // carried through is never in it)
+    let j = i;
+    let x0 = w[i][1], x1 = w[i][1], y0 = w[i][2], y1 = w[i][2];
+    const inBox = (k: number) => {
+      const [, x, y] = w[k];
+      return Math.max(x1, x) - Math.min(x0, x) <= r.stuckStill + eps && Math.max(y1, y) - Math.min(y0, y) <= r.stuckStill + eps;
+    };
+    const take = (k: number) => {
+      const [, x, y] = w[k];
       x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-      j++;
+    };
+    while (j + 1 < w.length) {
+      if (inBox(j + 1)) { take(j + 1); j++; continue; }
+      // item 113 (3.4b, "One off frame doesn't end a stretch"): one camera frame outside the box, with the next
+      // one back inside the same box, is part of the stretch and marked with it; its own x and y never widen the
+      // box. Two off frames in a row end it.
+      // One camera frame is the points in a row with its x and y, lasting no more than a camera frame: the live
+      // tick repeats a frame at each refresh (2–4 points), so the off frame is that whole run (NerdCider, 10:00
+      // AM). Two grid frames stuck on one off spot last two frames, and end it.
+      let e = j + 1;
+      while (e + 1 < w.length && same(e + 1, j + 1)) e++;
+      if (e + 1 < w.length && w[e + 1][0] - w[j + 1][0] <= camera * 1.5 + eps && inBox(e + 1)) { take(e + 1); j = e + 1; continue; }
+      break;
     }
     if ((j - i + 1) * frame < r.stuckMs - eps) continue;
     const last = out[out.length - 1];

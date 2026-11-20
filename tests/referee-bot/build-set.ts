@@ -18,6 +18,7 @@ import { markStuck, measureBar, type BarPoint } from '../../web/lib/judge/bar-me
 import { MeetLift, type MeetLiftName } from '../../web/lib/judge/meet-lift';
 import { judgeAttempt, checkCommandTimes, type MeetLift as JudgeLift } from '../../web/lib/judge/attempt';
 import { commandList, benchBlock } from '../../web/lib/referee/bot';
+import { camera, eyePauses, plant } from './pauses';
 import type { Frame } from '../../web/lib/judge/pose';
 
 const ROOT = join(__dirname, '../..');
@@ -28,7 +29,9 @@ const AFTER_END_MS = 1500;
 
 export type Group = 'bench white' | 'bench red' | 'press' | 'squat and deadlift' | 'close calls';
 export type Attempt = {
-  id: string; group: Group; source: string; cut: 'one' | 'lost' | 'stuck' | null;
+  id: string; group: Group; source: string; cut: 'one' | 'lost' | 'stuck' | 'planted' | null;
+  // score.py prints a recorded row's lamps and counts it in no line (item 113's planted cuts)
+  recorded?: boolean;
   // recut.py
   clip: string; free: boolean; window_ms: [number, number]; commands: [number, string][];
   moments: { ms: number; flagged: boolean }[]; bench: ReturnType<typeof benchBlock>;
@@ -373,13 +376,38 @@ export function holdout(attempts: Attempt[], seed0: number) {
   throw new Error('no seed holds back 2 sure reds');
 }
 
+/**
+ * Item 113's two allowed misses, sent to the bot as recorded rows (3.4b, the smoothing test's "The lines"; VibeSearch
+ * and The Playner, Nov 20, 10:01-10:03 AM): cut 1 of each as the phone sends it at 15 fps with one bad frame planted
+ * in her pause, on the grid (all three ticks give the same line). The clip, window and commands are cut 1's, so the
+ * frames are too; only the phone's path, and so the Pause line, differs. score.py reads their lamps, counts them in
+ * no line, and a red for the pause on either goes to The Playner before the bot is switched on.
+ */
+export const PLANTED = [
+  { id: 'ak3m3', dy: 0.05, why: 'sent 0.2 s on an eye pause of 0.50 s (0.05 lower)' },
+  { id: '8qzW-r1', dy: -0.05, why: 'sent "still 0.0 s" on an eye pause of 0.67 s (0.05 higher)' },
+] as const;
+export function plantedAttempts(): Attempt[] {
+  const pauses = eyePauses();
+  const { attempts } = benchAttempts({ trace: (id, tr) => {
+    const p = PLANTED.find(q => id.startsWith(q.id.slice(0, 4)));
+    return p ? { ...tr, pts: plant(camera(tr.pts, 15), pauses[id] ?? [], p.dy) } : tr;
+  } });
+  return PLANTED.map(p => {
+    const a = attempts.find(x => x.id === p.id && x.cut === 'one');
+    if (!a) throw new Error(`${p.id}: no cut 1 to plant`);
+    return { ...a, id: `${p.id}-planted`, cut: 'planted' as const, recorded: true,
+      note: `item 113's allowed miss: at 15 fps, one frame planted in her pause, ${p.why}; recorded, counted in no line` };
+  });
+}
+
 async function main() {
   const posesDir = arg('poses');
   if (!posesDir) throw new Error('--poses is needed');
   const out = arg('out') ?? __dirname;
   const b = benchAttempts();
   const o = otherAttempts(posesDir);
-  const attempts = [...b.attempts, ...o.attempts];
+  const attempts = [...b.attempts, ...plantedAttempts(), ...o.attempts];
   const ids = new Set<string>();
   for (const a of attempts) { if (ids.has(a.id)) throw new Error(`two attempts are ${a.id}`); ids.add(a.id); }
   // every bench goes out with its bench lines: none may become a `command_times` close call (NerdCider, 11:42 PM)
@@ -393,7 +421,7 @@ async function main() {
   writeFileSync(join(out, 'holdout.json'), JSON.stringify({ $comment: 'Held back before any run (3.4d step 11): a third of the clips in each group, rounded up, by build-set.ts\'s seeded shuffle.', ...h }, null, 1) + '\n');
   const by = new Map<string, { n: number; red: number; white: number; either: number }>();
   for (const a of attempts) {
-    const k = `${a.group}${a.cut === 'lost' ? ' (lost track)' : ''}`;
+    const k = `${a.group}${a.cut === 'lost' ? ' (lost track)' : a.recorded ? ' (planted, recorded)' : ''}`;
     const t = by.get(k) ?? { n: 0, red: 0, white: 0, either: 0 };
     t.n++; t[a.call.startsWith('red') ? 'red' : a.call === 'white' ? 'white' : 'either']++;
     by.set(k, t);

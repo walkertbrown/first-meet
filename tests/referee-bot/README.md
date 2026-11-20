@@ -41,6 +41,7 @@ Every number the bot is sent comes from the code that would send it in the produ
 |---|---|---|---|---|---|
 | bench white (cut 1) | 15 | 0 | 14 | 1 | meet 100 kg; ak3m2 175, ak3m3 182.5 kg; gym 60 kg |
 | bench white (lost track) | 13 | 0 | 13 | 0 | as above |
+| bench white (planted, recorded) | 2 | 0 | 2 | 0 | ak3m3 182.5 kg; gym 60 kg |
 | bench red (cut 1) | 22 | 22 | 0 | 0 | gym 60 kg; Nazt 100 kg |
 | bench red (lost track) | 9 | 9 | 0 | 0 | as above |
 | close calls | 4 | 0 | 0 | 4 | bench demo 60 kg; box squat 100 kg |
@@ -171,8 +172,19 @@ server's guarded track, below.
 at 30, 20 and 15 fps cameras (frames dropped from the trace), each on the grid, at the live tick and
 fed 3 times, unplanted and with one bad frame planted in each real pause, 0.05 lower and higher. The
 test fails if a pause of 0.5 s or more by eye is sent under 0.3 s, or one under 0.3 s is sent 0.5 s
-or more ("not measured" never fails), or a planted line moves more than one camera frame. 8qzW rep 1
-is recorded, not checked. Today's planted misses are in its `KNOWN`, with The Playner to rule on:
+or more ("not measured" never fails). On a planted run that eye check is the hard line: a line that
+moves more than one camera frame is printed, since on a bar still sinking into her stop the band's
+edge moves with any small change (z838, ak3m3; 3.4b). IA0P rep 2 and IA0P-r3-stuck must read "not
+measured" on every run (item 113: item 108's guard carries a stuck stretch through one off camera
+frame). 8qzW rep 1 is recorded, not checked.
+
+**Item 113's two allowed misses**, at 15 fps with one frame planted: ak3m3 (0.05 lower, sent 0.2 s on
+0.50 s; in `KNOWN`) and 8qzW rep 1 (0.05 higher, sent "still 0.0 s" on 0.67 s; printed). Both go to
+the bot as **recorded rows**, `ak3m3-planted` and `8qzW-r1-planted` (`cut: planted`, `recorded:
+true`): cut 1's clip, window and commands, with the planted 15 fps path. `score.py` counts them in no
+line, and prints their lamps next to those of the three real pauses on the eye check's line (AMih,
+ak3m3, 83WA-r2). A red for the pause on any of the five goes to The Playner before the bot is
+switched on.
 
     python3 -m unittest tests/referee-bot/test_pause.py
 
@@ -193,7 +205,7 @@ guard before any paid run.
 The shortest are IKuX rep 2 and VM_y rep 2, at 20. Their reps last 1.6 s, so the windows overlap. No other
 attempt's frames changed with the bar-path rule.
 
-**Held back:** 15 clips, 27 attempts (seed 1: a third of each group's clips, rounded up, with at
+**Held back:** 15 clips, 28 attempts, with ak3m3-planted beside its clip (seed 1: a third of each group's clips, rounded up, with at
 least 2 sure reds).
 
 **Left out:**

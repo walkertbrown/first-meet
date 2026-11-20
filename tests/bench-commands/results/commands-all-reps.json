@@ -3701,7 +3701,7 @@
      "press": true,
      "rack": false
     },
-    "pause": 0.86,
+    "pause": null,
     "pauseStuck": false,
     "sink": 0.0007758111017989733,
     "sinking": false,
@@ -7856,7 +7856,7 @@
      "press": true,
      "rack": false
     },
-    "pause": 0.86,
+    "pause": null,
     "pauseStuck": false,
     "sink": 0.0007758111017989733,
     "sinking": false,
