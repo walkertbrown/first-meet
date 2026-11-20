@@ -11,7 +11,8 @@
 // Stuck track (3.4b, item 111): off the hooks, a score of STUCK.score or more with under 1 px of movement on the frame
 //         for freezeBeforeMs (0.4 s) before Start! or freezeAfterMs (1.5 s) after it counts as lost, the window counted in
 //         time (full when its oldest point is within the path's median gap of its start), and the stuck stretch is
-//         dropped from the history. Before Start!: "We lost the
+//         dropped from the history. Before Start! it counts only while the track is within freezeNearTapPct (8%) of
+//         her tap, measured as leftRack is (The Playner's ruling, Nov 20, 9:23 AM; 0 counts it anywhere). Before Start!: "We lost the
 //         bar.", no Start!. After Start!: never Press! from stillness; if the track doesn't come back, a late Press!
 //         2 s after the loss and Rack! 3 s after that.
 // Missed start (3.4b, The Playner's 3:54 mail): off the hooks with no Start! within voidMs, or the track lost off the
@@ -56,9 +57,6 @@ function slope(h: P[], from: number): { vy: number; vx: number } | null {
  */
 export type FrozenPress = {
   frozenPressMs?: number; frozenStill?: number;
-  /** On trial, for The Playner's 9:11 AM sweep (not in shared/rules.json): before Start!, a stuck stretch counts only
-   *  while the track is within this distance of the tap (frame heights, x scaled as `leftRack` is). Unset: anywhere. */
-  freezeNearTap?: number;
 };
 /** The stuck rule's still time before and after Start! (item 111: 0.4 s and 1.5 s in shared/rules.json). 0 turns it off there. */
 
@@ -126,7 +124,7 @@ export class BarCaller {
     const fm = this.state === 'waiting' ? r.freezeBeforeMs : r.freezeAfterMs;
     if (r.stuckRule && fm > 0 && (this.state === 'waiting' || this.state === 'lifting' || (this.state === 'pressed' && this.lostPress)) && score >= r.freezeScore) {
       const back = this.all.filter(q => q.t >= t - fm);
-      const near = this.state !== 'waiting' || !r.freezeNearTap || Math.hypot(p.x - this.tap.x * this.aspect, p.y - this.tap.y) <= r.freezeNearTap;
+      const near = this.state !== 'waiting' || !r.freezeNearTapPct || Math.hypot(p.x - this.tap.x * this.aspect, p.y - this.tap.y) <= r.freezeNearTapPct / 100;
       const still = near && back.length >= 3 && back[0].t <= t - fm + this.medGap() && back.every(q => q.score >= r.freezeScore && Math.abs(q.x / this.aspect - x) * this.w < 1 && Math.abs(q.y - y) * this.h < 1);
       if (still) {
         ok = false; this.frozeAt.push(t); this.frozeFrom.push(t - fm);

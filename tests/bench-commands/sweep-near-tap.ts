@@ -1,4 +1,5 @@
-// The Playner's 9:11 AM sweep (3.4b, item 111): before Start!, the 0.99 stuck rule counted only near her tap.
+// The Playner's 9:11 AM sweep (3.4b, item 111): before Start!, the 0.99 stuck rule counted only near her tap. Ruled at
+// 8% (9:23 AM, `freezeNearTapPct` in shared/rules.json); the tests that hold it are in tests/unit/bench-commands.test.ts.
 // Free and local: the built caller on every rep of the set (ALL_REPS), at the grid, the 16.7 ms tick and each frame fed
 // 3 times, with the scores as recorded and every score lifted to 0.995 (the stand-in's held frames too), plus m-k8 with
 // her tap moved to 9.0 s.
@@ -10,10 +11,10 @@ import { score, type Live, type Row } from './score';
 
 const MK8 = 'm-k8mm8-HTg', MK8_TAP = 9000, LIFT = 0.995;
 const ROWS: { name: string; o: Partial<Rel> }[] = [
-  { name: "today's rule (0.4 s, anywhere before Start!)", o: {} },
-  { name: 'near the tap, D = 5%', o: { freezeNearTap: 0.05 } },
-  { name: 'near the tap, D = 6%', o: { freezeNearTap: 0.06 } },
-  { name: 'near the tap, D = 8%', o: { freezeNearTap: 0.08 } },
+  { name: 'anywhere before Start! (0.4 s; the rule before 9:21 AM)', o: { freezeNearTapPct: 0 } },
+  { name: 'near the tap, D = 5%', o: { freezeNearTapPct: 5 } },
+  { name: 'near the tap, D = 6%', o: { freezeNearTapPct: 6 } },
+  { name: 'near the tap, D = 8% (ruled, shared/rules.json)', o: { freezeNearTapPct: 8 } },
   { name: 'off before Start!', o: { freezeBeforeMs: 0 } },
 ];
 const CADENCES: (Live | undefined)[] = [undefined, 'tick', 'three'];

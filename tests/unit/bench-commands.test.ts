@@ -86,8 +86,8 @@ describe('bench commands test, every rep (item 109; reps 2 and on are two reps o
   }
   // Item 111's cadence line: a command in the clip may move by at most two of the clip's own camera frames from the
   // grid run. Commands in the stand-in's hold are recorded, not counted. A command on one run only is listed, so a change
-  // shows: VM_y reps 2 and 4 (bounced) lose Start! at the live cadences, the safe way, and 8qzW's Rack! falls past the
-  // trace's end.
+  // shows: 8qzW's Rack! falls past the trace's end. (VM_y reps 2 and 4 lost Start! at the live cadences until the stuck
+  // rule counted only near the tap, item 111.)
   const grid = score(RULES, undefined, { allReps: true }).rows;
   for (const live of ['tick', 'three'] as const) {
     it(`at the live cadence (${live}), no command in the clip moves by more than two of the clip's own frames`, () => {
@@ -96,8 +96,34 @@ describe('bench commands test, every rep (item 109; reps 2 and on are two reps o
       expect(over).toEqual([]);
       expect(m.filter(x => x.counted).length).toBeGreaterThanOrEqual(40);
       expect(m.filter(x => x.missing).map(x => `${x.id.slice(0, 4)}${x.id.includes('-r') ? x.id.slice(x.id.indexOf('-r')) : ''} ${x.cmd}`))
-        .toEqual(['8qzW rack', 'VM_y-r2 start', 'VM_y-r2 press', 'VM_y-r2 rack', 'VM_y-r4 start', 'VM_y-r4 press', 'VM_y-r4 rack']);
+        .toEqual(['8qzW rack']);
     });
+  }
+  // Item 111, near the tap (The Playner's ruling, Nov 20, 9:23 AM; the sweep in sweep-near-tap.ts): before Start!, the
+  // stuck rule counts only within 8% of her tap. On the 13 clips she taps on the hooks, with every score lifted to 0.995
+  // (a phone sharper than the set's), "We lost the bar." never comes before Start! inside her real hold (the eye's
+  // settled to descent, in the trace's own times), but on ak3m3 at the tick, which the ruling accepts. The 9 that open
+  // with the bar out and the stand-in reps aren't judged on it: their tap is no rack.
+  const tag = (r: { id: string; rep: number }) => r.id.slice(0, r.id.startsWith('ak3m') ? 5 : 4) + (r.rep > 1 ? `-r${r.rep}` : '');
+  const MK8 = 'm-k8mm8-HTg';
+  for (const live of [undefined, 'tick', 'three'] as const) {
+    const at = live ? `at the live cadence (${live})` : 'on the grid';
+    it(`${at}, scores lifted to 0.995: no real hold on the 13 racked clips is lost before Start!${live === 'tick' ? ' but ak3m3' : ''}`, () => {
+      const racked = score(RULES, undefined, { allReps: true, live, lift: 0.995 }).rows.filter(r => r.rep === 1 && !r.inHand);
+      expect(racked.length).toBe(13);
+      const lost = racked.filter(r => r.lostBeforeStart != null && r.lostBeforeStart >= r.settled && r.lostBeforeStart <= r.descent).map(tag);
+      expect(lost.filter(id => !(live === 'tick' && id === 'ak3m3'))).toEqual([]);
+    });
+    for (const lift of [undefined, 0.995]) {
+      const sc = lift ? 'scores lifted to 0.995' : 'scores as recorded';
+      it(`${at}, ${sc}: m-k8's racked bar never gets Start!, and with her tap at 9.0 s, her hold does`, () => {
+        const mk8 = score(RULES, undefined, { live, lift, only: [MK8] }).rows[0];
+        expect(mk8.start, mk8.log.join(', ')).toBeNull();
+        const moved = score(RULES, undefined, { live, lift, only: [MK8], tapAt: { [MK8]: 9000 } }).rows[0];
+        expect(moved.start, moved.log.join(', ')).not.toBeNull();
+        expect(moved.startEarly).toBe(false);
+      });
+    }
   }
   it('gives results/commands-all-reps.json', () => {
     const want = JSON.parse(readFileSync(join(B, 'results', 'commands-all-reps.json'), 'utf8'));

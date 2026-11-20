@@ -76,8 +76,21 @@ describe('the stuck rule, counted in time (item 111)', () => {
     });
   }
 
-  it('the times are 0.4 s before Start! and 1.5 s after it (shared/rules.json)', () => {
+  it('the times are 0.4 s before Start! and 1.5 s after it, and 8% from the tap before it (shared/rules.json)', () => {
     expect(BAR_RULES.freezeBeforeMs).toBe(400);
     expect(BAR_RULES.freezeAfterMs).toBe(1500);
+    expect(BAR_RULES.freezeNearTapPct).toBe(8);
   });
+
+  // The Playner's ruling (Nov 20, 9:23 AM): before Start!, a stuck stretch counts only within 8% of her tap, measured
+  // as leftRack is (x on the frame's height). After Start! it counts anywhere: the lifted case above holds 8% above
+  // the tap, at the line, and goes stuck at 1.5 s.
+  for (const [dx, dy, stuck] of [[0, 0.075, true], [0.075 * 160 / 284, 0, true], [0, 0.085, false], [0.085 * 160 / 284, 0.0001, false]] as const) {
+    it(`before Start!: a still bar ${(Math.hypot(dx * 284 / 160, dy) * 100).toFixed(1)}% from the tap ${stuck ? 'is' : 'is never'} stuck`, () => {
+      const c = new BarCaller({ x: 0.5, y: 0.3 }, DIMS, BAR_RULES, false);
+      for (let k = 0; k * 33.37 < 3000 && c.state === 'waiting'; k++) c.feed(Math.round(k * 33.37), 0.5 + dx, 0.3 - dy, 1);
+      expect(c.frozeAt.length > 0).toBe(stuck);
+      if (stuck) expect(c.lostBeforeStart).not.toBeNull();
+    });
+  }
 });

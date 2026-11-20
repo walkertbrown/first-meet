@@ -34,6 +34,7 @@
   "freezeMs": 400,
   "freezeBeforeMs": 400,
   "freezeAfterMs": 1500,
+  "freezeNearTapPct": 8,
   "stuckStill": 0.002,
   "stuckMs": 800,
   "pauseLostMs": 500,
@@ -59,11 +60,11 @@
    },
    "line3": {
     "status": "PASS",
-    "text": "3. No Start! before the bar settled, all 51 reps: 0 early (none). No Start!: 6K8v-r3, m-k8, m-k8-r3, Nv9h, VM_y, xXFj-r4; each must be voided within 5 s of leaving the hooks, or at the loss: 6K8v-r3 void 5.00 s after leaving the hooks; m-k8 void 0.43 s after leaving the hooks (at the loss); m-k8-r3 void 0.27 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 2.40 s after leaving the hooks (at the loss); xXFj-r4 void 5.00 s after leaving the hooks"
+    "text": "3. No Start! before the bar settled, all 51 reps: 0 early (none). No Start!: 6K8v-r3, m-k8, Nv9h, VM_y, xXFj-r4; each must be voided within 5 s of leaving the hooks, or at the loss: 6K8v-r3 void 5.00 s after leaving the hooks; m-k8 void 0.43 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 5.03 s after leaving the hooks; xXFj-r4 void 5.00 s after leaving the hooks"
    },
    "line4": {
     "status": "PASS",
-    "text": "4. No Rack! before the bar is back up, all 51 reps: 0 early (none). A rep with no Start! passes only by the void's Rack!: 6 of 6"
+    "text": "4. No Rack! before the bar is back up, all 51 reps: 0 early (none). A rep with no Start! passes only by the void's Rack!: 5 of 5"
    },
    "line5": {
     "status": "FAIL",
@@ -2074,61 +2075,82 @@
     "rep": 3,
     "group": "bounced",
     "inHand": true,
-    "start": null,
-    "press": null,
+    "start": 16.500333333333337,
+    "press": 18.469999999999995,
     "late": false,
-    "rack": null,
+    "rack": 20.067,
     "noRep": false,
-    "lostBeforeStart": 16.267,
-    "stuckBeforeStart": true,
+    "lostBeforeStart": null,
+    "stuckBeforeStart": false,
     "leftHooks": 16,
-    "voided": 16.267,
-    "voidAfterHooks": 0.267,
-    "voidAtLoss": true,
-    "voidOk": true,
-    "startIn": null,
-    "pressIn": null,
-    "pressClip": null,
+    "voided": null,
+    "voidAfterHooks": null,
+    "voidAtLoss": false,
+    "voidOk": false,
+    "startIn": "replay",
+    "pressIn": "replay",
+    "pressClip": 17.367,
     "settled": 15.899999999999999,
-    "descent": 16.4,
-    "stop": 17.13,
-    "pauseEnd": 17.47,
-    "backUpEye": 18.333,
-    "delay": null,
+    "descent": 16.933,
+    "stop": 17.663,
+    "pauseEnd": 18.003,
+    "backUpEye": 19.633,
+    "delay": 0.806999999999995,
     "early": false,
-    "within1": false,
-    "within15": false,
+    "within1": true,
+    "within15": true,
     "over15": false,
     "startEarly": false,
     "rackEarly": false,
-    "backPhone": false,
+    "backPhone": true,
     "backEye": true,
-    "backAgree": false,
+    "backAgree": true,
     "frame": 33.333333333333336,
     "clipAt": {
-     "start": null,
-     "press": null,
-     "rack": null
+     "start": 16.1,
+     "press": 17.367,
+     "rack": 18.767
     },
     "clipFrame": {
-     "start": null,
-     "press": null,
-     "rack": null
+     "start": 6,
+     "press": 44,
+     "rack": 86
     },
     "inHold": {
-     "start": false,
-     "press": false,
+     "start": true,
+     "press": true,
      "rack": false
     },
-    "pause": null,
+    "pause": 0.8,
     "pauseStuck": false,
-    "sink": null,
+    "sink": 0.0007543966545938696,
     "sinking": false,
     "refSink": null,
     "refSinking": false,
-    "waits": [],
+    "waits": [
+     {
+      "what": "start",
+      "at": 16.267,
+      "s": 0.533,
+      "got": true,
+      "from": 15.9,
+      "to": 16.267,
+      "still": true
+     },
+     {
+      "what": "press",
+      "at": 17.47,
+      "s": 0.767,
+      "got": true,
+      "from": 17.13,
+      "to": 17.47,
+      "still": false
+     }
+    ],
     "log": [
-     "Rack!(void) 16.27"
+     "start 16.50",
+     "press 18.47",
+     "rack 20.07"
     ]
    },
    {
@@ -3124,21 +3146,21 @@
     "late": false,
     "rack": null,
     "noRep": false,
-    "lostBeforeStart": 5.299666666666667,
-    "stuckBeforeStart": true,
+    "lostBeforeStart": null,
+    "stuckBeforeStart": false,
     "leftHooks": 2.9,
-    "voided": 5.299666666666667,
-    "voidAfterHooks": 2.4,
-    "voidAtLoss": true,
+    "voided": 7.933000000000001,
+    "voidAfterHooks": 5.033,
+    "voidAtLoss": false,
     "voidOk": true,
     "startIn": null,
     "pressIn": null,
     "pressClip": null,
     "settled": 3.267,
-    "descent": 5.4,
-    "stop": 6.1370000000000005,
-    "pauseEnd": 6.337,
-    "backUpEye": 6.8340000000000005,
+    "descent": 8.033000000000001,
+    "stop": 8.77,
+    "pauseEnd": 8.969999999999999,
+    "backUpEye": 9.467,
     "delay": null,
     "early": false,
     "within1": false,
@@ -3175,7 +3197,7 @@
      {
       "what": "start",
       "at": 4.7330000000000005,
-      "s": 0.567,
+      "s": 3.2,
       "got": false,
       "from": 4.333000000000001,
       "to": 4.7330000000000005,
@@ -3183,7 +3205,7 @@
      }
     ],
     "log": [
-     "Rack!(void) 5.30"
+     "Rack!(void) 7.93"
     ]
    },
    {
@@ -4202,11 +4224,11 @@
    },
    "line3": {
     "status": "PASS",
-    "text": "3. No Start! before the bar settled, all 51 reps: 0 early (none). No Start!: 6K8v-r3, m-k8, m-k8-r3, Nv9h, VM_y, xXFj-r4; each must be voided within 5 s of leaving the hooks, or at the loss: 6K8v-r3 void 5.00 s after leaving the hooks; m-k8 void 0.43 s after leaving the hooks (at the loss); m-k8-r3 void 0.27 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 2.40 s after leaving the hooks (at the loss); xXFj-r4 void 5.00 s after leaving the hooks"
+    "text": "3. No Start! before the bar settled, all 51 reps: 0 early (none). No Start!: 6K8v-r3, m-k8, Nv9h, VM_y, xXFj-r4; each must be voided within 5 s of leaving the hooks, or at the loss: 6K8v-r3 void 5.00 s after leaving the hooks; m-k8 void 0.43 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 5.03 s after leaving the hooks; xXFj-r4 void 5.00 s after leaving the hooks"
    },
    "line4": {
     "status": "PASS",
-    "text": "4. No Rack! before the bar is back up, all 51 reps: 0 early (none). A rep with no Start! passes only by the void's Rack!: 6 of 6"
+    "text": "4. No Rack! before the bar is back up, all 51 reps: 0 early (none). A rep with no Start! passes only by the void's Rack!: 5 of 5"
    },
    "line5": {
     "status": "FAIL",
@@ -6208,61 +6230,82 @@
     "rep": 3,
     "group": "bounced",
     "inHand": true,
-    "start": null,
-    "press": null,
+    "start": 16.500333333333337,
+    "press": 18.469999999999995,
     "late": false,
-    "rack": null,
+    "rack": 20.067,
     "noRep": false,
-    "lostBeforeStart": 16.267,
-    "stuckBeforeStart": true,
+    "lostBeforeStart": null,
+    "stuckBeforeStart": false,
     "leftHooks": 16,
-    "voided": 16.267,
-    "voidAfterHooks": 0.267,
-    "voidAtLoss": true,
-    "voidOk": true,
-    "startIn": null,
-    "pressIn": null,
-    "pressClip": null,
+    "voided": null,
+    "voidAfterHooks": null,
+    "voidAtLoss": false,
+    "voidOk": false,
+    "startIn": "replay",
+    "pressIn": "replay",
+    "pressClip": 17.367,
     "settled": 15.899999999999999,
-    "descent": 16.4,
-    "stop": 17.13,
-    "pauseEnd": 17.47,
-    "backUpEye": 18.333,
-    "delay": null,
+    "descent": 16.933,
+    "stop": 17.663,
+    "pauseEnd": 18.003,
+    "backUpEye": 19.633,
+    "delay": 0.806999999999995,
     "early": false,
-    "within1": false,
-    "within15": false,
+    "within1": true,
+    "within15": true,
     "over15": false,
     "startEarly": false,
     "rackEarly": false,
-    "backPhone": false,
+    "backPhone": true,
     "backEye": true,
-    "backAgree": false,
+    "backAgree": true,
     "frame": 33.333333333333336,
     "clipAt": {
-     "start": null,
-     "press": null,
-     "rack": null
+     "start": 16.1,
+     "press": 17.367,
+     "rack": 18.767
     },
     "clipFrame": {
-     "start": null,
-     "press": null,
-     "rack": null
+     "start": 6,
+     "press": 44,
+     "rack": 86
     },
     "inHold": {
-     "start": false,
-     "press": false,
+     "start": true,
+     "press": true,
      "rack": false
     },
-    "pause": null,
+    "pause": 0.8,
     "pauseStuck": false,
-    "sink": null,
+    "sink": 0.0007543966545938696,
     "sinking": false,
     "refSink": null,
     "refSinking": false,
-    "waits": [],
+    "waits": [
+     {
+      "what": "start",
+      "at": 16.267,
+      "s": 0.533,
+      "got": true,
+      "from": 15.9,
+      "to": 16.267,
+      "still": true
+     },
+     {
+      "what": "press",
+      "at": 17.47,
+      "s": 0.767,
+      "got": true,
+      "from": 17.13,
+      "to": 17.47,
+      "still": false
+     }
+    ],
     "log": [
-     "Rack!(void) 16.27"
+     "start 16.50",
+     "press 18.47",
+     "rack 20.07"
     ]
    },
    {
@@ -7258,21 +7301,21 @@
     "late": false,
     "rack": null,
     "noRep": false,
-    "lostBeforeStart": 5.299666666666667,
-    "stuckBeforeStart": true,
+    "lostBeforeStart": null,
+    "stuckBeforeStart": false,
     "leftHooks": 2.9,
-    "voided": 5.299666666666667,
-    "voidAfterHooks": 2.4,
-    "voidAtLoss": true,
+    "voided": 7.933000000000001,
+    "voidAfterHooks": 5.033,
+    "voidAtLoss": false,
     "voidOk": true,
     "startIn": null,
     "pressIn": null,
     "pressClip": null,
     "settled": 3.267,
-    "descent": 5.4,
-    "stop": 6.1370000000000005,
-    "pauseEnd": 6.337,
-    "backUpEye": 6.8340000000000005,
+    "descent": 8.033000000000001,
+    "stop": 8.77,
+    "pauseEnd": 8.969999999999999,
+    "backUpEye": 9.467,
     "delay": null,
     "early": false,
     "within1": false,
@@ -7309,7 +7352,7 @@
      {
       "what": "start",
       "at": 4.7330000000000005,
-      "s": 0.567,
+      "s": 3.2,
       "got": false,
       "from": 4.333000000000001,
       "to": 4.7330000000000005,
@@ -7317,7 +7360,7 @@
      }
     ],
     "log": [
-     "Rack!(void) 5.30"
+     "Rack!(void) 7.93"
     ]
    },
    {

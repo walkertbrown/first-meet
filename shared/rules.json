@@ -103,6 +103,7 @@
     "freezeMs": 400,
     "freezeBeforeMs": 400,
     "freezeAfterMs": 1500,
+    "freezeNearTapPct": 8,
     "stuckStill": 0.002,
     "stuckMs": 800,
     "pauseLostMs": 500,
