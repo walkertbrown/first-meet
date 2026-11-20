@@ -11,7 +11,7 @@ describe('the bench stage (3.4b)', () => {
     expect(st.state).toBe('tap');
     expect(st.feed(frame(...RACK, 0), 0)).toEqual([]);
     expect(st.tap(frame(...RACK, 0), RACK[0] + 0.004, RACK[1] - 0.004)).toBe(true);
-    expect(st.plateTap).toEqual({ x: 0.624, y: 0.296, size: 0.08 });
+    expect(st.plateTap).toEqual({ x: 0.624, y: 0.296, size: 0.08, t: 0 });
     const { evs } = run(st, RACK, BENCH);
     expect(cmds(evs)).toEqual(['start', 'press', 'rack']);
     // the mark follows the plate on the hooks, and goes at "Start!"
@@ -29,6 +29,14 @@ describe('the bench stage (3.4b)', () => {
     expect(st.voided).toBe(false);
     // no tap once the lift has started
     expect(st.tap(frame(...RACK, 0), 0.5, 0.5)).toBe(false);
+  });
+
+  it("a second tap is the last tap's point and time (item 110)", () => {
+    const st = new BarStage(DIMS);
+    st.tap(frame(...RACK, 0), ...RACK);
+    expect(st.plateTap?.t).toBe(0);
+    st.tap(frame(...RACK, 0), RACK[0] + 0.004, RACK[1], 1234.6);
+    expect(st.plateTap).toEqual({ x: 0.624, y: 0.3, size: 0.08, t: 1235 });
   });
 
   it('is lost on the hooks after 1 s under the line: the mark goes, and a new tap starts again', () => {
@@ -54,7 +62,7 @@ describe('the bench stage (3.4b)', () => {
     st.tap(frame(...RACK, 0), 0.3, 0.7); // the wrong place: a patch of wall
     run(st, RACK, [{ ms: 300 }]);
     expect(st.tap(frame(...RACK, 10), ...RACK)).toBe(true);
-    expect(st.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08 });
+    expect(st.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08, t: 0 });
     const { evs } = run(st, RACK, BENCH, 300);
     const m = evs.find(e => e.type === 'mark') as { x: number; y: number };
     expect(Math.abs(m.x - RACK[0]) * W).toBeLessThan(2.5);

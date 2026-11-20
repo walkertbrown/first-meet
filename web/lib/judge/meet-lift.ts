@@ -80,10 +80,10 @@ export class MeetLift {
   get plateTap(): PlateTap | null { return this.caller.kind === 'bar' ? this.caller.c.plateTap : null; }
   get bar(): BarStage | null { return this.caller.kind === 'bar' ? this.caller.c : null; }
 
-  /** Her tap at (x, y), fractions of the camera frame (not the mirrored screen). */
-  tapBar(g: Gray, x: number, y: number): boolean {
+  /** Her tap at (x, y), fractions of the camera frame (not the mirrored screen), at `t` ms in the recording. */
+  tapBar(g: Gray, x: number, y: number, t = 0): boolean {
     if (this.caller.kind !== 'bar' || !this.wantsBar) return false;
-    return this.caller.c.tap(g, x, y);
+    return this.caller.c.tap(g, x, y, t);
   }
 
   /** One grey frame for the bench: the mark, lost, and the bar's commands. The first frame after her first tap is "Bar is loaded.". */

@@ -7,7 +7,7 @@ import { RULES, type Rules } from './rules';
 import type { CommandTimes } from './zoom';
 import { judgePress, pressTimes, type PressRep } from './press';
 import { judgeOverhead, type OverheadRep } from './overhead';
-import { extrasOk, timesOnly } from './bar-measure';
+import { extrasOk, plateTap, timesOnly } from './bar-measure';
 
 export type RepLight = { call: 'white' | 'red' | 'close'; reason: string | null; frame_ms?: number };
 
@@ -35,6 +35,9 @@ export function checkCommandTimes(ct: CommandTimes | null | undefined, lift: Mee
   if (!ct || typeof ct !== 'object') return 'missing_soft';
   // the bench's `plate_tap` and `press_late_why` (3.4b) aren't times: a broken one can't be read
   if (!extrasOk(ct)) return 'not_a_number';
+  // the tap's time sits inside the clip, as the other times do (3.4b, item 110)
+  const tapT = plateTap(ct)?.t;
+  if (tapT !== undefined && tapT > durationMs) return 'outside_clip';
   ct = timesOnly(ct);
   for (const v of Object.values(ct)) if (typeof v !== 'number' || !Number.isFinite(v)) return 'not_a_number';
   for (const v of Object.values(ct)) if (v < 0 || v > durationMs) return 'outside_clip';

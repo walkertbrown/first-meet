@@ -87,7 +87,7 @@ describe('a meet attempt on the phone', () => {
     // no frames do anything until she taps
     expect(m.feedBar(frame(...RACK, 0), 0)).toEqual([]);
     expect(m.tapBar(frame(...RACK, 0), ...RACK)).toBe(true);
-    expect(m.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08 });
+    expect(m.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08, t: 0 });
     const { evs: bar } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, BENCH);
     // "Bar is loaded." on the first frame after the tap, then the mark, then the commands
     expect(bar[0].type).toBe('loaded');

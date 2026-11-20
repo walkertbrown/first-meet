@@ -119,7 +119,10 @@ def one_bar(job: dict) -> dict:
         urllib.request.urlretrieve(job['video_url'], path)
         got = time.monotonic()
         info = poses.clip_info(path)
-        bar = plate.track_clip(path, job['plate_tap'], info.duration)
+        # from the tap's frame (item 110: `t`, the last tap's ms in the recording; an old phone's has none, so 0)
+        tap = job['plate_tap']
+        start = tap.get('t') if isinstance(tap.get('t'), (int, float)) else 0
+        bar = plate.track_clip(path, tap, info.duration, int(max(0, start)))
         secs = time.monotonic() - t0
         status, _ = post('/api/internal/bar', {
             'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'),

@@ -575,7 +575,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // in the stage's own px (the tap target fills the stage), so it holds when the page is drawn turned (4b)
       const p = tapToFrame({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }, cx, cy, true);
       const again = ml.phase === 'loaded';
-      if (!ml.tapBar(g, p.x, p.y)) return;
+      // the tap's time in the recording (item 110): the first tap comes just before it starts at "Bar is loaded.", so 0
+      if (!ml.tapBar(g, p.x, p.y, recording.startedAt ? Math.max(0, since(performance.now())) : 0)) return;
       flushSync(() => { setTapWords(w => w && { ...w, on: false }); setBarMark({ x: p.x, y: p.y, size: ml.plateTap?.size ?? 0.08, n: ++marks, on: true }); });
       placeMark(p.x, p.y);
       // a re-tap after the bar was lost on the hooks: "Bar is loaded." again (3.4b)
