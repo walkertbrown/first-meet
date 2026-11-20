@@ -123,14 +123,21 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
   // compared with its own frame), so a tick path's repeats don't make it 0, exact or not (NerdCider, 10:15 AM).
   const medStep = (i: number, j: number) => {
     const steps: number[] = [];
-    let q = i - 1;
+    // one step per camera frame: a step's point comes at least 0.9 of a camera frame after the last step's, so a
+    // frame's repeats add none (fed 2 times, one real step would otherwise count as 2; The Playner, 10:28 AM: the
+    // median needs 2 camera frames' steps)
+    let q = i - 1, took = -Infinity;
     for (let k = i + 1; k <= j; k++) {
       while (q + 1 < k && w[q + 1][0] <= w[k][0] - camera * 0.9 + eps) q++;
-      if (q >= i) steps.push(Math.hypot(w[k][1] - w[q][1], w[k][2] - w[q][2]));
+      if (q >= i && w[k][0] >= took + camera * 0.9 - eps) {
+        steps.push(Math.hypot(w[k][1] - w[q][1], w[k][2] - w[q][2]));
+        took = w[k][0];
+      }
     }
-    // with no step to measure, nothing is carried (VibeSearch, Nov 20, 10:25 AM: an answer of 0 carried an off frame
-    // that came a stretch's second camera frame, whatever the bar was doing)
-    return steps.length ? steps.sort((x, y) => x - y)[Math.floor(steps.length / 2)] : Infinity;
+    // the median needs at least 2 steps; with fewer, nothing is carried (VibeSearch, Nov 20, 10:25 AM: an answer of 0
+    // on no step carried an off frame that came a stretch's second camera frame, whatever the bar did; NerdCider,
+    // 10:27 AM: on KrDo's still bar 4 single steps in 48 are under the line, and no median of 2 is)
+    return steps.length >= 2 ? steps.sort((x, y) => x - y)[Math.floor(steps.length / 2)] : Infinity;
   };
   for (let i = 0; i < w.length; i++) {
     // the furthest j with every point i..j inside a still box (each start grows its own box, so an off frame

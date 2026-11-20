@@ -331,6 +331,22 @@ describe('the stuck-track guard (item 108)', () => {
         const fed30 = (n: number) => cam.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (gap / n), q[1], q[2], q[3]] as BarPoint));
         for (const n of [1, 2, 3, 4]) expect(stuckStretches(fed30(n), CT), `30 fps, fed ${n}x`).toEqual([]);
       });
+      it('the median needs at least 2 steps: an off frame as the third, after one step under the line (NerdCider, 10:27 AM)', () => {
+        // a real bar: two frames 0.0001 apart (one step, under 0.0002), the off frame, then still moving 0.0007 a frame
+        // for 0.67 s at 15 fps or 0.73 s at 30 fps. Carried, it would read stuck
+        for (const fps of [15, 30]) {
+          const gap = 1000 / fps, still = fps === 15 ? 10 : 22, cam: BarPoint[] = [];
+          for (let k = 0; k * gap <= 6000; k++) {
+            const t = k * gap, at = Math.round((t - 3000) / gap);
+            const x = at === 0 ? 0.5 : at === 1 ? 0.5001 : 0.5 + (at % 2) * 0.0007;
+            cam.push(t >= 3000 - 1e-6 && at < 3 + still ? [t, x, at === 2 ? 0.47 : 0.42, 0.6] : [t, 0.3 + k * 0.004, 0.3 + k * 0.004, 0.6]);
+          }
+          for (const n of [1, 2, 3, 4]) {
+            const f = cam.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (gap / n), q[1], q[2], q[3]] as BarPoint));
+            expect(stuckStretches(f, CT), `${fps} fps, fed ${n}x`).toEqual([]);
+          }
+        }
+      });
       it('a stretch stuck without the carry is still stuck, however it moves', () => {
         const p = path(GOOD);
         const first = p.findIndex(q => q[0] >= A);
