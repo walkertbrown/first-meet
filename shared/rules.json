@@ -85,6 +85,7 @@
     "pressStillMs": 500,
     "pressStill": 0.01,
     "pastPeakDown": 0,
+    "smoothMs": 100,
     "rackRel": 0.05,
     "rackBack": 0.02,
     "rackHoldMs": 400,
@@ -100,6 +101,8 @@
     "stuckRule": true,
     "freezeScore": 0.99,
     "freezeMs": 400,
+    "freezeBeforeMs": 400,
+    "freezeAfterMs": 1500,
     "stuckStill": 0.002,
     "stuckMs": 800,
     "pauseLostMs": 500,
@@ -108,6 +111,8 @@
     "lostLateMs": 2000,
     "lostRackMs": 3000,
     "tapLostMs": 1000,
+    "frozenPressMs": 1000,
+    "frozenStill": 0.002,
     "sinkAfterPress": 0.01,
     "trainingNoDescentMs": 8000
   }

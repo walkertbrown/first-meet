@@ -14,6 +14,8 @@ The ways in, in order:
 """
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Callable
 
 PATH_SCORE = 0.5      # a path point counts at this confidence or more (the plan's guess)
@@ -24,15 +26,26 @@ WRISTS_SEEN = 0.5     # of the pose frames from Start! to Press! (or Rack!)
 LOST_MS = 500
 LOCKOUT_MS = 3000     # the lockout is looked for to Press! + 3 s
 FRAME_MS = 1000 / 15  # the server's frames, when the path is too short to tell
+# the smoothing window, from shared/rules.json (benchBar.smoothMs), and measureBar's slack (SMOOTH_SLACK_MS)
+SMOOTH_MS = json.loads((Path(__file__).resolve().parent.parent / 'shared/rules.json').read_text())['benchBar']['smoothMs']
+SMOOTH_SLACK_MS = 5
 
 Series = list[tuple[float, float]]
 
 
 def _smooth(pts: Series) -> Series:
-    """3-point median of y, as measureBar smooths the path (web/lib/judge/bar-measure.ts)."""
+    """The median of y over every point within SMOOTH_MS either side, as measureBar smooths the path
+    (web/lib/judge/bar-measure.ts, 3.4b "The smoothing is in time, not points"). At 15 fps that's 3 points."""
+    half = SMOOTH_MS + SMOOTH_SLACK_MS
     out = []
+    a = b = 0
     for i, (t, _) in enumerate(pts):
-        w = sorted(y for _, y in pts[max(0, i - 1):i + 2])
+        while t - pts[a][0] > half:
+            a += 1
+        b = max(b, i)
+        while b + 1 < len(pts) and pts[b + 1][0] - t <= half:
+            b += 1
+        w = sorted(y for _, y in pts[a:b + 1])
         out.append((t, w[len(w) // 2]))
     return out
 

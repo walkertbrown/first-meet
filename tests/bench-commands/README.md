@@ -13,10 +13,20 @@ python3 -I tests/bench-commands/eye.py /tmp/eye.json   # the by-eye times, from 
 
 Env: `QUIET=1` prints the lines only. `DEBUG=<id prefix>` prints every frame of that rep. `OUT=<file>` writes the
 settings, the lines, the note and every rep's times as JSON (`results/commands.json`). `STILL_START=1` also makes the
-Start! hold a still stretch (see Results). A first argument overrides settings from a JSON file, and a second points at
+Start! hold a still stretch (see Results). `ALL_REPS=1` scores every rep of the gym sets (reps 2 and on are a
+stand-in: two reps of one clip, see `laterReps`), and `LIVE=tick` or `LIVE=three` feeds the trace at a live cadence
+(the 16.7 ms tick, or each frame 3 times). `ALL_REPS_OUT=<file>` writes `results/commands-all-reps.json`. A first argument overrides settings from a JSON file, and a second points at
 another traces folder. `tests/unit/bench-commands.test.ts` runs on every commit. It checks that the scoring gives
 `results/commands.json`, that line 1 isn't failed, that lines 2 to 6 pass, and that no command changes when the frames
-after it are cut off (no look-ahead).
+after it are cut off (no look-ahead). On every rep, with the product's rules, it checks that no Press! comes before
+the stop, 90% come within 1 s, none past 1.5 s but `press_late`, and lines 1 to 4 pass, on the grid and at both live
+cadences; with item 109 off, that IA0P rep 3 alone gets Press! before the stop; and that the scoring gives
+`results/commands-all-reps.json`. At each live cadence, no command in the clip may move by more than two of the clip's
+own camera frames from the grid run (item 111, `cadenceMoves`; commands in the stand-in's hold are recorded, not
+counted). And on each rep's whole phone path, from the tap with its own command times, item 108's guard put on and read
+by `measureBar` as the server does (`pause`), no rep whose pause by eye is 0.5 s or more may read "not measured" because
+the live stuck rule marked it lost (`pauseStuck`; NerdCider, Nov 20, 9:01 AM). It does at 0.4 s after Start! (IA0P reps
+1 and 2), and doesn't at item 111's 1.5 s.
 
 ## Files
 
@@ -32,6 +42,7 @@ after it are cut off (no look-ahead).
 | `data/calls-meet.json`, `data/calls-run1.json` | The by-eye calls: the Start! window and each rep's bottom start and pause end, in seconds of the clip. |
 | `data/marks-*.json` | Where and when the plate was tapped. |
 | `results/commands.json` | The scorer's output: settings, the six lines (each with a status), the note on still pauses and every rep's times. |
+| `results/commands-all-reps.json` | Every rep of the gym sets, labelled as the stand-in it is, with the product's rules and with item 109 off. |
 
 **Trace format:** `{ id, w, h, racked, mark, pts }`, with `pts` a list of `[t ms, x, y, score]`. x and y are fractions
 of the 284×160 frame, and `score` is the template match (−1 to 1).

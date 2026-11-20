@@ -3,10 +3,12 @@
 //
 // Usage: npx tsx tests/bench-commands/score.ts [rules override .json] [traces dir]
 //        env QUIET=1 (lines only), DEBUG=<id prefix> (every frame of that rep), OUT=<file> (every rep's times as JSON),
-//        ALL_REPS=1 (every rep of the gym sets, not just rep 1; see laterReps)
+//        ALL_REPS=1 (every rep of the gym sets, not just rep 1; see laterReps), LIVE=tick|three (the live cadence; see liveFeed),
+//        ALL_REPS_OUT=<file> (writes results/commands-all-reps.json: allRepsResults)
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BenchCaller, RULES, type Rel } from './caller';
+import { callPath, markStuck, measureBar, type BarPoint, type CommandTimes } from '../../web/lib/judge/bar-measure';
 
 const HERE = __dirname;
 const BOUNCED = ['m-k8', 'Nv9h', 'VM_y', 'xXFj'];
@@ -29,6 +31,11 @@ export type Row = {
   backPhone: boolean; backEye: boolean; backAgree: boolean;
   sink: number | null; sinking: boolean; refSink: number | null; refSinking: boolean;
   waits: { what: string; at: number; s: number; got: boolean; from: number; to: number; still: boolean }[]; log: string[];
+  pause: number | null; pauseStuck: boolean;
+  /** The clip's own camera frame (ms); each command's time in the clip (s; in a hold, the clip frame then shown), the
+   *  index of the camera frame then shown, and whether it came in a hold. */
+  frame: number; clipAt: Record<'start' | 'press' | 'rack', number | null>; clipFrame: Record<'start' | 'press' | 'rack', number | null>;
+  inHold: Record<'start' | 'press' | 'rack', boolean>;
 };
 
 /** How far the bar goes lower after `from` before it rises by `rise` (3-frame median), in the units of y. */
@@ -110,7 +117,60 @@ function laterReps(e0: Eye, pts: number[][], g: GymCall): { rep: number; e: Eye;
   });
 }
 
-export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces'), opts: { allReps?: boolean } = {}) {
+/**
+ * The live phone's cadence (3.4b "The lights", NerdCider, Nov 20, 8:31 AM): the live tick runs on every screen refresh
+ * and feeds the newest camera frame each time, so the caller sees each frame more than once, with the same x and y.
+ * 'tick': a 16.7 ms tick feeding the newest frame (2 feeds a frame on these 30 fps traces, 3 on a 20 fps camera).
+ * 'three': each frame fed 3 times, evenly before the next frame (the 3 feeds a frame NerdCider saw).
+ */
+export type Live = 'tick' | 'three';
+export function liveFeed(pts: number[][], step: number, live: Live): number[][] {
+  const out: number[][] = [];
+  if (live === 'three') { for (const q of pts) for (let j = 0; j < 3; j++) out.push([q[0] + (j * step) / 3, q[1], q[2], q[3]]); return out; }
+  const tick = 1000 / 60;
+  for (let k = 0, i = 0; ; k++) {
+    const T = pts[0][0] + k * tick;
+    if (T >= pts.at(-1)![0] + step) break;
+    while (i + 1 < pts.length && pts[i + 1][0] <= T) i++;
+    out.push([T, pts[i][1], pts[i][2], pts[i][3]]);
+  }
+  return out;
+}
+
+/**
+ * Item 111's cadence line (3.4b, the commands test): how far each command moves at a live cadence from the grid run.
+ * A command in the clip, on both runs, is measured in the clip's own time and may move by at most two of the clip's
+ * own camera frames (`counted`), counted as frames of the clip between the frame shown at each. A command in the stand-in's hold on either run is recorded, not counted: both ends of
+ * a hold step at the feed's rate, and its wait is in `waits`. A command on one run and not the other is `missing`.
+ */
+export function cadenceMoves(grid: Row[], live: Row[]) {
+  const out: { id: string; cmd: 'start' | 'press' | 'rack'; moved: number | null; frames: number | null; counted: boolean; missing: boolean }[] = [];
+  const byId = new Map(live.map(r => [r.id, r]));
+  for (const g of grid) {
+    const l = byId.get(g.id); if (!l) continue;
+    for (const cmd of ['start', 'press', 'rack'] as const) {
+      const a = g.clipAt[cmd], b = l.clipAt[cmd];
+      if (a == null && b == null) continue;
+      const counted = a != null && b != null && !g.inHold[cmd] && !l.inHold[cmd];
+      const moved = a != null && b != null ? +(b - a).toFixed(4) : null;
+      const fa = g.clipFrame[cmd], fb = l.clipFrame[cmd];
+      out.push({ id: g.id, cmd, moved, frames: fa == null || fb == null ? null : Math.abs(fb - fa), counted, missing: a == null || b == null });
+    }
+  }
+  return out;
+}
+
+/** What results/commands-all-reps.json says it is, so no one reads the stand-in as people lifting. */
+export const ALL_REPS_LABEL = 'Every rep of the gym sets. Rep 1 is the clip as filmed; reps 2 and on are a stand-in: two reps of one clip, '
+  + 'each played as its own attempt, with her pause and holds played back as held frames (laterReps). Not people lifting.';
+
+/** results/commands-all-reps.json: every rep with the product's rules, and with item 109 off to show what it holds. */
+export function allRepsResults() {
+  const run = (o: Partial<Rel>) => { const g = score({ ...RULES, ...o }, undefined, { allReps: true }); return { lines: g.lines, rows: g.rows }; };
+  return { label: ALL_REPS_LABEL, rules: RULES, product: run({}), item109Off: run({ frozenPressMs: 0 }) };
+}
+
+export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces'), opts: { allReps?: boolean; live?: Live } = {}) {
   const eye: Record<string, Eye> = JSON.parse(readFileSync(join(HERE, 'data', 'eyetimes.json'), 'utf8'));
   const gym: Record<string, GymCall> = Object.fromEntries(
     (JSON.parse(readFileSync(join(HERE, 'data', 'calls-run1.json'), 'utf8')).attempts as GymCall[]).map(g => [g.id, g]));
@@ -122,9 +182,11 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     const rj = JSON.parse(readFileSync(join(HERE, 'data', 'reference', `${id0}.json`), 'utf8'));
     const ref: Ref = { t: rj.t, y: rj.y.map((y: number | null) => (y == null ? NaN : y)), h: rj.h };
     const group = e0.grp === 'meet' ? 'meet' : BOUNCED.some(b => id0.startsWith(b)) ? 'bounced' : 'paused';
-    const step = (pj.pts.at(-1)![0] - pj.pts[0][0]) / (pj.pts.length - 1);
+    const frame = (pj.pts.at(-1)![0] - pj.pts[0][0]) / (pj.pts.length - 1);
+    const step = !opts.live ? frame : opts.live === 'tick' ? 1000 / 60 : frame / 3;
     const plays = [{ rep: 1, e: e0, pts: pj.pts as number[][] }, ...(opts.allReps && gym[id0] ? laterReps(e0, pj.pts, gym[id0]) : [])];
-    for (const { rep, e, pts } of plays) {
+    for (const { rep, e, pts: pts0 } of plays) {
+    const pts = opts.live ? liveFeed(pts0, frame, opts.live) : pts0;
     const id = rep === 1 ? id0 : `${id0}-r${rep}`, racked: boolean = rep === 1 ? pj.racked : false;
     const dbg = process.env.DEBUG && id.startsWith(process.env.DEBUG);
     const cut1 = (e.descent - 0.1) * 1000, cut2 = e.pauseEnd * 1000;
@@ -140,10 +202,11 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
       const c = new BenchCaller({ x: pj.mark.x, y: pj.mark.y }, { w: pj.w, h: pj.h }, rules, racked);
       const ct: Record<string, number> = {}, ctClip: Record<string, number> = {}, inHold: Record<string, boolean> = {};
       let late = false, noRep = false, voided: number | null = null, off = 0, holding: string | null = null;
-      const log: string[] = [], fed: { t: number; y: number }[] = [], waits: Row['waits'] = [];
+      const log: string[] = [], fed: { t: number; y: number }[] = [], waits: Row['waits'] = [], path: BarPoint[] = [];
       let state1: string | null = null, state2: string | null = null;
       const feed = (t: number, clip: number, x: number, y: number, sc: number) => {
         if (sc >= rules.lostScore) fed.push({ t, y });
+        path.push([t, x, y, sc]);
         const cmd = c.feed(t, x, y, sc);
         if (dbg && holds.length === 2) console.log(`   ${(t / 1000).toFixed(2)} ${c.state} y ${y.toFixed(3)} sc ${sc.toFixed(2)} v ${c.speeds.at(-1)?.v.toFixed(3) ?? '-'}`);
         if (cmd?.void) { voided = cmd.t / 1000; log.push(`Rack!(void) ${(cmd.t / 1000).toFixed(2)}`); return; }
@@ -176,7 +239,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
         feed(t + off, t, x, y, sc);
       }
       while (todo.length && voided == null) hold(todo.shift()!); // a hold at the clip's end (reps 2 and on: Rack!)
-      return { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, state1, state2 };
+      return { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, state1, state2, path };
     };
     const holds: Hold[] = [];
     let r = run(holds);
@@ -190,7 +253,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     if (rep > 1 && r.ct.press !== undefined && r.ct.rack === undefined && r.voided == null && e.backUp != null) {
       holds.push({ what: 'rack', ...stillestStretch(pts, ref, pj.w / pj.h, e.backUp * 1000, pts.at(-1)![0], true) }); r = run(holds);
     }
-    const { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits } = r;
+    const { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, path } = r;
 
     const sh = (sec: number | null) => (sec == null ? null : sec + waits.filter(w => w.at < sec).reduce((a, w) => a + w.s, 0));
     const E = { settled: e.settled, descent: sh(e.descent)!, stop: sh(e.stop)!, pauseEnd: sh(e.pauseEnd)!, backUp: sh(e.backUp) };
@@ -201,6 +264,23 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     const refPts = ref.t.map((t, k) => ({ t, y: ref.y[k] / ref.h })).filter(q => Number.isFinite(q.y));
     const refSink = pressIn === 'clip' ? sinkAfter(refPts, ctClip.press, 0.01) : null;
     const delay = ct.press != null ? ct.press - E.stop : null;
+    // The Pause line as the server reads it under item 110 (NerdCider, Nov 20, 9:01 AM; 3.4d step 11): the phone's own
+    // path as fed, from the tap, with the phone's command times, item 108's guard put on (markStuck), then measureBar, as
+    // web/lib/queue.ts does. `pauseStuck` (item 111): it reads "not measured", and the live stuck rule after Start! (as
+    // callPath re-runs it) marked frames lost from pauseLostMs before the eye's stop to Press! that it wouldn't mark with
+    // the rule off. Item 108's guard alone doesn't count.
+    const ms = (x: number) => Math.round(x * 1000);
+    const ctm = ct.start != null && ct.press != null ? {
+      loaded: 0, plate_tap: { x: pj.mark.x, y: pj.mark.y, size: 0.05 }, start: ms(ct.start),
+      ...(late ? { press_late: ms(ct.press), press_late_why: c.lostPress ? 'lost' : 'still' } : { press: ms(ct.press) }),
+      ...(ct.rack != null ? { rack: ms(ct.rack) } : {}),
+    } as unknown as CommandTimes : null;
+    const readWith = (rr: Rel) => (ctm ? measureBar(markStuck(path, ctm, rr).path, ctm, { w: pj.w, h: pj.h }, rr) : null);
+    const read = readWith(rules);
+    const pause = read?.pause_s ?? null;
+    const liveLost = (rr: Rel) => (ctm ? callPath(path, ctm, { w: pj.w, h: pj.h }, rr).seen : []);
+    const seenOn = read != null && pause === null ? liveLost(rules) : [], seenOff = seenOn.length ? liveLost({ ...rules, freezeAfterMs: 0 }) : [];
+    const pauseStuck = seenOn.some((ok, i) => !ok && seenOff[i] && path[i][0] >= ms(E.stop) - rules.pauseLostMs && path[i][0] <= ms(ct.press!));
     const backPhone = c.reachedTop && ct.press != null && ct.rack != null && !noRep && voided == null;
     // A missed Start! is safe only if the void comes: Rack! within voidMs (one frame's slack) of leaving the hooks, or at the loss.
     const leftHooks = c.leftAt == null ? null : c.leftAt / 1000, lostAt = c.lostBeforeStart == null ? null : c.lostBeforeStart / 1000;
@@ -208,6 +288,13 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     const voidAtLoss = voided != null && voided === lostAt;
     const voidOk = voided != null && ((voidAfterHooks != null && voidAfterHooks <= (rules.voidMs + step) / 1000 + 1e-9) || voidAtLoss);
     const backEye = E.backUp != null;
+    // The camera frame shown at a clip time: the last of the rep's own frames at or before it.
+    const shown = (sec: number | undefined) => {
+      if (sec == null) return null;
+      let lo = 0, hi = pts0.length - 1;
+      while (lo < hi) { const m = (lo + hi + 1) >> 1; if (pts0[m][0] <= sec * 1000 + 1e-6) lo = m; else hi = m - 1; }
+      return lo;
+    };
     rows.push({
       id, rep, group, inHand: !racked, start: ct.start ?? null, press: ct.press ?? null, late, rack: ct.rack ?? null, noRep,
       lostBeforeStart: lostAt, leftHooks, voided, voidAfterHooks, voidAtLoss, voidOk,
@@ -218,7 +305,10 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
       startEarly: ct.start != null && ct.start < E.settled,
       rackEarly: ct.rack != null && (E.backUp == null ? !noRep : ct.rack < E.backUp),
       backPhone, backEye, backAgree: backPhone === backEye,
-      sink, sinking: sink != null && sink > 0.01, refSink, refSinking: refSink != null && refSink > 0.01, waits, log,
+      frame, clipAt: { start: ctClip.start ?? null, press: ctClip.press ?? null, rack: ctClip.rack ?? null },
+      clipFrame: { start: shown(ctClip.start), press: shown(ctClip.press), rack: shown(ctClip.rack) },
+      inHold: { start: !!inHold.start, press: !!inHold.press, rack: !!inHold.rack },
+      pause, pauseStuck, sink, sinking: sink != null && sink > 0.01, refSink, refSinking: refSink != null && refSink > 0.01, waits, log,
     });
     }
   }
@@ -262,7 +352,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
 
 if (process.argv[1]?.endsWith('score.ts')) {
   const o = process.argv[2] ? JSON.parse(readFileSync(process.argv[2], 'utf8')) : {};
-  const { rows, lines, notes } = score({ ...RULES, ...o }, process.argv[3], { allReps: process.env.ALL_REPS === '1' });
+  const { rows, lines, notes } = score({ ...RULES, ...o }, process.argv[3], { allReps: process.env.ALL_REPS === '1', live: (process.env.LIVE || undefined) as Live | undefined });
   const f2 = (x: number | null) => (x == null ? '-' : x.toFixed(2));
   const pc = (x: number | null) => (x == null ? '-' : `${(100 * x).toFixed(1)}%`);
   if (process.env.QUIET !== '1') for (const r of rows) {
@@ -273,5 +363,6 @@ if (process.argv[1]?.endsWith('score.ts')) {
   }
   for (const l of Object.values(lines)) console.log(`${l.text} -> ${l.status}`);
   console.log(notes.holds);
+  if (process.env.ALL_REPS_OUT) writeFileSync(process.env.ALL_REPS_OUT, JSON.stringify(allRepsResults(), null, 1) + '\n');
   if (process.env.OUT) writeFileSync(process.env.OUT, JSON.stringify({ rules: { ...RULES, ...o }, lines, notes, rows }, null, 1) + '\n');
 }

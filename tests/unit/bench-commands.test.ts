@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BenchCaller, RULES } from '../bench-commands/caller';
-import { score } from '../bench-commands/score';
+import { allRepsResults, cadenceMoves, score, type Live } from '../bench-commands/score';
 
 const B = join(__dirname, '..', 'bench-commands');
 
@@ -20,9 +20,9 @@ describe('bench commands test', () => {
   it('line1 does not fail', () => expect(got.lines.line1.status, got.lines.line1.text).not.toBe('FAIL'));
   for (const [k, l] of Object.entries(got.lines)) if (k !== 'line1') it(`${k} passes`, () => expect(l.status, l.text).toBe('PASS'));
 
-  it('never looks ahead, with item 109\'s trial rule on too', () => {
+  it('never looks ahead, on a frozen track item 109 holds Press! for', () => {
     const run = (pj: { mark: { x: number; y: number }; w: number; h: number }, pts: number[][]) => {
-      const c = new BenchCaller({ x: pj.mark.x, y: pj.mark.y }, { w: pj.w, h: pj.h }, { ...RULES, frozenPressMs: 1000 }, false);
+      const c = new BenchCaller({ x: pj.mark.x, y: pj.mark.y }, { w: pj.w, h: pj.h }, RULES, false);
       return pts.map(([t, x, y, s]) => c.feed(t, x, y, s)).filter(Boolean).map(cmd => `${cmd!.cmd}@${cmd!.t}`);
     };
     const pj = JSON.parse(readFileSync(join(B, 'data', 'traces', 'IA0PhDBzsz0.json'), 'utf8'));
@@ -50,30 +50,57 @@ describe('bench commands test', () => {
   });
 });
 
-// Item 109, on trial (The Playner, Nov 16, 2:23 AM): every rep of the gym sets, reps 2 and on with the stand-in (laterReps
-// in score.ts). The product's rules call IA0P rep 3's Press! before the stop, while the bar still sinks; with a frozen
-// track waiting 1.0 s for Press!, no rep is called early, 90% or more come within 1 s, and none past 1.5 s but press_late.
-// Lines 5 and 6 aren't asked of the stand-in: those sets went from rep to rep without settling (results/commands-all-reps.json).
-describe('bench commands test, every rep (item 109, on trial)', () => {
-  const pressLines = (rules: typeof RULES & { frozenPressMs?: number }) => {
-    const { rows } = score(rules, undefined, { allReps: true });
+// Item 109 (The Playner, Nov 16, 2:23 AM; in the product's rules since Nov 20): every rep of the gym sets. Reps 2 and on
+// are the stand-in (laterReps in score.ts): two reps of one clip, her pause played back as held frames. With item 109
+// off, IA0P rep 3's Press! comes before the stop while the bar still sinks; with the product's rules (a frozen track
+// waits 1.0 s for Press!), no rep is called early, 90% or more come within 1 s, none past 1.5 s but press_late, and
+// lines 1-4 pass on every rep, on the traces' grid and at the live cadences (the 16.7 ms tick, each frame fed 3 times).
+// Lines 5 and 6 aren't asked of the stand-in: those sets went from rep to rep without settling
+// (results/commands-all-reps.json).
+describe('bench commands test, every rep (item 109; reps 2 and on are two reps of one clip, the stand-in)', () => {
+  const pressLines = (rules: typeof RULES, live?: Live) => {
+    const { rows, lines } = score(rules, undefined, { allReps: true, live });
     const sc = rows.filter(r => r.group !== 'bounced');
-    return { sc, early: sc.filter(r => r.early).map(r => `${r.id.slice(0, 4)}-r${r.rep}`), within1: sc.filter(r => r.within1).length, over15: sc.filter(r => r.over15).length };
+    return { lines, sc, early: sc.filter(r => r.early).map(r => `${r.id.slice(0, 4)}-r${r.rep}`), within1: sc.filter(r => r.within1).length, over15: sc.filter(r => r.over15).length };
   };
-  it('the product\'s rules: IA0P rep 3 alone gets Press! before the stop', () => {
-    const { early, over15 } = pressLines(RULES);
+  it('with item 109 off, IA0P rep 3 alone gets Press! before the stop', () => {
+    const { early, over15 } = pressLines({ ...RULES, frozenPressMs: 0 });
     expect(early).toEqual(['IA0P-r3']);
     expect(over15).toBe(0);
   });
-  it('the trial rule at 1.0 s: no Press! before the stop, 90% within 1 s, none past 1.5 s but press_late', () => {
-    const { sc, early, within1, over15 } = pressLines({ ...RULES, frozenPressMs: 1000 });
-    expect(early).toEqual([]);
-    expect(within1).toBeGreaterThanOrEqual(0.9 * sc.length);
-    expect(over15).toBe(0);
-  });
+  for (const live of [undefined, 'tick', 'three'] as const) {
+    it(`the product's rules${live ? ` at the live cadence (${live})` : ''}: no Press! before the stop, 90% within 1 s, none past 1.5 s but press_late, lines 1-4`, () => {
+      const { lines, sc, early, within1, over15 } = pressLines(RULES, live);
+      expect(early).toEqual([]);
+      expect(within1).toBeGreaterThanOrEqual(0.9 * sc.length);
+      expect(over15).toBe(0);
+      expect(lines.line1.status, lines.line1.text).not.toBe('FAIL');
+      for (const k of ['line2', 'line3', 'line4'] as const) expect(lines[k].status, lines[k].text).toBe('PASS');
+    });
+    // NerdCider's gap (Nov 20, 9:01 AM): the set's bench cuts start mid-lift, so only the whole phone path, from the
+    // tap, shows a real pause the stuck rule blanks. None of 0.5 s or more (by eye) may read "not measured" for it.
+    it(`the product's rules${live ? ` at the live cadence (${live})` : ''}: no real pause of 0.5 s or more blanked by the stuck rule`, () => {
+      const blanked = pressLines(RULES, live).sc.filter(r => r.pauseEnd - r.stop >= 0.5 && r.pauseStuck).map(r => `${r.id.slice(0, 4)}-r${r.rep}`);
+      expect(blanked).toEqual([]);
+    });
+  }
+  // Item 111's cadence line: a command in the clip may move by at most two of the clip's own camera frames from the
+  // grid run. Commands in the stand-in's hold are recorded, not counted. A command on one run only is listed, so a change
+  // shows: VM_y reps 2 and 4 (bounced) lose Start! at the live cadences, the safe way, and 8qzW's Rack! falls past the
+  // trace's end.
+  const grid = score(RULES, undefined, { allReps: true }).rows;
+  for (const live of ['tick', 'three'] as const) {
+    it(`at the live cadence (${live}), no command in the clip moves by more than two of the clip's own frames`, () => {
+      const m = cadenceMoves(grid, score(RULES, undefined, { allReps: true, live }).rows);
+      const over = m.filter(x => x.counted && x.frames! > 2).map(x => `${x.id} ${x.cmd} ${x.moved} s (${x.frames} frames)`);
+      expect(over).toEqual([]);
+      expect(m.filter(x => x.counted).length).toBeGreaterThanOrEqual(40);
+      expect(m.filter(x => x.missing).map(x => `${x.id.slice(0, 4)}${x.id.includes('-r') ? x.id.slice(x.id.indexOf('-r')) : ''} ${x.cmd}`))
+        .toEqual(['8qzW rack', 'VM_y-r2 start', 'VM_y-r2 press', 'VM_y-r2 rack', 'VM_y-r4 start', 'VM_y-r4 press', 'VM_y-r4 rack']);
+    });
+  }
   it('gives results/commands-all-reps.json', () => {
     const want = JSON.parse(readFileSync(join(B, 'results', 'commands-all-reps.json'), 'utf8'));
-    const run = (o: object) => { const g = score({ ...RULES, ...o }, undefined, { allReps: true }); return { lines: g.lines, rows: g.rows }; };
-    expect(JSON.parse(JSON.stringify({ off: run({}), frozenPressMs1000: run({ frozenPressMs: 1000 }) }))).toEqual(want);
+    expect(JSON.parse(JSON.stringify(allRepsResults()))).toEqual(want);
   });
 });

@@ -123,7 +123,7 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
  * median, as `measureBar` does. Null when there's no Start! height or travel to measure the band by.
  */
 function lockoutHold(w: BarPoint[], ct: CommandTimes, r: BarRel): ((a: number, b: number) => boolean) | null {
-  const s = smooth(w.map(([t, , y, score]) => ({ t, y, ok: score >= r.lostScore })));
+  const s = smooth(w.map(([t, , y, score]) => ({ t, y, ok: score >= r.lostScore })), r.smoothMs);
   if (!s.length) return null;
   const startY = yNear(s, ct.start!, 1000 / 15 * 3);
   if (startY === null) return null;
@@ -147,11 +147,22 @@ export function markStuck(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RU
 
 type Pt = { t: number; y: number; ok: boolean };
 
-/** 3-frame median of y on the tracked points. */
-function smooth(pts: Pt[]): Pt[] {
+/** Slack on the window (3.4b): a frame at 100 ms, on any rounding, is always in. */
+export const SMOOTH_SLACK_MS = 5;
+
+/**
+ * The median of y over every tracked point within `smoothMs` either side (3.4b "The smoothing is in time, not
+ * points", item 110): the same at any cadence, so the live tick's repeats of one camera frame don't undo it.
+ */
+export function smooth<P extends { t: number; y: number; ok: boolean }>(pts: P[], ms: number = BAR_RULES.smoothMs): P[] {
   const ok = pts.filter(p => p.ok);
+  const half = ms + SMOOTH_SLACK_MS;
+  let a = 0, b = 0;
   return ok.map((p, i) => {
-    const w = ok.slice(Math.max(0, i - 1), i + 2).map(q => q.y).sort((a, b) => a - b);
+    while (p.t - ok[a].t > half) a++;
+    if (b < i) b = i;
+    while (b + 1 < ok.length && ok[b + 1].t - p.t <= half) b++;
+    const w = ok.slice(a, b + 1).map(q => q.y).sort((x, y) => x - y);
     return { ...p, y: w[Math.floor(w.length / 2)] };
   });
 }
@@ -190,7 +201,7 @@ export function callPath(path: BarPoint[], ct: CommandTimes, dims: { w: number; 
     if (c) server.push({ cmd: c.cmd, t: c.t, ...(c.late ? { late: true } : {}), ...(c.why ? { why: c.why } : {}), ...(c.void ? { void: true } : {}) });
   }
   const frozen = new Set<number>();
-  for (const f of caller.frozeAt) for (const [t] of path) if (t >= f - r.freezeMs && t <= f) frozen.add(t);
+  caller.frozeAt.forEach((f, i) => { for (const [t] of path) if (t >= caller.frozeFrom[i] && t <= f) frozen.add(t); });
   const seen = path.map(([t, , , score]) => score >= r.lostScore && !frozen.has(t));
   return { server, seen };
 }
@@ -198,7 +209,7 @@ export function callPath(path: BarPoint[], ct: CommandTimes, dims: { w: number; 
 export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES): BarMeasures {
   const { server, seen } = callPath(path, ct, dims, r);
   const pts: Pt[] = path.map(([t, , y], i) => ({ t, y, ok: seen[i] }));
-  const s = smooth(pts);
+  const s = smooth(pts, r.smoothMs);
 
   const start = ct.start ?? null;
   const press = ct.press ?? ct.press_late ?? null;

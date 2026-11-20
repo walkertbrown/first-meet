@@ -68,7 +68,7 @@ export class BarStage {
     // the stuck-track rule takes a stretch out once it sees it: those frames were never the bar
     if (c.frozeAt.length > this.stuckSeen) {
       this.stuckSeen = c.frozeAt.length;
-      const from = t - this.r.freezeMs;
+      const from = c.frozeFrom.at(-1)!;
       for (const q of this.path) if (q.t >= from) q.lost = true;
     }
     const lost = m.score < this.r.lostScore || c.frozeAt.at(-1) === t;

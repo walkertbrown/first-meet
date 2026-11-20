@@ -218,11 +218,14 @@ class BenchWay(unittest.TestCase):
 
     def test_the_80_percent_rule_on_a_real_trace(self):
         """IA0P rep 2 as the test set cuts it (window 9.811 s on, Start! 1.0 s, Press! 3.269 s, Rack! 5.137 s):
-        thinned to 90% of its points it takes the path; to 70%, the wrists."""
+        thinned to 90% of its points it takes the path; to 70%, the wrists. Its touch, on the 100 ms median, is at
+        2.77 s, the middle of the flat pause (a one-frame spike at 2.33 s was the 3-point median's touch); one frame
+        is missing before it, so the whole path covers 98%."""
         path = self.trace('IA0PhDBzsz0', 9811, 9811 + 6500)
         whole, _ = self.way(path, lambda t: 0.5, press=3269, rack=5137, duration=6500)
         self.assertEqual(whole['way'], 'path')
-        self.assertEqual(whole['cover'], 1.0)
+        self.assertGreaterEqual(whole['cover'], 0.95)
+        self.assertLessEqual(abs(whole['touch'] - 2768), 40)
         ninety, _ = self.way([p for i, p in enumerate(path) if i % 10 < 9], lambda t: 0.5, press=3269, rack=5137, duration=6500)
         self.assertEqual(ninety['way'], 'path')
         self.assertLessEqual(self.depth(path, whole['touch']) - self.depth(path, ninety['touch']), 0.01)
