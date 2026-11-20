@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- the card PNGs are drawn at their final size by /api/card */
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
@@ -12,6 +13,7 @@ import { DEMO_LINE } from '@/lib/total-view';
 import '../../try.css';
 import '../../platform.css';
 import '../../corner.css';
+import '../../card.css';
 
 // Her corner page (plan 5.4): public, no account, by her corner token. Before meet weekend it
 // takes a first name; on meet weekend it shows her nine live, with "Cheer" on each sent attempt.
@@ -83,6 +85,7 @@ export default async function CornerPage({ params }: { params: Promise<{ token: 
       <CornerLive view={view} token={token} savedName={saved}>
         {view.kind === 'totaled' && (
           <div className="corner-after">
+            <div className="card-frame story corner-card"><img src={view.card} alt={`${view.name}'s meet card`} width={1080} height={1920} /></div>
             {view.demo && <p className="body-l">{DEMO_LINE}</p>}
             <Link className="link" href={view.demo ? '/sample' : '/live'}>{view.demo ? 'Watch a meet night' : 'Soo is live tonight at 8 pm Eastern'}</Link>
           </div>

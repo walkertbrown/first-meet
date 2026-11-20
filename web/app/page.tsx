@@ -1,4 +1,5 @@
 // Landing (plan 5.1). Every word in quotes there is here, exactly.
+import { botOn, refereeWords } from '@/lib/referee/words';
 import Link from 'next/link';
 import { Footer, LiftIcon, Wordmark } from '@/components/chrome';
 import { LandingLamps } from '@/components/landing-lamps';
@@ -25,7 +26,8 @@ const QUESTIONS: [string, string][] = [
   ],
   [
     'Who sees my videos?',
-    'In Try a lift and training, nobody: your phone judges you and nothing is uploaded. Your meet attempts are seen by the judge, the referees and, if you choose, your corner. You can delete every video any time.',
+    // item 88: the judge and the referee bot, and where its frames go, once it's on
+    refereeWords(botOn()).faqVideos,
   ],
   [
     'Do I have to weigh in?',

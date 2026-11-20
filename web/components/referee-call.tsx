@@ -28,6 +28,16 @@ export type RefereeCallProps = {
   measured: string[];
   /** The demo referee: after saving, back to the demo platform. */
   demoDoneHref?: string;
+  /**
+   * The real /referee once the referee bot decided (5.33, look 5.14d): the toggles start at the
+   * bot's lights, "Change the lights" turns on once one differs, and after the board is final
+   * it's read only.
+   */
+  bot?: { lights: Light[]; reasons: (string | null)[]; rep: number | null; readOnly: boolean };
+  /** The referee bot's lamp board, above the toggles (5.33), while it decides too. */
+  board?: React.ReactNode;
+  /** The demo's bot page (5.36): only the clip and what the judge measured, nothing that sets lights. */
+  clipOnly?: boolean;
 };
 
 const FRAME_S = 1 / 30;
@@ -116,11 +126,11 @@ export function RefereeCall(p: RefereeCallProps) {
   const [duration, setDuration] = useState(0);
   const [showMarks, setShowMarks] = useState(true);
   const [scale, setScale] = useState(1);
-  const [lights, setLights] = useState<(Light | null)[]>([null, null, null]);
-  const [reasons, setReasons] = useState<(ReasonCode | null)[]>([null, null, null]);
+  const [lights, setLights] = useState<(Light | null)[]>(p.bot ? p.bot.lights : [null, null, null]);
+  const [reasons, setReasons] = useState<(ReasonCode | null)[]>(p.bot ? p.bot.reasons.map(x => (x as ReasonCode | null) ?? null) : [null, null, null]);
   const reps = useMemo(() => (p.repsDeclared ? (p.repLights ?? []).slice(0, p.repsDeclared) : []), [p.repLights, p.repsDeclared]);
   const home = !!p.repsDeclared;
-  const [rep, setRep] = useState<number | null>(null);
+  const [rep, setRep] = useState<number | null>(p.bot?.rep ?? null);
   const [asking, setAsking] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -128,7 +138,10 @@ export function RefereeCall(p: RefereeCallProps) {
   const [error, setError] = useState<string | null>(null);
 
   const missing = saveLine(lights, reasons, home, rep);
-  const canSave = !missing && !busy;
+  // 5.33: "Change the lights" is off until a lamp differs from the bot's
+  const differs = !p.bot || lights.some((l, i) => l !== p.bot!.lights[i] || (l === 'red' && reasons[i] !== p.bot!.reasons[i])) || (lights.includes('red') && rep !== p.bot.rep);
+  const readOnly = !!p.bot?.readOnly;
+  const canSave = !missing && !busy && differs && !readOnly;
   const anyRed = lights.includes('red');
   const setLamp = (i: number, l: Light) => setLights(ls => ls.map((x, j) => (j === i ? l : x)));
   const setAll = (l: Light) => setLights([l, l, l]);
@@ -246,7 +259,7 @@ export function RefereeCall(p: RefereeCallProps) {
   }
 
   const save = () => canSave && send({
-    action: 'save', lights, reasons: lights.map((l, i) => (l === 'red' ? reasons[i] : null)), rep: anyRed && home ? rep : null,
+    action: p.bot ? 'change' : 'save', lights, reasons: lights.map((l, i) => (l === 'red' ? reasons[i] : null)), rep: anyRed && home ? rep : null,
   }, p.saveUrl, 'saved');
   const ask = () => {
     if (!p.askUrl) return;
@@ -280,7 +293,7 @@ export function RefereeCall(p: RefereeCallProps) {
   }
 
   return (
-    <div className="ref-call">
+    <div className={`ref-call${p.clipOnly ? ' clip-only' : ''}`}>
       <div className="ref-clip" style={{ ['--ar' as string]: ar }}>
         <div className="ref-video" ref={boxRef}>
           {p.videoUrl ? (
@@ -348,11 +361,25 @@ export function RefereeCall(p: RefereeCallProps) {
         )}
       </div>
 
+      {p.clipOnly ? (
+        p.measured.length > 0 && (
+          <section className="ref-measured bot-measured" aria-label="What the judge measured">
+            {p.measured.map(l => <p key={l} className="small">{l}</p>)}
+          </section>
+        )
+      ) : (
       <aside className="ref-side">
         {p.measured.length > 0 && (
           <section className="ref-measured" aria-label="What the judge measured">
             <h2 className="eyebrow">What the judge measured</h2>
             {p.measured.map(l => <p key={l} className="small">{l}</p>)}
+          </section>
+        )}
+
+        {p.board && (
+          <section className="ref-bot" aria-label="The referee bot">
+            <h2 className="eyebrow">THE REFEREE BOT</h2>
+            {p.board}
           </section>
         )}
 
@@ -365,8 +392,8 @@ export function RefereeCall(p: RefereeCallProps) {
                   <i key={lights[i] ?? 'off'} className={`mini-lamp lg${lights[i] ? ' ' + lights[i] : ''}`} aria-hidden="true" />
                 </div>
                 <div className="ref-lamp-buttons">
-                  <button type="button" className="ref-light white" aria-pressed={lights[i] === 'white'} onClick={() => setLamp(i, 'white')}>White light</button>
-                  <button type="button" className="ref-light red" aria-pressed={lights[i] === 'red'} onClick={() => setLamp(i, 'red')}>Red light</button>
+                  <button type="button" className="ref-light white" aria-pressed={lights[i] === 'white'} disabled={readOnly} onClick={() => setLamp(i, 'white')}>White light</button>
+                  <button type="button" className="ref-light red" aria-pressed={lights[i] === 'red'} disabled={readOnly} onClick={() => setLamp(i, 'red')}>Red light</button>
                 </div>
               </div>
               {lights[i] === 'red' && (
@@ -374,7 +401,7 @@ export function RefereeCall(p: RefereeCallProps) {
                   <legend className="sr">{`The reason for the ${name.toLowerCase()} red light`}</legend>
                   {refereeReasons(p.lift, p.division).map(code => (
                     <label key={code} className="choice">
-                      <input type="radio" name={`reason-${i}`} value={code} checked={reasons[i] === code}
+                      <input type="radio" name={`reason-${i}`} value={code} checked={reasons[i] === code} disabled={readOnly}
                         onChange={() => setReasons(rs => rs.map((x, j) => (j === i ? code : x)))} />
                       <span className="choice-label eyebrow">{reasonEyebrow(code, home ? rep : null)}</span>
                       <span className="small">{reasonSentence(code, p.lift, p.division)}</span>
@@ -385,19 +412,23 @@ export function RefereeCall(p: RefereeCallProps) {
             </div>
           ))}
         </section>
-        <div className="ref-all">
-          <button type="button" className="btn ghost small" onClick={() => setAll('white')}>All white</button>
-          <button type="button" className="btn ghost small" onClick={() => setAll('red')}>All red</button>
-        </div>
+        {!readOnly && (
+          <div className="ref-all">
+            <button type="button" className="btn ghost small" onClick={() => setAll('white')}>All white</button>
+            <button type="button" className="btn ghost small" onClick={() => setAll('red')}>All red</button>
+          </div>
+        )}
 
         {error && <p className="small" role="alert">{error}</p>}
 
         <div className="ref-actions">
-          <div className="ref-save">
-            {missing && <p className="small ref-missing" id="ref-missing">{missing}</p>}
-            <button type="button" className="btn" disabled={!canSave} aria-busy={busy} aria-describedby={missing ? 'ref-missing' : undefined} onClick={save}>Save the lights</button>
-          </div>
-          {p.askUrl && (
+          {!readOnly && (
+            <div className="ref-save">
+              {missing && <p className="small ref-missing" id="ref-missing">{missing}</p>}
+              <button type="button" className="btn" disabled={!canSave} aria-busy={busy} aria-describedby={missing ? 'ref-missing' : undefined} onClick={save}>{p.bot ? 'Change the lights' : 'Save the lights'}</button>
+            </div>
+          )}
+          {p.askUrl && !p.bot && (
             <>
               {asking && (
                 <label className="ref-note">
@@ -410,6 +441,7 @@ export function RefereeCall(p: RefereeCallProps) {
           )}
         </div>
       </aside>
+      )}
     </div>
   );
 }

@@ -22,8 +22,14 @@ export type OpsNumbers = {
   bench: {
     decided: number; agree: number; whiteOnRed: number; redOnWhite: number;
     filmings: number; pressWhileSinking: number; lostAfterStart: number; noStartVoids: number;
+    /** item 109: bench filmings whose Press! the frozen-track rule held back (`command_times.press_held`); no 10% line */
+    pressHeld: number;
     /** 3.4c: real meet Home press sets decided or waiting, and those that went to a referee (a close call). */
     homePressSets: number; homePressReferee: number;
+    /** 3.4b, item 111: "No Start! twice or more in a meet", each lifter it happened to, by meet and name, with her count
+     *  (every `lost_bar_void` of hers in that meet, over the same bench filmings as "No Start!, filmed again"), and
+     *  each one's `why` (item 112), oldest first. */
+    noStartTwice: { meet: string; name: string; voids: number; whys: string[] }[];
   };
   render: {
     workersLive: number; startedHour: number; failedHour: number; attemptsPerWorker: number | null; requeuedHour: number;
@@ -34,6 +40,10 @@ export type OpsNumbers = {
   uploads: { device: string; tried: number; failed: number }[];
   demo: { runsToday: number; runsLimit: number; waiting: number; closeCalls: number; onPlatform: number; lights15mMedian: number | null };
   errors: { at: string; kind: string; attemptId: string | null; text: string }[];
+  /** 5.39, item 102: clips that still couldn't be made after her "Try again" ("We've told the team."). */
+  clipsFailed: number;
+  /** 5.39, item 108: bench attempts in the last 7 days whose server path had a stuck stretch, so a guard that catches real pauses shows up. */
+  stuckTracks: number;
   commits: { web: string | null; judge: string | null };
 };
 
@@ -120,9 +130,20 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       (select count(*) from b where uploaded_at is not null) as uploaded,
       (select count(*) from b where (measures->>'press_while_sinking')::boolean is true) as sinking,
       (select count(*) from b where (measures->>'lost_after_start')::boolean is true) as lost,
+      (select count(*) from b where (command_times->>'press_held')::boolean is true) as held,
       (select count(*) from events e join b r on r.id = e.attempt_id where e.kind = 'lost_bar_void') as voids,
       (select count(*) from press) as press_sets,
       (select count(*) from press where status = 'close_call' or (measures->>'referee')::boolean is true) as press_referee`);
+
+  // 3.4b, item 111: one lifter's set-up can void her every time and still sit under 10%, so the lifters it happened to
+  // twice or more in one meet are listed, over the same bench filmings as the count above (the sample's never)
+  const twice = await db.execute<Record<string, unknown>>(sql`
+    select m.name as meet, l.card_name as name, count(*)::int as voids,
+      array_agg(coalesce(e.detail->>'why', 'no_start') order by e.at, e.id) as whys
+    from events e join attempts a on a.id = e.attempt_id join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
+    where e.kind = 'lost_bar_void' and a.lift = 'bench' and ${REAL_PHONE} and l.division <> 'home'
+    group by m.id, m.name, l.id, l.card_name having count(*) >= 2
+    order by max(e.at) desc, m.name, l.card_name limit 50`);
 
   // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device: every real
   // phone's, the demo and test meets included, never a sample (none is uploaded from a phone).
@@ -165,6 +186,11 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
        or (kind = 'close_call' and detail->>'reason' = 'judge_unavailable')
     order by at desc, id desc limit 20`);
 
+  const [cf] = await db.execute<{ n: number }>(sql`select count(*) as n from attempts where clip_status = 'failed' and clip_retried`);
+  // takeBar's close_call event carries the stretches it marked (`stuck`); events never change after the lights land
+  const [st] = await db.execute<{ n: number }>(sql`select count(distinct attempt_id) as n from events
+    where kind = 'close_call' and at > now() - interval '7 days' and coalesce((detail->>'stuck')::int, 0) > 0`);
+
   const [jc] = await db.execute<{ commit: string | null }>(sql`
     select commit from (
       select detail->>'commit' as commit, at from events where kind = 'judged' and detail->>'commit' is not null
@@ -183,8 +209,9 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     },
     bench: {
       decided: num(b?.decided), agree: num(b?.agree), whiteOnRed: num(b?.white_on_red), redOnWhite: num(b?.red_on_white),
-      filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids),
+      filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids), pressHeld: num(b?.held),
       homePressSets: num(b?.press_sets), homePressReferee: num(b?.press_referee),
+      noStartTwice: twice.map(x => ({ meet: String(x.meet), name: String(x.name), voids: num(x.voids), whys: (x.whys as string[] | null) ?? [] })),
     },
     render: {
       workersLive: num(r.live), startedHour: num(r.started_hour), failedHour: num(r.failed_hour),
@@ -198,6 +225,8 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       waiting: num(q?.demo_waiting), closeCalls: num(cc?.demo), onPlatform: num(p?.demo), lights15mMedian: numOrNull(d15?.median),
     },
     errors: errs.map(e => ({ at: new Date(e.at).toISOString(), kind: e.kind, attemptId: e.attempt_id, text: errorText(e.kind, e.detail) })),
+    clipsFailed: num(cf?.n),
+    stuckTracks: num(st?.n),
     commits: { web: webCommit ? webCommit.slice(0, 7) : null, judge: jc?.commit ? jc.commit.slice(0, 7) : null },
   };
 }
@@ -247,6 +276,13 @@ export function poseRunRows(p: OpsNumbers['speed']['poseRunByDevice']): OpsRow[]
   }));
 }
 
+/** Item 112: each void's cause, counted: "2 no_start_5s, 1 stuck", in the order they first came. */
+export const whyCounts = (whys: string[]) => {
+  const c = new Map<string, number>();
+  for (const w of whys) c.set(w, (c.get(w) ?? 0) + 1);
+  return [...c].map(([w, k]) => `${k} ${w}`).join(', ');
+};
+
 /** 2.4, 3.4b: "Bench, phone and referees". */
 export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
   return [
@@ -257,8 +293,13 @@ export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
     { label: 'Press! while sinking', value: failedOf(b.pressWhileSinking, b.filmings) },
     { label: 'Lost the bar after Start!', value: failedOf(b.lostAfterStart, b.filmings) },
     { label: 'No Start!, filmed again', value: failedOf(b.noStartVoids, b.filmings) },
+    // item 109: counted the same way, with no 10% line: it may be common, and The Playner reads it after the first meet
+    { label: 'Press! held for a frozen track', value: failedOf(b.pressHeld, b.filmings) },
     // 3.4c: "Home press sets to a referee · <x>%"
     { label: 'Home press sets to a referee', value: b.homePressSets ? `${Math.round((b.homePressReferee / b.homePressSets) * 100)}%` : '—' },
+    // under the counts (item 111): a heading row, then each lifter by meet and name with her count
+    { label: 'No Start! twice or more in a meet', value: b.noStartTwice.length ? String(b.noStartTwice.length) : '—' },
+    ...b.noStartTwice.map(x => ({ label: `${x.meet} · ${x.name}`, value: `${x.voids} · ${whyCounts(x.whys)}` })),
   ];
 }
 

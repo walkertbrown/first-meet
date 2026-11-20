@@ -16,6 +16,7 @@ import { SAMPLES, sampleOf, sampleSrc, type Sample } from '@/lib/stage/samples';
 import { DeepestFrames, marksOf, type Marks } from '@/lib/stage/snap';
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { makeClip, shareOrDownload } from '@/lib/stage/clip-maker';
+import { useRefereeWords } from '@/components/referee-bot';
 import { RESULT_WORDS, STAGE_WORDS, lampsOf, markColour, outcomeOf, type Outcome } from '@/lib/stage/try-words';
 import { WaitLine } from '@/components/wait-line';
 import { deviceOf } from '@/lib/device';
@@ -71,6 +72,8 @@ function containBox(stage: { w: number; h: number }, d: Dims | null) {
 
 export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: string }) {
   const [step, setStep] = useState<Step>('choose');
+  // 5.2: "In a meet, the referee bot would decide it" once it's on (item 88)
+  const rw = useRefereeWords();
   const [source, setSource] = useState<Source>({ kind: 'camera' });
   const [sound, setSound] = useState(true);
 
@@ -605,7 +608,7 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
               {words && phase !== 'judging' && (
                 <div className={`result${resultOn ? ' on' : ''}${words?.reason ? ' no' : ''}`}>
                   {words && <h2>{words.title}</h2>}
-                  {words?.body && <p className="main">{words.body}</p>}
+                  {words?.body && <p className="main">{outcome === 'close' ? rw.tryClose : words.body}</p>}
                   {words?.reason && <div className="why"><b>{words.reason.label}</b><span>{words.reason.text}</span></div>}
                 </div>
               )}

@@ -238,11 +238,20 @@ export function platformState<T extends Pick<MeetAttempt, 'lift' | 'number' | 's
 export const attemptScore = (a: MeetAttempt, division: Division) =>
   a.call !== 'white' ? 0 : division === 'home' ? (a.homeLoad ?? a.weight) * (a.repsDeclared ?? 0) : a.weight;
 
+/**
+ * Her best lift (3.9 step 6, item 101): her heaviest good attempt, the later one in meet order on a tie;
+ * Home, her best-scoring good attempt (load × reps), ties the same way. `list` is in meet order.
+ */
+export function bestLiftOf(list: MeetAttempt[], division: Division): MeetAttempt | null {
+  return list.filter(a => a.call === 'white')
+    .reduce<MeetAttempt | null>((b, a) => (!b || attemptScore(a, division) >= attemptScore(b, division) ? a : b), null);
+}
+
 export type Total =
   | { kind: 'lifting' }
   /** after the close, nothing judged and nothing on its way: she didn't lift this time (5.24's closed page) */
   | { kind: 'none' }
-  | { kind: 'total'; value: number; best: Record<Lift, MeetAttempt>; nineForNine: boolean; lastCountedAt: Date | null }
+  | { kind: 'total'; value: number; best: Record<Lift, MeetAttempt>; top: MeetAttempt; nineForNine: boolean; lastCountedAt: Date | null }
   | { kind: 'waiting'; soFar: number; on: MeetAttempt }
   /** after the close, a clip of hers is still sending (5.28 "Waiting on your clip", item 85) */
   | { kind: 'waiting_clip'; soFar: number; on: MeetAttempt }
@@ -286,7 +295,7 @@ export function meetTotal(list: MeetAttempt[], division: Division, closed = fals
   const best = Object.fromEntries(LIFTS.map(l => [l, bestOf(l)!])) as Record<Lift, MeetAttempt>;
   const times = LIFTS.map(l => best[l].recordedAt).filter((d): d is Date => !!d);
   return {
-    kind: 'total', value: round(soFar), best,
+    kind: 'total', value: round(soFar), best, top: bestLiftOf(all, division)!,
     nineForNine: all.length === ORDER.length && all.every(a => a.call === 'white'),
     lastCountedAt: times.length ? new Date(Math.max(...times.map(d => d.getTime()))) : null,
   };

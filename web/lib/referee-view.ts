@@ -46,6 +46,8 @@ export const BENCH_LINES = {
   sinking: "The phone called Press! while the bar was still going down. That's the phone's mistake: don't give a red for the pause.",
   lateStill: 'The phone called Press! late, after 1.5 s still.',
   lateLost: 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.',
+  pauseLost: 'Pause: not measured. The phone lost the bar.',
+  lostNear: "The phone lost the bar around the pause, so its Press! may have come early. If she pressed on or after the call, don't give a red for the pause.",
 } as const;
 
 /**
@@ -62,13 +64,19 @@ export function measuredLines(reason: string | null, m: Record<string, unknown> 
   }
   const out: string[] = [];
   if (bench) {
-    const pause = n('pause_s');
-    if (pause !== null) out.push(`Pause: the bar was still ${pause.toFixed(1)} s before Press!`);
-    out.push(BENCH_LINES.every);
-    if (m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
     const why = pressLateWhy(bench.commandTimes as never);
+    const pause = n('pause_s');
+    // a lost bar (5.33, item 107), or a lost or stuck frame near the bottom (item 108): no pause and no sinking
+    // line, even from measures stored before these rules
+    const lost = why === 'lost' || m?.pause_lost === true;
+    if (lost) out.push(BENCH_LINES.pauseLost);
+    else if (pause !== null) out.push(`Pause: the bar was still ${pause.toFixed(1)} s before Press!`);
+    out.push(BENCH_LINES.every);
+    if (!lost && m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
     if (why === 'still') out.push(BENCH_LINES.lateStill);
     if (why === 'lost') out.push(BENCH_LINES.lateLost);
+    // item 108: the server's path lost or stuck near the pause, with Press! not late from a loss
+    else if (m?.pause_lost === true) out.push(BENCH_LINES.lostNear);
     return out;
   }
   const depth = n('depth');
@@ -136,7 +144,7 @@ export function barTrackOf(bar: BarFile | null, ct: Record<string, unknown> | nu
     ticks.push({ cmd, label, x, y, wide });
   };
   add('start', 'START!', time('start'));
-  add('press', 'PRESS!', time('press') ?? time('press_late'), m?.press_while_sinking === true);
+  add('press', 'PRESS!', time('press') ?? time('press_late'), m?.press_while_sinking === true && m?.pause_lost !== true);
   add('rack', 'RACK!', time('rack'));
   return { w, h, segs: segs.filter(sg => sg.length > 1), ticks };
 }
@@ -153,16 +161,18 @@ export async function closeCallView(db: Db, store: ClipStore | null, attemptId: 
   if (!c) return null;
   const a = c.a;
   const m = (a.measures ?? null) as Record<string, unknown> | null;
+  // why the judge sent it: once lights land (the referee bot's, 5.33), the attempt's reason is the red's
+  const sent = a.status === 'close_call' ? a.reason : typeof m?.close_reason === 'string' ? m.close_reason : a.reason;
   // 3.4b: a Barbell bench is judged on the plate's path, not the pose
   const bench = a.lift === 'bench' && c.division !== 'home';
   let videoUrl: string | null = null, track: Track | null = null, bar: BarTrack | null = null;
   if (store && a.videoKey) {
     try { videoUrl = await store.signedGet(a.videoKey); } catch { videoUrl = null; }
   }
-  if (store && bench && a.barKey && a.reason !== 'command_times') {
+  if (store && bench && a.barKey && sent !== 'command_times') {
     try { bar = barTrackOf(await store.getJson<BarFile>(a.barKey), a.commandTimes as Record<string, unknown> | null, m); } catch { bar = null; }
   }
-  if (store && !bench && a.posesKey && a.reason !== 'command_times') {
+  if (store && !bench && a.posesKey && sent !== 'command_times') {
     try { track = trackOf(await store.getJson<Dims & { frames: Frame[] }>(a.posesKey), (m?.side as Side) ?? null); } catch { track = null; }
   }
   return {
@@ -170,8 +180,8 @@ export async function closeCallView(db: Db, store: ClipStore | null, attemptId: 
     title: closeCallTitle(a, c.division, c.units),
     ageGroup: c.ageGroup,
     division: c.division,
-    why: whyText(a.reason),
-    measured: measuredLines(a.reason, m, bench ? { commandTimes: a.commandTimes as Record<string, unknown> | null } : null),
+    why: whyText(sent),
+    measured: measuredLines(sent, m, bench ? { commandTimes: a.commandTimes as Record<string, unknown> | null } : null),
     videoUrl, track, bar,
   };
 }

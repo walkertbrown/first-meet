@@ -1,6 +1,6 @@
 // A meet attempt's words (5.25 step 9, 3.5, the Barbell loading line).
 import { describe, expect, it } from 'vitest';
-import { COMMAND_TEXT, barLoading, meetResult, MEET_WORDS, noRepLine, setupLine, spotLineShown } from '../../web/lib/stage/meet-words';
+import { COMMAND_TEXT, barLoading, meetResult, MEET_WORDS, noRepLine, setupLine, spotLineShown, VOID_SHEETS, voidSaysLost } from '../../web/lib/stage/meet-words';
 import { estimateMinutes } from '../../web/lib/attempt-state';
 import { isFor } from '../../web/lib/live';
 
@@ -30,6 +30,7 @@ describe('meet words', () => {
   it('a Barbell bench goes to a referee (3.4b): "To a referee", unlit lamps, the plan\'s sentence', () => {
     expect(meetResult(a({ call: 'close', reason: 'bench_referee', lift: 'bench' }))).toEqual({
       title: 'To a referee',
+      bench: true,
       body: 'A referee judges every bench from your video, usually within 15 minutes. You can take your next attempt while you wait.',
       lamps: ['off', 'off', 'off'],
     });
@@ -46,9 +47,21 @@ describe('meet words', () => {
       voidTitle: 'We lost the bar',
       voidBody: "So we couldn't give you the start. This one doesn't count against you.",
       filmAgain: 'Film again',
-      sending: 'Sending to the referee',
-      looking: 'A referee is looking at this one',
     });
+  });
+
+  it("item 112: the void sheet follows its cause, the first in a row and the second, with the plan's words", () => {
+    const words = (w: keyof typeof VOID_SHEETS, k: 'first' | 'second') => { const x = VOID_SHEETS[w][k]; return [x.title, x.body, x.button, x.again]; };
+    expect(words('no_start_5s', 'first')).toEqual(["We didn't get the start", 'The bar has to be still for "Start!". This one doesn\'t count against you.', 'Film again', 'tap']);
+    expect(words('no_start_5s', 'second')).toEqual(["We didn't get the start again", 'Lift the bar out and hold it still with your arms straight. Don\'t lower it until you hear "Start!". It can take a second. This one doesn\'t count against you either.', 'Film again', 'tap']);
+    expect(words('stuck', 'first')).toEqual(['We lost the bar', "So we couldn't give you the start. This one doesn't count against you.", 'Film again', 'tap']);
+    expect(words('stuck', 'second')).toEqual(['We lost the bar again', 'Your phone may be too far away to follow the bar. Move it as close as you can, with your head and feet still on the screen. This one doesn\'t count against you either.', 'Find my spot again', 'spot']);
+    expect(words('low_score', 'first')).toEqual(words('stuck', 'first'));
+    expect(words('low_score', 'second')).toEqual(['We lost the bar again', "We couldn't keep sight of the end of the bar. Check it's in good light and nothing is in front of it, then tap it again. This one doesn't count against you either.", 'Film again', 'tap']);
+    // the voice: nothing after "Rack!" when the phone never lost the bar
+    expect(voidSaysLost('no_start_5s')).toBe(false);
+    expect(voidSaysLost('stuck')).toBe(true);
+    expect(voidSaysLost('low_score')).toBe(true);
   });
 
   it('the loading line', () => {

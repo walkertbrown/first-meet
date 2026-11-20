@@ -35,3 +35,9 @@ export function cachedFor(ms: number, check: PartCheck, now: () => number = Date
     return kept.run;
   };
 }
+
+/** The keys among `want` that aren't there (a HEAD answering null). */
+export async function missingSamples(head: (key: string) => Promise<unknown>, want: string[]): Promise<string[]> {
+  const have = await Promise.all(want.map(k => head(k)));
+  return want.filter((_, i) => !have[i]);
+}

@@ -40,3 +40,12 @@ describe('the health check', () => {
     expect(calls).toBe(1);
   });
 });
+
+describe('missingSamples (every demo sample lift is in the bucket)', () => {
+  it('names the keys a HEAD finds missing', async () => {
+    const { missingSamples } = await import('../../web/lib/health');
+    const have = new Set(['samples/good.mp4']);
+    expect(await missingSamples(async k => (have.has(k) ? { bytes: 1 } : null), ['samples/good.mp4', 'samples/close.mp4'])).toEqual(['samples/close.mp4']);
+    expect(await missingSamples(async () => ({ bytes: 1 }), ['samples/good.mp4'])).toEqual([]);
+  });
+});

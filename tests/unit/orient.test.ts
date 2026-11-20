@@ -147,8 +147,18 @@ describe('on the meet stage', () => {
   it('a turn from "Bar is loaded." on voids the attempt, and "Film again" goes back to the frame check', () => {
     expect(meet).toContain('if (settled !== null) return orientRef.current.watch.quarter !== settled;');
     expect(meet).toContain('if (turnedSinceLoaded()) {');
-    expect(meet).toContain("go(voidWhy === 'turned' ? 'lift' : 'refilm')");
+    // item 112: the turned sheet goes back to the frame check, as the stuck second sheet does ('spot')
+    expect(meet).toContain("voidWhy === 'turned' ? { title: ORIENT_WORDS.turned.title, body: ORIENT_WORDS.turned.body, button: ORIENT_WORDS.turned.filmAgain, again: 'spot' as const }");
+    expect(meet).toContain("go(w.again === 'spot' ? 'lift' : 'refilm')");
     expect(meet).toContain('/turned-void');
+  });
+  it('item 112, 5.14c: on a short landscape screen the void sheet holds the panel, so its text scrolls above the pinned button', () => {
+    expect(meet).toContain("className={`panel${phase === 'void' ? ' void-panel' : ''}`}");
+    const at = (r: string) => css.indexOf(r);
+    expect(at('.try-app.land .try-stagecol .panel.void-panel { overflow-y: hidden; }')).toBeGreaterThan(at('.try-app.land .try-stagecol .panel { width: 340px;'));
+    expect(css).toContain('.try-app.land .try-stagecol .panel.void-panel .panel-in { height: 100%; }');
+    expect(css).toContain('.void-text { min-height: 0; overflow-y: auto; }');
+    expect(css).toContain('.void-sheet.under .try-actions { border-top-color: var(--rule); }');
   });
   it('the motion step comes once, before the first bench\'s camera', () => {
     expect(meet).toContain("if (bench && !asked && m !== 'sample' && m !== 'resume' && orientRef.current.needsAsk) {");

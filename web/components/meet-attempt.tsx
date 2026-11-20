@@ -9,7 +9,7 @@ import type React from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
-import { RULES, type Dims, type Part } from '@/lib/judge';
+import { RULES, type Dims, type Part, type VoidWhy } from '@/lib/judge';
 import { MeetLift, type MeetLiftName } from '@/lib/judge/meet-lift';
 import { nearSide, type Pt } from '@/lib/judge/pose';
 import { BAR_FRAME_H } from '@/lib/judge/plate-tracker';
@@ -25,13 +25,16 @@ import { DeepestFrames, liftMarks, type LiftMarks, type Snap } from '@/lib/stage
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { heldFrameMs } from '@/lib/stage/held-frame';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
+import { useRefereeBot } from '@/components/referee-bot';
+import { refereeWords } from '@/lib/referee/words';
 import {
   COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
-  setupLine, spotLineShown, standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
+  setupLine, spotLineShown, standInLine, VOID_SHEETS, voidSaysLost, weightDigits, WINDOW_WORDS, type MeetResult,
 } from '@/lib/stage/meet-words';
 import { WindowText } from '@/components/window-words';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
 import { apiFetch, phoneNow } from '@/lib/stage/server-clock';
+import { bumpVoids, resetVoids, secondSheet, syncVoids, voidsInRow } from '@/lib/stage/void-count';
 import samples from '../../content/samples/samples.json';
 import { WaitLine } from '@/components/wait-line';
 import { useLand } from '@/lib/stage/land';
@@ -135,6 +138,9 @@ async function getJson(path: string, init?: RequestInit) {
 
 export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = false, strip, onBusy, closesAt = null, anyJudged = false }: MeetAttemptProps) {
   const [win, setWin] = useState<WindowStop | null>(null);
+  // item 88: close calls and benches go to the referee bot once REFEREE_BOT is on (item 103)
+  const bot = useRefereeBot();
+  const rw = refereeWords(bot);
   // "Use a sample lift instead" is the demo meet's only (5.36): a real meet's lifts are filmed
   const demo = demoReferee;
   const first = attempt;
@@ -197,6 +203,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   if (turnShown && !turnedOnce) setTurnedOnce(true);
   /** which void sheet: the bench's lost bar (3.4b) or a phone that turned during the lift (3.10) */
   const [voidWhy, setVoidWhy] = useState<'bar' | 'turned'>('bar');
+  // item 112: the second void in a row on this attempt (or later) gets the second sheet, by the void's cause
+  const [voidAgain, setVoidAgain] = useState(false);
+  const [barVoidWhy, setBarVoidWhy] = useState<VoidWhy>('stuck');
   /** the motion step (look 4b) waits for her answer, then films this */
   const [askFor, setAskFor] = useState<Mode | null>(null);
   // Look 4b: rotation lock kept the screen portrait while gravity says the phone is on its side, so the page
@@ -227,6 +236,18 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   // an alert dialog takes focus when it opens, so a screen reader lands in the void sheet (The Playner, 13 Nov)
   const voidRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (phase === 'void') voidRef.current?.focus(); }, [phase]);
+  // look 5.14c (item 112): the rule over the button shows only while the sheet's text runs under it
+  const [voidUnder, setVoidUnder] = useState(false);
+  const voidTextRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = voidTextRef.current;
+    if (phase !== 'void' || !el) { setVoidUnder(false); return; }
+    const check = () => setVoidUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    check();
+    const ro = new ResizeObserver(check); ro.observe(el);
+    el.addEventListener('scroll', check, { passive: true });
+    return () => { ro.disconnect(); el.removeEventListener('scroll', check); };
+  }, [phase, voidAgain, voidWhy, barVoidWhy]);
   /** The bench's tap, while the bar stage takes one (set by runCamera). */
   const tapRef = useRef<((x: number, y: number) => void) | null>(null);
 
@@ -255,7 +276,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     setFrozen(false); setMarks(null); setReplaying(false); setSample(null); setError(''); setShownLift(attempt.lift);
     setResumedSample(false); setSettledOpen(false);
     setTapWords(null); setBarMark(null); setBenchPath(null); tapRef.current = null;
-    setTurnShown(false); setVoidWhy('bar');
+    setTurnShown(false); setVoidWhy('bar'); setVoidAgain(false); setBarVoidWhy('stuck');
   };
 
   /** Freezes the stage on the judged moment: the deepest frame the phone saw. */
@@ -281,8 +302,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // 45 s or 90 s lines; it waits, pulsing, for the referee's lights
     let lookingAt = closeNow ? -Infinity : t0;
     if (!closeNow) {
-    // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee", with no panel
-    setPhase('held'); setCommand(null); setWaitLine(bench ? MEET_WORDS.bench.sending : MEET_WORDS.sending);
+    // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee (bot)", with no panel
+    setPhase('held'); setCommand(null); setWaitLine(bench ? rw.benchSending : MEET_WORDS.sending);
     const ok = await sent;
     if (!ok || !alive()) return;
     await sleep(Math.max(0, SENDING_MIN_MS - (performance.now() - t0)));
@@ -292,8 +313,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // once it's sent: the close call's pulse and line, and "To a referee" in the panel, with no
       // thock, spill or total drop (nothing was judged). Then her clip: the last 2 s, and the
       // "Press!" frame held with the bar's path.
-      setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(MEET_WORDS.bench.looking);
-      setResult(meetResult({ call: 'close', lights: null, reason: 'bench_referee', red_rep: null, reps_declared: null, lift: attempt.lift }));
+      setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(rw.looking);
+      setResult(meetResult({ call: 'close', lights: null, reason: 'bench_referee', red_rep: null, reps_declared: null, lift: attempt.lift }, bot));
       setPhase('close'); setResultOn(true);
       await wait(900);
       if (!alive()) return;
@@ -346,10 +367,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
           if (!alive()) return;
           clearTimeout(t45); clearTimeout(t90); clearInterval(every);
-          setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
+          setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(rw.looking);
           const shownC = s.shown_lift ?? attempt.lift;
           setShownLift(shownC);
-          setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+          setResult(meetResult({ ...s, lift: attempt.lift }, bot)); setPhase('close'); setResultOn(true);
           // look step 10 (LookieBot 1): while a referee looks, the stage holds the judged frame with its marks,
           // as after the lights: the server's judged moment when it says which, else the phone's own
           let judged = snap;
@@ -366,7 +387,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
       if (!alive()) return;
       const s = state as unknown as State;
-      const res = meetResult({ ...s, lift: attempt.lift })!;
+      const res = meetResult({ ...s, lift: attempt.lift }, bot)!;
       const shown = s.shown_lift ?? attempt.lift;
       setShownLift(shown);
       // a close call that opened settled lights its lamps, spill and result as any other (F-E); its
@@ -407,7 +428,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       if (bench && path) setBenchPath(path);
       setPhase('hold');
     } finally { stop(); }
-  }, [attempt.lift, bench]);
+  }, [attempt.lift, bench, bot, rw]);
 
   /** Sends the saved recording, telling the stage how it goes; resolves once the server has it. */
   const send = useCallback((alive: () => boolean, attemptId: string) => {
@@ -515,6 +536,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     const gw = smallWidth(d.w, d.h, BAR_FRAME_H);
     const grey = () => greyFrame(video, gc, gw, BAR_FRAME_H);
     let pressSnap: SideSnap | null = null, voidSnap: SideSnap | null = null, voided = false, marks = 0;
+    // item 112: the server's count of voids in a row, once it answers (null until then)
+    let serverVoids: number | null = null, phoneVoids = 0, voidCause: VoidWhy = 'no_start_5s';
     const extras: Record<string, unknown> = {};
     // the bar mark follows the plate every frame with no easing (look 5.14c): set on the element, not in state
     const placeMark = (x: number, y: number) => {
@@ -552,7 +575,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // in the stage's own px (the tap target fills the stage), so it holds when the page is drawn turned (4b)
       const p = tapToFrame({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }, cx, cy, true);
       const again = ml.phase === 'loaded';
-      if (!ml.tapBar(g, p.x, p.y)) return;
+      // the tap's time in the recording (item 110): the first tap comes just before it starts at "Bar is loaded.", so 0
+      if (!ml.tapBar(g, p.x, p.y, recording.startedAt ? Math.max(0, since(performance.now())) : 0)) return;
       flushSync(() => { setTapWords(w => w && { ...w, on: false }); setBarMark({ x: p.x, y: p.y, size: ml.plateTap?.size ?? 0.08, n: ++marks, on: true }); });
       placeMark(p.x, p.y);
       // a re-tap after the bar was lost on the hooks: "Bar is loaded." again (3.4b)
@@ -651,6 +675,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             if (ml.byBar && ev.word === 'start') setBarMark(m => m && { ...m, on: false });
             if (ml.byBar && ev.word === 'press' && !pressSnap) pressSnap = grab(video, d);
             if (ev.why) extras.press_late_why = ev.why;
+            if (ev.held) extras.press_held = true; // item 109: /ops counts how often she waits the extra 0.5 s
             show(COMMAND_TEXT[ev.word]); voice.say(ev.word);
           } else if (ev.type === 'rep') {
             ct[ev.key] = since(now); setReps(ev.k);
@@ -660,7 +685,15 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           } else if (ev.type === 'end') {
             endAt = now; ct[ev.key] = since(now); noRep = ev.noRep;
             // no "Start!" out of the rack (3.4b): "Rack!", then the void sheet, frozen on this frame
-            if (ev.void) { voided = true; voidSnap = grab(video, d); }
+            if (ev.void) {
+              voided = true; voidSnap = grab(video, d); voidCause = ev.voidWhy ?? 'no_start_5s';
+              // item 112: posted as soon as it's voided, with its cause; the sheet never waits for the answer
+              phoneVoids = bumpVoids(attempt.id);
+              void apiFetch(`/api/attempts/${attempt.id}/bar-void`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ why: voidCause }) })
+                .then(r => (r.ok ? r.json() : null)).then((b: { n?: number } | null) => {
+                  if (typeof b?.n === 'number') { serverVoids = b.n; syncVoids(attempt.id, b.n); }
+                }).catch(() => {});
+            }
             show(endWord); voice.say(ev.key);
             return done();
           }
@@ -717,9 +750,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await wait(900);
       if (!alive()) return;
       freeze(voidSnap);
-      flushSync(() => { setCommand(null); setBarMark(null); setTapWords(null); setPhase('void'); });
-      voice.say('lost-bar');
-      void apiFetch(`/api/attempts/${attempt.id}/bar-void`, { method: 'POST' }).catch(() => {});
+      const again = secondSheet(voidsInRow(serverVoids, phoneVoids));
+      flushSync(() => { setCommand(null); setBarMark(null); setTapWords(null); setVoidAgain(again); setBarVoidWhy(voidCause); setPhase('void'); });
+      // on no_start_5s the phone never lost the bar: "Rack!" and nothing after it (3.4b)
+      if (voidSaysLost(voidCause)) voice.say('lost-bar');
       return;
     }
     const last = grab(video, d);
@@ -735,6 +769,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       setCommand(null); setPhase('norep'); setWaitLine(noRepLine(lift, lifter.division));
       return;
     }
+    // filmed through to "Rack!": the next void on this attempt is the first again (item 112)
+    resetVoids(attempt.id);
     // Saved on the phone before anything is sent (3.10), so a reload or a lost signal keeps it.
     // by the corrected clock (item 86), so a slow phone clock can't put a lift before the close
     const savedAt = phoneNow();
@@ -933,7 +969,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (st?.sample) { setResumedSample(true); if (st.sample_clip) setSample({ credit: st.sample_clip.credit, reps: st.sample_clip.reps }); }
     if (st?.call === 'white' || st?.call === 'red') {
       const shown = st.shown_lift ?? attempt.lift;
-      const res = meetResult({ ...st, lift: attempt.lift })!;
+      const res = meetResult({ ...st, lift: attempt.lift }, bot)!;
       setShownLift(shown); setSettledOpen(true);
       setResult(res); setLamps(res.lamps); setSpill(st.call === 'white' ? 'white' : 'red');
       setResultOn(true); setWaitLine(''); setBusy(false); setPhase('hold');
@@ -947,8 +983,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (st?.call === 'close') {
       setShownLift(st.shown_lift ?? attempt.lift); setSettledOpen(true);
       setLamps(['pulse', 'pulse', 'pulse']); setCommand(null);
-      setWaitLine(bench ? MEET_WORDS.bench.looking : 'A referee is looking at this one');
-      setResult(meetResult({ ...st, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+      setWaitLine(rw.looking);
+      setResult(meetResult({ ...st, lift: attempt.lift }, bot)); setPhase('close'); setResultOn(true);
       // the judged frame and its marks (LookieBot 1), else the held frame
       const judged = bench ? null : await snapAt().catch(() => null);
       if (!alive()) return;
@@ -964,7 +1000,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (!alive()) return;
     freeze(snap);
     await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt);
-  }, [attempt.id, attempt.lift, bench, send, awaitLights]);
+  }, [attempt.id, attempt.lift, bench, send, awaitLights, bot, rw]);
 
   const start = (m: Mode) => {
     // her tap: an iPhone that allowed motion before gets it back with no question (look 4b)
@@ -1218,7 +1254,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               {sound ? <SpeakerHigh weight="bold" /> : <SpeakerSlash weight="bold" />}
             </button>
           </div>
-          <Lamps states={lamps} settled={settledOpen} />
+          <Lamps states={lamps} settled={settledOpen} bot={bot} />
           <WaitLine text={waitLine} lineRef={waitLineRef} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
@@ -1248,7 +1284,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           {isSample && sample && <div className="credit">{sample.credit}</div>}
         </div>
 
-        <div className="panel" aria-hidden={!panelOpen}>
+        {/* the void sheet holds the panel to the screen, so its text scrolls above the pinned button (5.14c) */}
+        <div className={`panel${phase === 'void' ? ' void-panel' : ''}`} aria-hidden={!panelOpen}>
           <div className="panel-in">
             {slow && <p className="small">{STAGE_WORDS.slowModel}</p>}
             {phase === 'spot-done' && (
@@ -1281,10 +1318,17 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               // 3.4b, look 5.14c: the bench's void sheet. "Film again" is the only way on.
               // 3.10: a phone that turned during the lift gets the same sheet with its own words, and films the
               // attempt again from the frame check, since the phone has moved.
-              <div className="void-sheet" role="alertdialog" aria-labelledby="void-title" aria-describedby="void-body" tabIndex={-1} ref={voidRef}>
-                <p className="sheet-title" id="void-title">{voidWhy === 'turned' ? ORIENT_WORDS.turned.title : MEET_WORDS.bench.voidTitle}</p>
-                <p className="body" id="void-body">{voidWhy === 'turned' ? ORIENT_WORDS.turned.body : MEET_WORDS.bench.voidBody}</p>
-                <div className="try-actions"><button className="btn" type="button" onClick={() => go(voidWhy === 'turned' ? 'lift' : 'refilm')}>{voidWhy === 'turned' ? ORIENT_WORDS.turned.filmAgain : MEET_WORDS.bench.filmAgain}</button></div>
+              <div className={`void-sheet${voidUnder ? ' under' : ''}`} role="alertdialog" aria-labelledby="void-title" aria-describedby="void-body" tabIndex={-1} ref={voidRef}>
+                {(() => {
+                  // item 112: from the second void in a row, "We lost the bar again", and back to "Find your spot"
+                  // and its words follow the void's cause; "Find my spot again" goes back to the frame check, "Film again" to the tap
+                  const w = voidWhy === 'turned' ? { title: ORIENT_WORDS.turned.title, body: ORIENT_WORDS.turned.body, button: ORIENT_WORDS.turned.filmAgain, again: 'spot' as const }
+                    : VOID_SHEETS[barVoidWhy][voidAgain ? 'second' : 'first'];
+                  return (<>
+                    <div className="void-text" ref={voidTextRef}><p className="sheet-title" id="void-title">{w.title}</p><p className="body" id="void-body">{w.body}</p></div>
+                    <div className="try-actions"><button className="btn" type="button" onClick={() => go(w.again === 'spot' ? 'lift' : 'refilm')}>{w.button}</button></div>
+                  </>);
+                })()}
               </div>
             )}
             {phase === 'refused' && (
@@ -1321,7 +1365,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
                 <hr className="rule" />
                 <div className="try-actions">
                   {onNext && <button className={nextGhost ? 'btn ghost' : 'btn'} type="button" onClick={onNext}>{nextLabel}</button>}
-                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{result?.title === 'To a referee' ? MEET_WORDS.bench.refereeLink : MEET_WORDS.refereeLink}</Link>}
+                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{result?.bench ? rw.benchRefereeLink : rw.refereeLink}</Link>}
                 </div>
               </div>
             )}

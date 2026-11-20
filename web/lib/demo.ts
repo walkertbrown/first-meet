@@ -121,7 +121,19 @@ export async function sampleLift(db: Db, store: Pick<R2, 'copy' | 'head' | 'putJ
     where kind = 'demo_run' and detail->>'lifter_id' = ${lifterId} and (detail->>'sample')::boolean and coalesce(detail->>'lift', 'squat') = ${a.lift}`);
   const clip = clips[Number(n) % clips.length];
   const key = keys.meetVideo(a.meetId, a.lifterId, a.id, 'mp4');
-  await store.copy(keys.sample(clip.file), key);
+  // Item 100: a sample missing from this bucket answers 503 (the phone's refused-upload sheet),
+  // never a bare 500, and nothing is counted or changed on the attempt.
+  const from = keys.sample(clip.file);
+  try {
+    if (!(await store.head(from))) {
+      console.error('sample missing from the bucket', from);
+      return { status: 503 as const, error: 'sample missing' };
+    }
+    await store.copy(from, key);
+  } catch (e) {
+    console.error('sample copy failed', from, e);
+    return { status: 503 as const, error: 'sample unavailable' };
+  }
   // 5.36: a sample standing in for a Home attempt is judged on the clip's reps ("25 × 1")
   await db.update(attempts).set({ videoKey: key, status: 'uploading', isSampleClip: true, recordedAt: new Date(), repsDeclared: a.repsDeclared ? clip.meet!.reps : null })
     .where(eq(attempts.id, a.id));

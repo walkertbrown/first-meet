@@ -8,23 +8,29 @@
 import { BAR_RULES, BarCaller, type BarCmd, type BarRel } from './bar-caller';
 import type { CommandTimes } from './zoom';
 
-/** Where she tapped and the template's size, fractions of the frame (3.4b). */
-export type PlateTap = { x: number; y: number; size: number };
+/**
+ * Where she tapped and the template's size, fractions of the frame, and `t`, the tap's ms in the recording (3.4b,
+ * item 110: the last tap's; 0 for a first tap, which comes just before the recording starts). An old phone's has no
+ * `t`, and the server's tracker starts at the clip's first frame.
+ */
+export type PlateTap = { x: number; y: number; size: number; t?: number };
 export type PressLateWhy = 'still' | 'lost';
 /** A path point as the worker posts it: [t ms, x, y, score], x and y fractions of the frame. */
 export type BarPoint = [number, number, number, number];
 
 /** The keys in `command_times` that aren't command times (3.4b). */
-export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why'] as const;
+export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why', 'press_held'] as const;
 export const isCommandExtra = (k: string) => (COMMAND_EXTRAS as readonly string[]).includes(k);
 
 const frac = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
 
-/** `plate_tap` from command_times, when it's whole: x and y on the frame, a size above 0. */
+/** `plate_tap` from command_times, when it's whole: x and y on the frame, a size above 0, and a `t` of 0 or more if any. */
 export function plateTap(ct: CommandTimes | null | undefined): PlateTap | null {
   const t = (ct as Record<string, unknown> | null | undefined)?.plate_tap as Partial<PlateTap> | undefined;
   if (!t || typeof t !== 'object') return null;
-  return frac(t.x) && frac(t.y) && frac(t.size) && t.size! > 0 ? { x: t.x!, y: t.y!, size: t.size! } : null;
+  if (!(frac(t.x) && frac(t.y) && frac(t.size) && t.size! > 0)) return null;
+  if (!('t' in t)) return { x: t.x!, y: t.y!, size: t.size! };
+  return typeof t.t === 'number' && Number.isFinite(t.t) && t.t >= 0 ? { x: t.x!, y: t.y!, size: t.size!, t: t.t } : null;
 }
 
 export function pressLateWhy(ct: CommandTimes | null | undefined): PressLateWhy | null {
@@ -37,6 +43,8 @@ export function extrasOk(ct: CommandTimes): boolean {
   const o = ct as Record<string, unknown>;
   if ('plate_tap' in o && !plateTap(ct)) return false;
   if ('press_late_why' in o && (!pressLateWhy(ct) || !('press_late' in o))) return false;
+  // item 109: only ever `true`, and only with a Press! it held back
+  if ('press_held' in o && (o.press_held !== true || !Object.keys(o).some(k => /^press(_late)?(_\d+)?$/.test(k)))) return false;
   return true;
 }
 
@@ -58,19 +66,168 @@ export type BarMeasures = {
   lost_share: number | null;
   /** The phone called a late Press! after losing the bar (`press_late_why: lost`). */
   lost_after_start: boolean;
+  /**
+   * A lost or stuck frame fell from `pauseLostMs` before the path's lowest seen point to Press! (or Rack!), so the
+   * pause isn't measured across it (item 108): "Pause: not measured. The phone lost the bar.", and no sinking line.
+   */
+  pause_lost: boolean;
   /** The bar's own call, by item 70's rules. */
   shadow: ShadowCall;
   /** What the server's own caller called on its path, for information. */
   server_commands: { cmd: BarCmd['cmd']; t: number; late?: boolean; why?: PressLateWhy; void?: boolean }[];
 };
 
+/**
+ * 3.4b, item 108, "A track that sticks at a lower score, found after the lift": the stretches between "Start!" and
+ * "Rack!" (or the path's end) where x and y both stay within `stuckStill` of the frame for `stuckMs` or more,
+ * whatever the score. A racked bar or her setting up is still too, so only that window is checked. A stretch's
+ * length is its number of frames times the frame time (the mean gap between the window's frames, dropped frames left out), never last time
+ * minus first on rounded ms (The Playner, Nov 16, 2:21 AM): 16 frames at 15 fps is 1.07 s.
+ *
+ * Her lockout hold is never marked (The Playner, 2:27 AM; NerdCider, 2:23 AM: hIuj's lost-track cut holds still
+ * 1.67 s at arm's length for a late "Rack!"): a stretch that starts after "Press!" (or after the path's lowest seen
+ * point when there's no "Press!") and stays within the back-up band, `rackRel` of the rep's travel from its Start!
+ * height, is left alone. A still stretch after "Press!" below that band, on the way up, is still marked.
+ * Returns [first, last] ms of each stretch.
+ */
+export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES): [number, number][] {
+  const start = ct.start ?? null;
+  if (start === null || !path.length) return [];
+  const end = ct.rack ?? path[path.length - 1][0];
+  const w = path.filter(([t]) => t >= start && t <= end);
+  const out: [number, number][] = [];
+  if (w.length < 2) return out;
+  const gaps = w.slice(1).map(([t], k) => t - w[k][0]).sort((a, b) => a - b);
+  // the mean of the gaps near the median, so ms rounding (66, 67, 67…) and a dropped frame don't move it
+  const med = gaps[Math.floor(gaps.length / 2)], even = gaps.filter(g => g <= med * 1.5);
+  const frame = even.reduce((a, g) => a + g, 0) / even.length;
+  const eps = 1e-9;
+  // One camera frame's time (item 113): how long each point's x and y lasts before the next, the mean of those near
+  // the median (a stuck run is far longer, and the 20 fps cut's 33/67 ms is one frame of 50 ms). On the grid it's the
+  // gap; at the live tick, which repeats each camera frame at every refresh, it's the camera's frame, not 16.7 ms.
+  const same = (a: number, b: number) => w[a][1] === w[b][1] && w[a][2] === w[b][2];
+  const lasts: number[] = [];
+  for (let k = 0; k < w.length;) {
+    let e = k;
+    while (e + 1 < w.length && same(e + 1, k)) e++;
+    if (e + 1 < w.length) lasts.push(w[e + 1][0] - w[k][0]);
+    k = e + 1;
+  }
+  const lmed = [...lasts].sort((a, b) => a - b)[Math.floor(lasts.length / 2)] ?? frame;
+  const near = lasts.filter(g => g <= lmed * 3);
+  const camera = near.length ? near.reduce((a, g) => a + g, 0) / near.length : frame;
+  // Item 113, "Only on a frozen track's motion": the median step over the camera frames from the stretch's start i
+  // up to the off frame at j + 1 (fixed when the carry is decided, so a carry can't change its own median). Each
+  // step is between a point and the one a camera frame before it in time (the last at least 0.9 of a camera frame
+  // earlier: at the live tick a camera frame's last repeat is 3/4 of a frame after its first, so it's never
+  // compared with its own frame), so a tick path's repeats don't make it 0, exact or not (NerdCider, 10:15 AM).
+  const medStep = (i: number, j: number) => {
+    const steps: number[] = [];
+    // one step per camera frame: a step's point comes at least 0.9 of a camera frame after the last step's, so a
+    // frame's repeats add none (fed 2 times, one real step would otherwise count as 2; The Playner, 10:28 AM: the
+    // median needs 2 camera frames' steps)
+    let q = i - 1, took = -Infinity;
+    for (let k = i + 1; k <= j; k++) {
+      while (q + 1 < k && w[q + 1][0] <= w[k][0] - camera * 0.9 + eps) q++;
+      if (q >= i && w[k][0] >= took + camera * 0.9 - eps) {
+        steps.push(Math.hypot(w[k][1] - w[q][1], w[k][2] - w[q][2]));
+        took = w[k][0];
+      }
+    }
+    // the median needs at least 2 steps; with fewer, nothing is carried (VibeSearch, Nov 20, 10:25 AM: an answer of 0
+    // on no step carried an off frame that came a stretch's second camera frame, whatever the bar did; NerdCider,
+    // 10:27 AM: on KrDo's still bar 4 single steps in 48 are under the line, and no median of 2 is)
+    return steps.length >= 2 ? steps.sort((x, y) => x - y)[Math.floor(steps.length / 2)] : Infinity;
+  };
+  for (let i = 0; i < w.length; i++) {
+    // the furthest j with every point i..j inside a still box (each start grows its own box, so an off frame
+    // carried through is never in it)
+    let j = i;
+    let x0 = w[i][1], x1 = w[i][1], y0 = w[i][2], y1 = w[i][2];
+    const inBox = (k: number) => {
+      const [, x, y] = w[k];
+      return Math.max(x1, x) - Math.min(x0, x) <= r.stuckStill + eps && Math.max(y1, y) - Math.min(y0, y) <= r.stuckStill + eps;
+    };
+    const take = (k: number) => {
+      const [, x, y] = w[k];
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    };
+    while (j + 1 < w.length) {
+      if (inBox(j + 1)) { take(j + 1); j++; continue; }
+      // item 113 (3.4b, "One off frame doesn't end a stretch"): one camera frame outside the box, with the next
+      // one back inside the same box, is part of the stretch and marked with it; its own x and y never widen the
+      // box. Two off frames in a row end it.
+      // One camera frame is the points in a row with its x and y, lasting no more than a camera frame: the live
+      // tick repeats a frame at each refresh (2–4 points), so the off frame is that whole run (NerdCider, 10:00
+      // AM). Two grid frames stuck on one off spot last two frames, and end it.
+      let e = j + 1;
+      while (e + 1 < w.length && same(e + 1, j + 1)) e++;
+      // ...and only on a frozen track's motion: the median step between camera frames up to it under stuckCarryStep
+      // (0.0002 of the frame; KrDo's real still bar is 0.00073, IA0P's frozen ones 0.00002-0.00005). Otherwise the
+      // off frame ends the stretch, as before (The Playner, Nov 20, 10:13 AM).
+      if (e + 1 < w.length && w[e + 1][0] - w[j + 1][0] <= camera * 1.5 + eps && inBox(e + 1) && medStep(i, j) < r.stuckCarryStep) {
+        take(e + 1); j = e + 1; continue;
+      }
+      break;
+    }
+    // 0.5 ms under stuckMs, so rounding in the frame time never decides a stretch that's exactly on the line
+    // (NerdCider, 10:14 AM: KrDo's 12 frames at 66.667 ms)
+    if ((j - i + 1) * frame < r.stuckMs - 0.5) continue;
+    const last = out[out.length - 1];
+    if (last && w[i][0] <= last[1]) last[1] = Math.max(last[1], w[j][0]);
+    else out.push([w[i][0], w[j][0]]);
+  }
+  if (!out.length) return out;
+  const hold = lockoutHold(w, ct, r);
+  return hold ? out.filter(([a, b]) => !hold(a, b)) : out;
+}
+
+/**
+ * Whether a still stretch [a, b] is her lockout hold: it starts after "Press!" (else after the lowest seen point)
+ * and every point in it is within the back-up band of the Start! height. Measured on the seen points' 3-frame
+ * median, as `measureBar` does. Null when there's no Start! height or travel to measure the band by.
+ */
+function lockoutHold(w: BarPoint[], ct: CommandTimes, r: BarRel): ((a: number, b: number) => boolean) | null {
+  const s = smooth(w.map(([t, , y, score]) => ({ t, y, ok: score >= r.lostScore })), r.smoothMs);
+  if (!s.length) return null;
+  const startY = yNear(s, ct.start!, 1000 / 15 * 3);
+  if (startY === null) return null;
+  const low = Math.max(...s.map(p => p.y));
+  const lowAt = s.find(p => p.y === low)!.t;
+  const after = ct.press ?? ct.press_late ?? lowAt;
+  const back = r.rackRel * Math.max(0, low - startY);
+  return (a, b) => a > after && w.every(([t, , y]) => t < a || t > b || y - startY <= back);
+}
+
+/**
+ * The server's path with its stuck frames marked the way lost frames are (score 0), so the path breaks there on
+ * the referee's page (look 5.14c), `measureBar` reads them as lost, and no point in them counts for the frames job
+ * (3.4d step 1). Run on the server's path after the lift, before it's saved: it never changes a live command.
+ */
+export function markStuck(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES): { path: BarPoint[]; stuck: [number, number][] } {
+  const stuck = stuckStretches(path, ct, r);
+  if (!stuck.length) return { path, stuck };
+  return { path: path.map(p => (stuck.some(([a, b]) => p[0] >= a && p[0] <= b) ? [p[0], p[1], p[2], 0] : p)), stuck };
+}
+
 type Pt = { t: number; y: number; ok: boolean };
 
-/** 3-frame median of y on the tracked points. */
-function smooth(pts: Pt[]): Pt[] {
+/** Slack on the window (3.4b): a frame at 100 ms, on any rounding, is always in. */
+export const SMOOTH_SLACK_MS = 5;
+
+/**
+ * The median of y over every tracked point within `smoothMs` either side (3.4b "The smoothing is in time, not
+ * points", item 110): the same at any cadence, so the live tick's repeats of one camera frame don't undo it.
+ */
+export function smooth<P extends { t: number; y: number; ok: boolean }>(pts: P[], ms: number = BAR_RULES.smoothMs): P[] {
   const ok = pts.filter(p => p.ok);
+  const half = ms + SMOOTH_SLACK_MS;
+  let a = 0, b = 0;
   return ok.map((p, i) => {
-    const w = ok.slice(Math.max(0, i - 1), i + 2).map(q => q.y).sort((a, b) => a - b);
+    while (p.t - ok[a].t > half) a++;
+    if (b < i) b = i;
+    while (b + 1 < ok.length && ok[b + 1].t - p.t <= half) b++;
+    const w = ok.slice(a, b + 1).map(q => q.y).sort((x, y) => x - y);
     return { ...p, y: w[Math.floor(w.length / 2)] };
   });
 }
@@ -109,7 +266,7 @@ export function callPath(path: BarPoint[], ct: CommandTimes, dims: { w: number; 
     if (c) server.push({ cmd: c.cmd, t: c.t, ...(c.late ? { late: true } : {}), ...(c.why ? { why: c.why } : {}), ...(c.void ? { void: true } : {}) });
   }
   const frozen = new Set<number>();
-  for (const f of caller.frozeAt) for (const [t] of path) if (t >= f - r.freezeMs && t <= f) frozen.add(t);
+  caller.frozeAt.forEach((f, i) => { for (const [t] of path) if (t >= caller.frozeFrom[i] && t <= f) frozen.add(t); });
   const seen = path.map(([t, , , score]) => score >= r.lostScore && !frozen.has(t));
   return { server, seen };
 }
@@ -117,7 +274,7 @@ export function callPath(path: BarPoint[], ct: CommandTimes, dims: { w: number; 
 export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number; h: number }, r: BarRel = BAR_RULES): BarMeasures {
   const { server, seen } = callPath(path, ct, dims, r);
   const pts: Pt[] = path.map(([t, , y], i) => ({ t, y, ok: seen[i] }));
-  const s = smooth(pts);
+  const s = smooth(pts, r.smoothMs);
 
   const start = ct.start ?? null;
   const press = ct.press ?? ct.press_late ?? null;
@@ -127,7 +284,7 @@ export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number
   const gap = 1000 / 15 * 3; // three of the server's frames
   const out: BarMeasures = {
     pause_s: null, sink: null, press_while_sinking: false, lost_share: null, lost_after_start: why === 'lost',
-    shadow: { light: 'close', reason: 'visibility' }, server_commands: server,
+    pause_lost: false, shadow: { light: 'close', reason: 'visibility' }, server_commands: server,
   };
   if (start === null || end === null || !s.length) return out;
 
@@ -135,7 +292,19 @@ export function measureBar(path: BarPoint[], ct: CommandTimes, dims: { w: number
   out.lost_share = inWin.length ? +(inWin.filter(p => !p.ok).length / inWin.length).toFixed(3) : 1;
   const startY = yNear(s, start, gap);
 
-  if (press !== null) {
+  // Item 108: any lost or stuck frame from pauseLostMs before the lowest seen point to Press! (or Rack!) means the
+  // pause isn't measured across it. No seen point there at all is the same.
+  const to = press ?? end;
+  const seenTo = s.filter(p => p.t >= start && p.t <= to);
+  if (seenTo.length) {
+    const low = Math.max(...seenTo.map(p => p.y));
+    const lowAt = seenTo.find(p => p.y === low)!.t;
+    out.pause_lost = pts.some(p => !p.ok && p.t >= lowAt - r.pauseLostMs && p.t <= to);
+  } else out.pause_lost = pts.some(p => p.t >= start && p.t <= to);
+
+  // After a lost track (`press_late_why: lost`) the phone had no bar at Press!, so neither the pause nor a sink
+  // after it can be known (5.33, item 107): a path the tracker found again later isn't measured across the gap.
+  if (press !== null && why !== 'lost' && !out.pause_lost) {
     // the pause: back from Press!, the stretch the bar stayed within 5% of the rep's travel of its lowest point
     const before = s.filter(p => p.t >= start && p.t <= press);
     if (startY !== null && before.length) {

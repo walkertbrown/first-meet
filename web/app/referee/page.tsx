@@ -5,19 +5,24 @@ import { db } from '@/db';
 import { requireRole } from '@/lib/guard';
 import { hasR2, r2 } from '@/lib/r2';
 import { closeCallQueue } from '@/lib/referee';
+import { botOn } from '@/lib/referee/words';
+import { botQueue, botQueueLine, decidedText, type BotQueueRow } from '@/lib/referee/bot-view';
 import { liftName, minutes, queueLine, weightText, whyText } from '@/lib/referee-view';
 
 // The close-call queue (plan 5.33, look 5.13), oldest first. Referees only.
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Close calls', robots: { index: false } };
+export const generateMetadata = () => ({ title: botOn() ? 'Referee bot' : 'Close calls', robots: { index: false } });
+
+async function thumbOf(r: { videoKey: string | null; judgedFrameMs: number | null }) {
+  if (!r.videoKey || !hasR2()) return null;
+  try { return `${await r2().signedGet(r.videoKey)}#t=${((r.judgedFrameMs ?? 0) / 1000).toFixed(2)}`; } catch { return null; }
+}
 
 export default async function Page() {
   const v = await requireRole('referee');
+  if (botOn()) return <BotQueue />;
   const rows = await closeCallQueue(db(), v.id);
-  const thumbs = await Promise.all(rows.map(async r => {
-    if (!r.videoKey || !hasR2()) return null;
-    try { return `${await r2().signedGet(r.videoKey)}#t=${((r.judgedFrameMs ?? 0) / 1000).toFixed(2)}`; } catch { return null; }
-  }));
+  const thumbs = await Promise.all(rows.map(thumbOf));
   const line = queueLine(rows);
   return (
     <div className="wrap page desk">
@@ -61,5 +66,66 @@ export default async function Page() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+/**
+ * From item 88 (5.33, look 5.14d): the referee bot gives these lights. "Referee bot", "<n>
+ * deciding · <m> decided today", and the table adds "Lights" and "Decided". Deciding rows first,
+ * oldest first; decided rows after, newest first.
+ */
+async function BotQueue() {
+  const q = await botQueue(db());
+  const thumbs = await Promise.all(q.rows.map(thumbOf));
+  const now = new Date();
+  return (
+    <div className="wrap page desk">
+      <AutoRefresh />
+      <header className="topbar"><Wordmark /></header>
+      <main>
+        <h1 className="page-title">Referee bot</h1>
+        <p className="body-l desk-line bot-line">{botQueueLine(q)}</p>
+        {q.rows.length > 0 && (
+          <table className="board ref-queue">
+            <thead>
+              <tr>
+                <th scope="col">Clip</th><th scope="col">Lift</th><th scope="col">Why it was sent</th>
+                <th scope="col">Lights</th><th scope="col" className="n">Decided</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q.rows.map((r, i) => <BotRow key={r.attemptId} r={r} thumb={thumbs[i]} now={now} />)}
+            </tbody>
+          </table>
+        )}
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
+function BotRow({ r, thumb, now }: { r: BotQueueRow; thumb: string | null; now: Date }) {
+  const name = `${liftName(r.lift, r.division)} ${r.number}`;
+  return (
+    <tr>
+      <td>
+        <Link href={`/referee/${r.attemptId}`} className="ref-thumb" aria-label={`Open ${name}`}>
+          {thumb ? <video src={thumb} preload="metadata" muted playsInline tabIndex={-1} aria-hidden="true" /> : null}
+        </Link>
+      </td>
+      <td>
+        <Link href={`/referee/${r.attemptId}`}>{name}</Link>
+        <span className="ref-sub">{weightText(r.weight, r.units, r.repsDeclared)}</span>
+      </td>
+      <td>{whyText(r.why)}</td>
+      <td>
+        {r.lights ? (
+          <span className="bot-lights" role="img" aria-label={`Lights: ${r.lights.join(', ')}`}>
+            {r.lights.map((l, k) => <i key={k} className={`mini-lamp ${l}`} aria-hidden="true" />)}
+          </span>
+        ) : <span className="bot-deciding">Deciding</span>}
+      </td>
+      <td className="n bot-decided">{r.decidedAt ? decidedText(r.decidedAt, now) : ''}</td>
+    </tr>
   );
 }

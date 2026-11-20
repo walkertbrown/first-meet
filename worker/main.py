@@ -9,6 +9,10 @@ A Barbell bench (plan 3.4b) comes with `track: 'bar'` and her `plate_tap`: in pl
 pose run, the worker follows the plate from the tap on its 15-a-second frames
 (worker/plate.py, the phone's tracker in Python) and posts the path to /api/internal/bar.
 
+`render_clip(worker_id)` makes lift clips (piece 7, worker/clip.py): it asks for the next clip,
+draws it from her attempt and her story card, PUTs the MP4 to R2 at the link it was given, says how
+it went, and asks again. The web service only hands one out while no attempt waits for its poses.
+
 `find_clip(clip, times_ms, split_ms, fps)` finds poses in one of the repo's test clips at
 the times given, or in a timing clip made from one (worker/timing_clip.py). It proves the
 pose finder on Render (piece 6) and measures it; its points come back gzipped in the
@@ -23,6 +27,7 @@ import base64
 import gzip
 import hashlib
 import hmac
+import io
 import json
 import os
 import sys
@@ -34,10 +39,13 @@ from pathlib import Path
 STARTED = time.monotonic()
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from PIL import Image  # noqa: E402
 from render import Retry, TaskContext, Workflows  # noqa: E402
 
+import clip  # noqa: E402
 import plate  # noqa: E402
 import poses  # noqa: E402
+import referee_frames as rf  # noqa: E402
 import timing_clip  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -111,7 +119,10 @@ def one_bar(job: dict) -> dict:
         urllib.request.urlretrieve(job['video_url'], path)
         got = time.monotonic()
         info = poses.clip_info(path)
-        bar = plate.track_clip(path, job['plate_tap'], info.duration)
+        # from the tap's frame (item 110: `t`, the last tap's ms in the recording; an old phone's has none, so 0)
+        tap = job['plate_tap']
+        start = tap.get('t') if isinstance(tap.get('t'), (int, float)) else 0
+        bar = plate.track_clip(path, tap, info.duration, int(max(0, start)))
         secs = time.monotonic() - t0
         status, _ = post('/api/internal/bar', {
             'attempt_id': job['attempt_id'], 'worker_id': job.get('worker_id'),
@@ -162,6 +173,106 @@ def find_poses(ctx: TaskContext, worker_id: str) -> dict:
         post('/api/internal/worker-done', {'worker_id': worker_id, 'commit': COMMIT, 'attempts': len(done)})
     return {'commit': COMMIT, 'worker_id': worker_id, 'model_load_secs': round(ready - begun, 2),
             'process_secs': round(begun - STARTED, 2), 'attempts': done}
+
+
+def one_clip(job: dict) -> dict:
+    """One lift clip: her attempt and her story card in, the MP4 PUT to R2."""
+    t0 = time.monotonic()
+    if job.get('fault'):
+        raise RuntimeError('FAULT=clip set')  # staging's forced failure (item 102)
+    with tempfile.TemporaryDirectory() as d:
+        video = os.path.join(d, 'attempt')
+        urllib.request.urlretrieve(job['video_url'], video)
+        with urllib.request.urlopen(APP_URL + job['card_path'], timeout=60) as r:
+            card = Image.open(io.BytesIO(r.read()))
+            card.load()
+        out = os.path.join(d, 'clip.mp4')
+        made = clip.render(job, video, card, out, d)
+        data = Path(out).read_bytes()
+        put = urllib.request.Request(job['upload_url'], data=data, method='PUT', headers={'content-type': 'video/mp4', 'content-length': str(len(data))})
+        with urllib.request.urlopen(put, timeout=120) as r:
+            if r.status >= 300:
+                raise RuntimeError(f'upload: {r.status}')
+    return {**made, 'bytes': len(data), 'secs': round(time.monotonic() - t0, 2)}
+
+
+def clip_or_report(job: dict, run=None) -> dict:
+    """One clip; whatever happens, the web service hears how it went (a failure is tried once more there)."""
+    try:
+        out = (run or one_clip)(job)
+        status, _ = post('/api/internal/clip', {'attempt_id': job['attempt_id'], 'worker_id': job['worker_id'], 'ok': True,
+                                                'secs': out.get('secs'), 'bytes': out.get('bytes'), 'commit': COMMIT})
+        return {'attempt_id': job['attempt_id'], **out, 'posted': status}
+    except Exception as e:  # noqa: BLE001 - one bad clip never stops the run
+        why = f'{type(e).__name__}: {e}'[:300]
+        post('/api/internal/clip', {'attempt_id': job['attempt_id'], 'worker_id': job['worker_id'], 'ok': False, 'error': why, 'commit': COMMIT})
+        return {'attempt_id': job['attempt_id'], 'error': why}
+
+
+@app.task(timeout_seconds=int(WORKER_MAX_S) + 300)
+def render_clip(ctx: TaskContext, worker_id: str) -> dict:
+    begun = time.monotonic()
+    done: list[dict] = []
+    idle_since = time.monotonic()
+    try:
+        while time.monotonic() - begun < WORKER_MAX_S:
+            status, job = post('/api/internal/clip-job', {'worker_id': worker_id})
+            if status == 200 and job and job.get('attempt_id'):
+                job['worker_id'] = worker_id
+                done.append(clip_or_report(job))
+                idle_since = time.monotonic()
+                continue
+            if time.monotonic() - idle_since >= WORKER_IDLE_S:
+                break
+            time.sleep(1)
+    finally:
+        post('/api/internal/worker-done', {'worker_id': worker_id, 'commit': COMMIT, 'attempts': len(done)})
+    return {'commit': COMMIT, 'worker_id': worker_id, 'process_secs': round(begun - STARTED, 2), 'clips': done}
+
+
+BENCH_POSE_FPS = rf.BENCH_POSE_FPS
+
+
+def one_referee_frames(job: dict) -> dict:
+    """3.4d step 1: the attempt's frames, picked, stamped and PUT to R2 (the web service says where)."""
+    t0 = time.monotonic()
+    commands = [(int(t), w) for t, w in job['commands']]
+    urls = job['upload_urls']
+    with tempfile.TemporaryDirectory() as d:
+        video = os.path.join(d, 'attempt')
+        urllib.request.urlretrieve(job['video_url'], video)
+        frames, how = rf.make_frames(video, commands, job.get('moments') or [], job.get('bench'), cap=min(rf.CAP, len(urls)))
+        out = []
+        for n, (t, data) in enumerate(frames):
+            put = urllib.request.Request(urls[n], data=data, method='PUT', headers={'content-type': 'image/jpeg', 'content-length': str(len(data))})
+            with urllib.request.urlopen(put, timeout=60) as r:
+                if r.status >= 300:
+                    raise RuntimeError(f'upload {n}: {r.status}')
+            out.append({'n': n, 't_ms': t, 'sha256': hashlib.sha256(data).hexdigest()})
+    return {'frames': out, 'bench_way': how and how['way'], 'secs': round(time.monotonic() - t0, 2)}
+
+
+def referee_frames_or_report(job_id: str, run=None) -> dict:
+    """Whatever happens, the web service hears: the frames, or why there are none."""
+    try:
+        status, job = post('/api/internal/referee-frames-job', {'job_id': job_id})
+        if status != 200 or not job or not job.get('video_url'):
+            return {'job_id': job_id, 'skipped': status}
+        if job.get('fault'):
+            raise RuntimeError('FAULT=referee set')
+        out = (run or one_referee_frames)(job)
+        posted, _ = post('/api/internal/referee-frames', {'job_id': job_id, 'ok': True, 'frames': out['frames'],
+                                                         'bench_way': out.get('bench_way'), 'secs': out.get('secs'), 'commit': COMMIT})
+        return {'job_id': job_id, 'frames': len(out['frames']), 'posted': posted}
+    except Exception as e:  # noqa: BLE001 - the web service decides what a failure means
+        why = f'{type(e).__name__}: {e}'[:300]
+        post('/api/internal/referee-frames', {'job_id': job_id, 'ok': False, 'error': why, 'commit': COMMIT})
+        return {'job_id': job_id, 'error': why}
+
+
+@app.task(timeout_seconds=600)
+def referee_frames(ctx: TaskContext, job_id: str) -> dict:
+    return {'commit': COMMIT, **referee_frames_or_report(job_id)}
 
 
 @app.task(timeout_seconds=900)

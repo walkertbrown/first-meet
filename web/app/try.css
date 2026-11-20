@@ -145,6 +145,12 @@
 .void-sheet .sheet-title { margin: 0; }
 .void-sheet .body { margin: 8px 0 0; color: var(--ink-2); }
 .void-sheet .try-actions { margin-top: auto; padding-top: 24px; }
+/* item 112, look 5.14c: the longer Body is never shrunk; on a short screen it scrolls above the pinned button, with a
+   1px rule over the button only while text runs under it */
+.void-sheet { min-height: 0; }
+.void-text { min-height: 0; overflow-y: auto; }
+.void-sheet .try-actions { border-top: 1px solid transparent; }
+.void-sheet.under .try-actions { border-top-color: var(--rule); }
 @media (prefers-reduced-motion: reduce) {
   .tapwords, .barmark { animation: none; transition: none; }
   .stage.voided .dim { transition: none; }
@@ -198,6 +204,11 @@
 .try-app.land .panel-in .btn { min-height: 56px; }
 .try-app.land .panel-in > .after, .try-app.land .panel-in > .try-actions:last-child { margin-top: auto; }
 .try-app.land .void-sheet .try-actions { padding-top: 16px; }
+/* on a short landscape screen (300 px tall and under) the panel would scroll and take the button with it: held to the
+   screen instead, the title and Body scroll inside the column and the button stays pinned (LookieBot, Nov 20, 9:46 AM); after the
+   landscape panel's own overflow, so it wins */
+.try-app.land .try-stagecol .panel.void-panel { overflow-y: hidden; }
+.try-app.land .try-stagecol .panel.void-panel .panel-in { height: 100%; }
 .try-app.land .stage .lamps { top: calc(16px + var(--sa-t)); gap: 20px; }
 .try-app.land .stage .lamp { width: 56px; height: 56px; }
 .try-app.land .waitline { top: 88px; }

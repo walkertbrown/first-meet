@@ -1,0 +1,1 @@
+ALTER TABLE "attempts" ADD COLUMN "clip_retried" boolean DEFAULT false NOT NULL;

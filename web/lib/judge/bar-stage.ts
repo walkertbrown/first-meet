@@ -45,15 +45,16 @@ export class BarStage {
 
   /**
    * Her tap at (x, y), fractions of the camera frame (the footage as recorded, not the mirrored screen).
-   * Taken before "Start!" while the bar is on the hooks; false otherwise.
+   * Taken before "Start!" while the bar is on the hooks; false otherwise. `t` is the tap's ms in the recording
+   * (item 110), 0 before it starts.
    */
-  tap(g: Gray, x: number, y: number): boolean {
+  tap(g: Gray, x: number, y: number, t = 0): boolean {
     if (this.state === 'lifting' || this.state === 'done') return false;
     if (this.caller && this.caller.state !== 'racked') return false;
     const cx = Math.min(1, Math.max(0, x)), cy = Math.min(1, Math.max(0, y));
     this.tracker = new PlateTracker(g, cx, cy, this.track);
     this.caller = new BarCaller({ x: cx, y: cy }, this.dims, this.r);
-    this.plateTap = { x: round4(cx), y: round4(cy), size: this.track.tpl };
+    this.plateTap = { x: round4(cx), y: round4(cy), size: this.track.tpl, t: Math.max(0, Math.round(t)) };
     this.state = 'racked'; this.lowSince = null; this.stuckSeen = 0;
     this.path = []; this.cmds = [];
     return true;
@@ -68,7 +69,7 @@ export class BarStage {
     // the stuck-track rule takes a stretch out once it sees it: those frames were never the bar
     if (c.frozeAt.length > this.stuckSeen) {
       this.stuckSeen = c.frozeAt.length;
-      const from = t - this.r.freezeMs;
+      const from = c.frozeFrom.at(-1)!;
       for (const q of this.path) if (q.t >= from) q.lost = true;
     }
     const lost = m.score < this.r.lostScore || c.frozeAt.at(-1) === t;
