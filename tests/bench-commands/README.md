@@ -43,6 +43,7 @@ the live stuck rule marked it lost (`pauseStuck`; NerdCider, Nov 20, 9:01 AM). I
 | `data/marks-*.json` | Where and when the plate was tapped. |
 | `results/commands.json` | The scorer's output: settings, the six lines (each with a status), the note on still pauses and every rep's times. |
 | `results/commands-all-reps.json` | Every rep of the gym sets, labelled as the stand-in it is, with the product's rules and with item 109 off. |
+| `sweep-near-tap.ts`, `results/sweep-near-tap.json` | The Playner's 9:11 AM sweep, Nov 20 (item 111, on trial): before Start!, the stuck rule counted only within D of the tap (`freezeNearTap`, the `leftRack` sum), at D = 5, 6 and 8%, next to today's rule and off; every rep, all three cadences, the scores as recorded and lifted to 0.995, and m-k8 with the tap at 9.0 s. Not in shared/rules.json until ruled. |
 
 **Trace format:** `{ id, w, h, racked, mark, pts }`, with `pts` a list of `[t ms, x, y, score]`. x and y are fractions
 of the 284×160 frame, and `score` is the template match (−1 to 1).

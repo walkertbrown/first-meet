@@ -24,6 +24,8 @@ export type Status = 'PASS' | 'FAIL' | 'NOT SHOWN';
 export type Row = {
   id: string; rep: number; group: 'meet' | 'paused' | 'bounced'; inHand: boolean;
   start: number | null; press: number | null; late: boolean; rack: number | null; noRep: boolean; lostBeforeStart: number | null;
+  /** the loss before Start! was the stuck rule's (a score of freezeScore or more, still), not a low score */
+  stuckBeforeStart: boolean;
   leftHooks: number | null; voided: number | null; voidAfterHooks: number | null; voidAtLoss: boolean; voidOk: boolean;
   startIn: 'clip' | 'replay' | null; pressIn: 'clip' | 'replay' | null; pressClip: number | null;
   settled: number; descent: number; stop: number; pauseEnd: number; backUpEye: number | null; delay: number | null;
@@ -170,7 +172,14 @@ export function allRepsResults() {
   return { label: ALL_REPS_LABEL, rules: RULES, product: run({}), item109Off: run({ frozenPressMs: 0 }) };
 }
 
-export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces'), opts: { allReps?: boolean; live?: Live } = {}) {
+export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces'), opts: {
+  allReps?: boolean; live?: Live;
+  /** every score lifted to at least this (a sharp camera), before the live cadence and the stand-in */
+  lift?: number;
+  /** her tap moved to this ms in the trace's own times: the trace starts there, the mark is the bar's point then */
+  tapAt?: Record<string, number>;
+  only?: string[];
+} = {}) {
   const eye: Record<string, Eye> = JSON.parse(readFileSync(join(HERE, 'data', 'eyetimes.json'), 'utf8'));
   const gym: Record<string, GymCall> = Object.fromEntries(
     (JSON.parse(readFileSync(join(HERE, 'data', 'calls-run1.json'), 'utf8')).attempts as GymCall[]).map(g => [g.id, g]));
@@ -179,6 +188,12 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
   for (const f of files) {
     const pj = JSON.parse(readFileSync(join(tracesDir, f), 'utf8'));
     const id0: string = pj.id; const e0 = eye[id0]; if (!e0) continue;
+    if (opts.only && !opts.only.some(o => id0.startsWith(o))) continue;
+    if (opts.tapAt?.[id0] != null) {
+      pj.pts = pj.pts.filter((q: number[]) => q[0] >= opts.tapAt![id0]);
+      pj.mark = { x: pj.pts[0][1], y: pj.pts[0][2] };
+    }
+    if (opts.lift != null) pj.pts = pj.pts.map((q: number[]) => [q[0], q[1], q[2], Math.max(q[3], opts.lift!)]);
     const rj = JSON.parse(readFileSync(join(HERE, 'data', 'reference', `${id0}.json`), 'utf8'));
     const ref: Ref = { t: rj.t, y: rj.y.map((y: number | null) => (y == null ? NaN : y)), h: rj.h };
     const group = e0.grp === 'meet' ? 'meet' : BOUNCED.some(b => id0.startsWith(b)) ? 'bounced' : 'paused';
@@ -297,7 +312,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     };
     rows.push({
       id, rep, group, inHand: !racked, start: ct.start ?? null, press: ct.press ?? null, late, rack: ct.rack ?? null, noRep,
-      lostBeforeStart: lostAt, leftHooks, voided, voidAfterHooks, voidAtLoss, voidOk,
+      lostBeforeStart: lostAt, stuckBeforeStart: c.lostBeforeStart != null && c.frozeAt.includes(c.lostBeforeStart), leftHooks, voided, voidAfterHooks, voidAtLoss, voidOk,
       startIn: ct.start == null ? null : inHold.start ? 'replay' : 'clip', pressIn, pressClip: ctClip.press ?? null,
       settled: E.settled, descent: E.descent, stop: E.stop, pauseEnd: E.pauseEnd, backUpEye: E.backUp, delay,
       early: delay != null && delay < 0, within1: delay != null && delay >= 0 && delay <= 1, within15: delay != null && delay >= 0 && delay <= 1.5,

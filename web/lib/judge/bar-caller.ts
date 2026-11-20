@@ -54,7 +54,12 @@ function slope(h: P[], from: number): { vy: number; vx: number } | null {
  * has been still `frozenPressMs` (1.0 s in shared/rules.json). The late Press! and the stuck rule run as before; a Press!
  * it held back says `held`. A test can turn it off with `frozenPressMs: 0`.
  */
-export type FrozenPress = { frozenPressMs?: number; frozenStill?: number };
+export type FrozenPress = {
+  frozenPressMs?: number; frozenStill?: number;
+  /** On trial, for The Playner's 9:11 AM sweep (not in shared/rules.json): before Start!, a stuck stretch counts only
+   *  while the track is within this distance of the tap (frame heights, x scaled as `leftRack` is). Unset: anywhere. */
+  freezeNearTap?: number;
+};
 /** The stuck rule's still time before and after Start! (item 111: 0.4 s and 1.5 s in shared/rules.json). 0 turns it off there. */
 
 export class BarCaller {
@@ -121,7 +126,8 @@ export class BarCaller {
     const fm = this.state === 'waiting' ? r.freezeBeforeMs : r.freezeAfterMs;
     if (r.stuckRule && fm > 0 && (this.state === 'waiting' || this.state === 'lifting' || (this.state === 'pressed' && this.lostPress)) && score >= r.freezeScore) {
       const back = this.all.filter(q => q.t >= t - fm);
-      const still = back.length >= 3 && back[0].t <= t - fm + this.medGap() && back.every(q => q.score >= r.freezeScore && Math.abs(q.x / this.aspect - x) * this.w < 1 && Math.abs(q.y - y) * this.h < 1);
+      const near = this.state !== 'waiting' || !r.freezeNearTap || Math.hypot(p.x - this.tap.x * this.aspect, p.y - this.tap.y) <= r.freezeNearTap;
+      const still = near && back.length >= 3 && back[0].t <= t - fm + this.medGap() && back.every(q => q.score >= r.freezeScore && Math.abs(q.x / this.aspect - x) * this.w < 1 && Math.abs(q.y - y) * this.h < 1);
       if (still) {
         ok = false; this.frozeAt.push(t); this.frozeFrom.push(t - fm);
         // The stuck stretch was never the bar: take it out of the history, so no stillness is read from it.
