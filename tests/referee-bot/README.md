@@ -163,7 +163,20 @@ that. Each bench's way in and its touch minus the reference's lowest point (nega
 clip, before the cut does (12.77 s). It isn't a tracker loss. In the product the server's path
 would go on, and this bench would take the path.
 
-**These paths are the phone's** (`data/traces`). In a meet the Pause line and the saved path come
+**The Pause line is measured on the phone's own path** (item 110, as `takeBar` does in a meet): the
+trace in the cut, item 108's guard on it, then `measureBar`. The frames still find the touch on the
+server's guarded track, below.
+
+**Each Pause line against the eye** (`test_pause.py`, 3.4d step 11): `pauses.ts` measures every bench
+at 30, 20 and 15 fps cameras (frames dropped from the trace), each on the grid, at the live tick and
+fed 3 times, unplanted and with one bad frame planted in each real pause, 0.05 lower and higher. The
+test fails if a pause of 0.5 s or more by eye is sent under 0.3 s, or one under 0.3 s is sent 0.5 s
+or more ("not measured" never fails), or a planted line moves more than one camera frame. 8qzW rep 1
+is recorded, not checked. Today's planted misses are in its `KNOWN`, with The Playner to rule on:
+
+    python3 -m unittest tests/referee-bot/test_pause.py
+
+**The touch paths below are the phone's** (`data/traces`). In a meet the saved path comes
 from the server's re-track (`worker/plate.py`, the same tracking code on the server's 15 fps
 frames), which drifts apart from the phone's on the same clip. On these 22 clips it sticks on
 IA0P reps 1 and 3 (not rep 2), and on z838 for 14 s at confidence 0.55. The Playner rules on a

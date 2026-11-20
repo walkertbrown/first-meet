@@ -8,7 +8,8 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BenchCaller, RULES, type Rel } from './caller';
-import { callPath, markStuck, measureBar, type BarPoint, type CommandTimes } from '../../web/lib/judge/bar-measure';
+import { callPath, markStuck, measureBar, type BarPoint } from '../../web/lib/judge/bar-measure';
+import type { CommandTimes } from '../../web/lib/judge/zoom';
 
 const HERE = __dirname;
 const BOUNCED = ['m-k8', 'Nv9h', 'VM_y', 'xXFj'];
