@@ -213,9 +213,76 @@ describe('the stuck-track guard (item 108)', () => {
         expect(stuckStretches(fed(blip([0, 1]).p, n), CT)).toEqual([]);
       }
     });
-    it('as the rule reads, a bar 0.003 apart on every other frame is one stretch: each off frame stands alone', () => {
+    it("a bar 0.003 apart on every other frame isn't stuck: it moves every frame, so nothing is carried", () => {
       const flip = path(GOOD).map((q, i) => (q[0] >= 3000 && q[0] <= 4500 ? [q[0], 0.5 + (i % 2) * 0.003, 0.42, 0.9] : q)) as BarPoint[];
-      expect(stuckStretches(flip, CT)).toHaveLength(1);
+      expect(stuckStretches(flip, CT)).toEqual([]);
+    });
+    // 3.4b, "Only on a frozen track's motion" (The Playner, Nov 20, 10:13 AM): the carry holds only when the median
+    // step between camera frames is under stuckCarryStep
+    describe("only on a frozen track's motion", () => {
+      const eps = 1e-6;
+      /** a still bar at 15 fps over [A, A + 15 frames], each frame `step` from the last (alternating, so it stays in the box), one off frame mid-way */
+      const jitter = (step: number) => {
+        const p = path(GOOD);
+        const first = p.findIndex(q => q[0] >= A);
+        for (let k = 0; k < 2 * N + 1; k++) p[first + k] = [p[first + k][0], 0.5 + (k % 2) * step, 0.42, 0.6];
+        p[first + N] = [p[first + N][0], 0.5, 0.47, 0.6];
+        return p;
+      };
+      it('is 0.0002 of the frame', () => expect(BAR_RULES.stuckCarryStep).toBe(0.0002));
+      it('a track that moves 0.0001 a frame (a frozen tracker) carries the off frame: one stretch', () => {
+        expect(stuckStretches(jitter(0.0001), CT)).toHaveLength(1);
+      });
+      it("a bar that moves 0.0007 a frame (KrDo's real still bar) doesn't: two halves under 0.8 s, nothing marked", () => {
+        expect(stuckStretches(jitter(0.0007), CT)).toEqual([]);
+      });
+      it('fed 2-4 times at the live tick, the repeats of one camera frame count once', () => {
+        const fed = (p: BarPoint[], n: number) => p.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (STEP / n), q[1], q[2], q[3]] as BarPoint));
+        for (const n of [2, 3, 4]) {
+          expect(stuckStretches(fed(jitter(0.0001), n), CT)).toHaveLength(1);
+          expect(stuckStretches(fed(jitter(0.0007), n), CT)).toEqual([]);
+        }
+      });
+      it("taken up to the off frame: a track frozen, then moving, carries into the frozen part only (NerdCider, 10:15 AM)", () => {
+        // 0.0001 a frame for 7 frames, the off frame, then 0.0007 a frame for 7: the median up to the off frame is the
+        // frozen part's, so it's carried; a second off frame in the moving part isn't (its median up to it is 0.0007's
+        // as often as not, and the stretch ends there)
+        const p = path(GOOD);
+        const first = p.findIndex(q => q[0] >= A);
+        for (let k = 0; k < 4 * N; k++) p[first + k] = [p[first + k][0], 0.5 + (k % 2) * (k < N ? 0.0001 : 0.0007), 0.42, 0.6];
+        p[first + N] = [p[first + N][0], 0.5, 0.47, 0.6];
+        p[first + 3 * N] = [p[first + 3 * N][0], 0.5, 0.47, 0.6];
+        const s = stuckStretches(p, CT);
+        expect(s).toHaveLength(1);
+        expect(s[0][0]).toBe(p[first][0]);
+        expect(s[0][1]).toBe(p[first + 3 * N - 1][0]);
+      });
+      it("tick repeats that aren't exact (nudged 1e-6) never carry a real bar's off frame (NerdCider, 10:15 AM)", () => {
+        const nudged = (p: BarPoint[], n: number) => p.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (STEP / n), q[1] + k * 1e-6, q[2], q[3]] as BarPoint));
+        for (const n of [2, 3, 4]) expect(stuckStretches(nudged(jitter(0.0007), n), CT)).toEqual([]);
+      });
+      it('a stretch at exactly 800 ms is stuck at every cadence: 0.5 ms under stuckMs, so rounding never decides it', () => {
+        // 24 frames at 30 fps, 16 at 20, 12 at 15, each also at the live tick and fed 3 times
+        for (const fps of [30, 20, 15]) {
+          const gap = 1000 / fps, n = Math.round(0.8 * fps);
+          const cam: BarPoint[] = [];
+          for (let k = 0; k * gap <= 6000; k++) {
+            const t = k * gap;
+            const inStretch = t >= 3000 - eps && k < Math.round(3000 / gap) + n;
+            cam.push([t, inStretch ? 0.5 : 0.3 + k * 0.004, inStretch ? 0.42 : 0.3 + k * 0.004, 0.6]);
+          }
+          for (const per of [1, 2, 3, 4]) {
+            const p = cam.flatMap(q => Array.from({ length: per }, (_, k) => [q[0] + k * (gap / per), q[1], q[2], q[3]] as BarPoint));
+            expect(stuckStretches(p, CT), `${fps} fps, each frame ${per}x`).toHaveLength(1);
+          }
+        }
+      });
+      it('a stretch stuck without the carry is still stuck, however it moves', () => {
+        const p = path(GOOD);
+        const first = p.findIndex(q => q[0] >= A);
+        for (let k = 0; k < 14; k++) p[first + k] = [p[first + k][0], 0.5 + (k % 2) * 0.0007, 0.42, 0.6];
+        expect(stuckStretches(p, CT)).toHaveLength(1);
+      });
     });
   });
 

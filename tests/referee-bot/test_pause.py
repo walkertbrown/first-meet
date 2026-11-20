@@ -19,8 +19,8 @@ fails, and so does a known one that stops missing, so the list never goes stale.
 
 Item 113: IA0P rep 2 (its track froze through the pause) and IA0P-r3-stuck read "not measured" on every camera, tick
 and plant, since item 108's guard carries a stuck stretch through one off camera frame. And no real pause of 0.5 s or
-more by eye that's measured on the recorded trace reads "not measured" on any run, but for LOST_REAL (KrDo at 15 fps,
-with The Playner).
+more by eye that's measured on the recorded trace reads "not measured" on any run (LOST_REAL is empty: the carry holds
+only on a frozen track's motion, 3.4b). KrDo rep 1's is pinned measured at every camera, tick and plant.
 
     python3 -m unittest discover tests/referee-bot
 """
@@ -45,11 +45,9 @@ KNOWN = {
 # item 113: read "not measured" on every run
 STUCK = ('IA0P-r2', 'IA0P-r3-stuck')
 # NerdCider's third check on item 113 (10:00 AM): a real pause of 0.5 s or more by eye that's measured at 30 fps on the
-# grid, unplanted, is measured on every run. KrDo (eye 1.07 s) at 15 fps on the grid and the tick isn't since the
-# guard carries one off frame: her real still bar wobbles 0.0021 x 0.0026 of the frame, and each single frame off the
-# 0.002 box is carried, so 3.97-4.70 s reads stuck. Sent to The Playner to rule on (Nov 20); printed on every run, and
-# the test fails if it changes.
-LOST_REAL = {('KrDo', 15, t, d) for t in ('grid', 'tick') for d in (0, 0.05, -0.05)}
+# grid, unplanted, is measured on every run. None is allowed to read "not measured" (The Playner, Nov 20, 10:13 AM:
+# KrDo at 15 fps was, until the carry went on a frozen track's motion only), so the list is empty.
+LOST_REAL = set()
 
 _runs = None
 
@@ -175,6 +173,16 @@ class PauseAgainstEye(unittest.TestCase):
                 print(f'      {key(k)}', file=sys.stderr)
         self.assertEqual(sorted(got - LOST_REAL), [], 'new real pauses read "not measured"')
         self.assertEqual(sorted(LOST_REAL - got), [], 'known ones that are measured again (take them out of LOST_REAL)')
+
+    def test_measured_real_pauses_stay_measured_at_every_camera(self):
+        # the pin (The Playner, 10:13 AM): the real pauses of 0.5 s or more measured on the recorded trace, KrDo's among
+        # them, are measured on all 27 runs
+        measured = {x['id'] for x in runs()[0]['rows'] if (x['eye_pause_s'] or 0) >= 0.5 and x['pause_s'] is not None}
+        self.assertIn('KrDo', {i.split('-')[0] for i in measured})
+        for r in runs():
+            for x in r['rows']:
+                if x['id'] in measured:
+                    self.assertIsNotNone(x['pause_s'], f'{x["id"]} at {name(r)}')
 
     def test_8qzw_rep_1_is_recorded(self):
         line = []

@@ -107,6 +107,7 @@
     "lowScoreBeforeMs": 1000,
     "stuckStill": 0.002,
     "stuckMs": 800,
+    "stuckCarryStep": 0.0002,
     "pauseLostMs": 500,
     "voidRule": true,
     "voidMs": 5000,

@@ -110,6 +110,20 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
   const lmed = [...lasts].sort((a, b) => a - b)[Math.floor(lasts.length / 2)] ?? frame;
   const near = lasts.filter(g => g <= lmed * 3);
   const camera = near.length ? near.reduce((a, g) => a + g, 0) / near.length : frame;
+  // Item 113, "Only on a frozen track's motion": the median step over the camera frames from the stretch's start i
+  // up to the off frame at j + 1 (fixed when the carry is decided, so a carry can't change its own median). Each
+  // step is between a point and the one a camera frame before it in time (the last at least 0.9 of a camera frame
+  // earlier: at the live tick a camera frame's last repeat is 3/4 of a frame after its first, so it's never
+  // compared with its own frame), so a tick path's repeats don't make it 0, exact or not (NerdCider, 10:15 AM).
+  const medStep = (i: number, j: number) => {
+    const steps: number[] = [];
+    let q = i - 1;
+    for (let k = i + 1; k <= j; k++) {
+      while (q + 1 < k && w[q + 1][0] <= w[k][0] - camera * 0.9 + eps) q++;
+      if (q >= i) steps.push(Math.hypot(w[k][1] - w[q][1], w[k][2] - w[q][2]));
+    }
+    return steps.length ? steps.sort((x, y) => x - y)[Math.floor(steps.length / 2)] : 0;
+  };
   for (let i = 0; i < w.length; i++) {
     // the furthest j with every point i..j inside a still box (each start grows its own box, so an off frame
     // carried through is never in it)
@@ -133,10 +147,17 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
       // AM). Two grid frames stuck on one off spot last two frames, and end it.
       let e = j + 1;
       while (e + 1 < w.length && same(e + 1, j + 1)) e++;
-      if (e + 1 < w.length && w[e + 1][0] - w[j + 1][0] <= camera * 1.5 + eps && inBox(e + 1)) { take(e + 1); j = e + 1; continue; }
+      // ...and only on a frozen track's motion: the median step between camera frames up to it under stuckCarryStep
+      // (0.0002 of the frame; KrDo's real still bar is 0.00073, IA0P's frozen ones 0.00002-0.00005). Otherwise the
+      // off frame ends the stretch, as before (The Playner, Nov 20, 10:13 AM).
+      if (e + 1 < w.length && w[e + 1][0] - w[j + 1][0] <= camera * 1.5 + eps && inBox(e + 1) && medStep(i, j) < r.stuckCarryStep) {
+        take(e + 1); j = e + 1; continue;
+      }
       break;
     }
-    if ((j - i + 1) * frame < r.stuckMs - eps) continue;
+    // 0.5 ms under stuckMs, so rounding in the frame time never decides a stretch that's exactly on the line
+    // (NerdCider, 10:14 AM: KrDo's 12 frames at 66.667 ms)
+    if ((j - i + 1) * frame < r.stuckMs - 0.5) continue;
     const last = out[out.length - 1];
     if (last && w[i][0] <= last[1]) last[1] = Math.max(last[1], w[j][0]);
     else out.push([w[i][0], w[j][0]]);

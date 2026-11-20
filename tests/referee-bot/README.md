@@ -176,7 +176,10 @@ or more ("not measured" never fails). On a planted run that eye check is the har
 moves more than one camera frame is printed, since on a bar still sinking into her stop the band's
 edge moves with any small change (z838, ak3m3; 3.4b). IA0P rep 2 and IA0P-r3-stuck must read "not
 measured" on every run (item 113: item 108's guard carries a stuck stretch through one off camera
-frame). 8qzW rep 1 is recorded, not checked.
+frame, but only on a frozen track's motion: the median step between points a camera frame apart, from
+the stretch's start up to the off frame, under 0.0002 of the frame; 3.4b). No real pause of 0.5 s or
+more measured on the recorded trace may read "not measured" on any run (`LOST_REAL` is empty), and
+KrDo's is pinned measured at every camera, tick and plant. 8qzW rep 1 is recorded, not checked.
 
 **Item 113's two allowed misses**, at 15 fps with one frame planted: ak3m3 (0.05 lower, sent 0.2 s on
 0.50 s; in `KNOWN`) and 8qzW rep 1 (0.05 higher, sent "still 0.0 s" on 0.67 s; printed). Both go to
