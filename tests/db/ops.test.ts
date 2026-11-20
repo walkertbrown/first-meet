@@ -237,22 +237,27 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     const bea2 = await mk(real.id, { status: 'declared', lifterId: bea });
     const cy = await mk(real.id, { status: 'declared', name: 'Cy' });
     const dee = await mk(demo.id, { status: 'declared', name: 'Dee' });
-    const v = (attemptId: string) => ({ kind: 'lost_bar_void', attemptId, detail: { lift: 'bench', why: 'no_start' } });
-    await db.insert(events).values([v(bea1), v(bea2), v(cy), v(dee), v(dee), v(s), v(pressVoid)]);
+    const v = (attemptId: string, why = 'no_start_5s') => ({ kind: 'lost_bar_void', attemptId, detail: { lift: 'bench', why, n: 1 } });
+    await db.insert(events).values([v(bea1), v(cy), v(dee, 'stuck'), v(s), v(pressVoid)]);
+    await new Promise(r => setTimeout(r, 5));
+    await db.insert(events).values([v(bea2, 'low_score'), v(dee, 'stuck')]);
     n = await opsNumbers(db, BUDGETS, null);
   });
   afterAll(async () => drop?.());
 
   it('lists each lifter with No Start! twice or more in a meet, by meet and name, with her count, under the counts', () => {
     expect(new Set(n.bench.noStartTwice.map(x => JSON.stringify(x)))).toEqual(new Set([
-      { meet: 'Meet 1', name: 'Ana', voids: 2 }, { meet: 'Meet 1', name: 'Bea', voids: 2 }, { meet: 'Demo', name: 'Dee', voids: 2 },
+      { meet: 'Meet 1', name: 'Ana', voids: 2, whys: ['no_start', 'no_start'] }, { meet: 'Meet 1', name: 'Bea', voids: 2, whys: ['no_start_5s', 'low_score'] },
+      { meet: 'Demo', name: 'Dee', voids: 2, whys: ['stuck', 'stuck'] },
     ].map(x => JSON.stringify(x))));
     const rows = opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows;
     const at = rows.findIndex(r => r.label === 'No Start! twice or more in a meet');
     expect(at).toBe(rows.length - 4);
     expect(rows[at].value).toBe('3');
     expect(rows.slice(at + 1).map(r => r.label).sort()).toEqual(['Demo · Dee', 'Meet 1 · Ana', 'Meet 1 · Bea']);
-    expect(rows.slice(at + 1).every(r => r.value === '2')).toBe(true);
+    expect(Object.fromEntries(rows.slice(at + 1).map(r => [r.label, r.value]))).toEqual({
+      'Meet 1 · Ana': '2 · 2 no_start', 'Meet 1 · Bea': '2 · 1 no_start_5s, 1 low_score', 'Demo · Dee': '2 · 2 stuck',
+    });
   });
 
   it('compares the bar\'s call with the referees\' on decided real meet bench attempts, and counts the bench going wrong over every real phone\'s filming', () => {

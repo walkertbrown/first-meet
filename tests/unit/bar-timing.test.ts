@@ -93,4 +93,45 @@ describe('the stuck rule, counted in time (item 111)', () => {
       if (stuck) expect(c.lostBeforeStart).not.toBeNull();
     });
   }
+
+  // Item 112 (3.4b, "The void has three causes"): the caller says which, for the void's post, its row and its sheet
+  describe('the void says its cause (item 112)', () => {
+    const run = (y: (k: number) => number, score: (k: number) => number) => {
+      const c = new BarCaller({ x: 0.5, y: 0.3 }, DIMS, BAR_RULES, false);
+      for (let k = 0; k * 33.37 < 7000; k++) {
+        const cmd = c.feed(Math.round(k * 33.37), 0.5, y(k), score(k));
+        if (cmd?.void) return cmd;
+      }
+      return null;
+    };
+    it('no_start_5s: off the hooks 5 s, never still enough for Start!', () => {
+      // wobbling 3% of the frame every 0.6 s (her arms shaking), at a good score
+      const v = run(k => 0.25 + 0.03 * Math.sin((k * 33.37 * 2 * Math.PI) / 600), () => 0.9);
+      expect(v).toMatchObject({ cmd: 'rack', void: true, voidWhy: 'no_start_5s' });
+      expect(v!.t).toBeGreaterThanOrEqual(BAR_RULES.voidMs);
+    });
+    it('stuck: still to 1 px at 0.99 or more, near her tap', () => {
+      expect(run(() => 0.3, () => 1)).toMatchObject({ void: true, voidWhy: 'stuck' });
+    });
+    it('low_score: under the line for 1 s off the hooks, on its own key (3.4b; the Playner, 9:39 AM)', () => {
+      expect(BAR_RULES.lowScoreBeforeMs).toBe(1000);
+      const low = (rules = BAR_RULES, gapEnd = Infinity) => {
+        const c = new BarCaller({ x: 0.5, y: 0.3 }, DIMS, rules, false);
+        for (let k = 0; k * 33.37 < 7000; k++) {
+          const t = Math.round(k * 33.37), cmd = c.feed(t, 0.5, 0.25 + 0.03 * Math.sin((t * 2 * Math.PI) / 600), k < 10 || k >= gapEnd ? 0.9 : 0.2);
+          if (cmd?.void) return cmd;
+        }
+        return null;
+      };
+      const v = low();
+      expect(v).toMatchObject({ void: true, voidWhy: 'low_score' });
+      const from = Math.round(10 * 33.37);
+      expect(v!.t - from).toBeGreaterThanOrEqual(1000 - 34);
+      expect(v!.t - from).toBeLessThanOrEqual(1000 + 34);
+      // a 0.6 s block (someone walking past) never voids; the 5 s rule ends it instead
+      expect(low(BAR_RULES, 10 + 18)).toMatchObject({ void: true, voidWhy: 'no_start_5s' });
+      // the stuck window moving never moves it
+      expect(low({ ...BAR_RULES, freezeMs: 2000, freezeBeforeMs: 2000 })!.t).toBe(v!.t);
+    });
+  });
 });

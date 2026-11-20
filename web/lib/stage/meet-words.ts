@@ -1,5 +1,6 @@
 // A meet attempt's words (plan 5.25, 3.5, 3.11, 5.36), exactly, and which ones an attempt's
 // state gets. The stage (meet-attempt.tsx) only draws these.
+import type { VoidWhy } from '@/lib/judge/bar-caller';
 import type { LampState } from '@/components/lamps';
 import { REASON_EYEBROW, reasonEyebrow, reasonSentence, type ReasonCode } from '@/lib/reason-words';
 import { refereeWords, UNAVAILABLE_SMALL } from '@/lib/referee/words';
@@ -36,6 +37,26 @@ export const MEET_WORDS = {
     filmAgain: 'Film again',
   },
 } as const;
+
+/** Item 112 (3.4b): the void sheet by its cause, the first in a row and the second (the third and later show the
+ *  second). `again: 'spot'` is "Find my spot again", back to "Find your spot"; `'tap'` is "Film again", a new tap. */
+export const VOID_SHEETS = {
+  no_start_5s: {
+    first: { title: "We didn't get the start", body: 'The bar has to be still for "Start!". This one doesn\'t count against you.', button: 'Film again', again: 'tap' },
+    second: { title: "We didn't get the start again", body: 'Lift the bar out and hold it still with your arms straight. Don\'t lower it until you hear "Start!". It can take a second. This one doesn\'t count against you either.', button: 'Film again', again: 'tap' },
+  },
+  stuck: {
+    first: { title: MEET_WORDS.bench.voidTitle, body: MEET_WORDS.bench.voidBody, button: MEET_WORDS.bench.filmAgain, again: 'tap' },
+    second: { title: 'We lost the bar again', body: 'Your phone may be too far away to follow the bar. Move it as close as you can, with your head and feet still on the screen. This one doesn\'t count against you either.', button: 'Find my spot again', again: 'spot' },
+  },
+  low_score: {
+    first: { title: MEET_WORDS.bench.voidTitle, body: MEET_WORDS.bench.voidBody, button: MEET_WORDS.bench.filmAgain, again: 'tap' },
+    second: { title: 'We lost the bar again', body: 'We couldn\'t keep sight of the end of the bar. Check it\'s in good light and nothing is in front of it, then tap it again. This one doesn\'t count against you either.', button: 'Film again', again: 'tap' },
+  },
+} as const satisfies Record<VoidWhy, Record<'first' | 'second', { title: string; body: string; button: string; again: 'tap' | 'spot' }>>;
+
+/** On `no_start_5s` the phone never lost the bar, so it says nothing after "Rack!" (3.4b); "We lost the bar." otherwise. */
+export const voidSaysLost = (why: VoidWhy) => why !== 'no_start_5s';
 
 export type MeetResult = {
   title: 'Good lift' | 'No lift' | 'Close call' | 'To a referee' | 'To the referee bot';

@@ -147,7 +147,9 @@ describe('on the meet stage', () => {
   it('a turn from "Bar is loaded." on voids the attempt, and "Film again" goes back to the frame check', () => {
     expect(meet).toContain('if (settled !== null) return orientRef.current.watch.quarter !== settled;');
     expect(meet).toContain('if (turnedSinceLoaded()) {');
-    expect(meet).toContain("go(voidWhy === 'turned' ? 'lift' : 'refilm')");
+    // item 112: the turned sheet goes back to the frame check, as the stuck second sheet does ('spot')
+    expect(meet).toContain("voidWhy === 'turned' ? { title: ORIENT_WORDS.turned.title, body: ORIENT_WORDS.turned.body, button: ORIENT_WORDS.turned.filmAgain, again: 'spot' as const }");
+    expect(meet).toContain("go(w.again === 'spot' ? 'lift' : 'refilm')");
     expect(meet).toContain('/turned-void');
   });
   it('the motion step comes once, before the first bench\'s camera', () => {

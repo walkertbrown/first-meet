@@ -9,6 +9,7 @@ import { DeadliftCaller, SquatCaller } from './commands';
 import { pressKey } from './press';
 import { OverheadCaller } from './overhead';
 import { BarStage } from './bar-stage';
+import type { VoidWhy } from './bar-caller';
 import type { Gray } from './plate-tracker';
 import type { PlateTap, PressLateWhy } from './bar-measure';
 import { RULES, type Rules } from './rules';
@@ -35,7 +36,7 @@ export type MeetEvent =
    * "RACK!" or "DOWN!"; `noRep`: she never lifted, so nothing is sent. `void`: the bench had no
    * "Start!" out of the rack (3.4b), so nothing is sent and she films it again.
    */
-  | { type: 'end'; t: number; key: 'rack' | 'down'; noRep: boolean; void?: boolean };
+  | { type: 'end'; t: number; key: 'rack' | 'down'; noRep: boolean; void?: boolean; voidWhy?: VoidWhy };
 
 export type MeetPhase = 'spot' | 'good-spot' | 'tap' | 'loaded' | 'lifting' | 'done';
 
@@ -100,7 +101,7 @@ export class MeetLift {
       else if (e.type === 'lost') out.push({ type: 'lost', t: e.t });
       else if (e.cmd === 'start') { this.phase = 'lifting'; out.push({ type: 'call', t: e.t, key: 'start', word: 'start' }); }
       else if (e.cmd === 'press') out.push({ type: 'call', t: e.t, key: pressKey(1, !!e.late), word: 'press', ...(e.late && e.why ? { why: e.why } : {}) });
-      else { this.phase = 'done'; out.push({ type: 'end', t: e.t, key: 'rack', noRep: !!e.noRep, ...(e.void ? { void: true } : {}) }); }
+      else { this.phase = 'done'; out.push({ type: 'end', t: e.t, key: 'rack', noRep: !!e.noRep, ...(e.void ? { void: true, voidWhy: e.voidWhy ?? 'no_start_5s' } : {}) }); }
     }
     return out;
   }

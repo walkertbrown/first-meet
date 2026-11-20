@@ -128,6 +128,7 @@ describe('a meet attempt on the phone', () => {
     for (let i = 0; i < 12; i++) wander.push({ ms: 500, to: i % 2 ? [0.55, 0.22] : [0.5, 0.27] });
     const { evs } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, wander);
     expect(evs.at(-1)).toMatchObject({ type: 'end', key: 'rack', void: true });
+    expect((evs.at(-1) as { voidWhy?: string }).voidWhy).toMatch(/^(no_start_5s|stuck|low_score)$/);
     expect(evs.some(e => e.type === 'call')).toBe(false);
   });
 

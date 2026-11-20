@@ -47,13 +47,40 @@ describe.skipIf(!URL_)('the bench void', () => {
 
   it('200: logs the void, and the attempt stays declared to film again', async () => {
     const { d, a } = await bench();
-    expect(await lostBarVoid(db, a.id, d.lifter.id)).toEqual({ status: 200, body: { ok: true } });
+    expect(await lostBarVoid(db, a.id, d.lifter.id)).toEqual({ status: 200, body: { ok: true, n: 1 } });
     const [e] = await voids(a.id);
-    expect(e.detail).toEqual({ lift: 'bench', why: 'no_start' });
+    expect(e.detail).toEqual({ lift: 'bench', why: 'no_start', n: 1 });
     const [after] = await db.select().from(attempts).where(eq(attempts.id, a.id));
     expect(after).toMatchObject({ status: 'declared', call: null, voidReason: null });
     // a second void on the re-filmed attempt is counted too
     expect(await lostBarVoid(db, a.id, d.lifter.id)).toMatchObject({ status: 200 });
     expect(await voids(a.id)).toHaveLength(2);
+  });
+
+  it("item 112: the row keeps the phone's why (no_start_5s, stuck or low_score); anything else is the old no_start", async () => {
+    const { d, a } = await bench();
+    for (const why of ['no_start_5s', 'stuck', 'low_score', 'turned', 42, undefined]) await lostBarVoid(db, a.id, d.lifter.id, why);
+    const rows = (await voids(a.id)).sort((x, y) => (x.detail as { n: number }).n - (y.detail as { n: number }).n);
+    expect(rows.map(r => (r.detail as { why: string }).why)).toEqual(['no_start_5s', 'stuck', 'low_score', 'no_start', 'no_start', 'no_start']);
+    expect(rows.map(r => (r.detail as { n: number }).n)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('item 112: n counts the voids in a row since the last upload started; a turned void never resets it; each attempt on its own', async () => {
+    const { d, a } = await bench();
+    const n = async (id = a.id) => (await lostBarVoid(db, id, d.lifter.id)).body.n;
+    expect(await n()).toBe(1);
+    await db.insert(events).values({ kind: 'turned_void', attemptId: a.id, detail: { lift: 'bench' } });
+    expect(await n()).toBe(2);
+    expect(await n()).toBe(3);
+    // filmed through to Rack!: the upload started (and failed, so the attempt is still declared to film again)
+    await new Promise(r => setTimeout(r, 5));
+    await db.insert(events).values({ kind: 'upload_started', attemptId: a.id, detail: { device: 'x' } });
+    await new Promise(r => setTimeout(r, 5));
+    expect(await n()).toBe(1);
+    expect(await n()).toBe(2);
+    expect((await voids(a.id)).map(e => (e.detail as { n: number }).n).sort()).toEqual([1, 1, 2, 2, 3]);
+    // another attempt of hers starts at 1
+    const [b] = await db.insert(attempts).values({ ...a, id: undefined, number: 2 } as never).returning();
+    expect(await n(b.id)).toBe(1);
   });
 });

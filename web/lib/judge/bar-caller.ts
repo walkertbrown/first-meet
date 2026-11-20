@@ -16,7 +16,7 @@
 //         bar.", no Start!. After Start!: never Press! from stillness; if the track doesn't come back, a late Press!
 //         2 s after the loss and Rack! 3 s after that.
 // Missed start (3.4b, The Playner's 3:54 mail): off the hooks with no Start! within voidMs, or the track lost off the
-//         hooks before Start! (stuck, or under lostScore for freezeMs): "Rack!", then "We lost the bar.", and the attempt
+//         hooks before Start! (stuck, or under lostScore for lowScoreBeforeMs): "Rack!", then "We lost the bar.", and the attempt
 //         is void. Lost on the hooks before Start! is a re-tap, as before (no command).
 
 import { RULES as ALL } from './rules';
@@ -29,9 +29,15 @@ export const BAR_RULES: BarRel = BENCH_BAR;
 /** The stuck-track rule's numbers before Start!. The plan's guess was 0.99 for 0.3 s; 0.3 s calls a real held bar lost (IA0P). */
 export const BAR_STUCK = { score: BAR_RULES.freezeScore, ms: BAR_RULES.freezeBeforeMs, afterMs: BAR_RULES.freezeAfterMs };
 
+/** Item 112 (3.4b, "The void has three causes"): why the bench was voided with no Start! out of the rack. `no_start_5s`:
+ *  off the hooks voidMs with no Start!; `stuck`: the stuck rule within freezeNearTapPct of her tap; `low_score`: under
+ *  lostScore for lowScoreBeforeMs (its own key, the Playner's 9:37 AM ruling: a change to the stuck window never moves it). It goes in the void's post and the `lost_bar_void` row, and picks the sheet's words. */
+export type VoidWhy = 'no_start_5s' | 'stuck' | 'low_score';
+export const VOID_WHYS: readonly VoidWhy[] = ['no_start_5s', 'stuck', 'low_score'];
+
 /** `why` on a late Press! (3.4b, `press_late_why`): `still`, down and still 1.5 s with no Press!, or `lost`, 2 s after the track was lost. */
 export type BarCmd = {
-  cmd: 'start' | 'press' | 'rack'; t: number; late?: boolean; why?: 'still' | 'lost'; noRep?: boolean; void?: boolean;
+  cmd: 'start' | 'press' | 'rack'; t: number; late?: boolean; why?: 'still' | 'lost'; noRep?: boolean; void?: boolean; voidWhy?: VoidWhy;
   /** item 109: the frozen-track rule held this Press! back (`command_times.press_held`) */
   held?: boolean;
 };
@@ -133,17 +139,17 @@ export class BarCaller {
       }
     }
     if (this.state === 'waiting' && this.leftAt !== null) {
-      // Lost off the hooks before Start!: stuck, or under lostScore for freezeMs.
+      // Lost off the hooks before Start!: stuck, or under lostScore for lowScoreBeforeMs.
       this.lowSince = score < r.lostScore ? (this.lowSince ?? t) : null;
       const stuck = !ok && r.stuckRule && score >= r.freezeScore;
-      const low = this.lowSince !== null && t - this.lowSince >= r.freezeMs;
+      const low = this.lowSince !== null && t - this.lowSince >= r.lowScoreBeforeMs;
       if (stuck || (r.voidRule && low)) {
         this.state = 'done'; this.lostBeforeStart = t;
         if (!r.voidRule) return null;
-        this.voidAt = t; return { cmd: 'rack', t, void: true };
+        this.voidAt = t; return { cmd: 'rack', t, void: true, voidWhy: stuck ? 'stuck' : 'low_score' };
       }
       // Off the hooks with no Start! within voidMs.
-      if (r.voidRule && t - this.leftAt >= r.voidMs) { this.state = 'done'; this.voidAt = t; return { cmd: 'rack', t, void: true }; }
+      if (r.voidRule && t - this.leftAt >= r.voidMs) { this.state = 'done'; this.voidAt = t; return { cmd: 'rack', t, void: true, voidWhy: 'no_start_5s' }; }
     }
     if (!ok && r.stuckRule && this.state === 'lifting') {
       if (this.lostSince === null) this.lostSince = this.frozeAt.at(-1) === t ? this.frozeFrom.at(-1)! : t;
