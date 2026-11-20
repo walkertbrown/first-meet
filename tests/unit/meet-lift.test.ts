@@ -106,6 +106,12 @@ describe('a meet attempt on the phone', () => {
     for (const e of bar) if (e.type === 'call' || e.type === 'end') ct[e.key] = Math.round(e.t - soft);
     expect(ok(ct as Record<string, number>, 'bench')).toBeNull();
     expect(extrasOk(ct as Record<string, number>)).toBe(true);
+    // item 109: press_held is only ever true, and only with a Press! it held back
+    expect(extrasOk({ ...ct, press_held: true } as Record<string, number>)).toBe(true);
+    expect(extrasOk({ ...ct, press_held: false } as Record<string, number>)).toBe(false);
+    expect(extrasOk({ ...ct, press_held: 1 } as Record<string, number>)).toBe(false);
+    expect(extrasOk({ start: 1, press_late: 3, press_held: true } as Record<string, number>)).toBe(true);
+    expect(extrasOk({ start: 1, press_held: true } as Record<string, number>)).toBe(false);
   });
 
   it('Barbell bench: lost on the hooks says so and asks for a new tap, with no second "Bar is loaded."', () => {

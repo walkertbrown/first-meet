@@ -184,7 +184,7 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     const [real] = await db.insert(meets).values({ slug: 'm1', name: 'Meet 1', kind: 'real', status: 'open' }).returning();
     const [demo] = await db.insert(meets).values({ slug: 'demo', name: 'Demo', kind: 'demo', status: 'open' }).returning();
     const [test] = await db.insert(meets).values({ slug: 'test', name: 'Test', kind: 'test', status: 'open' }).returning();
-    type Row = { status: string; call?: 'white' | 'red'; shadow?: 'white' | 'red'; referee?: boolean; uploaded?: boolean; sinking?: boolean; lost?: boolean; lift?: 'bench' | 'squat'; home?: boolean; sample?: boolean; name?: string; lifterId?: string };
+    type Row = { status: string; call?: 'white' | 'red'; shadow?: 'white' | 'red'; referee?: boolean; uploaded?: boolean; sinking?: boolean; lost?: boolean; lift?: 'bench' | 'squat'; home?: boolean; sample?: boolean; name?: string; lifterId?: string; held?: boolean };
     const mk = async (meetId: string, r: Row) => {
       const [l] = r.lifterId ? await db.select().from(lifters).where(eq(lifters.id, r.lifterId))
         : await db.insert(lifters).values({ cardName: r.name ?? 'L', isDemo: meetId === demo.id, division: r.home ? 'home' : 'barbell' }).returning();
@@ -194,13 +194,15 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
         shadowLights: r.shadow ? [r.shadow, r.shadow, r.shadow] : null,
         uploadedAt: r.uploaded ? new Date() : null, isSampleClip: !!r.sample,
         measures: { press_while_sinking: !!r.sinking, lost_after_start: !!r.lost, ...(r.referee ? { referee: true } : {}) },
+        // item 109: the frozen-track rule held her Press! back
+        ...(r.held ? { commandTimes: { start: 1.1, press: 3.2, press_held: true } as never } : {}),
       }).returning();
       return a.id;
     };
     // decided by referees: agree (white, white), white on a red, red on a white, and a close-call shadow (agrees with neither)
     await mk(real.id, { status: 'judged', call: 'white', shadow: 'white', referee: true, uploaded: true, sinking: true });
     await mk(real.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, lost: true });
-    await mk(real.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true });
+    await mk(real.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true, held: true });
     await mk(real.id, { status: 'judged', call: 'red', referee: true, uploaded: true });
     // waiting for a referee: filmed, not decided
     await mk(real.id, { status: 'close_call', shadow: 'red', uploaded: true });
@@ -210,12 +212,12 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     const squat = await mk(real.id, { status: 'declared', lift: 'squat' });
     // item 94: the demo and test meets' benches were filmed on a real phone, so they count in the tracker's three
     // rates, never in the referee lines. A sample never counts.
-    const d = await mk(demo.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true, lost: true });
+    const d = await mk(demo.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true, lost: true, held: true });
     await mk(test.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true });
-    const s = await mk(demo.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true, sinking: true, lost: true, sample: true });
+    const s = await mk(demo.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true, sinking: true, lost: true, sample: true, held: true });
     // F-C, F-D: Home press sets (lift 'bench' on Home, 3.4c) are never bench rows; they make their own line.
     // Judged by the phone; a referee's red on a phone close call; one waiting; one still declared with a void; a demo one.
-    await mk(real.id, { status: 'judged', call: 'white', home: true, uploaded: true, sinking: true });
+    await mk(real.id, { status: 'judged', call: 'white', home: true, uploaded: true, sinking: true, held: true });
     await mk(real.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, home: true, uploaded: true, lost: true });
     await mk(real.id, { status: 'close_call', home: true, uploaded: true });
     const pressVoid = await mk(real.id, { status: 'declared', home: true });
@@ -265,8 +267,8 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     // never the sample's or the Home press set's
     const { noStartTwice, ...counts } = n.bench;
     expect(noStartTwice).toHaveLength(3);
-    expect(counts).toEqual({ decided: 4, agree: 1, whiteOnRed: 1, redOnWhite: 1, filmings: 15, pressWhileSinking: 3, lostAfterStart: 2, noStartVoids: 8, homePressSets: 3, homePressReferee: 2 });
-    expect(opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows.slice(0, 8)).toEqual([
+    expect(counts).toEqual({ decided: 4, agree: 1, whiteOnRed: 1, redOnWhite: 1, filmings: 15, pressWhileSinking: 3, lostAfterStart: 2, noStartVoids: 8, pressHeld: 2, homePressSets: 3, homePressReferee: 2 });
+    expect(opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows.slice(0, 9)).toEqual([
       { label: 'Decided', value: '4' },
       { label: 'Agree', value: '1' },
       { label: 'White on a red', value: '1' },
@@ -274,6 +276,8 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
       { label: 'Press! while sinking', value: '3 of 15 · 20%' },
       { label: 'Lost the bar after Start!', value: '2 of 15 · 13%' },
       { label: 'No Start!, filmed again', value: '8 of 15 · 53%' },
+      // item 109: a real meet's and the demo's, never the sample's or a Home press set's
+      { label: 'Press! held for a frozen track', value: '2 of 15 · 13%' },
       { label: 'Home press sets to a referee', value: '67%' },
     ]);
   });
@@ -298,8 +302,8 @@ describe('ops words', () => {
     ]);
   });
   it('benchRows with nothing yet', () => {
-    expect(benchRows({ decided: 0, agree: 0, whiteOnRed: 0, redOnWhite: 0, filmings: 0, pressWhileSinking: 0, lostAfterStart: 0, noStartVoids: 0, homePressSets: 0, homePressReferee: 0, noStartTwice: [] }).map(r => r.value))
-      .toEqual(['0', '0', '0', '0', '0 of 0', '0 of 0', '0 of 0', '—', '—']);
+    expect(benchRows({ decided: 0, agree: 0, whiteOnRed: 0, redOnWhite: 0, filmings: 0, pressWhileSinking: 0, lostAfterStart: 0, noStartVoids: 0, pressHeld: 0, homePressSets: 0, homePressReferee: 0, noStartTwice: [] }).map(r => r.value))
+      .toEqual(['0', '0', '0', '0', '0 of 0', '0 of 0', '0 of 0', '0 of 0', '—', '—']);
   });
   it('commitsDiffer only when both commits are known and differ', () => {
     expect(commitsDiffer({ web: 'abc1234', judge: 'abc1234' })).toBe(false);

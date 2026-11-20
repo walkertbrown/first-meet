@@ -674,6 +674,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             if (ml.byBar && ev.word === 'start') setBarMark(m => m && { ...m, on: false });
             if (ml.byBar && ev.word === 'press' && !pressSnap) pressSnap = grab(video, d);
             if (ev.why) extras.press_late_why = ev.why;
+            if (ev.held) extras.press_held = true; // item 109: /ops counts how often she waits the extra 0.5 s
             show(COMMAND_TEXT[ev.word]); voice.say(ev.word);
           } else if (ev.type === 'rep') {
             ct[ev.key] = since(now); setReps(ev.k);

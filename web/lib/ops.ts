@@ -22,6 +22,8 @@ export type OpsNumbers = {
   bench: {
     decided: number; agree: number; whiteOnRed: number; redOnWhite: number;
     filmings: number; pressWhileSinking: number; lostAfterStart: number; noStartVoids: number;
+    /** item 109: bench filmings whose Press! the frozen-track rule held back (`command_times.press_held`); no 10% line */
+    pressHeld: number;
     /** 3.4c: real meet Home press sets decided or waiting, and those that went to a referee (a close call). */
     homePressSets: number; homePressReferee: number;
     /** 3.4b, item 111: "No Start! twice or more in a meet", each lifter it happened to, by meet and name, with her count
@@ -128,6 +130,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       (select count(*) from b where uploaded_at is not null) as uploaded,
       (select count(*) from b where (measures->>'press_while_sinking')::boolean is true) as sinking,
       (select count(*) from b where (measures->>'lost_after_start')::boolean is true) as lost,
+      (select count(*) from b where (command_times->>'press_held')::boolean is true) as held,
       (select count(*) from events e join b r on r.id = e.attempt_id where e.kind = 'lost_bar_void') as voids,
       (select count(*) from press) as press_sets,
       (select count(*) from press where status = 'close_call' or (measures->>'referee')::boolean is true) as press_referee`);
@@ -206,7 +209,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     },
     bench: {
       decided: num(b?.decided), agree: num(b?.agree), whiteOnRed: num(b?.white_on_red), redOnWhite: num(b?.red_on_white),
-      filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids),
+      filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids), pressHeld: num(b?.held),
       homePressSets: num(b?.press_sets), homePressReferee: num(b?.press_referee),
       noStartTwice: twice.map(x => ({ meet: String(x.meet), name: String(x.name), voids: num(x.voids), whys: (x.whys as string[] | null) ?? [] })),
     },
@@ -290,6 +293,8 @@ export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
     { label: 'Press! while sinking', value: failedOf(b.pressWhileSinking, b.filmings) },
     { label: 'Lost the bar after Start!', value: failedOf(b.lostAfterStart, b.filmings) },
     { label: 'No Start!, filmed again', value: failedOf(b.noStartVoids, b.filmings) },
+    // item 109: counted the same way, with no 10% line: it may be common, and The Playner reads it after the first meet
+    { label: 'Press! held for a frozen track', value: failedOf(b.pressHeld, b.filmings) },
     // 3.4c: "Home press sets to a referee · <x>%"
     { label: 'Home press sets to a referee', value: b.homePressSets ? `${Math.round((b.homePressReferee / b.homePressSets) * 100)}%` : '—' },
     // under the counts (item 111): a heading row, then each lifter by meet and name with her count

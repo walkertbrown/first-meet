@@ -135,3 +135,35 @@ describe('the stuck rule, counted in time (item 111)', () => {
     });
   });
 });
+
+// Item 109 (3.4b, "A frozen track holds Press! back"): x and y within 0.002 through the whole still window makes
+// Press! wait for frozenPressMs still, and says so (`command_times.press_held`); a real still bar wobbles more.
+describe('a frozen track holds Press! back (item 109)', () => {
+  const press = (wob: number, rules = BAR_RULES) => {
+    const c = new BarCaller({ x: 0.5, y: 0.3 }, DIMS, rules, false);
+    let started = -1;
+    for (let k = 0; k * 33.37 < 8000; k++) {
+      const t = Math.round(k * 33.37);
+      const y = started < 0 ? 0.25 + (k % 2 ? 0.02 : -0.02) : t - started < 1000 ? 0.25 + (0.15 * (t - started)) / 1000 : 0.4 + (k % 2 ? wob : -wob);
+      const cmd = c.feed(t, 0.5, y, 0.9);
+      if (cmd?.cmd === 'start') started = t;
+      if (cmd?.cmd === 'press') return cmd;
+    }
+    return null;
+  };
+  it('is 1.0 s (shared/rules.json)', () => expect(BAR_RULES.frozenPressMs).toBe(1000));
+  it('a frozen bar gets Press! 0.5 s later than a still one that wobbles, marked held; never late', () => {
+    const still = press(0.004)!, frozen = press(0)!;
+    expect(still).toMatchObject({ cmd: 'press' });
+    expect('held' in still).toBe(false);
+    expect(frozen).toMatchObject({ cmd: 'press', held: true });
+    expect(frozen.late).toBeFalsy();
+    expect(Math.abs(frozen.t - still.t - (BAR_RULES.frozenPressMs - 500))).toBeLessThanOrEqual(34);
+  });
+  it('off (frozenPressMs 0), a frozen bar gets Press! with the still one, and nothing is held', () => {
+    const off = press(0, { ...BAR_RULES, frozenPressMs: 0 })!;
+    expect('held' in off).toBe(false);
+    expect(Math.abs(off.t - press(0.004)!.t)).toBeLessThanOrEqual(34);
+  });
+});
+
