@@ -322,6 +322,14 @@ describe('the stuck-track guard (item 108)', () => {
         for (let k = 0; k < 12; k++) p[first + k] = [p[first + k][0], 0.5 + (k % 2) * 0.0007, 0.42, 0.6];
         p[first + 1] = [p[first + 1][0], 0.5, 0.47, 0.6];
         for (const n of [1, 2, 3, 4]) expect(stuckStretches(fed(p, n), CT), `fed ${n}x`).toEqual([]);
+        // and at 30 fps: one frame, the off frame, then 22 frames still (0.73 s)
+        const gap = 1000 / 30, cam: BarPoint[] = [];
+        for (let k = 0; k * gap <= 6000; k++) {
+          const t = k * gap, at = Math.round((t - 3000) / gap);
+          cam.push(t >= 3000 - 1e-6 && at < 24 ? [t, 0.5 + (at % 2) * 0.0007, at === 1 ? 0.47 : 0.42, 0.6] : [t, 0.3 + k * 0.004, 0.3 + k * 0.004, 0.6]);
+        }
+        const fed30 = (n: number) => cam.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (gap / n), q[1], q[2], q[3]] as BarPoint));
+        for (const n of [1, 2, 3, 4]) expect(stuckStretches(fed30(n), CT), `30 fps, fed ${n}x`).toEqual([]);
       });
       it('a stretch stuck without the carry is still stuck, however it moves', () => {
         const p = path(GOOD);
