@@ -152,6 +152,14 @@ describe('on the meet stage', () => {
     expect(meet).toContain("go(w.again === 'spot' ? 'lift' : 'refilm')");
     expect(meet).toContain('/turned-void');
   });
+  it('item 112, 5.14c: on a short landscape screen the void sheet holds the panel, so its text scrolls above the pinned button', () => {
+    expect(meet).toContain("className={`panel${phase === 'void' ? ' void-panel' : ''}`}");
+    const at = (r: string) => css.indexOf(r);
+    expect(at('.try-app.land .try-stagecol .panel.void-panel { overflow-y: hidden; }')).toBeGreaterThan(at('.try-app.land .try-stagecol .panel { width: 340px;'));
+    expect(css).toContain('.try-app.land .try-stagecol .panel.void-panel .panel-in { height: 100%; }');
+    expect(css).toContain('.void-text { min-height: 0; overflow-y: auto; }');
+    expect(css).toContain('.void-sheet.under .try-actions { border-top-color: var(--rule); }');
+  });
   it('the motion step comes once, before the first bench\'s camera', () => {
     expect(meet).toContain("if (bench && !asked && m !== 'sample' && m !== 'resume' && orientRef.current.needsAsk) {");
   });

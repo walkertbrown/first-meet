@@ -1283,7 +1283,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           {isSample && sample && <div className="credit">{sample.credit}</div>}
         </div>
 
-        <div className="panel" aria-hidden={!panelOpen}>
+        {/* the void sheet holds the panel to the screen, so its text scrolls above the pinned button (5.14c) */}
+        <div className={`panel${phase === 'void' ? ' void-panel' : ''}`} aria-hidden={!panelOpen}>
           <div className="panel-in">
             {slow && <p className="small">{STAGE_WORDS.slowModel}</p>}
             {phase === 'spot-done' && (
