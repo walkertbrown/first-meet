@@ -48,6 +48,17 @@ describe("the bench's command_times extras", () => {
     // and the times are still checked
     expect(checkCommandTimes(ct({ press: 9000 }), 'bench', 8000)).toBe('outside_clip');
   });
+  it("plate_tap's t is the tap's ms in the recording: kept, checked inside the clip, and optional (item 110)", () => {
+    const at = (t: unknown) => ct({ press: 4300, plate_tap: { ...TAP, t } });
+    expect(plateTap(at(1500))).toEqual({ ...TAP, t: 1500 });
+    expect(plateTap(at(0))).toEqual({ ...TAP, t: 0 });
+    expect(checkCommandTimes(at(1500), 'bench', 8000)).toBeNull();
+    expect(checkCommandTimes(at(8000), 'bench', 8000)).toBeNull();
+    expect(checkCommandTimes(at(8001), 'bench', 8000)).toBe('outside_clip');
+    for (const bad of [-1, 'soon', null, Number.NaN]) expect(checkCommandTimes(at(bad), 'bench', 8000), String(bad)).toBe('not_a_number');
+    // an old phone's has no t: the server's tracker starts at the clip's first frame
+    expect(plateTap(CT)).not.toHaveProperty('t');
+  });
 });
 
 describe('measureBar', () => {
@@ -175,6 +186,31 @@ describe('the stuck-track guard (item 108)', () => {
     expect(stuckStretches(wobble, CT)).toEqual([]);
   });
 
+  // Item 114's hole on the fallback (The Playner, Nov 20, 10:24 AM): a frozen track whose points are exactly
+  // identical for 1 s is stuck on both cadences. On the refresh tick the grouping makes it one long "camera frame",
+  // but the stretch is counted in points x the path's frame gap, so it's still 1 s.
+  it('a frozen track exactly identical for 1 s is stuck, one point per camera frame and on the refresh tick', () => {
+    for (const fps of [30, 20, 15]) {
+      const gap = 1000 / fps;
+      const cam: BarPoint[] = [];
+      for (let k = 0; k * gap <= 6000; k++) {
+        const t = k * gap, still = t >= 3000 && t < 4000;
+        cam.push([t, still ? 0.5 : 0.3 + k * 0.004, still ? 0.42 : 0.3 + k * 0.004, 0.6]);
+      }
+      const refresh = cam.flatMap((q, k) => {
+        const next = cam[k + 1]?.[0] ?? q[0] + gap, out: BarPoint[] = [];
+        for (let t = q[0]; t < next - 1e-6; t += 1000 / 60) out.push([t, q[1], q[2], q[3]]);
+        return out;
+      });
+      for (const [how, p] of [['frame', cam], ['refresh', refresh]] as const) {
+        const st = stuckStretches(p, CT);
+        expect(st, `${fps} fps, ${how}`).toHaveLength(1);
+        expect(st[0][0], `${fps} fps, ${how}`).toBeCloseTo(3000, 0);
+        expect(st[0][1], `${fps} fps, ${how}`).toBeGreaterThan(3900);
+      }
+    }
+  });
+
   // Item 113 (3.4b, "One off frame doesn't end a stretch"; The Playner, Nov 20, 9:58 AM)
   describe('one off frame does not end a stretch (item 113)', () => {
     const A = 3000, N = 7; // two 7-frame halves at 15 fps: each 0.47 s, under 0.8 s alone
@@ -276,6 +312,16 @@ describe('the stuck-track guard (item 108)', () => {
             expect(stuckStretches(p, CT), `${fps} fps, each frame ${per}x`).toHaveLength(1);
           }
         }
+      });
+      it("with no step to measure, nothing is carried: an off frame as a stretch's second frame (VibeSearch, 10:25 AM)", () => {
+        // a real bar moving 0.0007 a frame: one frame, the off frame, then 10 frames still (0.67 s at 15 fps). Carried,
+        // it would be 12 frames, 0.8 s, and stuck
+        const fed = (p: BarPoint[], n: number) => p.flatMap(q => Array.from({ length: n }, (_, k) => [q[0] + k * (STEP / n), q[1], q[2], q[3]] as BarPoint));
+        const p = path(GOOD);
+        const first = p.findIndex(q => q[0] >= A);
+        for (let k = 0; k < 12; k++) p[first + k] = [p[first + k][0], 0.5 + (k % 2) * 0.0007, 0.42, 0.6];
+        p[first + 1] = [p[first + 1][0], 0.5, 0.47, 0.6];
+        for (const n of [1, 2, 3, 4]) expect(stuckStretches(fed(p, n), CT), `fed ${n}x`).toEqual([]);
       });
       it('a stretch stuck without the carry is still stuck, however it moves', () => {
         const p = path(GOOD);

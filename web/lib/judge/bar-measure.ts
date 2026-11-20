@@ -8,8 +8,12 @@
 import { BAR_RULES, BarCaller, type BarCmd, type BarRel } from './bar-caller';
 import type { CommandTimes } from './zoom';
 
-/** Where she tapped and the template's size, fractions of the frame (3.4b). */
-export type PlateTap = { x: number; y: number; size: number };
+/**
+ * Where she tapped and the template's size, fractions of the frame, and `t`, the tap's ms in the recording (3.4b,
+ * item 110: the last tap's; 0 for a first tap, which comes just before the recording starts). An old phone's has no
+ * `t`, and the server's tracker starts at the clip's first frame.
+ */
+export type PlateTap = { x: number; y: number; size: number; t?: number };
 export type PressLateWhy = 'still' | 'lost';
 /** A path point as the worker posts it: [t ms, x, y, score], x and y fractions of the frame. */
 export type BarPoint = [number, number, number, number];
@@ -20,11 +24,13 @@ export const isCommandExtra = (k: string) => (COMMAND_EXTRAS as readonly string[
 
 const frac = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
 
-/** `plate_tap` from command_times, when it's whole: x and y on the frame, a size above 0. */
+/** `plate_tap` from command_times, when it's whole: x and y on the frame, a size above 0, and a `t` of 0 or more if any. */
 export function plateTap(ct: CommandTimes | null | undefined): PlateTap | null {
   const t = (ct as Record<string, unknown> | null | undefined)?.plate_tap as Partial<PlateTap> | undefined;
   if (!t || typeof t !== 'object') return null;
-  return frac(t.x) && frac(t.y) && frac(t.size) && t.size! > 0 ? { x: t.x!, y: t.y!, size: t.size! } : null;
+  if (!(frac(t.x) && frac(t.y) && frac(t.size) && t.size! > 0)) return null;
+  if (!('t' in t)) return { x: t.x!, y: t.y!, size: t.size! };
+  return typeof t.t === 'number' && Number.isFinite(t.t) && t.t >= 0 ? { x: t.x!, y: t.y!, size: t.size!, t: t.t } : null;
 }
 
 export function pressLateWhy(ct: CommandTimes | null | undefined): PressLateWhy | null {
@@ -122,7 +128,9 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
       while (q + 1 < k && w[q + 1][0] <= w[k][0] - camera * 0.9 + eps) q++;
       if (q >= i) steps.push(Math.hypot(w[k][1] - w[q][1], w[k][2] - w[q][2]));
     }
-    return steps.length ? steps.sort((x, y) => x - y)[Math.floor(steps.length / 2)] : 0;
+    // with no step to measure, nothing is carried (VibeSearch, Nov 20, 10:25 AM: an answer of 0 carried an off frame
+    // that came a stretch's second camera frame, whatever the bar was doing)
+    return steps.length ? steps.sort((x, y) => x - y)[Math.floor(steps.length / 2)] : Infinity;
   };
   for (let i = 0; i < w.length; i++) {
     // the furthest j with every point i..j inside a still box (each start grows its own box, so an off frame
