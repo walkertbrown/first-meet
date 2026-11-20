@@ -2,7 +2,7 @@
 // only; the phone's lines count every real phone's filming, demo and test meets included, never a sample; the
 // server's lines count every run. DEMO also has its own counts (5.36).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers, lifters, meets } from '../../web/db/schema';
 import { benchRows, commitsDiffer, errorText, failedOf, opsNumbers, opsSections, poseRunRows, uploadRows, type OpsNumbers } from '../../web/lib/ops';
@@ -184,11 +184,12 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     const [real] = await db.insert(meets).values({ slug: 'm1', name: 'Meet 1', kind: 'real', status: 'open' }).returning();
     const [demo] = await db.insert(meets).values({ slug: 'demo', name: 'Demo', kind: 'demo', status: 'open' }).returning();
     const [test] = await db.insert(meets).values({ slug: 'test', name: 'Test', kind: 'test', status: 'open' }).returning();
-    type Row = { status: string; call?: 'white' | 'red'; shadow?: 'white' | 'red'; referee?: boolean; uploaded?: boolean; sinking?: boolean; lost?: boolean; lift?: 'bench' | 'squat'; home?: boolean; sample?: boolean };
+    type Row = { status: string; call?: 'white' | 'red'; shadow?: 'white' | 'red'; referee?: boolean; uploaded?: boolean; sinking?: boolean; lost?: boolean; lift?: 'bench' | 'squat'; home?: boolean; sample?: boolean; name?: string; lifterId?: string };
     const mk = async (meetId: string, r: Row) => {
-      const [l] = await db.insert(lifters).values({ cardName: 'L', isDemo: meetId === demo.id, division: r.home ? 'home' : 'barbell' }).returning();
+      const [l] = r.lifterId ? await db.select().from(lifters).where(eq(lifters.id, r.lifterId))
+        : await db.insert(lifters).values({ cardName: r.name ?? 'L', isDemo: meetId === demo.id, division: r.home ? 'home' : 'barbell' }).returning();
       const [a] = await db.insert(attempts).values({
-        lifterId: l.id, meetId, lift: r.lift ?? 'bench', number: 1, weight: 60, status: r.status as never,
+        lifterId: l.id, meetId, lift: r.lift ?? 'bench', number: r.lifterId ? 2 : 1, weight: 60, status: r.status as never,
         call: r.call ?? null, lights: r.call ? [r.call, r.call, r.call] : null,
         shadowLights: r.shadow ? [r.shadow, r.shadow, r.shadow] : null,
         uploadedAt: r.uploaded ? new Date() : null, isSampleClip: !!r.sample,
@@ -204,7 +205,7 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     // waiting for a referee: filmed, not decided
     await mk(real.id, { status: 'close_call', shadow: 'red', uploaded: true });
     // no Start! twice, still declared
-    const voided = await mk(real.id, { status: 'declared' });
+    const voided = await mk(real.id, { status: 'declared', name: 'Ana' });
     // a squat with a void doesn't count
     const squat = await mk(real.id, { status: 'declared', lift: 'squat' });
     // item 94: the demo and test meets' benches were filmed on a real phone, so they count in the tracker's three
@@ -228,21 +229,46 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
       { kind: 'lost_bar_void', attemptId: d, detail: { lift: 'bench', why: 'no_start' } },
       { kind: 'turned_void', attemptId: squat, detail: { lift: 'squat' } },
     ]);
+    // item 111's by-lifter list: Bea voided once on each of two attempts in the meet (listed, 2); Cy once (never);
+    // a demo lifter twice (listed: the demo's bench is filmed on a real phone); a sample's twice and a Home press
+    // set's twice (never)
+    const bea1 = await mk(real.id, { status: 'declared', name: 'Bea' });
+    const bea = (await db.select().from(attempts).where(eq(attempts.id, bea1)))[0].lifterId;
+    const bea2 = await mk(real.id, { status: 'declared', lifterId: bea });
+    const cy = await mk(real.id, { status: 'declared', name: 'Cy' });
+    const dee = await mk(demo.id, { status: 'declared', name: 'Dee' });
+    const v = (attemptId: string) => ({ kind: 'lost_bar_void', attemptId, detail: { lift: 'bench', why: 'no_start' } });
+    await db.insert(events).values([v(bea1), v(bea2), v(cy), v(dee), v(dee), v(s), v(pressVoid)]);
     n = await opsNumbers(db, BUDGETS, null);
   });
   afterAll(async () => drop?.());
 
+  it('lists each lifter with No Start! twice or more in a meet, by meet and name, with her count, under the counts', () => {
+    expect(new Set(n.bench.noStartTwice.map(x => JSON.stringify(x)))).toEqual(new Set([
+      { meet: 'Meet 1', name: 'Ana', voids: 2 }, { meet: 'Meet 1', name: 'Bea', voids: 2 }, { meet: 'Demo', name: 'Dee', voids: 2 },
+    ].map(x => JSON.stringify(x))));
+    const rows = opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows;
+    const at = rows.findIndex(r => r.label === 'No Start! twice or more in a meet');
+    expect(at).toBe(rows.length - 4);
+    expect(rows[at].value).toBe('3');
+    expect(rows.slice(at + 1).map(r => r.label).sort()).toEqual(['Demo · Dee', 'Meet 1 · Ana', 'Meet 1 · Bea']);
+    expect(rows.slice(at + 1).every(r => r.value === '2')).toBe(true);
+  });
+
   it('compares the bar\'s call with the referees\' on decided real meet bench attempts, and counts the bench going wrong over every real phone\'s filming', () => {
-    // filmings: 5 real + demo + test uploaded, and 2 real + 1 demo no-Start! voids; never the sample's
-    expect(n.bench).toEqual({ decided: 4, agree: 1, whiteOnRed: 1, redOnWhite: 1, filmings: 10, pressWhileSinking: 3, lostAfterStart: 2, noStartVoids: 3, homePressSets: 3, homePressReferee: 2 });
-    expect(opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows).toEqual([
+    // filmings: 5 real + demo + test uploaded, and 2 real + 1 demo no-Start! voids, and the list's 3 real + 2 demo;
+    // never the sample's or the Home press set's
+    const { noStartTwice, ...counts } = n.bench;
+    expect(noStartTwice).toHaveLength(3);
+    expect(counts).toEqual({ decided: 4, agree: 1, whiteOnRed: 1, redOnWhite: 1, filmings: 15, pressWhileSinking: 3, lostAfterStart: 2, noStartVoids: 8, homePressSets: 3, homePressReferee: 2 });
+    expect(opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows.slice(0, 8)).toEqual([
       { label: 'Decided', value: '4' },
       { label: 'Agree', value: '1' },
       { label: 'White on a red', value: '1' },
       { label: 'Red on a white', value: '1' },
-      { label: 'Press! while sinking', value: '3 of 10 · 30%' },
-      { label: 'Lost the bar after Start!', value: '2 of 10 · 20%' },
-      { label: 'No Start!, filmed again', value: '3 of 10 · 30%' },
+      { label: 'Press! while sinking', value: '3 of 15 · 20%' },
+      { label: 'Lost the bar after Start!', value: '2 of 15 · 13%' },
+      { label: 'No Start!, filmed again', value: '8 of 15 · 53%' },
       { label: 'Home press sets to a referee', value: '67%' },
     ]);
   });
@@ -267,8 +293,8 @@ describe('ops words', () => {
     ]);
   });
   it('benchRows with nothing yet', () => {
-    expect(benchRows({ decided: 0, agree: 0, whiteOnRed: 0, redOnWhite: 0, filmings: 0, pressWhileSinking: 0, lostAfterStart: 0, noStartVoids: 0, homePressSets: 0, homePressReferee: 0 }).map(r => r.value))
-      .toEqual(['0', '0', '0', '0', '0 of 0', '0 of 0', '0 of 0', '—']);
+    expect(benchRows({ decided: 0, agree: 0, whiteOnRed: 0, redOnWhite: 0, filmings: 0, pressWhileSinking: 0, lostAfterStart: 0, noStartVoids: 0, homePressSets: 0, homePressReferee: 0, noStartTwice: [] }).map(r => r.value))
+      .toEqual(['0', '0', '0', '0', '0 of 0', '0 of 0', '0 of 0', '—', '—']);
   });
   it('commitsDiffer only when both commits are known and differ', () => {
     expect(commitsDiffer({ web: 'abc1234', judge: 'abc1234' })).toBe(false);

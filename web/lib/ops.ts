@@ -24,6 +24,9 @@ export type OpsNumbers = {
     filmings: number; pressWhileSinking: number; lostAfterStart: number; noStartVoids: number;
     /** 3.4c: real meet Home press sets decided or waiting, and those that went to a referee (a close call). */
     homePressSets: number; homePressReferee: number;
+    /** 3.4b, item 111: "No Start! twice or more in a meet", each lifter it happened to, by meet and name, with her count
+     *  (every `lost_bar_void` of hers in that meet, over the same bench filmings as "No Start!, filmed again"). */
+    noStartTwice: { meet: string; name: string; voids: number }[];
   };
   render: {
     workersLive: number; startedHour: number; failedHour: number; attemptsPerWorker: number | null; requeuedHour: number;
@@ -128,6 +131,15 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       (select count(*) from press) as press_sets,
       (select count(*) from press where status = 'close_call' or (measures->>'referee')::boolean is true) as press_referee`);
 
+  // 3.4b, item 111: one lifter's set-up can void her every time and still sit under 10%, so the lifters it happened to
+  // twice or more in one meet are listed, over the same bench filmings as the count above (the sample's never)
+  const twice = await db.execute<Record<string, unknown>>(sql`
+    select m.name as meet, l.card_name as name, count(*)::int as voids
+    from events e join attempts a on a.id = e.attempt_id join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
+    where e.kind = 'lost_bar_void' and a.lift = 'bench' and ${REAL_PHONE} and l.division <> 'home'
+    group by m.id, m.name, l.id, l.card_name having count(*) >= 2
+    order by max(e.at) desc, m.name, l.card_name limit 50`);
+
   // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device: every real
   // phone's, the demo and test meets included, never a sample (none is uploaded from a phone).
   // An upload tried is a started upload, or one the phone turned down before it began (too big).
@@ -194,6 +206,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       decided: num(b?.decided), agree: num(b?.agree), whiteOnRed: num(b?.white_on_red), redOnWhite: num(b?.red_on_white),
       filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids),
       homePressSets: num(b?.press_sets), homePressReferee: num(b?.press_referee),
+      noStartTwice: twice.map(x => ({ meet: String(x.meet), name: String(x.name), voids: num(x.voids) })),
     },
     render: {
       workersLive: num(r.live), startedHour: num(r.started_hour), failedHour: num(r.failed_hour),
@@ -270,6 +283,9 @@ export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
     { label: 'No Start!, filmed again', value: failedOf(b.noStartVoids, b.filmings) },
     // 3.4c: "Home press sets to a referee · <x>%"
     { label: 'Home press sets to a referee', value: b.homePressSets ? `${Math.round((b.homePressReferee / b.homePressSets) * 100)}%` : '—' },
+    // under the counts (item 111): a heading row, then each lifter by meet and name with her count
+    { label: 'No Start! twice or more in a meet', value: b.noStartTwice.length ? String(b.noStartTwice.length) : '—' },
+    ...b.noStartTwice.map(x => ({ label: `${x.meet} · ${x.name}`, value: String(x.voids) })),
   ];
 }
 
