@@ -18,7 +18,9 @@ KNOWN holds the one allowed miss of the eye check: ak3m3 at 15 fps, 0.05 lower, 
 fails, and so does a known one that stops missing, so the list never goes stale.
 
 Item 113: IA0P rep 2 (its track froze through the pause) and IA0P-r3-stuck read "not measured" on every camera, tick
-and plant, since item 108's guard carries a stuck stretch through one off camera frame.
+and plant, since item 108's guard carries a stuck stretch through one off camera frame. And no real pause of 0.5 s or
+more by eye that's measured on the recorded trace reads "not measured" on any run, but for LOST_REAL (KrDo at 15 fps,
+with The Playner).
 
     python3 -m unittest discover tests/referee-bot
 """
@@ -42,6 +44,12 @@ KNOWN = {
 }
 # item 113: read "not measured" on every run
 STUCK = ('IA0P-r2', 'IA0P-r3-stuck')
+# NerdCider's third check on item 113 (10:00 AM): a real pause of 0.5 s or more by eye that's measured at 30 fps on the
+# grid, unplanted, is measured on every run. KrDo (eye 1.07 s) at 15 fps on the grid and the tick isn't since the
+# guard carries one off frame: her real still bar wobbles 0.0021 x 0.0026 of the frame, and each single frame off the
+# 0.002 box is carried, so 3.97-4.70 s reads stuck. Sent to The Playner to rule on (Nov 20); printed on every run, and
+# the test fails if it changes.
+LOST_REAL = {('KrDo', 15, t, d) for t in ('grid', 'tick') for d in (0, 0.05, -0.05)}
 
 _runs = None
 
@@ -111,6 +119,14 @@ def key(k):
     return f'{k[0]} at {k[1]} fps, {k[2]}, planted {k[3]:+.2f}'
 
 
+def lost_real():
+    """{(bench, camera, tick, plant)} where a real pause of 0.5 s or more by eye, measured on the recorded trace, reads
+    "not measured"."""
+    rs = runs()
+    measured = {x['id'] for x in rs[0]['rows'] if (x['eye_pause_s'] or 0) >= 0.5 and x['pause_s'] is not None}
+    return {(x['id'], r['camera'], r['tick'], r['plant']) for r in rs for x in r['rows'] if x['id'] in measured and x['pause_s'] is None}
+
+
 class PauseAgainstEye(unittest.TestCase):
     def test_runs_cover_every_camera_tick_and_plant(self):
         got = {(r['camera'], r['tick'], r['plant']) for r in runs()}
@@ -150,6 +166,15 @@ class PauseAgainstEye(unittest.TestCase):
                if x['id'] in STUCK and x['pause_s'] is not None]
         self.assertEqual(bad, [], '\n'.join(bad))
         self.assertEqual({x['id'] for r in runs() for x in r['rows'] if x['id'] in STUCK}, set(STUCK))
+
+    def test_no_real_pause_newly_reads_not_measured(self):
+        got = lost_real()
+        if got:
+            print(f'\n   -- test_pause.py: {len(got)} runs where a real pause of 0.5 s or more reads "not measured", with The Playner', file=sys.stderr)
+            for k in sorted(got, key=lambda k: (k[0], -k[1], k[2], k[3])):
+                print(f'      {key(k)}', file=sys.stderr)
+        self.assertEqual(sorted(got - LOST_REAL), [], 'new real pauses read "not measured"')
+        self.assertEqual(sorted(LOST_REAL - got), [], 'known ones that are measured again (take them out of LOST_REAL)')
 
     def test_8qzw_rep_1_is_recorded(self):
         line = []
