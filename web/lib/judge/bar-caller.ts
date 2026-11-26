@@ -264,7 +264,7 @@ export class BarCaller {
       // item 116: lost after a Press! from stillness (lost, stuck, or no frame): "Rack!" 3 s after the loss, unless the track
       // comes back first; a stuck stretch counts from when the guard marks it, 1.5 s in (3.4b)
       if (ok) this.pressLostSince = null; else this.pressLostSince ??= t;
-      // on a seen frame the no-rep rule runs after the back-up Rack! below, as it always has
+      // on a seen frame the no-rep rule runs at the end of the pressed block, after the back-up Rack!
       const c = this.pressedTimeRules(t, !ok); if (c) return c;
     }
     if (ok) this.lostSince = null;
@@ -321,6 +321,9 @@ export class BarCaller {
         if (this.backSince === null) this.backSince = t;
         if (t - this.backSince >= r.rackHoldMs) { this.state = 'done'; return { cmd: 'rack', t, rackWhy: 'up' }; }
       } else this.backSince = null;
+      // the no-rep rule on a seen frame, after the back-up Rack! (3.4b: 20 s from "Press!" with no rep); a failed rep,
+      // seen on her chest or stuck halfway, ends here on "refresh" and on the server, where no tick runs
+      if (t - this.pressAt! >= r.noRepMs) { this.state = 'done'; return { cmd: 'rack', t, noRep: true, rackWhy: 'no_rep' }; }
     }
     return null;
   }
