@@ -48,6 +48,7 @@ export const BENCH_LINES = {
   lateLost: 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.',
   pauseLost: 'Pause: not measured. The phone lost the bar.',
   lostNear: "The phone lost the bar around the pause, so its Press! may have come early. If she pressed on or after the call, don't give a red for the pause.",
+  rackLost: "The phone lost the bar during the press and called Rack! 3 s later. Judge the lockout by eye, from the clip. If she was still pressing up when Rack! came, that's the phone's mistake: don't give a red for the lockout.",
 } as const;
 
 /**
@@ -77,6 +78,8 @@ export function measuredLines(reason: string | null, m: Record<string, unknown> 
     if (why === 'lost') out.push(BENCH_LINES.lateLost);
     // item 108: the server's path lost or stuck near the pause, with Press! not late from a loss
     else if (m?.pause_lost === true) out.push(BENCH_LINES.lostNear);
+    // item 116: Rack! 3 s after a loss, so the phone didn't judge the lockout; only on rack_why lost, never up or no_rep
+    if (bench.commandTimes?.rack_why === 'lost') out.push(BENCH_LINES.rackLost);
     return out;
   }
   const depth = n('depth');
