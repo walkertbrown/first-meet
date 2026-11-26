@@ -49,6 +49,8 @@
   "frozenPressMs": 1000,
   "frozenStill": 0.002,
   "guardAfterPress": "from",
+  "samePoint": false,
+  "samePointMs": 1500,
   "sinkAfterPress": 0.01,
   "trainingNoDescentMs": 8000
  },

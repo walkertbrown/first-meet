@@ -95,6 +95,8 @@ export class BarCaller {
   stopAt: number | null = null;
   /** Item 116 (3.4b, "Lost after a normal Press!"): when the bar was lost after a Press! from stillness; null while it's seen. */
   pressLostSince: number | null = null;
+  /** Item 117: the first of the seen points in a row with exactly this frame's x and y, after a normal Press!. */
+  private sameFrom: number | null = null;
   /** item 109: the frozen-track rule held Press! back on this rep */
   held = false;
   /** the last positive gaps between points, for the path's median gap */
@@ -235,6 +237,19 @@ export class BarCaller {
         ok = false; this.frozeAt.push(t); this.frozeFrom.push(t - fm);
         // The stuck stretch was never the bar: take it out of the history, so no stillness is read from it.
         if (this.lostSince === null) { const from = t - fm; this.hist = this.hist.filter(q => q.t < from); this.speeds = this.speeds.filter(q => q.t < from); }
+      }
+    }
+    // Item 117 (3.4b, "Lost after a normal Press!"; `samePoint`, off until Walker's yes): after a normal Press!, a seen point
+    // with exactly the same x and y for samePointMs of camera time, at any score of lostScore or more, is marked as the
+    // stuck guard marks a stretch, counted from Press! at the earliest. A re-read frozen picture gives the same point; a
+    // filmed bar never repeats one (the 22 traces). Its length is last less first plus the median gap, as the guard's.
+    if (r.stuckRule && r.samePoint && this.state === 'pressed' && !this.lostPress) {
+      const q = this.all.at(-2);
+      const same = ok && !!q && q.score >= r.lostScore && t - q.t < (r.noFrameMs ?? 500) && q.x === p.x && q.y === p.y;
+      this.sameFrom = same ? (this.sameFrom ?? q!.t) : null;
+      const from = this.sameFrom === null ? null : Math.max(this.sameFrom, this.pressAt!);
+      if (from !== null && ok && t - from + this.medGap() >= r.samePointMs) {
+        ok = false; this.frozeAt.push(t); this.frozeFrom.push(from);
       }
     }
     if (this.state === 'waiting' && this.leftAt !== null) {
