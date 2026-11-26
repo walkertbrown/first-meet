@@ -25,6 +25,8 @@ export type Status = 'PASS' | 'FAIL' | 'NOT SHOWN';
 export type Row = {
   id: string; rep: number; group: 'meet' | 'paused' | 'bounced'; inHand: boolean;
   start: number | null; press: number | null; late: boolean; rack: number | null; noRep: boolean; lostBeforeStart: number | null;
+  /** item 116: why the first Rack! came (`rack_why`) */
+  rackWhy?: string | null;
   /** the loss before Start! was the stuck rule's (a score of freezeScore or more, still), not a low score */
   stuckBeforeStart: boolean;
   leftHooks: number | null; voided: number | null; voidAfterHooks: number | null; voidAtLoss: boolean; voidOk: boolean;
@@ -217,7 +219,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     const run = (holds: Hold[]) => {
       const c = new BenchCaller({ x: pj.mark.x, y: pj.mark.y }, { w: pj.w, h: pj.h }, rules, racked);
       const ct: Record<string, number> = {}, ctClip: Record<string, number> = {}, inHold: Record<string, boolean> = {};
-      let late = false, noRep = false, voided: number | null = null, off = 0, holding: string | null = null;
+      let late = false, noRep = false, voided: number | null = null, off = 0, holding: string | null = null, rackWhy: string | null = null;
       const log: string[] = [], fed: { t: number; y: number }[] = [], waits: Row['waits'] = [], path: BarPoint[] = [];
       let state1: string | null = null, state2: string | null = null;
       const feed = (t: number, clip: number, x: number, y: number, sc: number) => {
@@ -228,7 +230,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
         if (cmd?.void) { voided = cmd.t / 1000; log.push(`Rack!(void) ${(cmd.t / 1000).toFixed(2)}`); return; }
         if (cmd) {
           if (ct[cmd.cmd] === undefined) { ct[cmd.cmd] = cmd.t / 1000; ctClip[cmd.cmd] = clip / 1000; inHold[cmd.cmd] = holding === cmd.cmd; }
-          if (cmd.late) late = true; if (cmd.noRep) noRep = true;
+          if (cmd.late) late = true; if (cmd.noRep) noRep = true; if (cmd.cmd === 'rack' && rackWhy === null) rackWhy = cmd.rackWhy ?? null;
           log.push(`${cmd.cmd}${cmd.late ? '(late)' : ''}${cmd.noRep ? '(no rep)' : ''} ${(cmd.t / 1000).toFixed(2)}`);
         }
       };
@@ -255,7 +257,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
         feed(t + off, t, x, y, sc);
       }
       while (todo.length && voided == null) hold(todo.shift()!); // a hold at the clip's end (reps 2 and on: Rack!)
-      return { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, state1, state2, path };
+      return { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, state1, state2, path, rackWhy };
     };
     const holds: Hold[] = [];
     let r = run(holds);
@@ -269,7 +271,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
     if (rep > 1 && r.ct.press !== undefined && r.ct.rack === undefined && r.voided == null && e.backUp != null) {
       holds.push({ what: 'rack', ...stillestStretch(pts, ref, pj.w / pj.h, e.backUp * 1000, pts.at(-1)![0], true) }); r = run(holds);
     }
-    const { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, path } = r;
+    const { c, ct, ctClip, inHold, late, noRep, voided, log, fed, waits, path, rackWhy } = r;
 
     const sh = (sec: number | null) => (sec == null ? null : sec + waits.filter(w => w.at < sec).reduce((a, w) => a + w.s, 0));
     const E = { settled: e.settled, descent: sh(e.descent)!, stop: sh(e.stop)!, pauseEnd: sh(e.pauseEnd)!, backUp: sh(e.backUp) };
@@ -312,7 +314,7 @@ export function score(rules: Rel = RULES, tracesDir = join(HERE, 'data', 'traces
       return lo;
     };
     rows.push({
-      id, rep, group, inHand: !racked, start: ct.start ?? null, press: ct.press ?? null, late, rack: ct.rack ?? null, noRep,
+      id, rep, group, inHand: !racked, start: ct.start ?? null, press: ct.press ?? null, late, rack: ct.rack ?? null, rackWhy, noRep,
       lostBeforeStart: lostAt, stuckBeforeStart: c.lostBeforeStart != null && c.frozeAt.includes(c.lostBeforeStart), leftHooks, voided, voidAfterHooks, voidAtLoss, voidOk,
       startIn: ct.start == null ? null : inHold.start ? 'replay' : 'clip', pressIn, pressClip: ctClip.press ?? null,
       settled: E.settled, descent: E.descent, stop: E.stop, pauseEnd: E.pauseEnd, backUpEye: E.backUp, delay,

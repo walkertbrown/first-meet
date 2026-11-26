@@ -92,6 +92,31 @@ export class BarStage {
     }
     return out;
   }
+
+  /**
+   * Item 114 (3.2, "The time rules keep running with no frames"): the refresh tick with no new camera frame, at `t` on
+   * the frames' clock. The caller's time rules run (bar-caller.ts `tick`), and on the hooks, noFrameMs with no frame
+   * counts as lost from the last frame, so the 1 s tap loss still comes. Nothing is added to the path.
+   */
+  idle(t: number): BarStageEvent[] {
+    if (this.state === 'tap' || this.state === 'done' || !this.caller) return [];
+    const c = this.caller, last = this.path.at(-1);
+    if (!last || t <= last.t) return [];
+    if (this.state === 'racked' && c.state === 'racked') {
+      if (t - last.t >= (this.r.noFrameMs ?? 500)) this.lowSince ??= last.t;
+      if (this.lowSince !== null && t - this.lowSince >= this.r.tapLostMs) {
+        this.state = 'tap'; this.tracker = null; this.caller = null; this.plateTap = null; this.path = [];
+        return [{ type: 'lost', t }];
+      }
+      return [];
+    }
+    const cmd = c.tick(t);
+    if (!cmd) return [];
+    this.cmds.push(cmd);
+    if (cmd.cmd === 'start') this.state = 'lifting';
+    if (cmd.cmd === 'rack') { this.state = 'done'; this.voided = !!cmd.void; }
+    return [{ type: 'cmd', ...cmd }];
+  }
 }
 
 const round4 = (v: number) => Math.round(v * 10_000) / 10_000;

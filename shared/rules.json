@@ -109,6 +109,7 @@
     "stuckMs": 800,
     "stuckCarryStep": 0.0002,
     "pauseLostMs": 500,
+    "noFrameMs": 500,
     "voidRule": true,
     "voidMs": 5000,
     "lostLateMs": 2000,
@@ -116,6 +117,7 @@
     "tapLostMs": 1000,
     "frozenPressMs": 1000,
     "frozenStill": 0.002,
+    "guardAfterPress": "from",
     "sinkAfterPress": 0.01,
     "trainingNoDescentMs": 8000
   }

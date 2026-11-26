@@ -5,7 +5,7 @@
 //
 // The unit is the frame's height; y grows downward. Points under `lostScore`, and stretches the caller's stuck-track
 // rule took out, count as lost.
-import { BAR_RULES, BarCaller, type BarCmd, type BarRel } from './bar-caller';
+import { BAR_RULES, BarCaller, RACK_WHYS, type BarCmd, type BarRel } from './bar-caller';
 import type { CommandTimes } from './zoom';
 
 /**
@@ -19,7 +19,7 @@ export type PressLateWhy = 'still' | 'lost';
 export type BarPoint = [number, number, number, number];
 
 /** The keys in `command_times` that aren't command times (3.4b). */
-export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why', 'press_held'] as const;
+export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why', 'press_held', 'rack_why'] as const;
 export const isCommandExtra = (k: string) => (COMMAND_EXTRAS as readonly string[]).includes(k);
 
 const frac = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
@@ -43,6 +43,8 @@ export function extrasOk(ct: CommandTimes): boolean {
   const o = ct as Record<string, unknown>;
   if ('plate_tap' in o && !plateTap(ct)) return false;
   if ('press_late_why' in o && (!pressLateWhy(ct) || !('press_late' in o))) return false;
+  // item 116: `up`, `lost` or `no_rep`, and only with a Rack!
+  if ('rack_why' in o && (!(RACK_WHYS as readonly unknown[]).includes(o.rack_why) || !('rack' in o))) return false;
   // item 109: only ever `true`, and only with a Press! it held back
   if ('press_held' in o && (o.press_held !== true || !Object.keys(o).some(k => /^press(_late)?(_\d+)?$/.test(k)))) return false;
   return true;
