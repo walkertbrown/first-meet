@@ -14,7 +14,25 @@ import { BAR_RULES, BarCaller, type BarCmd, type BarRel } from './bar-caller';
 import { BAR_TRACK, PlateTracker, type Gray, type TrackOpts } from './plate-tracker';
 import type { PlateTap } from './bar-measure';
 
-export type BarPathPoint = { t: number; x: number; y: number; lost: boolean };
+export type BarPathPoint = { t: number; x: number; y: number; score: number; lost: boolean };
+
+/** One point of `bar_path` as the phone sends it (item 110): `[t, x, y, score, lost]`, `lost` 1 or 0. */
+export type SentBarPoint = [number, number, number, number, 0 | 1];
+
+/**
+ * The phone's path as it's sent with the upload (item 110): `t` in ms from the clip's 0 ("Bar is loaded.", on the
+ * frames' clock), which sits `zero` ms after the path's own 0; `x` and `y` to 4 places, `score` to 2. Points before
+ * the clip's 0 are left out, and so is a point whose rounded `t` isn't later than the one before.
+ */
+export function sentPath(path: readonly BarPathPoint[], zero: number): SentBarPoint[] {
+  const out: SentBarPoint[] = [];
+  for (const p of path) {
+    const t = Math.round(p.t - zero);
+    if (t < 0 || (out.length && t <= out[out.length - 1][0])) continue;
+    out.push([t, round4(p.x), round4(p.y), Math.round(p.score * 100) / 100, p.lost ? 1 : 0]);
+  }
+  return out;
+}
 
 export type BarStageEvent =
   /** where the mark sits now, fractions of the camera frame */
@@ -73,7 +91,7 @@ export class BarStage {
       for (const q of this.path) if (q.t >= from) q.lost = true;
     }
     const lost = m.score < this.r.lostScore || c.frozeAt.at(-1) === t;
-    this.path.push({ t, x: m.x, y: m.y, lost });
+    this.path.push({ t, x: m.x, y: m.y, score: m.score, lost });
     if (this.state === 'racked' && c.state === 'racked') {
       // lost on the hooks: under the line for tapLostMs
       this.lowSince = m.score < this.r.lostScore ? (this.lowSince ?? t) : null;

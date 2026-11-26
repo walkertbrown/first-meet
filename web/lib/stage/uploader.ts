@@ -19,6 +19,11 @@ export type Pending = {
   savedAt: number;
   /** When the phone started recording (ms since 1970): the attempt's recorded_at (3.4, 3.8). */
   recordedAt?: number;
+  /** The bench (item 110): the path the phone followed live, `[t, x, y, score, lost]` from the clip's 0. */
+  barPath?: [number, number, number, number, 0 | 1][];
+  /** The bench (item 114): how the path was fed, and what the frame callback saw. */
+  barCadence?: 'frame' | 'refresh';
+  barFrames?: { fell_back: boolean; frames: number; skipped: number };
 };
 
 export type UploadStatus =
@@ -149,7 +154,7 @@ export async function sendOnce(p: Pending, net: Net, onStatus: (s: UploadStatus)
 
 async function finish(p: Pending, api: (path: string, init?: { method?: string; body?: unknown }) => Promise<{ status: number; body: Record<string, unknown> }>,
   onStatus: (s: UploadStatus) => void, parts: { part: number; etag: string }[]) {
-  const r = await api(`/api/attempts/${p.attemptId}/uploaded`, { method: 'POST', body: { upload_id: p.uploadId, parts, command_times: p.commandTimes } });
+  const r = await api(`/api/attempts/${p.attemptId}/uploaded`, { method: 'POST', body: { upload_id: p.uploadId, parts, command_times: p.commandTimes, ...(p.barPath ? { bar_path: p.barPath, bar_cadence: p.barCadence ?? 'refresh', ...(p.barFrames ? { bar_frames: p.barFrames } : {}) } : {}) } });
   if (r.status !== 200) throw new Stop({ kind: 'refused', error: String(r.body.error ?? r.status) });
   const status = String((r.body.attempt as { status?: string } | undefined)?.status ?? 'queued');
   onStatus({ kind: 'sent', status });

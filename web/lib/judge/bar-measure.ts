@@ -19,7 +19,7 @@ export type PressLateWhy = 'still' | 'lost';
 export type BarPoint = [number, number, number, number];
 
 /** The keys in `command_times` that aren't command times (3.4b). */
-export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why', 'press_held', 'rack_why'] as const;
+export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why', 'press_held', 'rack_why', 'said_at'] as const;
 export const isCommandExtra = (k: string) => (COMMAND_EXTRAS as readonly string[]).includes(k);
 
 const frac = (v: unknown) => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
@@ -36,6 +36,21 @@ export function plateTap(ct: CommandTimes | null | undefined): PlateTap | null {
 export function pressLateWhy(ct: CommandTimes | null | undefined): PressLateWhy | null {
   const w = (ct as Record<string, unknown> | null | undefined)?.press_late_why;
   return w === 'still' || w === 'lost' ? w : null;
+}
+
+/**
+ * `said_at` (item 114): when each command's word actually played, ms on the clip's clock, by command key; for /ops
+ * only, never used to judge. Only the entries for a command in `command_times`, each a whole number of 0 or more, are
+ * kept; anything else is dropped (null when nothing is left), never a close call.
+ */
+export function cleanSaidAt(ct: Record<string, unknown>): Record<string, number> | null {
+  const s = ct.said_at;
+  if (!s || typeof s !== 'object' || Array.isArray(s)) return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(s as Record<string, unknown>)) {
+    if (!isCommandExtra(k) && typeof ct[k] === 'number' && typeof v === 'number' && Number.isFinite(v) && v >= 0) out[k] = Math.round(v);
+  }
+  return Object.keys(out).length ? out : null;
 }
 
 /** The extras are well formed, or absent: a broken one is a command_times close call, like a broken time. */
