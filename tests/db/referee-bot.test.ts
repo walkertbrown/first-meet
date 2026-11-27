@@ -14,6 +14,9 @@ import {
 import { NOT_SURE_NOTE } from '../../web/lib/referee/lamps';
 import { botQueue, botQueueLine, botSide } from '../../web/lib/referee/bot-view';
 import { changeLights } from '../../web/lib/referee';
+import { attemptState } from '../../web/lib/attempt-state';
+import { meetResult } from '../../web/lib/stage/meet-words';
+import { UNAVAILABLE_SMALL } from '../../web/lib/referee/words';
 import { lifters, meets } from '../../web/db/schema';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
@@ -117,6 +120,12 @@ describe.skipIf(!URL_)('the referee bot', () => {
       expect(a.measures).toMatchObject({ referee: true, referee_bot: true, referee_unavailable: true, referee_doubt: 'no_key' });
       const [r] = await db.select().from(reviews).where(eq(reviews.attemptId, id));
       expect(r).toMatchObject({ byBot: true, reason: 'referee_unavailable', refereeId: null, kind: 'close_call' });
+      // her phone reads the attempt's state: the doubt comes through, so her result has the line (staging e2e, Nov 27)
+      const st = await attemptState(db, id, a.lifterId);
+      expect(st.status).toBe(200);
+      const s = (st as Extract<typeof st, { status: 200 }>).attempt;
+      expect(s).toMatchObject({ call: 'white', reason: 'referee_unavailable' });
+      expect(meetResult(s)).toMatchObject({ title: 'Good lift', small: UNAVAILABLE_SMALL });
     }
     expect(await notRunning(db, { REFEREE_BOT: 'on' })).toBe('no key');
     // those doubts still say why for 30 minutes, whatever the switch

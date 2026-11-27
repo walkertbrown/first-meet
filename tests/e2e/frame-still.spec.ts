@@ -135,6 +135,13 @@ async function refereeWhites(browser: Page) {
   await ref.close();
 }
 
+/** The rows as they are, before the checks run on them, so a failure still leaves its log. */
+function dump(r: Row[], name: string) {
+  const dir = join(__dirname, '../../test-results/frame-still');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${name.replace(/\W+/g, '-')}.json`), JSON.stringify(r));
+}
+
 async function run(browser: Browser, width: number, motion: 'on' | 'off') {
   const ctx = await browser.newContext({ reducedMotion: motion === 'off' ? 'reduce' : 'no-preference' });
   const page = await ctx.newPage();
@@ -149,6 +156,7 @@ async function run(browser: Browser, width: number, motion: 'on' | 'off') {
     await liftSample(page);
     await settle(page);
     const r = await rows(page);
+    dump(r, `${width}-motion-${motion}-squat-${next - 1}`);
     const got = r.at(-1)!.title;
     expect(got, `${name}: squat ${next - 1} is the sample's ${title}`).toBe(title);
     out.push(...lights(r, 0, motion, `${name} ${title}`));
@@ -172,14 +180,11 @@ async function run(browser: Browser, width: number, motion: 'on' | 'off') {
   await expect(page.locator('.result.on h2', { hasText: 'Good lift' })).toBeVisible({ timeout: 2 * 60_000 });
   await settle(page);
   r = await rows(page);
+  dump(r, `${width}-motion-${motion}`);
   const close = r.findIndex(x => x.on && x.title === 'Close call');
   const lamp = r.findIndex((x, i) => i > close && x.lit >= 1);
   out.push(oneMove(r, close, lamp, motion, `${name} Close call in, and the referee looking`));
   out.push(...lights(r, close, motion, `${name} the referee's lights`));
-  // the log, for the hand-off
-  const dir = join(__dirname, '../../test-results/frame-still');
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, `${width}-motion-${motion}.json`), JSON.stringify(r));
   await ctx.close();
   return { name, out };
 }

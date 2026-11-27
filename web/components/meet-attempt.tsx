@@ -263,7 +263,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   useLayoutEffect(() => {
     const el = stageRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setStageSize({ w: e.contentRect.width, h: e.contentRect.height }));
+    // rendered before the paint (item 98): set plainly, her frame moved a frame after the panel did, two steps where
+    // motion off asks for one
+    const ro = new ResizeObserver(([e]) => flushSync(() => setStageSize({ w: e.contentRect.width, h: e.contentRect.height })));
     ro.observe(el);
     return () => ro.disconnect();
   }, [view]);
