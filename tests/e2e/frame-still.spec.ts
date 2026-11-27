@@ -23,15 +23,32 @@ async function logFrames(page: Page) {
   await page.addInitScript(() => {
     const w = window as unknown as { __rows: Row[] };
     w.__rows = [];
-    const tick = () => {
+    // What is painted, read as late in the frame as a script can: requestAnimationFrame runs before layout and before
+    // the ResizeObserver callbacks, and the stage's observer moves her frame in its callback, before the same paint.
+    // So each frame a new observer is made on a 1 px sentinel: observers are called in the order they were made, so
+    // this one runs after the page's own, and reads the layout that frame paints.
+    let dot: HTMLDivElement | null = null;
+    const read = () => {
       const f = document.querySelector('.stage .footage'), p = document.querySelector('.try-stagecol .panel');
-      if (f && p) {
-        const r = document.querySelector('.result');
-        w.__rows.push({
-          t: performance.now(), top: f.getBoundingClientRect().top, ph: p.getBoundingClientRect().height,
-          lit: document.querySelectorAll('.stage .lamps .lamp.white, .stage .lamps .lamp.red').length,
-          on: !!r?.classList.contains('on'), title: r?.querySelector('h2')?.textContent ?? null,
-        });
+      if (!f || !p) return;
+      const r = document.querySelector('.result');
+      w.__rows.push({
+        t: performance.now(), top: f.getBoundingClientRect().top, ph: p.getBoundingClientRect().height,
+        lit: document.querySelectorAll('.stage .lamps .lamp.white, .stage .lamps .lamp.red').length,
+        on: !!r?.classList.contains('on'), title: r?.querySelector('h2')?.textContent ?? null,
+      });
+    };
+    const tick = () => {
+      if (document.body && !dot?.isConnected) {
+        dot = document.createElement('div');
+        dot.setAttribute('aria-hidden', 'true');
+        dot.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+        document.body.appendChild(dot);
+      }
+      if (dot) {
+        // a new observation always reports once, in this frame's ResizeObserver step
+        const ro = new ResizeObserver(() => { ro.disconnect(); read(); });
+        ro.observe(dot);
       }
       requestAnimationFrame(tick);
     };
