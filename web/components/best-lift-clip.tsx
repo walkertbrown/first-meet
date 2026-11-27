@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Play } from '@phosphor-icons/react';
 import { BEST_LIFT_WORDS as W } from '@/lib/card/best-lift-words';
+import { BusyLabel } from '@/components/busy-label';
 
 type Props = {
   ready: boolean;
@@ -139,8 +140,8 @@ export function BestLiftClip({ ready: ready0, failed: failed0, length, label }: 
       </div>
       {state === 'ready' && (
         <div className={`best-actions${opening ? ' opening' : ''}`} onAnimationEnd={e => { if (e.target === e.currentTarget) setOpening(false); }}>
-          <div className="best-actions-in">
-            <button className="btn ghost small" type="button" onClick={() => void share()} aria-busy={sharing || undefined}>{sharing ? W.sharing : W.share}</button>
+          <div className="best-actions-in pair">
+            <button className="btn ghost small" type="button" onClick={() => void share()} aria-busy={sharing || undefined}><BusyLabel busy={sharing} rest={W.share} ing={W.sharing} /></button>
             <button className="btn ghost small" type="button" onClick={download}>{W.save}</button>
           </div>
         </div>

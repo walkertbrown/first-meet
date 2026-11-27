@@ -139,6 +139,10 @@ h1, h2, h3, p, ul, ol { margin: 0; }
 .btn[disabled], .btn[aria-disabled="true"] { background: var(--surface-2); color: var(--ink-3); cursor: not-allowed; transform: none; }
 .btn.ghost[disabled] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rule); }
 .btn[aria-busy="true"] { opacity: .85; }
+/* look 5.1 (item 118): the rest and -ing labels share one cell, so the button keeps the wider one's width */
+.busy-label { display: inline-grid; justify-items: center; }
+.busy-label > span { grid-area: 1 / 1; }
+.busy-label:not([data-busy]) > span:last-child, .busy-label[data-busy] > span:first-child { visibility: hidden; }
 .link {
   background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink);
   font-family: var(--font-text); font-weight: 600; font-size: 17px; line-height: 24px;
