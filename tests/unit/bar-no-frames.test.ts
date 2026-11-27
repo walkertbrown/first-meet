@@ -200,8 +200,10 @@ describe('lost after a normal "Press!" (item 116, 3.4b)', () => {
       expect(r.press!.late).toBeFalsy();
       expect(r.rack!.rackWhy).toBe('lost');
       const stall = r.press!.t + 1000;
-      // the guard marks it 1.5 s after the stall, and Rack! comes 3 s after the mark
-      expect(r.rack!.t).toBeGreaterThanOrEqual(stall + BAR_RULES.freezeAfterMs + BAR_RULES.lostRackMs - GAP);
+      // the guard marks it 1.5 s after the stall, and Rack! comes 3 s after the mark; with item 117 on, the point that
+      // doesn't move may mark it up to two frames sooner (it counts from the frozen frame's own time, and that frame's
+      // time on screen)
+      expect(r.rack!.t).toBeGreaterThanOrEqual(stall + Math.min(BAR_RULES.freezeAfterMs, BAR_RULES.samePointMs) + BAR_RULES.lostRackMs - 3 * GAP);
       expect(r.rack!.t).toBeLessThanOrEqual(stall + BAR_RULES.freezeAfterMs + BAR_RULES.lostRackMs + 2 * GAP);
     });
     it(`guard ${guard}: the picture stalls just as she locks out: "Rack!" at the lockout, why up, within 400 ms`, () => {
@@ -235,8 +237,8 @@ describe('lost after a normal "Press!" (item 116, 3.4b)', () => {
     expect(Math.min(...r.c.frozeFrom.filter(f => f > 2000))).toBeLessThan(r.press!.t);
   });
   it('the guard is on in shared/rules.json, counting from Press! (Walker\'s yes, 1:03 AM)', () => expect(BAR_RULES.guardAfterPress).toBe('from'));
-  it('guard off: the same stall mid-press is never marked lost', () => {
-    const r = bench({ freeze: pa => (pa === null ? null : pa + 1000), upMs: 3000, until: 25000, rules: { guardAfterPress: false } });
+  it('guard off and item 117 off: the same stall mid-press is never marked lost', () => {
+    const r = bench({ freeze: pa => (pa === null ? null : pa + 1000), upMs: 3000, until: 25000, rules: { guardAfterPress: false, samePoint: false } });
     expect(r.rack?.rackWhy).not.toBe('lost');
   });
 

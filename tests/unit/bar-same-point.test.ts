@@ -1,4 +1,4 @@
-// Item 117 (3.4b, "Lost after a normal Press!"; behind `samePoint`, off until Walker's yes): after a normal "Press!", a
+// Item 117 (3.4b, "Lost after a normal Press!"; `samePoint`, on since Walker's yes of Nov 27): after a normal "Press!", a
 // seen point with exactly the same x and y for 1.5 s of camera time counts as frozen. 3.4b's tests: on "refresh", a
 // picture frozen in her pause with its real score (z838's is under 0.6 all through it) and KrDo at 57.80 s (0.674) get
 // "Rack!" with `lost` about 4.5 s after the later of "Press!" and the freeze, never at 20 s; and on the 51 grinder reps,
@@ -17,6 +17,7 @@ const EYE = JSON.parse(readFileSync(join(B, 'eyetimes.json'), 'utf8')) as Record
 type Trace = { w: number; h: number; racked: boolean; mark: { x: number; y: number }; pts: BarPoint[] };
 const trace = (id: string) => JSON.parse(readFileSync(join(B, 'traces', `${id}.json`), 'utf8')) as Trace;
 const ON = { ...BAR_RULES, samePoint: true };
+const OFF = { ...BAR_RULES, samePoint: false };
 const TICK = 1000 / 60;
 const ms = (s: number) => Math.round(s * 1000);
 
@@ -50,7 +51,7 @@ for (const [id, e] of Object.entries(EYE)) {
 CASES.push({ id: 'KrDo', at: 57800 + 1 }); // NerdCider's 1:15 AM freeze: the frame at 57.80 s, which scores 0.674
 
 describe('a frozen picture after Press!, at its real score (item 117)', () => {
-  it('is off in the rules until Walker\'s yes', () => expect(BAR_RULES.samePoint).toBe(false));
+  it('is on in the rules (Walker\'s yes, Nov 27)', () => expect(BAR_RULES.samePoint).toBe(true));
   it('covers z838 and the clips scoring under 0.8 in the pause', () => {
     // every frame of the pause: hIuj 24, z838 17, xXFj 6 (NerdCider's count)
     const n = (id: string) => CASES.filter(c => c.id === id).length;
@@ -68,7 +69,7 @@ describe('a frozen picture after Press!, at its real score (item 117)', () => {
     });
   }
   it('with the switch off, z838 frozen in her pause waits for the 20 s no-rep (why item 117 is asked)', () => {
-    const r = frozen(trace('z838WQVSBmk'), ms(EYE.z838WQVSBmk.stop) + 200, BAR_RULES);
+    const r = frozen(trace('z838WQVSBmk'), ms(EYE.z838WQVSBmk.stop) + 200, OFF);
     expect(r.score).toBeLessThan(0.8);
     expect(r.rack).toMatchObject({ rackWhy: 'no_rep' });
   });
@@ -100,7 +101,7 @@ describe("the server's replay of all 22 paths with item 117 on: it marks nothing
       const path = JSON.parse(readFileSync(join(B, 'server', `${id}.json`), 'utf8')) as BarPoint[];
       const tr = trace(id);
       const ct = { plate_tap: tr.mark } as never;
-      expect(callPath(path, ct, tr, ON)).toEqual(callPath(path, ct, tr, BAR_RULES));
+      expect(callPath(path, ct, tr, ON)).toEqual(callPath(path, ct, tr, OFF));
     });
   }
 });
@@ -109,7 +110,7 @@ describe('the grinder run with item 117 on: it marks nothing', () => {
   for (const cs of GUARD_CASES.filter(c => c.guard === 'from')) {
     it(`${cs.live ?? 'grid'}, ${cs.lift ? `scores lifted to ${cs.lift}` : 'scores as filmed'}: every rep the same as with it off`, () => {
       const opts = { allReps: true, live: cs.live, lift: cs.lift };
-      const on = score(ON, undefined, opts).rows, off = score(BAR_RULES, undefined, opts).rows;
+      const on = score(ON, undefined, opts).rows, off = score(OFF, undefined, opts).rows;
       expect(on.length).toBe(51);
       expect(JSON.stringify(on)).toBe(JSON.stringify(off.map(r => ({ ...r }))));
     }, 120000);

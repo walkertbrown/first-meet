@@ -1,7 +1,9 @@
 // 3.4b and 3.2's time rules, item 70: after a normal "Press!", a bar that stays in view and never gets back up (a failed
 // rep, on her chest or stuck halfway) gets "Rack!" 20 s after "Press!", `rack_why: no_rep`, on frames alone, with no tick
 // between them: on "refresh", where every tick is a frame, and in the server's caller (NerdCider and VibeSearch, Nov 26,
-// 1:15 AM, on 1d4cfa2). The bar is held at its last point at a score the stuck guard never marks (under 0.99).
+// 1:15 AM, on 1d4cfa2). The bar is held at its last point at a score the stuck guard never marks (under 0.99), with
+// ±0.002 of wobble, as a live camera's noise moves a real bar. Held at exactly one point, it's a frozen picture: item 117
+// (Walker's yes, Nov 27) marks it after 1.5 s and "Rack!" comes 3 s later, why lost, never at 20 s.
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
@@ -39,7 +41,17 @@ function heldAfterPress(tr: Trace, score: number, wobble: boolean) {
 
 describe('a seen bar that never gets back up after Press! (no-rep, frames only)', () => {
   const CLIPS = ['KrDo', 'Ecs1', 'cE2t'];
-  for (const id of CLIPS) for (const score of [0.674, 0.95]) for (const wobble of [false, true]) {
+  for (const id of CLIPS) for (const score of [0.674, 0.95]) {
+    it(`${id}, held at exactly one point at ${score}: a frozen picture, Rack! (lost) about 4.5 s after Press! (item 117)`, () => {
+      const r = heldAfterPress(trace(id), score, false)!;
+      expect(r).toBeTruthy();
+      expect(r.out.filter(k => k.cmd !== 'rack')).toEqual([]);
+      expect(r.rack).toMatchObject({ rackWhy: 'lost' });
+      expect(r.rack!.noRep).toBeFalsy();
+      expect(r.rack!.t - r.press.t).toBeLessThanOrEqual(BAR_RULES.samePointMs + BAR_RULES.lostRackMs + 2 * FRAME);
+    });
+  }
+  for (const id of CLIPS) for (const score of [0.674, 0.95]) for (const wobble of [true]) {
     it(`${id}, held at ${score}${wobble ? ', ±0.002' : ''}: Rack! (no_rep) 20 s after Press!, on the phone and on the server`, () => {
       const tr = trace(id);
       const r = heldAfterPress(tr, score, wobble)!;

@@ -239,7 +239,7 @@ export class BarCaller {
         if (this.lostSince === null) { const from = t - fm; this.hist = this.hist.filter(q => q.t < from); this.speeds = this.speeds.filter(q => q.t < from); }
       }
     }
-    // Item 117 (3.4b, "Lost after a normal Press!"; `samePoint`, off until Walker's yes): after a normal Press!, a seen point
+    // Item 117 (3.4b, "Lost after a normal Press!"; `samePoint`, on since Walker's yes of Nov 27): after a normal Press!, a seen point
     // with exactly the same x and y for samePointMs of camera time, at any score of lostScore or more, is marked as the
     // stuck guard marks a stretch, counted from Press! at the earliest. A re-read frozen picture gives the same point; a
     // filmed bar never repeats one (the 22 traces). Its length is last less first plus the median gap, as the guard's.
