@@ -71,6 +71,23 @@ describe.skipIf(!URL_)('the referee bot', () => {
     expect(await enqueue(db, { ...STAGING, ANTHROPIC_API_KEY: 'k' })).toEqual([]);
   });
 
+  it('a test answer goes to the next close call to come in, never one already waiting for the test referee', async () => {
+    const old = await closeCall();
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    expect(await enqueue(db, STAGING)).toEqual([]);
+    const next = await closeCall('bench');
+    const [id] = await enqueue(db, STAGING);
+    expect(await job(id)).toMatchObject({ attemptId: next, testAnswers: 'red_white_white' });
+    expect((await db.select().from(refereeJobs).where(eq(refereeJobs.attemptId, old)))).toHaveLength(0);
+    // with the bot on, the old one gets a job too, but the test answer stays with the next one
+    await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    const later = await closeCall();
+    const both = await enqueue(db, { ...STAGING, REFEREE_BOT: 'on', ANTHROPIC_API_KEY: 'k' });
+    expect(both).toHaveLength(2);
+    expect((await db.select().from(refereeJobs).where(eq(refereeJobs.attemptId, old)))[0]).toMatchObject({ testAnswers: null });
+    expect((await db.select().from(refereeJobs).where(eq(refereeJobs.attemptId, later)))[0]).toMatchObject({ testAnswers: 'no_key', status: 'doubt' });
+  });
+
   it("production never takes a test answer, even one written in the table", async () => {
     await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
@@ -78,9 +95,9 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('a test answer sends the next close call to the bot, for that one job, and is then used up', async () => {
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
     const a1 = await closeCall();
     const a2 = await closeCall();
-    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
     const made = await enqueue(db, STAGING);
     expect(made).toHaveLength(1);
     expect(await job(made[0])).toMatchObject({ attemptId: a1, status: 'waiting_frames', testAnswers: 'red_white_white' });
@@ -113,8 +130,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('"No key" on staging: that bench gets three whites, and /ops says the bot is not running while the key is missing', async () => {
-    const be = await closeCall('bench');
     await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    const be = await closeCall('bench');
     const [id] = await enqueue(db, { ...STAGING, ANTHROPIC_API_KEY: 'k' });
     expect(await job(id)).toMatchObject({ status: 'doubt', doubtReason: 'no_key' });
     expect(await attempt(be)).toMatchObject({ status: 'judged', call: 'white', lights: ['white', 'white', 'white'] });
@@ -123,8 +140,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('the frames job: the clip, the commands as spoken, 60 places to put frames, and the bench\'s times', async () => {
-    const be = await closeCall('bench');
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const be = await closeCall('bench');
     const [id] = await enqueue(db, STAGING);
     expect(await framesToStart(db, 5)).toEqual([id]);
     const j = await framesJob(db, store, id, {});
@@ -143,6 +160,7 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('the frames job sends the saved bar path on a bench, with no Press! too', async () => {
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
     const be = await closeCall('bench');
     const path = Array.from({ length: 90 }, (_, i) => {
       const t = Math.round(i * 1000 / 15);
@@ -150,7 +168,6 @@ describe.skipIf(!URL_)('the referee bot', () => {
     });
     await store.putJson(keys.bar(be), { w: 1280, h: 720, duration: 6, tap: null, path });
     await db.update(attempts).set({ commandTimes: { loaded: 200, start: 1000, rack: 5000 }, barKey: keys.bar(be) }).where(eq(attempts.id, be));
-    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
     const [id] = await enqueue(db, STAGING);
     const j = await framesJob(db, store, id, {});
     expect(j!.commands).toEqual([[200, 'Bar is loaded.'], [1000, 'Start!'], [5000, 'Rack!']]);
@@ -160,8 +177,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('frames that fail get one more run after 5 minutes, then the job is doubt "no_frames"', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await framesStarted(db, id);
     expect(await takeFrames(db, { job_id: id, ok: false, error: 'RuntimeError: FAULT=referee set' })).toMatchObject({ ready: false });
@@ -175,8 +192,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('"Red, white, white": three lamps, a 2–1 good lift, each lamp\'s note stored, shown on 5.33 not on her attempt', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     expect(await run(id)).toBe('done');
@@ -196,8 +213,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('"Not sure, twice": each lamp is asked once more, then white with "Not sure, so the benefit of the doubt."', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'not_sure_twice');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     expect(await run(id)).toBe('done');
@@ -210,8 +227,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('"Spend limit reached": doubt at once, three whites, and /ops says why', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'spend_limit');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     expect(await run(id)).toBe('doubt');
@@ -221,8 +238,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('"Errors for 30 minutes" (its clock 60 times faster): tries again after each failure, then doubt "api_failing"', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'errors_30m');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     const t0 = Date.now();
@@ -238,8 +255,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('a lease that runs out goes back to ready (tries counts it); a job 60 minutes past its frames is doubt "too_slow"', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     await lease(db, 'gone-worker', 4);
@@ -253,8 +270,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('a close call a person decided in /referee first: the job is done and lands nothing', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     await db.update(attempts).set({ status: 'judged', call: 'red', lights: ['red', 'red', 'red'] }).where(eq(attempts.id, sq));
@@ -264,8 +281,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it('a doubt never overrides lights that already landed', async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     await run(id);
@@ -275,8 +292,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
 
   it("/ops's cost this month adds every job's calls", async () => {
     const before = await costThisMonth(db);
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await db.update(refereeJobs).set({ costUsd: 0.25 }).where(eq(refereeJobs.id, id));
     void sq;
@@ -286,8 +303,8 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it("/ops's numbers: the switch, what waits, the median from frames ready to lights, and the test answer set", async () => {
-    const sq = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const sq = await closeCall();
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     await run(id);
@@ -305,12 +322,12 @@ describe.skipIf(!URL_)('the referee bot', () => {
   it('the uptime check: how long the red line has shown, from the first doubt of this run of them', async () => {
     await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '2 days'` }).where(eq(refereeJobs.status, 'doubt'));
     expect(await botWatch(db, {})).toBeNull();
-    const a = await closeCall(), b = await closeCall();
     await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    await closeCall();
     const [j1] = await enqueue(db, STAGING);
     await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
+    await closeCall();
     const [j2] = await enqueue(db, STAGING);
-    void a; void b;
     await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '25 minutes'` }).where(eq(refereeJobs.id, j1));
     await db.update(refereeJobs).set({ decidedAt: sql`now() - interval '5 minutes'` }).where(eq(refereeJobs.id, j2));
     const w = await botWatch(db, {});
@@ -323,10 +340,10 @@ describe.skipIf(!URL_)('the referee bot', () => {
 
   /** A close call in a real meet, through the bot with "red, white, white". */
   async function botDecided(meetStatus: 'open' | 'final' = 'open') {
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
     const sq = await closeCall();
     const a = await attempt(sq);
     await db.update(meets).set({ kind: 'real', status: meetStatus }).where(eq(meets.id, a.meetId));
-    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
     const [id] = await enqueue(db, STAGING);
     await ready(sq);
     expect(await run(id)).toBe('done');
@@ -378,9 +395,9 @@ describe.skipIf(!URL_)('the referee bot', () => {
   });
 
   it("the bot's side while it decides, and when it couldn't look: three whites, no notes", async () => {
+    await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
     const sq = await closeCall();
     expect((await botSide(db, sq))!.side).toEqual({ state: 'deciding' });
-    await setSetting(db, TEST_ANSWERS_KEY, 'no_key');
     await enqueue(db, STAGING);
     const b = await botSide(db, sq);
     expect(b!.side).toMatchObject({ state: 'decided', unavailable: true });

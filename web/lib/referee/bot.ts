@@ -67,21 +67,29 @@ const fast = (test: string | null) => (test === 'errors_30m' ? FAST_CLOCK : 1);
 /**
  * New jobs: every close call (benches included) with no lamps job yet. With the bot off, only the
  * one a test answer sends (item 103), and the test answer is then used up. No key: `doubt` at once.
+ * A test answer goes to the next close call or bench (3.4d step 14): the first to come in once it
+ * was set, never one already waiting from before (on staging, old close calls wait for the test referee).
  */
 export async function enqueue(db: Db, env: Record<string, string | undefined> = process.env): Promise<string[]> {
   const on = botOn(env);
   const test = await pendingTestAnswers(db, env);
   if (!on && !test) return [];
-  const rows = await db.execute<{ id: string }>(sql`
-    select a.id from ${attempts} a join ${meets} m on m.id = a.meet_id
+  // a test answer's time: only a close call that came in once it was set takes it
+  const since = sql`(select s.updated_at from ${opsSettings} s where s.key = ${TEST_ANSWERS_KEY})`;
+  const came = sql`coalesce(a.judged_at, a.uploaded_at, a.created_at)`;
+  const rows = await db.execute<{ id: string; after: boolean }>(sql`
+    select a.id, coalesce(${came} >= ${since}, false) as after
+    from ${attempts} a join ${meets} m on m.id = a.meet_id
     where a.status = 'close_call' and m.kind <> 'sample'
       and not exists (select 1 from ${refereeJobs} j where j.attempt_id = a.id and j.kind = 'lamps')
-    order by coalesce(a.judged_at, a.uploaded_at, a.created_at) asc
+      ${on ? sql`` : sql`and ${came} >= ${since}`}
+    order by ${came} asc
     limit ${on ? 20 : 1}`);
   const made: string[] = [];
-  for (const [i, r] of rows.entries()) {
-    const t = i === 0 ? test : null;
-    if (t) await setSetting(db, TEST_ANSWERS_KEY, null);
+  let used = !test;
+  for (const r of rows) {
+    const t = !used && r.after ? test : null;
+    if (t) { used = true; await setSetting(db, TEST_ANSWERS_KEY, null); }
     const [job] = await db.insert(refereeJobs).values({ kind: 'lamps', attemptId: r.id, testAnswers: t }).onConflictDoNothing().returning({ id: refereeJobs.id });
     if (!job) continue;
     made.push(job.id);

@@ -118,6 +118,9 @@ const SLOW_UPLOAD_MS = 20_000;
 const POLL_MS = 5000;
 const BUSY_REFRESH_MS = 30_000;
 
+/** The panel's scroll limit (look 4), and its one move when its height changes (item 98). */
+const PANEL_MAX_PX = 400;
+const PANEL_MOVE_MS = 260;
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
 const wait = (ms: number) => sleep(ms);
@@ -1119,7 +1122,56 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // busy from "I'm ready" until the result panel has slid in (480 ms; at once with motion off)
+  const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'tap' || phase === 'loaded' || phase === 'lifting';
+  // the bench: no panel while it sends (look 5.14c), so the stage keeps the full width
+  const panelOpen = !lifting && !(phase === 'loading' && !slow && !error) && !(bench && phase === 'held');
+
+  // Item 98 (5.25 step 9, look 9 "The frame holds still under the lamps"): the stage fills what the panel leaves, so
+  // every change to the panel's height moves her frame. Through the lamps the panel keeps the height it had before the
+  // first lamp (a fixed `height`, set before the words go). Every other change after it has opened (the result, "Close
+  // call", the 90 s busy line, the lights landing on a close call) is one move to the new full height, measured settled
+  // before its fade starts: 260 ms --ease-out, at once with motion off, ending at the 400 px scroll limit. Its first
+  // opening keeps the slide-up's own 480 ms (the CSS max-height), and a reload of a decided attempt opens settled.
+  // Portrait and the desktop column only: the turned phone's side panel is the screen's full height.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelInRef = useRef<HTMLDivElement>(null);
+  const panelH = useRef<number | null>(null);
+  const moveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [panelMoving, setPanelMoving] = useState(false);
+  const holdPanel = phase === 'lit' && !resultOn;
+  // after every render, with no list: what the panel shows can change with any of its state. It sets state only when
+  // the height changed, so the run after it stops.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const el = panelRef.current, inner = panelInRef.current;
+    if (!el || !inner) return;
+    const free = () => { el.style.height = ''; el.style.transition = ''; el.style.overflowY = ''; };
+    if (view !== 'stage' || !panelOpen || land) { free(); panelH.current = null; return; }
+    if (holdPanel) {
+      // the words that have gone keep their space, and the next ones (still invisible) never show a scroll bar
+      if (panelH.current !== null) { el.style.transition = 'none'; el.style.height = `${panelH.current}px`; el.style.overflowY = 'hidden'; }
+      return;
+    }
+    el.style.overflowY = '';
+    const to = Math.min(PANEL_MAX_PX, inner.getBoundingClientRect().height);
+    const from = panelH.current;
+    panelH.current = to;
+    if (from === null) { free(); return; }
+    if (Math.abs(to - from) < 0.5) return;
+    el.style.transition = 'none';
+    if (reduced() || (settledOpen && phase !== 'close')) { el.style.height = `${to}px`; return; }
+    el.style.height = `${from}px`;
+    void el.offsetHeight;
+    el.style.transition = `height ${PANEL_MOVE_MS}ms var(--ease-out)`;
+    el.style.height = `${to}px`;
+    // the platform's banners wait for the panel to settle (look 9: a banner never lands during the move)
+    setPanelMoving(true);
+    clearTimeout(moveTimer.current);
+    moveTimer.current = setTimeout(() => setPanelMoving(false), PANEL_MOVE_MS + 20);
+  });
+  useEffect(() => () => clearTimeout(moveTimer.current), []);
+
+  // busy from "I'm ready" until the result panel has slid in (480 ms; at once with motion off), and through its moves
   const resultIn = ['held', 'offline', 'lit', 'close', 'replay', 'hold', 'norep', 'refused'].includes(phase);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
@@ -1127,7 +1179,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     const t = setTimeout(() => setSettled(true), reduced() ? 0 : 480);
     return () => clearTimeout(t);
   }, [view, resultIn]);
-  const underBar = view === 'stage' && !settled;
+  const underBar = view === 'stage' && (!settled || panelMoving);
   useEffect(() => { onBusy?.(underBar); }, [underBar, onBusy]);
   useEffect(() => () => onBusy?.(false), [onBusy]);
 
@@ -1232,9 +1284,6 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   // The stage.
   const isSample = mode === 'sample' || resumedSample;
   const box = containBox(stageSize, dims);
-  const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'tap' || phase === 'loaded' || phase === 'lifting';
-  // the bench: no panel while it sends (look 5.14c), so the stage keeps the full width
-  const panelOpen = !lifting && !(phase === 'loading' && !slow && !error) && !(bench && phase === 'held');
   const stageClass = ['stage',
     turnUp.on ? 'turning' : '',
     turnedOnce ? 'turned-once' : '',
@@ -1350,8 +1399,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
         </div>
 
         {/* the void sheet holds the panel to the screen, so its text scrolls above the pinned button (5.14c) */}
-        <div className={`panel${phase === 'void' ? ' void-panel' : ''}`} aria-hidden={!panelOpen}>
-          <div className="panel-in">
+        <div className={`panel${phase === 'void' ? ' void-panel' : ''}`} aria-hidden={!panelOpen} ref={panelRef}>
+          <div className="panel-in" ref={panelInRef}>
             {slow && <p className="small">{STAGE_WORDS.slowModel}</p>}
             {phase === 'spot-done' && (
               <>
