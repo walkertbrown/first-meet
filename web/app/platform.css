@@ -287,10 +287,10 @@
 .best-actions { display: grid; grid-template-rows: 1fr; margin-top: 16px; }
 .best-actions-in { min-height: 0; display: flex; gap: 12px; }
 .best-actions .btn { width: auto; padding: 0 20px; }
-/* look 9 (item 118): side by side when the column is 340 px or wider; narrower, Share and Save stack, each full width.
+/* look 9 (item 118): side by side when the column is 350 px or wider (a 390 px screen), which leaves 10 px to spare for WebKit's wider text; narrower, Share and Save stack, each full width.
    It follows the column, not the screen, so the row spans the column and is the container. */
 .best-actions { align-self: stretch; container-type: inline-size; }
-@container (width < 340px) {
+@container (width < 350px) {
   .best-actions-in.pair { flex-direction: column; }
   .best-actions-in.pair .btn { width: 100%; }
 }

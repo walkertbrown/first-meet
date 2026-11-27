@@ -1,5 +1,5 @@
 // Item 118 (look 9 "The bomb-out clip", look 5.1): under her best lift's clip, "Share" and "Save to my phone" sit side
-// by side when the column is 340 px or wider and stack, each full width, "Share" first, 12 px apart, when it's
+// by side when the column is 350 px or wider (a 390 px screen) and stack, each full width, "Share" first, 12 px apart, when it's
 // narrower; and "Share" keeps its width while it reads "Sharing". The component's own markup and the site's own CSS
 // and fonts, laid out in Chromium at the column each phone gives (20 px gutters; 80 px from 1024 up).
 import { execFileSync } from 'node:child_process';
@@ -14,7 +14,7 @@ const markup = execFileSync(process.execPath, ['--import', 'tsx', join(__dirname
 // screen width → column width
 const COLUMNS: [number, number][] = [[360, 320], [375, 335], [379, 339], [380, 340], [389, 349], [390, 350], [391, 351], [1280, 560]];
 
-test('the bomb-out buttons: side by side from a 340 px column, stacked full width under it, and Share keeps its width while sharing (item 118)', async ({ page }) => {
+test('the bomb-out buttons: side by side from a 350 px column, stacked full width under it, and Share keeps its width while sharing (item 118)', async ({ page }) => {
   await page.goto('/healthz');
   for (const [screen, col] of COLUMNS) {
     await page.setViewportSize({ width: screen, height: 900 });
@@ -35,7 +35,7 @@ test('the bomb-out buttons: side by side from a 340 px column, stacked full widt
       expect(m.shown, at).toEqual([busy ? 'Sharing' : 'Share']);
       expect(m.wide, `${at}: nothing past the screen`).toBe(false);
       expect(m.row.width, at).toBeCloseTo(col, 0);
-      if (col < 340) {
+      if (col < 350) {
         expect(m.s.width, `${at}: Share full width`).toBeCloseTo(col, 0);
         expect(m.v.width, `${at}: Save full width`).toBeCloseTo(col, 0);
         expect(m.v.top - m.s.bottom, `${at}: Share first, 12 px between`).toBeCloseTo(12, 0);
