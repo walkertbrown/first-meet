@@ -71,6 +71,13 @@
       "when": 1794801285998,
       "tag": "0009_referee_bot_frames_and_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795678854506,
+      "tag": "0010_bar_server_key",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,50 @@ export type PressLateWhy = 'still' | 'lost';
 /** A path point as the worker posts it: [t ms, x, y, score], x and y fractions of the frame. */
 export type BarPoint = [number, number, number, number];
 
+/** How the phone fed its path (item 114): once per camera frame, or at each screen refresh (the fallback). */
+export type BarCadence = 'frame' | 'refresh';
+
+/**
+ * `bar_cadence` as sent (3.4b, "The lights", item 114): "frame" or "refresh". Missing reads as "refresh", and so does
+ * anything else, which comes back as `unknown` (printable, 40 characters at most) for the `bar_cadence_unknown` row.
+ */
+export function cadenceOf(v: unknown): { cadence: BarCadence; unknown?: string } {
+  if (v === 'frame' || v === 'refresh') return { cadence: v };
+  if (v === undefined || v === null) return { cadence: 'refresh' };
+  const said = (typeof v === 'string' ? v : JSON.stringify(v) ?? String(v)).replace(/[^\x20-\x7E]/g, '').slice(0, 40);
+  return { cadence: 'refresh', unknown: said };
+}
+
+/** The most points a sent path may have: 2 minutes at 60 a second, with room (a 30 s bench at 30 fps is about 900). */
+export const MAX_SENT_POINTS = 20_000;
+export type PhonePathProblem = 'missing' | 'empty' | 'too_long' | 'shape' | 'outside_clip' | 'not_increasing' | 'off_frame';
+
+/**
+ * The phone's own path, `bar_path` (3.4b, "The lights", item 110), checked as `command_times` are: `[t, x, y, score,
+ * lost]` per point, every `t` inside the clip (0 to `clipMs`) and later than the one before, every `x` and `y` from 0
+ * to 1. No limit on how close the points are. Usable, it comes back as BarPoints, a lost point (`lost` 1: under the
+ * line, or the phone's 0.99 stuck rule) with score 0, so every reader takes it as lost.
+ */
+export function checkPhonePath(raw: unknown, clipMs: number): { path: BarPoint[] } | { problem: PhonePathProblem } {
+  if (raw === undefined || raw === null) return { problem: 'missing' };
+  if (!Array.isArray(raw)) return { problem: 'shape' };
+  if (!raw.length) return { problem: 'empty' };
+  if (raw.length > MAX_SENT_POINTS) return { problem: 'too_long' };
+  const out: BarPoint[] = [];
+  let last = -Infinity;
+  for (const q of raw as unknown[]) {
+    if (!Array.isArray(q) || q.length !== 5 || q.some(v => typeof v !== 'number' || !Number.isFinite(v))) return { problem: 'shape' };
+    const [t, x, y, score, lost] = q as number[];
+    if (!(lost === 0 || lost === 1) || score < 0 || score > 1) return { problem: 'shape' };
+    if (t < 0 || t > clipMs) return { problem: 'outside_clip' };
+    if (t <= last) return { problem: 'not_increasing' };
+    if (!frac(x) || !frac(y)) return { problem: 'off_frame' };
+    last = t;
+    out.push([t, x, y, lost ? 0 : score]);
+  }
+  return { path: out };
+}
+
 /** The keys in `command_times` that aren't command times (3.4b). */
 export const COMMAND_EXTRAS = ['plate_tap', 'press_late_why', 'press_held', 'rack_why', 'said_at'] as const;
 export const isCommandExtra = (k: string) => (COMMAND_EXTRAS as readonly string[]).includes(k);
@@ -107,7 +151,7 @@ export type BarMeasures = {
  * height, is left alone. A still stretch after "Press!" below that band, on the way up, is still marked.
  * Returns [first, last] ms of each stretch.
  */
-export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES): [number, number][] {
+export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES, cadence: BarCadence = 'refresh'): [number, number][] {
   const start = ct.start ?? null;
   if (start === null || !path.length) return [];
   const end = ct.rack ?? path[path.length - 1][0];
@@ -122,7 +166,9 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
   // One camera frame's time (item 113): how long each point's x and y lasts before the next, the mean of those near
   // the median (a stuck run is far longer, and the 20 fps cut's 33/67 ms is one frame of 50 ms). On the grid it's the
   // gap; at the live tick, which repeats each camera frame at every refresh, it's the camera's frame, not 16.7 ms.
-  const same = (a: number, b: number) => w[a][1] === w[b][1] && w[a][2] === w[b][2];
+  // On "frame" (item 114) each point is its own camera frame: identical points are never grouped, so a frozen
+  // tracker's repeats are each a frame. Only the refresh fallback's repeats are one camera frame.
+  const same = cadence === 'frame' ? (a: number, b: number) => a === b : (a: number, b: number) => w[a][1] === w[b][1] && w[a][2] === w[b][2];
   const lasts: number[] = [];
   for (let k = 0; k < w.length;) {
     let e = k;
@@ -189,7 +235,10 @@ export function stuckStretches(path: BarPoint[], ct: CommandTimes, r: BarRel = B
     }
     // 0.5 ms under stuckMs, so rounding in the frame time never decides a stretch that's exactly on the line
     // (NerdCider, 10:14 AM: KrDo's 12 frames at 66.667 ms)
-    if ((j - i + 1) * frame < r.stuckMs - 0.5) continue;
+    // On "frame" (item 114, "Skipped frames"), a stretch's length is its last time less its first plus the median gap,
+    // so frames the phone skipped under load don't shorten it; on "refresh", its frames times the frame time.
+    const len = cadence === 'frame' ? w[j][0] - w[i][0] + med : (j - i + 1) * frame;
+    if (len < r.stuckMs - 0.5) continue;
     const last = out[out.length - 1];
     if (last && w[i][0] <= last[1]) last[1] = Math.max(last[1], w[j][0]);
     else out.push([w[i][0], w[j][0]]);
@@ -221,8 +270,8 @@ function lockoutHold(w: BarPoint[], ct: CommandTimes, r: BarRel): ((a: number, b
  * the referee's page (look 5.14c), `measureBar` reads them as lost, and no point in them counts for the frames job
  * (3.4d step 1). Run on the server's path after the lift, before it's saved: it never changes a live command.
  */
-export function markStuck(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES): { path: BarPoint[]; stuck: [number, number][] } {
-  const stuck = stuckStretches(path, ct, r);
+export function markStuck(path: BarPoint[], ct: CommandTimes, r: BarRel = BAR_RULES, cadence: BarCadence = 'refresh'): { path: BarPoint[]; stuck: [number, number][] } {
+  const stuck = stuckStretches(path, ct, r, cadence);
   if (!stuck.length) return { path, stuck };
   return { path: path.map(p => (stuck.some(([a, b]) => p[0] >= a && p[0] <= b) ? [p[0], p[1], p[2], 0] : p)), stuck };
 }

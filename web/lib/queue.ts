@@ -5,7 +5,8 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, events, judgeQueue, judgeWorkers } from '@/db/schema';
-import { checkCommandTimes, judgeAttempt, markStuck, measureBar, mergePasses, plateTap, shadowLights, zoomWindows, type BarPoint, type Frame, type MeetLift, type PlateTap } from '@/lib/judge';
+import { BAR_RULES, checkCommandTimes, judgeAttempt, markStuck, measureBar, mergePasses, plateTap, shadowLights, zoomWindows, type BarPoint, type Frame, type MeetLift, type PlateTap } from '@/lib/judge';
+import { checkPhonePath, type BarCadence } from '@/lib/judge/bar-measure';
 import { keys } from '@/lib/r2';
 import { sampleJudgedMs, sampleOfAttempt } from '@/lib/sample-clip';
 
@@ -242,9 +243,13 @@ export function parseBar(body: unknown): BarPost | null {
 }
 
 /**
- * 3.4b, "The lights": a Barbell bench's plate path. Saved for the referee's marks (`bar_key`), measured
- * (the pause, "Press! while sinking", `shadow_lights`), and sent to a referee, reason `bench_referee`.
- * Broken command times still make it a `command_times` close call, which the referee judges by eye.
+ * 3.4b, "The lights" (item 110): a Barbell bench's plate path. The phone's own path, sent with the upload, is checked
+ * here (checkPhonePath, against the clip's length), item 108's guard is marked on it at its cadence, and it's saved as
+ * `bar_key`: the referee's marks, the pause, "Press! while sinking" and `shadow_lights` come from it. The server's own
+ * track is saved as `bar_server_key`, never drawn or measured while there's a phone path. With no usable phone path,
+ * `bar_key` is the server's track, for the frames only: nothing is measured, and the referee is told (`bar_path: none`).
+ * Every bench goes to a referee, reason `bench_referee`; broken command times still make it a `command_times` close
+ * call, judged by eye.
  */
 export async function takeBar(db: Db, store: Store, p: BarPost):
   Promise<{ status: 200; call: 'close' } | { status: 409 | 404; error: string }> {
@@ -255,21 +260,43 @@ export async function takeBar(db: Db, store: Store, p: BarPost):
   if (held.q.workerId !== p.worker_id) return { status: 409, error: 'not held by this worker' };
   const a = held.a;
   const ct = a.commandTimes;
-  const problem = checkCommandTimes(ct, 'bench', Math.round(p.duration * 1000));
+  const clipMs = Math.round(p.duration * 1000);
+  const problem = checkCommandTimes(ct, 'bench', clipMs);
+  const dims = { w: p.w, h: p.h };
+  // the phone's path, as the upload left it (a second post finds the saved file, which keeps what was sent)
+  const sentFile = await store.getJson<{ sent?: unknown; cadence?: BarCadence; frames?: unknown }>(keys.bar(a.id)).catch(() => null);
+  const cadence: BarCadence = sentFile?.cadence === 'frame' ? 'frame' : 'refresh';
+  const checked = sentFile?.sent === 'too_long' ? { problem: 'too_long' as const } : checkPhonePath(sentFile?.sent ?? null, clipMs);
+  const phone = 'path' in checked ? checked.path : null;
+  const serverKey = keys.barServer(a.id);
+  const tap = plateTap(ct);
   // item 108: the stuck stretches between Start! and Rack! are marked lost before anything reads the path
-  const { path, stuck } = !problem && ct ? markStuck(p.path, ct) : { path: p.path, stuck: [] };
-  const m = !problem && ct ? measureBar(path, ct, { w: p.w, h: p.h }) : null;
-  const barKey = keys.bar(a.id);
-  await store.putJson(barKey, { w: p.w, h: p.h, duration: p.duration, tap: plateTap(ct), path, stuck, commit: p.commit ?? null });
+  const server = !problem && ct ? markStuck(p.path, ct) : { path: p.path, stuck: [] };
+  await store.putJson(serverKey, { source: 'server', w: p.w, h: p.h, duration: p.duration, tap, path: server.path, stuck: server.stuck, commit: p.commit ?? null });
+  const own = phone && !problem && ct ? markStuck(phone, ct, BAR_RULES, cadence) : phone ? { path: phone, stuck: [] } : null;
+  const barKey = own ? keys.bar(a.id) : serverKey;
+  if (own) {
+    await store.putJson(barKey, {
+      source: 'phone', cadence, w: p.w, h: p.h, duration: p.duration, tap, path: own.path, stuck: own.stuck,
+      sent: sentFile?.sent ?? null, frames: sentFile?.frames ?? null, commit: p.commit ?? null,
+    });
+  }
+  const m = own && !problem && ct ? measureBar(own.path, ct, dims) : null;
+  const stuck = own?.stuck ?? server.stuck;
   const reason = problem ? 'command_times' : 'bench_referee';
-  const measures = problem ? { command_times: problem, commit: p.commit ?? null } : { ...m!, stuck, commit: p.commit ?? null };
+  const barPath = own ? 'phone' : 'none';
+  const pathWhy = 'problem' in checked ? checked.problem : null;
+  const measures = problem
+    ? { command_times: problem, bar_path: barPath, bar_path_problem: pathWhy, bar_cadence: cadence, commit: p.commit ?? null }
+    : m ? { ...m, stuck, bar_path: barPath, bar_cadence: cadence, commit: p.commit ?? null }
+    : { bar_path: barPath, bar_path_problem: pathWhy, bar_cadence: cadence, stuck, commit: p.commit ?? null };
   const done = await db.transaction(async tx => {
     const gone = await tx.delete(judgeQueue)
       .where(and(eq(judgeQueue.attemptId, a.id), eq(judgeQueue.kind, 'poses'), eq(judgeQueue.workerId, p.worker_id)))
       .returning({ startedAt: judgeQueue.startedAt });
     if (!gone.length) return false;
     await tx.update(attempts).set({
-      status: 'close_call', barKey, judgedAt: sql`now()`, call: 'close', lights: null, reason,
+      status: 'close_call', barKey, barServerKey: serverKey, judgedAt: sql`now()`, call: 'close', lights: null, reason,
       shadowLights: m ? shadowLights(m.shadow) : null, measures,
     }).where(eq(attempts.id, a.id));
     await tx.update(judgeWorkers).set({ attemptsDone: sql`${judgeWorkers.attemptsDone} + 1`, lastSeenAt: sql`now()` })
@@ -279,6 +306,7 @@ export async function takeBar(db: Db, store: Store, p: BarPost):
   if (!done) return { status: 409, error: 'not held by this worker' };
   await logEvent(db, 'close_call', {
     reason, ...(problem ? { command_times: problem } : {}), shadow: m?.shadow ?? null, press_while_sinking: m?.press_while_sinking ?? null, stuck: stuck.length,
+    bar_path: barPath, bar_path_problem: pathWhy, bar_cadence: cadence,
     bar_secs: p.secs ?? null, download_secs: p.download_secs ?? null, clip_s: p.duration, commit: p.commit ?? null, worker_id: p.worker_id,
   }, a.id);
   console.log(JSON.stringify({ msg: 'bench to a referee', attempt_id: a.id, reason, bar_secs: p.secs }));

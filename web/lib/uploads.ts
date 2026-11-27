@@ -6,7 +6,8 @@ import type { Db } from '@/db';
 import { attempts, lifters, meets, type VoidReason } from '@/db/schema';
 import { countDemoRun, demoLimitHit, type LimitHit } from '@/lib/demo';
 import { extOf, keys, type R2 } from '@/lib/r2';
-import { MAX_CLIP_BYTES, logEvent, markUploaded } from '@/lib/queue';
+import { MAX_CLIP_BYTES, benchByBar, logEvent, markUploaded } from '@/lib/queue';
+import { cadenceOf, cleanSaidAt, MAX_SENT_POINTS, type BarCadence } from '@/lib/judge/bar-measure';
 import { refusalBody, voidAttempt, windowRefusal } from '@/lib/meet-window';
 
 export type UploadStore = Pick<R2, 'startUpload' | 'signPart' | 'listParts' | 'finishUpload' | 'head' | 'putJson' | 'getJson' | 'signedGet'>;
@@ -131,8 +132,29 @@ export async function partsDone(db: Db, store: UploadStore, attemptId: string, l
  * POST /api/attempts/:id/uploaded (3.9 step 1): finishes the multipart upload if it isn't yet,
  * saves command_times, and queues the attempt. Safe to call again.
  */
+export type UploadedBody = {
+  upload_id?: string; parts?: { part: number; etag: string }[]; command_times?: Record<string, number>;
+  /** Bench (3.4b, item 110): the phone's own path, [t, x, y, score, lost]; checked when the server's track comes in. */
+  bar_path?: unknown;
+  /** Bench (item 114): "frame" or "refresh"; missing or anything else reads as "refresh". */
+  bar_cadence?: unknown;
+  /** Bench (item 114): the frame callback's counts, for /ops. */
+  bar_frames?: unknown;
+};
+
+/** The sent path as saved at `bar/<attempt>.json` until the server's track comes in (takeBar checks it then). */
+export type SentBarFile = { sent: unknown; cadence: BarCadence; frames: BarFrames | null };
+export type BarFrames = { fell_back: boolean; frames: number; skipped: number };
+
+const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.min(1e7, Math.round(v)) : 0);
+function framesOf(v: unknown): BarFrames | null {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return null;
+  const o = v as Record<string, unknown>;
+  return { fell_back: o.fell_back === true, frames: count(o.frames), skipped: count(o.skipped) };
+}
+
 export async function attemptUploaded(db: Db, store: UploadStore, attemptId: string, lifterId: string,
-  body: { upload_id?: string; parts?: { part: number; etag: string }[]; command_times?: Record<string, number> }, now = new Date()) {
+  body: UploadedBody, now = new Date(), device = 'unknown') {
   const a = await own(db, attemptId, lifterId);
   if (isFail(a)) return a;
   // 3.8: an upload that finishes after the clip deadline is refused, before R2 puts it together
@@ -148,9 +170,35 @@ export async function attemptUploaded(db: Db, store: UploadStore, attemptId: str
     }
     await store.finishUpload(a.videoKey, body.upload_id, body.parts);
   }
-  const ct = body.command_times && typeof body.command_times === 'object' ? body.command_times : null;
+  let ct = body.command_times && typeof body.command_times === 'object' ? body.command_times : null;
+  // item 114: said_at is for /ops only; what isn't well formed is dropped, never a close call
+  if (ct && 'said_at' in ct) {
+    const said = cleanSaidAt(ct);
+    const rest: Record<string, unknown> = { ...ct };
+    delete rest.said_at;
+    ct = (said ? { ...rest, said_at: said } : rest) as Record<string, number>;
+  }
+  const fresh = ['declared', 'recording', 'uploading'].includes(a.status);
+  // 3.4b, item 110: a bench's own path waits in R2 for the server's track, which checks it (takeBar)
+  const bench = fresh && benchByBar({ ...a, commandTimes: ct ?? a.commandTimes });
+  let sent: SentBarFile | null = null;
+  if (bench) {
+    const c = cadenceOf(body.bar_cadence);
+    const raw = body.bar_path ?? null;
+    sent = { sent: Array.isArray(raw) && raw.length > MAX_SENT_POINTS ? 'too_long' : raw, cadence: c.cadence, frames: framesOf(body.bar_frames) };
+    await store.putJson(keys.bar(a.id), sent);
+    if (c.unknown !== undefined) await logEvent(db, 'bar_cadence_unknown', { value: c.unknown, device }, a.id);
+  }
   const r = await markUploaded(db, store, attemptId, ct);
   if (r.status !== 200) return r as Fail;
+  if (sent) {
+    const f = sent.frames;
+    await logEvent(db, 'bar_path_sent', {
+      cadence: sent.cadence, device, points: Array.isArray(body.bar_path) ? body.bar_path.length : null,
+      frames: f?.frames ?? null, skipped: f?.skipped ?? null, fell_back: f?.fell_back ?? false,
+    }, a.id);
+  }
+  if (sent?.frames?.fell_back) await logEvent(db, 'bar_cadence_fallback', { device }, a.id);
   if (['declared', 'recording', 'uploading'].includes(a.status) && await isDemoLifter(db, lifterId)) await countDemoRun(db, lifterId, a.id, false);
   return { status: 200 as const, attempt: { id: r.attempt.id, status: r.attempt.status } };
 }

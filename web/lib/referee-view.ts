@@ -47,6 +47,8 @@ export const BENCH_LINES = {
   lateStill: 'The phone called Press! late, after 1.5 s still.',
   lateLost: 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.',
   pauseLost: 'Pause: not measured. The phone lost the bar.',
+  noPath: "We didn't get the phone's bar path, so the pause wasn't measured. Judge the pause by eye, from the clip.",
+  pauseNoPath: 'Pause: not measured. No bar path from the phone.',
   lostNear: "The phone lost the bar around the pause, so its Press! may have come early. If she pressed on or after the call, don't give a red for the pause.",
   rackLost: "The phone lost the bar during the press and called Rack! 3 s later. Judge the lockout by eye, from the clip. If she was still pressing up when Rack! came, that's the phone's mistake: don't give a red for the lockout.",
 } as const;
@@ -69,15 +71,18 @@ export function measuredLines(reason: string | null, m: Record<string, unknown> 
     const pause = n('pause_s');
     // a lost bar (5.33, item 107), or a lost or stuck frame near the bottom (item 108): no pause and no sinking
     // line, even from measures stored before these rules
-    const lost = why === 'lost' || m?.pause_lost === true;
-    if (lost) out.push(BENCH_LINES.pauseLost);
+    // item 110: no usable path came from the phone, so nothing was measured; the other lines as their own rules say
+    const none = noPhonePath(m);
+    const lost = none || why === 'lost' || m?.pause_lost === true;
+    if (none) out.push(BENCH_LINES.pauseNoPath, BENCH_LINES.noPath);
+    else if (lost) out.push(BENCH_LINES.pauseLost);
     else if (pause !== null) out.push(`Pause: the bar was still ${pause.toFixed(1)} s before Press!`);
     out.push(BENCH_LINES.every);
     if (!lost && m?.press_while_sinking === true) out.push(BENCH_LINES.sinking);
     if (why === 'still') out.push(BENCH_LINES.lateStill);
     if (why === 'lost') out.push(BENCH_LINES.lateLost);
     // item 108: the server's path lost or stuck near the pause, with Press! not late from a loss
-    else if (m?.pause_lost === true) out.push(BENCH_LINES.lostNear);
+    else if (!none && m?.pause_lost === true) out.push(BENCH_LINES.lostNear);
     // item 116: Rack! 3 s after a loss, so the phone didn't judge the lockout; only on rack_why lost, never up or no_rep
     if (bench.commandTimes?.rack_why === 'lost') out.push(BENCH_LINES.rackLost);
     return out;
@@ -114,8 +119,30 @@ export function trackOf(poses: (Dims & { frames: Frame[] }) | null, side: Side |
 
 /** Look 5.13's bench marks: the plate's path, broken where the bar wasn't seen, and a tick for each command. */
 export type BarTick = { cmd: 'start' | 'press' | 'rack'; label: 'START!' | 'PRESS!' | 'RACK!'; x: number; y: number; wide: boolean };
-export type BarTrack = { w: number; h: number; segs: [number, number][][]; ticks: BarTick[] };
-type BarFile = { w: number; h: number; path: BarPoint[] };
+/** A command on the clip's scrub bar (look 5.14c, no phone path): its label and its time in the clip, ms. */
+export type ScrubTick = { cmd: BarTick['cmd']; label: BarTick['label']; ms: number };
+/**
+ * `scrub` is set when no usable path came from the phone (3.4b, item 110): nothing is drawn on the picture, and the
+ * three commands sit on the scrub bar instead.
+ */
+export type BarTrack = { w: number; h: number; segs: [number, number][][]; ticks: BarTick[]; scrub?: ScrubTick[] };
+/** bar/<attempt>.json: `source` "phone" (item 110) or "server" (no usable phone path); none on an older row. */
+type BarFile = { w: number; h: number; path: BarPoint[]; source?: 'phone' | 'server' };
+
+/** The commands at their times in the clip, for the scrub bar: a `press_late` "Press!" at the time it was called. */
+export function scrubTicks(ct: Record<string, unknown> | null): ScrubTick[] {
+  const time = (k: string) => (typeof ct?.[k] === 'number' && Number.isFinite(ct[k]) && (ct[k] as number) >= 0 ? (ct[k] as number) : null);
+  const out: ScrubTick[] = [];
+  const add = (cmd: ScrubTick['cmd'], label: ScrubTick['label'], ms: number | null) => { if (ms !== null) out.push({ cmd, label, ms }); };
+  add('start', 'START!', time('start'));
+  add('press', 'PRESS!', time('press') ?? time('press_late'));
+  add('rack', 'RACK!', time('rack'));
+  return out.sort((a, b) => a.ms - b.ms);
+}
+
+/** No usable phone path (3.4b, item 110): the measures say so, or the saved file is the server's track. */
+export const noPhonePath = (m: Record<string, unknown> | null, bar?: { source?: string } | null) =>
+  m?.bar_path === 'none' || bar?.source === 'server';
 
 /**
  * The bench marks from the stored plate path (bar/<attempt>.json) and the phone's command times, in the
@@ -126,6 +153,8 @@ type BarFile = { w: number; h: number; path: BarPoint[] };
 export function barTrackOf(bar: BarFile | null, ct: Record<string, unknown> | null, m: Record<string, unknown> | null): BarTrack | null {
   if (!bar || !(bar.w > 0) || !(bar.h > 0) || !Array.isArray(bar.path) || !ct) return null;
   const { w, h } = bar;
+  // the server's track is never drawn: a line that slid off the plate is worse than none (look 5.14c)
+  if (noPhonePath(m, bar)) { const scrub = scrubTicks(ct); return scrub.length ? { w, h, segs: [], ticks: [], scrub } : null; }
   const path = bar.path.filter(p => Array.isArray(p) && p.length === 4 && p.every(Number.isFinite)).sort((a, b) => a[0] - b[0]);
   const { seen } = callPath(path, ct as never, { w, h });
   const px = (p: BarPoint): [number, number] => [r1(p[1] * w), r1(p[2] * h)];

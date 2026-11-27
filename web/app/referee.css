@@ -63,6 +63,22 @@
 .ref-scrub.on-stage { --track: #2A2D37; --fill: var(--stage-ink); }
 /* A rep's judged frame: a 2 x 10 tick, placed where the thumb's centre would be. */
 .ref-tick { position: absolute; top: 17px; left: calc(5px + (100% - 10px) * var(--at, 0)); width: 2px; height: 10px; margin-left: -1px; background: var(--stage-ink-2); pointer-events: none; }
+/* Look 5.14c, no phone path (item 110): the commands on the scrub bar. The track is drawn under them and the thumb
+   over them; each tick is 2 x 14, centred on the 4 px track, with a 1 px gap of the ground either side so it shows on
+   the played part; its label is Eyebrow type, 12 px above the track. 36 px from the clip to the track, so labels clear it. */
+.ref-clip.no-path .ref-scrub { margin-top: 4px; }
+.ref-scrub { --gap: var(--chalk); }
+.ref-scrub.on-stage { --gap: var(--stage); }
+.ref-scrub.cmds input { position: relative; z-index: 2; }
+.ref-scrub.cmds input::-webkit-slider-runnable-track { background: transparent; }
+.ref-scrub.cmds input::-moz-range-track, .ref-scrub.cmds input::-moz-range-progress { background: transparent; }
+.ref-scrub-track {
+  position: absolute; left: 0; right: 0; top: 20px; height: 4px; border-radius: 4px; pointer-events: none;
+  background: linear-gradient(to right, var(--fill) var(--played, 0%), var(--track) var(--played, 0%));
+}
+.ref-cmds { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.ref-cmd-tick { position: absolute; top: 15px; width: 2px; height: 14px; margin-left: -1px; background: var(--fill); box-shadow: -1px 0 0 var(--gap), 1px 0 0 var(--gap); }
+.ref-cmd-label { position: absolute; top: -8px; font-size: 13px; line-height: 16px; color: var(--fill); white-space: nowrap; }
 
 .ref-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .ref-controls .btn { width: auto; padding: 0 16px; }

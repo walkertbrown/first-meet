@@ -147,6 +147,7 @@ export const keys = {
   firstPass: (attempt: string) => `poses/${attempt}.pass1.json`,
   /** Bench (3.4b): the server's plate path. */
   bar: (attempt: string) => `bar/${attempt}.json`,
+  barServer: (attempt: string) => `bar/${attempt}-server.json`,
   sample: (file: string) => `samples/${file}`,
   /** render_clip's lift clip (5.30): 9:16 MP4. */
   clip: (attempt: string) => `clips/${attempt}.mp4`,

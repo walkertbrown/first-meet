@@ -8,6 +8,7 @@ import { attempts, events, judgeQueue, judgeWorkers } from '../../web/db/schema'
 import { MAX_CLIP_BYTES, claimNext, clipSecondsOf, expireLeases, markUploaded, parseBar, takeBar, takePoses, workerDone, workerFailed } from '../../web/lib/queue';
 import { BarCaller, judgeClip, type BarPoint, type Frame } from '../../web/lib/judge';
 import { judgedFrame } from '../../web/lib/attempt-state';
+import { attemptUploaded } from '../../web/lib/uploads';
 import samples from '../../content/samples/samples.json';
 import { freshDb, MemStore, seed, URL_ } from './setup';
 
@@ -102,8 +103,101 @@ describe.skipIf(!URL_)('the judge queue', () => {
     for (const [t, x, y, s] of tr.pts) { const r = c.feed(t, x, y, s); if (r) phone[r.cmd] = t; }
     const BENCH_CT = phone as Record<string, number>;
     const dims = { w: tr.w, h: tr.h, duration: tr.pts.at(-1)![0] / 1000 + 1 };
+    /** The phone's own path as the page sends it (item 110): [t, x, y, score, lost]. */
+    const sent = (pts: BarPoint[]) => pts.map(([t, x, y, sc]) => [t, x, y, sc, sc < 0.4 ? 1 : 0]);
+    /** The server's track, a little off the phone's, so a test can tell which one was saved and measured. */
+    const serverOf = (pts: BarPoint[]) => pts.map(([t, x, y, sc]) => [t, x, Math.min(1, y + 0.05), sc]) as BarPoint[];
+    /** What the phone posts at /uploaded (3.9 step 1), from her own lifter, with her phone's device line. */
+    const upload = async (id: string, extra: Record<string, unknown>, ct: Record<string, unknown> = BENCH_CT) => {
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      return attemptUploaded(db, store, id, a.lifterId, { command_times: ct as Record<string, number>, ...extra }, new Date(), 'Safari 26 · iOS 26 iPhone');
+    };
+    const evs = async (id: string, kind: string) => (await db.select().from(events).where(sql`${events.kind} = ${kind} and ${events.attemptId} = ${id}`)).map(e => e.detail as Record<string, unknown>);
 
-    it('the job says to follow the bar; its path is saved and measured, and it goes to a referee', async () => {
+    it("the phone's own path (item 110): checked, guarded, saved as bar_key and measured; the server's track saved beside it", async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      const r = await upload(id, { bar_path: sent(tr.pts), bar_cadence: 'frame', bar_frames: { fell_back: false, frames: 900, skipped: 12 } });
+      expect(r).toMatchObject({ status: 200 });
+      const w = await worker('w-bench-phone');
+      await claimNext(db, store, w);
+      const server = serverOf(tr.pts);
+      expect(await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: server, commit: 'abc1234' })).toEqual({ status: 200, call: 'close' });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ status: 'close_call', reason: 'bench_referee', barKey: `bar/${id}.json`, barServerKey: `bar/${id}-server.json` });
+      // measured on the phone's path, not the server's
+      const phonePts = tr.pts.map(([t, x, y, sc]) => [t, x, y, sc < 0.4 ? 0 : sc]);
+      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ source: 'phone', cadence: 'frame', path: phonePts, stuck: [], sent: sent(tr.pts) });
+      expect(store.objects.get(`bar/${id}-server.json`)).toMatchObject({ source: 'server', path: server });
+      expect(a.measures).toMatchObject({ bar_path: 'phone', bar_cadence: 'frame', shadow: { light: 'white' } });
+      expect((a.measures as { pause_s: number }).pause_s).toBeGreaterThan(0.5);
+      // /ops: how it was fed, by device
+      expect(await evs(id, 'bar_path_sent')).toEqual([{ cadence: 'frame', device: 'Safari 26 · iOS 26 iPhone', points: tr.pts.length, frames: 900, skipped: 12, fell_back: false }]);
+      expect(await evs(id, 'bar_cadence_fallback')).toEqual([]);
+      expect(await evs(id, 'bar_cadence_unknown')).toEqual([]);
+    });
+
+    it('no bar_path from the phone (an old app): bar_key is the server\'s track, for the frames only, and nothing is measured', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      expect(await upload(id, {})).toMatchObject({ status: 200 });
+      const w = await worker('w-bench-none');
+      await claimNext(db, store, w);
+      expect(await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: tr.pts })).toEqual({ status: 200, call: 'close' });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect(a).toMatchObject({ reason: 'bench_referee', barKey: `bar/${id}-server.json`, barServerKey: `bar/${id}-server.json`, shadowLights: null });
+      expect(a.measures).toMatchObject({ bar_path: 'none', bar_path_problem: 'missing', bar_cadence: 'refresh' });
+      expect((a.measures as Record<string, unknown>).pause_s).toBeUndefined();
+      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ sent: null, cadence: 'refresh' });
+    });
+
+    for (const [why, bad] of [
+      ['not_increasing', (p: number[][]) => p.map((q, i) => (i === 10 ? [p[9][0], ...q.slice(1)] : q))],
+      ['outside_clip', (p: number[][]) => [...p, [Math.round(dims.duration * 1000) + 500, 0.5, 0.5, 0.9, 0]]],
+      ['off_frame', (p: number[][]) => p.map((q, i) => (i === 10 ? [q[0], 1.2, q[2], q[3], q[4]] : q))],
+      ['shape', (p: number[][]) => p.map((q, i) => (i === 10 ? q.slice(0, 4) : q))],
+    ] as const) {
+      it(`a bar_path that fails the check (${why}): read as no phone path`, async () => {
+        await db.delete(judgeQueue);
+        const { attempts: [id] } = await seed(db, store, 1, 'bench');
+        await upload(id, { bar_path: bad(sent(tr.pts)), bar_cadence: 'frame' });
+        const w = await worker(`w-bench-${why}`);
+        await claimNext(db, store, w);
+        await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: tr.pts });
+        const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+        expect(a.barKey).toBe(`bar/${id}-server.json`);
+        expect(a.measures).toMatchObject({ bar_path: 'none', bar_path_problem: why });
+      });
+    }
+
+    it('bar_cadence: an unknown value reads as "refresh" and is logged with the device; a fallback is logged too', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await upload(id, { bar_path: sent(tr.pts), bar_cadence: 'vsync\u0000', bar_frames: { fell_back: true, frames: 0, skipped: 0 } });
+      expect(await evs(id, 'bar_cadence_unknown')).toEqual([{ value: 'vsync', device: 'Safari 26 · iOS 26 iPhone' }]);
+      expect(await evs(id, 'bar_cadence_fallback')).toEqual([{ device: 'Safari 26 · iOS 26 iPhone' }]);
+      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ cadence: 'refresh' });
+      // a missing one reads as "refresh" with no row
+      const { attempts: [id2] } = await seed(db, store, 1, 'bench');
+      await upload(id2, { bar_path: sent(tr.pts) });
+      expect(await evs(id2, 'bar_cadence_unknown')).toEqual([]);
+      expect(store.objects.get(`bar/${id2}.json`)).toMatchObject({ cadence: 'refresh' });
+    });
+
+    it('said_at (item 114): kept for the commands it names; anything else dropped, never a close call', async () => {
+      await db.delete(judgeQueue);
+      const { attempts: [id] } = await seed(db, store, 1, 'bench');
+      await upload(id, { bar_path: sent(tr.pts) }, { ...BENCH_CT, said_at: { start: BENCH_CT.start + 40.4, press: 'x', loud: 5, rack: -1 } });
+      const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
+      expect((a.commandTimes as Record<string, unknown>).said_at).toEqual({ start: Math.round(BENCH_CT.start + 40.4) });
+      expect(a.status).toBe('queued');
+      const { attempts: [id2] } = await seed(db, store, 1, 'bench');
+      await upload(id2, {}, { ...BENCH_CT, said_at: 'soon' });
+      const [b] = await db.select().from(attempts).where(eq(attempts.id, id2));
+      expect(b.commandTimes).not.toHaveProperty('said_at');
+    });
+
+    it('the job says to follow the bar; with no phone path it still goes to a referee', async () => {
       await db.delete(judgeQueue);
       const { attempts: [id] } = await seed(db, store, 1, 'bench');
       expect((await markUploaded(db, store, id, BENCH_CT)).status).toBe(200);
@@ -115,14 +209,12 @@ describe.skipIf(!URL_)('the judge queue', () => {
       expect(await takeBar(db, store, { ...post!, worker_id: 'w-other' })).toMatchObject({ status: 409 });
       expect(await takeBar(db, store, post!)).toEqual({ status: 200, call: 'close' });
       const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
-      expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', lights: null, barKey: `bar/${id}.json`, shadowLights: ['white', 'white', 'white'] });
-      expect(a.measures).toMatchObject({ press_while_sinking: false, lost_share: 0, lost_after_start: false, shadow: { light: 'white' }, commit: 'abc1234' });
-      expect((a.measures as { pause_s: number }).pause_s).toBeGreaterThan(0.5);
-      expect(store.objects.get(`bar/${id}.json`)).toMatchObject({ tap, path: tr.pts, stuck: [] });
-      expect(a.measures).toMatchObject({ stuck: [], pause_lost: false });
+      expect(a).toMatchObject({ status: 'close_call', call: 'close', reason: 'bench_referee', lights: null, barKey: `bar/${id}-server.json`, shadowLights: null });
+      expect(a.measures).toMatchObject({ bar_path: 'none', commit: 'abc1234', stuck: [] });
+      expect(store.objects.get(`bar/${id}-server.json`)).toMatchObject({ source: 'server', tap, path: tr.pts, stuck: [] });
       expect(await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, id))).toHaveLength(0);
       const [ev] = await db.select().from(events).where(sql`${events.kind} = 'close_call' and ${events.attemptId} = ${id}`);
-      expect(ev.detail).toMatchObject({ reason: 'bench_referee', shadow: { light: 'white' }, bar_secs: 1.5, stuck: 0 });
+      expect(ev.detail).toMatchObject({ reason: 'bench_referee', shadow: null, bar_secs: 1.5, stuck: 0, bar_path: 'none' });
       // posting it again changes nothing
       expect(await takeBar(db, store, post!)).toMatchObject({ status: 404 });
     });
@@ -130,13 +222,13 @@ describe.skipIf(!URL_)('the judge queue', () => {
     it("a track stuck at the bottom (item 108): marked lost before it's saved or measured, so the pause isn't measured", async () => {
       await db.delete(judgeQueue);
       const { attempts: [id] } = await seed(db, store, 1, 'bench');
-      await markUploaded(db, store, id, BENCH_CT);
-      const w = await worker('w-bench-stuck');
-      await claimNext(db, store, w);
-      // the tracker sticks from 0.6 s before Press! to 0.6 s after it
+      // the tracker sticks from 0.6 s before Press! to 0.6 s after it, on the phone's path (sent on "refresh")
       const at = BENCH_CT.press, y = tr.pts.find(p => p[0] >= at)![2];
       const stuckPath = tr.pts.map(p => (p[0] >= at - 600 && p[0] <= at + 600 ? [p[0], 0.5, y, 0.8] : p)) as BarPoint[];
-      expect(await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: stuckPath })).toEqual({ status: 200, call: 'close' });
+      await upload(id, { bar_path: sent(stuckPath) });
+      const w = await worker('w-bench-stuck');
+      await claimNext(db, store, w);
+      expect(await takeBar(db, store, { attempt_id: id, worker_id: w, ...dims, path: tr.pts })).toEqual({ status: 200, call: 'close' });
       const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
       const m = a.measures as { stuck: [number, number][]; pause_lost: boolean; pause_s: number | null; sink: number | null };
       expect(m.stuck).toHaveLength(1);

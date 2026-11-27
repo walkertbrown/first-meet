@@ -24,6 +24,11 @@ export type OpsNumbers = {
     filmings: number; pressWhileSinking: number; lostAfterStart: number; noStartVoids: number;
     /** item 109: bench filmings whose Press! the frozen-track rule held back (`command_times.press_held`); no 10% line */
     pressHeld: number;
+    /** item 110: bench filmings with no usable bar path from the phone (`measures.bar_path: 'none'`) */
+    noBarPath: number;
+    /** item 114: how `bar_path` was fed, by device: filmings sent on "frame" and on "refresh", the camera frames the
+     *  callback skipped over all there were, and the `bar_cadence_fallback` rows (most filmings first). */
+    feed: { device: string; frame: number; refresh: number; frames: number; skipped: number; fallbacks: number }[];
     /** 3.4c: real meet Home press sets decided or waiting, and those that went to a referee (a close call). */
     homePressSets: number; homePressReferee: number;
     /** 3.4b, item 111: "No Start! twice or more in a meet", each lifter it happened to, by meet and name, with her count
@@ -131,6 +136,7 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
       (select count(*) from b where (measures->>'press_while_sinking')::boolean is true) as sinking,
       (select count(*) from b where (measures->>'lost_after_start')::boolean is true) as lost,
       (select count(*) from b where (command_times->>'press_held')::boolean is true) as held,
+      (select count(*) from b where measures->>'bar_path' = 'none') as no_path,
       (select count(*) from events e join b r on r.id = e.attempt_id where e.kind = 'lost_bar_void') as voids,
       (select count(*) from press) as press_sets,
       (select count(*) from press where status = 'close_call' or (measures->>'referee')::boolean is true) as press_referee`);
@@ -144,6 +150,24 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     where e.kind = 'lost_bar_void' and a.lift = 'bench' and ${REAL_PHONE} and l.division <> 'home'
     group by m.id, m.name, l.id, l.card_name having count(*) >= 2
     order by max(e.at) desc, m.name, l.card_name limit 50`);
+
+  // 2.4, item 114: how bar_path was fed, by device, over the same bench filmings (a real phone's, never a sample)
+  const feed = await db.execute<Record<string, unknown>>(sql`
+    with b as (
+      select a.id from attempts a join meets m on m.id = a.meet_id join lifters l on l.id = a.lifter_id
+      where a.lift = 'bench' and ${REAL_PHONE} and l.division <> 'home'
+    ), x as (
+      select coalesce(e.detail->>'device', 'unknown') as device,
+        (e.detail->>'cadence' = 'frame')::int as frame, (e.detail->>'cadence' is distinct from 'frame')::int as refresh,
+        coalesce((e.detail->>'frames')::int, 0) as frames, coalesce((e.detail->>'skipped')::int, 0) as skipped, 0 as fallbacks
+      from events e join b on b.id = e.attempt_id where e.kind = 'bar_path_sent'
+      union all
+      select coalesce(e.detail->>'device', 'unknown'), 0, 0, 0, 0, 1
+      from events e join b on b.id = e.attempt_id where e.kind = 'bar_cadence_fallback'
+    )
+    select device, sum(frame)::int as frame, sum(refresh)::int as refresh, sum(frames)::int as frames, sum(skipped)::int as skipped,
+      sum(fallbacks)::int as fallbacks
+    from x group by device order by sum(frame) + sum(refresh) desc, device limit 20`);
 
   // 2.4: uploads in the last 24 hours that failed or were refused, against all uploads, by device: every real
   // phone's, the demo and test meets included, never a sample (none is uploaded from a phone).
@@ -210,6 +234,8 @@ export async function opsNumbers(db: Db, budgets: Budgets, webCommit = process.e
     bench: {
       decided: num(b?.decided), agree: num(b?.agree), whiteOnRed: num(b?.white_on_red), redOnWhite: num(b?.red_on_white),
       filmings: num(b?.uploaded) + num(b?.voids), pressWhileSinking: num(b?.sinking), lostAfterStart: num(b?.lost), noStartVoids: num(b?.voids), pressHeld: num(b?.held),
+      noBarPath: num(b?.no_path),
+      feed: feed.map(x => ({ device: String(x.device ?? 'unknown'), frame: num(x.frame), refresh: num(x.refresh), frames: num(x.frames), skipped: num(x.skipped), fallbacks: num(x.fallbacks) })),
       homePressSets: num(b?.press_sets), homePressReferee: num(b?.press_referee),
       noStartTwice: twice.map(x => ({ meet: String(x.meet), name: String(x.name), voids: num(x.voids), whys: (x.whys as string[] | null) ?? [] })),
     },
@@ -283,6 +309,20 @@ export const whyCounts = (whys: string[]) => {
   return [...c].map(([w, k]) => `${k} ${w}`).join(', ');
 };
 
+/**
+ * Item 114: "Bar path fed · <device>", "12 frame, 3 refresh · 2% skipped · 1 fallback": filmings by cadence, the
+ * skipped-frame rate (frames the callback skipped over all the camera frames there were, "—" with none on "frame"),
+ * and the `bar_cadence_fallback` rows.
+ */
+export function feedRows(f: OpsNumbers['bench']['feed']): OpsRow[] {
+  if (!f.length) return [{ label: 'Bar path fed', value: '—' }];
+  return f.map(d => {
+    const all = d.frames + d.skipped;
+    const rate = all ? `${Math.round((d.skipped / all) * 1000) / 10}% skipped` : '— skipped';
+    return { label: `Bar path fed · ${d.device}`, value: `${d.frame} frame, ${d.refresh} refresh · ${rate} · ${d.fallbacks} ${d.fallbacks === 1 ? 'fallback' : 'fallbacks'}` };
+  });
+}
+
 /** 2.4, 3.4b: "Bench, phone and referees". */
 export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
   return [
@@ -293,10 +333,14 @@ export function benchRows(b: OpsNumbers['bench']): OpsRow[] {
     { label: 'Press! while sinking', value: failedOf(b.pressWhileSinking, b.filmings) },
     { label: 'Lost the bar after Start!', value: failedOf(b.lostAfterStart, b.filmings) },
     { label: 'No Start!, filmed again', value: failedOf(b.noStartVoids, b.filmings) },
+    // item 110: inside the 10% rule with the three above
+    { label: 'No bar path from the phone', value: failedOf(b.noBarPath, b.filmings) },
     // item 109: counted the same way, with no 10% line: it may be common, and The Playner reads it after the first meet
     { label: 'Press! held for a frozen track', value: failedOf(b.pressHeld, b.filmings) },
     // 3.4c: "Home press sets to a referee · <x>%"
     { label: 'Home press sets to a referee', value: b.homePressSets ? `${Math.round((b.homePressReferee / b.homePressSets) * 100)}%` : '—' },
+    // item 114: how bar_path was fed, by device
+    ...feedRows(b.feed),
     // under the counts (item 111): a heading row, then each lifter by meet and name with her count
     { label: 'No Start! twice or more in a meet', value: b.noStartTwice.length ? String(b.noStartTwice.length) : '—' },
     ...b.noStartTwice.map(x => ({ label: `${x.meet} · ${x.name}`, value: `${x.voids} · ${whyCounts(x.whys)}` })),

@@ -5,8 +5,8 @@
 // lights" and "Ask another referee".
 // The demo referee (5.36) is the same screen deciding the demo lifter's own close call.
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { BarTrack, MarkFrame, Track } from '@/lib/referee-view';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { BarTrack, MarkFrame, ScrubTick, Track } from '@/lib/referee-view';
 import { reasonEyebrow, reasonSentence, refereeReasons, type ReasonCode } from '@/lib/reason-words';
 import { saveLine, type Light } from '@/lib/lights';
 import { readyToSeek } from '@/lib/stage/recorder';
@@ -116,6 +116,60 @@ function BarMarks({ bar, scale }: { bar: BarTrack; scale: number }) {
 }
 
 const miniClass = (c: RepLight['call']) => `mini-lamp ${c === 'close' ? 'pulse' : c}`;
+
+/** Where a tick sits on the scrub bar, in px from its left: where the thumb's centre would be at that time. */
+const thumbAt = (width: number, at: number) => 5 + (width - 10) * Math.max(0, Math.min(1, at));
+
+/**
+ * Labels centred on their ticks, never past the bar's ends, and at least `gap` px apart: a label that would come
+ * closer moves right, and its tick stays (look 5.14c). `xs` are the ticks' px, `ws` the labels' widths; lefts back.
+ */
+export function placeLabels(width: number, xs: number[], ws: number[], gap = 8): number[] {
+  const out: number[] = [];
+  xs.forEach((x, i) => {
+    let left = Math.max(0, Math.min(width - ws[i], x - ws[i] / 2));
+    if (i > 0) left = Math.max(left, out[i - 1] + ws[i - 1] + gap);
+    out.push(left);
+  });
+  return out;
+}
+
+/**
+ * Look 5.14c, no phone path (item 110): the three commands on the scrub bar, a 2 x 14 tick each, over the played part
+ * and under the thumb, each labelled above the track. Marks, not controls: clicks go through to the bar.
+ */
+function ScrubCmds({ ticks, duration }: { ticks: ScrubTick[]; duration: number }) {
+  const box = useRef<HTMLDivElement>(null);
+  const labels = useRef<(HTMLSpanElement | null)[]>([]);
+  const [width, setWidth] = useState(0);
+  const [lefts, setLefts] = useState<number[] | null>(null);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    setWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+  const xs = ticks.map(t => thumbAt(width, t.ms / 1000 / duration));
+  const key = xs.map(Math.round).join(',');
+  useLayoutEffect(() => {
+    if (!width) return;
+    setLefts(placeLabels(width, xs, ticks.map((_, i) => labels.current[i]?.offsetWidth ?? 0)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, key]);
+  return (
+    <div className="ref-cmds" ref={box} aria-hidden="true">
+      {ticks.map((t, i) => (
+        <span key={t.cmd} className="ref-cmd-tick" style={{ left: `${xs[i]}px` }} />
+      ))}
+      {ticks.map((t, i) => (
+        <span key={`${t.cmd}-label`} ref={el => { labels.current[i] = el; }} className="ref-cmd-label ref-tick-label"
+          style={{ left: `${lefts?.[i] ?? 0}px`, visibility: lefts ? 'visible' : 'hidden' }}>{t.label}</span>
+      ))}
+    </div>
+  );
+}
 
 export function RefereeCall(p: RefereeCallProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -294,7 +348,7 @@ export function RefereeCall(p: RefereeCallProps) {
 
   return (
     <div className={`ref-call${p.clipOnly ? ' clip-only' : ''}`}>
-      <div className="ref-clip" style={{ ['--ar' as string]: ar }}>
+      <div className={`ref-clip${p.bar?.scrub ? ' no-path' : ''}`} style={{ ['--ar' as string]: ar }}>
         <div className="ref-video" ref={boxRef}>
           {p.videoUrl ? (
             <video
@@ -313,10 +367,13 @@ export function RefereeCall(p: RefereeCallProps) {
             <p className="ref-noclip small">The clip isn&apos;t available.</p>
           )}
           {mark && p.track && <Marks m={mark} track={p.track} scale={scale} />}
-          {showMarks && p.bar && <BarMarks bar={p.bar} scale={scale} />}
+          {showMarks && p.bar && !p.bar.scrub && <BarMarks bar={p.bar} scale={scale} />}
         </div>
 
-        <div className="ref-scrub" style={{ ['--played' as string]: `${duration > 0 ? Math.min(100, (now / duration) * 100) : 0}%` }}>
+        <div className={`ref-scrub${p.bar?.scrub ? ' cmds' : ''}`} style={{ ['--played' as string]: `${duration > 0 ? Math.min(100, (now / duration) * 100) : 0}%` }}>
+          {/* no phone path (look 5.14c): the track is drawn under the commands' ticks, and the thumb over them */}
+          {p.bar?.scrub && <div className="ref-scrub-track" aria-hidden="true" />}
+          {p.bar?.scrub && showMarks && duration > 0 && <ScrubCmds ticks={p.bar.scrub} duration={duration} />}
           <input
             type="range" min={0} max={duration || 1} step={0.001} value={Math.min(now, duration || 1)}
             aria-label="Position in the clip" aria-valuetext={`${now.toFixed(2)} seconds`}

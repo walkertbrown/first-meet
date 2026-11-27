@@ -9,7 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { and, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, lifters, meets, opsSettings, refereeJobs, reviews, type Light, type RefereeCall, type RefereeFrame } from '@/db/schema';
-import { judgeAttempt, type Frame, type MeetLift } from '@/lib/judge';
+import { BAR_RULES, judgeAttempt, type Frame, type MeetLift } from '@/lib/judge';
 import type { BarPoint } from '@/lib/judge/bar-measure';
 import type { CommandTimes } from '@/lib/judge/zoom';
 import { attemptReason, callOf } from '@/lib/lights';
@@ -138,6 +138,30 @@ export function benchBlock(ct: Record<string, unknown> | null, bar?: { path: Bar
   return out;
 }
 
+/** A path point counts for the frames at this score or more (worker/bench_path.py's PATH_SCORE). */
+export const FRAMES_PATH_SCORE = 0.5;
+
+/**
+ * The path the frames are found on (3.4d step 1, item 110): the phone's own, and where it's lost, the server's track
+ * for the frames only. "Lost" is any stretch of `gapMs` (the bar's 500 ms no-frame rule) or more with no phone point
+ * that counts, before its first or after its last included; the server's points in it stand in, its own guard's stuck
+ * stretches already at score 0. Every phone point that counts is kept as it is.
+ */
+export function framesPath(phone: BarPoint[], server: BarPoint[] | null | undefined, gapMs = BAR_RULES.noFrameMs): BarPoint[] {
+  if (!server?.length) return phone;
+  const ok = (p: BarPoint) => p[3] >= FRAMES_PATH_SCORE;
+  const seen = phone.filter(ok).map(p => p[0]).sort((a, b) => a - b);
+  const holes: [number, number][] = [];
+  if (!seen.length) holes.push([-Infinity, Infinity]);
+  else {
+    if (seen[0] >= gapMs) holes.push([-Infinity, seen[0]]);
+    for (let i = 1; i < seen.length; i++) if (seen[i] - seen[i - 1] >= gapMs) holes.push([seen[i - 1], seen[i]]);
+    holes.push([seen[seen.length - 1], Infinity]);
+  }
+  const inHole = (t: number) => holes.some(([a, b]) => t > a && t < b);
+  return [...phone.filter(p => ok(p) || !inHole(p[0])), ...server.filter(p => inHole(p[0]))].sort((a, b) => a[0] - b[0]);
+}
+
 export interface FrameStore {
   getJson<T>(key: string): Promise<T | null>;
   signedGet(key: string, seconds?: number): Promise<string>;
@@ -155,6 +179,11 @@ export async function framesJob(db: Db, store: FrameStore, jobId: string, env: R
   const moments: { ms: number; flagged: boolean }[] = [];
   let bar: { path: BarPoint[] } | null = null;
   if (benchByBar(a) && a.barKey) bar = await store.getJson<{ path: BarPoint[] }>(a.barKey).catch(() => null);
+  // item 110: the server's track stands in where the phone's path is lost, for the frames only
+  if (bar?.path && a.barServerKey && a.barServerKey !== a.barKey) {
+    const server = await store.getJson<{ path: BarPoint[] }>(a.barServerKey).catch(() => null);
+    bar = { path: framesPath(bar.path, server?.path) };
+  }
   const bench = benchByBar(a) ? benchBlock(ct, bar) : null;
   if (!benchByBar(a) && a.posesKey) {
     const poses = await store.getJson<{ w: number; h: number; duration: number; frames: Frame[] }>(a.posesKey).catch(() => null);

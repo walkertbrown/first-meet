@@ -149,8 +149,14 @@ export const attempts = pgTable('attempts', {
   score: real('score'),
   commandTimes: jsonb('command_times').$type<Record<string, number>>(),
   posesKey: text('poses_key'),
-  /** Bench (3.4b): the server's plate path, R2 `bar/<attempt>.json`, for the referee's marks. */
+  /**
+   * Bench (3.4b, item 110): the plate's path, R2 `bar/<attempt>.json`: the phone's own path, sent with the upload, with
+   * item 108's guard marked on it (`source: 'phone'`). With no usable phone path, the server's track (`source: 'server'`),
+   * used for the frames and never drawn or measured.
+   */
   barKey: text('bar_key'),
+  /** Bench (item 110): the server's own track from the plate tap, R2 `bar/<attempt>-server.json`; for the frames where the phone's path is lost. */
+  barServerKey: text('bar_server_key'),
   /** Bench (3.4b): the bar's own call, like `lights`; never shown to her or a referee. */
   shadowLights: jsonb('shadow_lights').$type<Light[]>(),
   status: text('status').$type<AttemptStatus>().notNull().default('declared'),

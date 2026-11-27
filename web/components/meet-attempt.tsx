@@ -12,6 +12,7 @@ import { SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
 import { RULES, type Dims, type Part, type VoidWhy } from '@/lib/judge';
 import { MeetLift, type MeetEvent, type MeetLiftName } from '@/lib/judge/meet-lift';
 import { sentPath } from '@/lib/judge/bar-stage';
+import { checkPhonePath } from '@/lib/judge/bar-measure';
 import { nearSide, type Pt } from '@/lib/judge/pose';
 import { BAR_FRAME_H } from '@/lib/judge/plate-tracker';
 import { smallWidth } from '@/lib/judge/bar-stage';
@@ -841,8 +842,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes, uploadId: null, savedAt, recordedAt: Math.round(savedAt - (performance.now() - recording.startedAt)), ...benchBar });
     const heldSnap = (ml.byBar && pressSnap) || (lift === 'squat' && deeperOf(deepest)) || last;
     freeze(heldSnap);
-    // her bench clip's marks: the phone's own path, broken where it was lost, and the "Press!" tick
-    const bar = ml.bar;
+    // her bench clip's marks: the phone's own path, broken where it was lost, and the "Press!" tick. With no usable path
+    // to send (one the server's check turns down, item 110), the plain "Press!" frame: no path, no tick (look 5.14c)
+    const sendable = !!benchBar.barPath && 'path' in checkPhonePath(benchBar.barPath, Math.ceil(performance.now() - (zeroAt ?? t0)));
+    const bar = sendable ? ml.bar : null;
     const pressAt = bar?.cmds.find(c => c.cmd === 'press')?.t;
     const path: BenchPath | null = bar ? { pieces: pathPieces(bar.path), press: pressAt === undefined ? null : tickAt(bar.path, pressAt) } : null;
     const clipUrl = URL.createObjectURL(blob);
