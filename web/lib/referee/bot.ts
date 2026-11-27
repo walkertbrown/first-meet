@@ -11,9 +11,9 @@ import type { Db } from '@/db';
 import { attempts, lifters, meets, opsSettings, refereeJobs, reviews, type Light, type RefereeCall, type RefereeFrame } from '@/db/schema';
 import { BAR_RULES, judgeAttempt, type Frame, type MeetLift } from '@/lib/judge';
 import type { BarPoint } from '@/lib/judge/bar-measure';
-import type { CommandTimes } from '@/lib/judge/zoom';
 import { attemptReason, callOf } from '@/lib/lights';
 import { benchByBar, judgedLift, logEvent, publish } from '@/lib/queue';
+import { clipAfterLights } from '@/lib/card/clip-job';
 import { keys } from '@/lib/r2';
 import { refereeReasons } from '@/lib/reason-words';
 import { WHY } from '@/lib/referee';
@@ -321,6 +321,8 @@ async function land(db: Db, j: JobRow, lights: Light[], reasons: (string | null)
   if (!saved) return false;
   await logEvent(db, 'referee_saved', { call, bot: true, doubt: unavailable || undefined, waited_s: saved.judgedAt ? Math.round((Date.now() - new Date(saved.judgedAt).getTime()) / 1000) : null }, attemptId);
   await publish(db, { kind: 'attempt', attempt_id: attemptId, lifter_id: saved.lifterId, status: 'judged' });
+  // the bot's lights can give her a total or a bomb-out, as a referee's do: her clip is queued then (3.9 step 6)
+  await clipAfterLights(db, attemptId);
   return true;
 }
 

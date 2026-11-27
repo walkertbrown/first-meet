@@ -4,6 +4,7 @@
 // so each weight and width is its own family (web/card-fonts, cut by scripts/cut-card-fonts.py).
 import type { CardView } from '@/lib/card/card-view';
 import { CARD_FOOTER } from '@/lib/card/card-view';
+import type { BestLiftView } from '@/lib/card/best-lift';
 
 export const K = 1080 / 390;
 const px = (n: number) => Math.round(n * K * 100) / 100;
@@ -107,7 +108,7 @@ function Wordmark({ season }: { season: string }) {
   );
 }
 
-function Name({ v }: { v: CardView }) {
+function Name({ v }: { v: Pick<CardView, 'name' | 'meta'> }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       <div style={{ fontFamily: F.name, fontSize: px(34), lineHeight: `${px(36)}px`, letterSpacing: px(34) * -0.01, color: C.ink }}>{v.name}</div>
@@ -185,6 +186,45 @@ export function StoryCard({ v }: { v: CardView }) {
       <Total v={v} />
       <Heaviest v={v} />
       <Lifts v={v} />
+      <Foot />
+    </div>
+  );
+}
+
+// Anybody 900 wdth 130's advance widths (web/card-fonts/anybody-900-130.ttf, 2000 units to the em), for the weight's fit
+const TOTAL_ADVANCE: Record<string, number> = { 0: 1702, 1: 1636, 2: 1756, 3: 1748, 4: 1688, 5: 1729, 6: 1751, 7: 1574, 8: 1721, 9: 1760, '.': 670, ',': 873 };
+
+/** The weight's width in the total's face at `size`, with its -0.04em tracking: the sample's 390 px scale. */
+export const totalFaceWidth = (text: string, size: number) =>
+  [...text].reduce((w, ch) => w + (TOTAL_ADVANCE[ch] ?? 1760) / 2000 * size, 0) - 0.04 * size * Math.max(0, text.length - 1);
+
+/** Look 9: 118 px, stepped down 2 px at a time until it fits the 330 px column (`102.5`). */
+export function bestWeightSize(text: string, column = 330) {
+  let size = 118;
+  while (size > 40 && totalFaceWidth(text, size) > column) size -= 2;
+  return size;
+}
+
+/**
+ * The bomb-out clip's end frame (look 9 "The bomb-out clip", item 101): the story card with the total, the heaviest
+ * bar, the three lifts and 9 FOR 9 taken out, and the best-lift block where the total sits. Nothing below it.
+ */
+export function BestLiftCard({ v }: { v: BestLiftView }) {
+  const size = bestWeightSize(v.weight);
+  return (
+    <div style={frame(1080, 1920)}>
+      <Wordmark season={v.season} />
+      <div style={{ display: 'flex', height: px(44), flexShrink: 0 }} />
+      <div style={{ display: 'flex', justifyContent: 'center', flexShrink: 0 }}><Lamps size={px(68)} gap={px(18)} /></div>
+      <div style={{ display: 'flex', height: px(38), flexShrink: 0 }} />
+      <Name v={v} />
+      <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(26), flexShrink: 0 }}>
+        <span style={{ fontFamily: F.eyebrow, fontSize: px(13), lineHeight: `${px(16)}px`, letterSpacing: px(13) * 0.09, color: C.ink2 }}>BEST LIFT</span>
+        <span style={{ fontFamily: F.tag, fontSize: px(17), lineHeight: `${px(20)}px`, letterSpacing: px(17) * 0.04, color: C.ink, marginTop: px(10) }}>{v.liftLine}</span>
+        <div style={{ fontFamily: F.total, fontSize: px(size), lineHeight: `${px(size * 0.85)}px`, letterSpacing: px(size) * -0.04, color: C.ink, marginTop: px(6) }}>{v.weight}</div>
+        <span style={{ fontFamily: F.unit, fontSize: px(20), lineHeight: `${px(24)}px`, letterSpacing: px(20) * 0.06, color: C.ink2, marginTop: px(10) }}>{v.unitLine.toUpperCase()}</span>
+      </div>
+      <div style={{ display: 'flex', flex: 1 }} />
       <Foot />
     </div>
   );

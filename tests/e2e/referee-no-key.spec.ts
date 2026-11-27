@@ -38,10 +38,13 @@ async function joinDemo(page: Page) {
   await page.getByRole('button', { name: 'Start the demo meet' }).click();
   await expect(page).toHaveURL(/\/platform\?welcome=1$/);
   const welcome = page.getByRole('dialog', { name: 'Welcome to the demo meet' });
+  // wait for the sheet first: hidden before it shows would pass at once, and it would then cover the platform
+  await expect(welcome).toBeVisible();
   await expect(async () => {
     if (await welcome.isVisible()) await welcome.getByRole('button', { name: 'Go to the platform' }).click({ timeout: 2000 });
     await expect(welcome).toBeHidden({ timeout: 2000 });
   }).toPass({ timeout: 30_000 });
+  await expect(page).toHaveURL(/\/platform$/);
 }
 
 async function liftSample(page: Page) {

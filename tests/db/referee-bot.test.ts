@@ -4,7 +4,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
-import { attempts, opsSettings, refereeJobs, reviews } from '../../web/db/schema';
+import { attempts, judgeQueue, opsSettings, refereeJobs, reviews } from '../../web/db/schema';
+import { ORDER } from '../../web/lib/meet';
 import { keys } from '../../web/lib/r2';
 import {
   botOps, botWatch, costThisMonth, doubt, enqueue, framesJob, framesStarted, framesToStart, lease, notRunning, runJob, setSetting, sweep, takeFrames,
@@ -224,6 +225,34 @@ describe.skipIf(!URL_)('the referee bot', () => {
     const [r] = await db.select().from(reviews).where(eq(reviews.attemptId, sq));
     expect(r.lampNotes).toEqual([NOT_SURE_NOTE, NOT_SURE_NOTE, NOT_SURE_NOTE]);
     expect(await attempt(sq)).toMatchObject({ call: 'white', lights: ['white', 'white', 'white'] });
+  });
+
+  it("the bot's lights on her ninth attempt land her total, and her clip is queued as a referee's would be (3.9 step 6)", async () => {
+    await setSetting(db, TEST_ANSWERS_KEY, 'red_white_white');
+    const [m] = await db.insert(meets).values({
+      slug: `bot-clip-${Date.now()}`, name: 'Winter 2027', kind: 'real', status: 'open',
+      opensAt: new Date(Date.now() - 3_600_000), closesAt: new Date(Date.now() + 86_400_000),
+    }).returning();
+    const [l] = await db.insert(lifters).values({ cardName: 'Diane R.', division: 'barbell', meetId: m.id }).returning();
+    const W = [95, 105, 115, 65, 70, 75, 135, 145, 155];
+    const ids: string[] = [];
+    for (let k = 0; k < 9; k++) {
+      const last = k === 8;
+      const [a] = await db.insert(attempts).values({
+        lifterId: l.id, meetId: m.id, lift: ORDER[k].lift, number: ORDER[k].number, weight: W[k], videoKey: `videos/${l.id}/${k}.webm`,
+        status: last ? 'close_call' : 'judged', call: last ? null : 'white', lights: last ? null : ['white', 'white', 'white'],
+        reason: last ? 'borderline_depth' : null, judgedAt: new Date(), judgedFrameMs: 3000, commandTimes: SQUAT_CT,
+      }).returning();
+      store.objects.set(a.videoKey!, 'video');
+      ids.push(a.id);
+    }
+    const [id] = await enqueue(db, STAGING);
+    await ready(ids[8]);
+    expect(await run(id)).toBe('done');
+    expect(await attempt(ids[8])).toMatchObject({ status: 'judged', call: 'white' });
+    const q = await db.select().from(judgeQueue).where(eq(judgeQueue.attemptId, ids[8]));
+    expect(q).toMatchObject([{ kind: 'clip', workerId: null }]);
+    expect((await attempt(ids[8])).clipStatus).toBe('queued');
   });
 
   it('"Spend limit reached": doubt at once, three whites, and /ops says why', async () => {

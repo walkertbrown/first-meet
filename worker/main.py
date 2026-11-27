@@ -175,6 +175,13 @@ def find_poses(ctx: TaskContext, worker_id: str) -> dict:
             'process_secs': round(begun - STARTED, 2), 'attempts': done}
 
 
+def put_file(url: str, data: bytes, kind: str) -> None:
+    put = urllib.request.Request(url, data=data, method='PUT', headers={'content-type': kind, 'content-length': str(len(data))})
+    with urllib.request.urlopen(put, timeout=120) as r:
+        if r.status >= 300:
+            raise RuntimeError(f'upload: {r.status}')
+
+
 def one_clip(job: dict) -> dict:
     """One lift clip: her attempt and her story card in, the MP4 PUT to R2."""
     t0 = time.monotonic()
@@ -187,12 +194,13 @@ def one_clip(job: dict) -> dict:
             card = Image.open(io.BytesIO(r.read()))
             card.load()
         out = os.path.join(d, 'clip.mp4')
-        made = clip.render(job, video, card, out, d)
+        poster = os.path.join(d, 'poster.jpg') if job.get('poster_url') else None
+        made = clip.render(job, video, card, out, d, poster)
+        # the poster first: the clip being in R2 is what makes it `ready`
+        if poster:
+            put_file(job['poster_url'], Path(poster).read_bytes(), 'image/jpeg')
         data = Path(out).read_bytes()
-        put = urllib.request.Request(job['upload_url'], data=data, method='PUT', headers={'content-type': 'video/mp4', 'content-length': str(len(data))})
-        with urllib.request.urlopen(put, timeout=120) as r:
-            if r.status >= 300:
-                raise RuntimeError(f'upload: {r.status}')
+        put_file(job['upload_url'], data, 'video/mp4')
     return {**made, 'bytes': len(data), 'secs': round(time.monotonic() - t0, 2)}
 
 

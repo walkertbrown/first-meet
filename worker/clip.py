@@ -4,7 +4,10 @@
      or the missed rep and the 2 before it on a red).
   2. The three lamps lighting in real timing (330 ms apart), with thocks.
   3. A 2 s hold on the judged frame with the judge's marks.
-  4. The story card fades in over 400 ms and holds for 3 s.
+  4. The story card fades in over 400 ms and holds for 3 s. A bomb-out's clip ends on her best lift's end frame
+     in its place (item 101); the job's card_path says which.
+
+Beside the clip, its poster (look 9 "The bomb-out clip"): the first frame of the 2 s hold, a 432 x 768 JPEG.
 
 Portrait footage fills the frame uncropped, with the lamps at the stage's scale, as the phone's
 "Save my clip" draws them (web/lib/stage/clip-maker.ts). Landscape footage (the presses) is laid out
@@ -277,8 +280,16 @@ def still(path: str, at_ms: int, size: tuple[int, int], mirror: bool) -> Image.I
     return Image.open(io.BytesIO(out.stdout)).convert('RGB')
 
 
-def render(job: dict, video_path: str, card: Image.Image, out_path: str, work_dir: str) -> dict:
-    """Makes the clip at out_path. Returns its length and frame count."""
+POSTER = (432, 768)
+
+
+def write_poster(hold: Image.Image, path: str) -> None:
+    """The first frame of the hold, at twice the page's 216 x 384 thumbnail."""
+    hold.convert('RGB').resize(POSTER, Image.LANCZOS).save(path, 'JPEG', quality=85, optimize=True, progressive=True)
+
+
+def render(job: dict, video_path: str, card: Image.Image, out_path: str, work_dir: str, poster_path: str | None = None) -> dict:
+    """Makes the clip at out_path, and its poster at poster_path. Returns its length and frame count."""
     times = Times.of(job.get('times'))
     src_w, src_h, _ = probe(video_path)
     lay = layout(src_w, src_h)
@@ -302,6 +313,8 @@ def render(job: dict, video_path: str, card: Image.Image, out_path: str, work_di
             t = k * 1000 / FPS
             yield p.frame(held, [s if t >= i * times.lamp_gap_ms else 'off' for i, s in enumerate(lamps)], dim=0.18).tobytes()
         hold = p.frame(held, lamps, dim=0.18, marks=True)
+        if poster_path:
+            write_poster(hold, poster_path)
         hb = hold.tobytes()
         for _ in range(frames_for(times.hold_ms)):
             yield hb

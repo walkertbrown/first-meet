@@ -151,6 +151,8 @@ export const keys = {
   sample: (file: string) => `samples/${file}`,
   /** render_clip's lift clip (5.30): 9:16 MP4. */
   clip: (attempt: string) => `clips/${attempt}.mp4`,
+  /** The clip's poster beside it (look 9 "The bomb-out clip"): the first frame of the 2 s hold, 432 × 768 JPEG. */
+  clipPoster: (attempt: string) => `clips/${attempt}.jpg`,
   /** The referee bot's frames (3.4d step 1). */
   refereeFrame: (attempt: string, n: number) => `referee/${attempt}/${n}.jpg`,
   health: 'health/ok.txt',

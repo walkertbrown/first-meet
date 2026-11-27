@@ -1,10 +1,13 @@
 // Her lift clip (plan 3.9 step 6, piece 7, look 9 "Lift clip"): render_clip's job, made here so the
-// worker only draws. Queued once when her total (or Home score) lands, for the lift on her card, and
-// again only if a referee changes which lift that is. Claimed only while no `poses` row waits.
+// worker only draws. Queued once when her total (or Home score, or her bomb-out) lands, for her best lift,
+// and again only if a referee changes which lift that is. Claimed only while no `poses` row waits.
+// A bomb-out's clip (item 101) ends on her best lift's end frame in place of the story card.
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, judgeQueue, judgeWorkers, lifters } from '@/db/schema';
-import { totalFor } from '@/lib/meet-flow';
+import { asMeetAttempt, meetAttempts, totalFor, type LifterRow } from '@/lib/meet-flow';
+import { bestLiftOf, type MeetAttempt } from '@/lib/meet';
+import { endFramePath } from '@/lib/card/best-lift';
 import { ensureCardToken } from '@/lib/card/card-data';
 import { judgedLift, logEvent } from '@/lib/queue';
 import { keys } from '@/lib/r2';
@@ -66,11 +69,13 @@ export type ClipJob = {
   marks: { pts: [number, number][]; colour: string } | null;
   /** her stage shows her front camera mirrored, so the clip does too; a sample lift isn't */
   mirror: boolean;
-  /** her story card, on this site: the worker puts its APP_URL in front */
+  /** her story card, on this site: the worker puts its APP_URL in front. A bomb-out: her best lift's end frame, signed */
   card_path: string;
   /** landscape footage (the presses): "BENCH · 2 OF 3" and "85 lb" under it (look 9) */
   lift_line: string; weight: string;
   upload_url: string;
+  /** the poster beside the clip (look 9): the first frame of the 2 s hold, a 432 × 768 JPEG */
+  poster_url: string;
   /** FAULT=clip (staging only, as /healthz's): the run fails this clip on purpose, through the real failure path (item 102) */
   fault?: true;
   times: typeof CLIP_TIMES;
@@ -85,29 +90,43 @@ export interface ClipStore {
 }
 
 /**
- * Queues her clip when she has a total, for the lift on her card. Does nothing when that attempt's clip is
+ * The lift her clip is of (3.9 step 6, item 101): with a total, the lift on her card; a bomb-out, her best good
+ * attempt by the same rule (the heaviest, the later in meet order on a tie; Home, the best score). No good
+ * attempt, or no total and no bomb-out yet: null.
+ */
+export async function clipLiftOf(db: Db, l: LifterRow, now = new Date()): Promise<{ top: MeetAttempt; bombed: boolean } | null> {
+  if (!l.meetId) return null;
+  const rows = await meetAttempts(db, l);
+  const t = await totalFor(db, l, rows, now);
+  if (t.kind === 'total') return t.top.id ? { top: t.top, bombed: false } : null;
+  if (t.kind !== 'bombed') return null;
+  const top = bestLiftOf(rows.map(a => asMeetAttempt(a, l)), l.division);
+  return top?.id ? { top, bombed: true } : null;
+}
+
+/**
+ * Queues her clip when she has a total or bombs out, for her best lift. Does nothing when that attempt's clip is
  * already queued, being made or made; a referee who changes her best lift moves it to the new one.
  * Returns the attempt queued, or null.
  */
 export async function queueCardClip(db: Db, lifterId: string, now = new Date()): Promise<string | null> {
   const [l] = await db.select().from(lifters).where(eq(lifters.id, lifterId));
   if (!l || l.deletedAt || !l.meetId) return null;
-  const t = await totalFor(db, l, undefined, now);
-  if (t.kind !== 'total') return null;
-  const top = t.top;
-  if (!top.id) return null;
+  const it = await clipLiftOf(db, l, now);
+  if (!it) return null;
+  const top = it.top;
   const queued = await db.transaction(async tx => {
     const [a] = await tx.update(attempts).set({ clipStatus: 'queued' })
       .where(and(eq(attempts.id, top.id!), isNull(attempts.clipStatus))).returning({ id: attempts.id, ct: attempts.commandTimes, call: attempts.call, rl: attempts.repLights });
     if (!a) return null;
     const w = clipWindow({ call: a.call, repLights: a.rl, commandTimes: a.ct });
     await tx.insert(judgeQueue).values({ attemptId: a.id, kind: 'clip', clipSeconds: clipLength(w.endMs - w.startMs) / 1000 }).onConflictDoNothing();
-    // her card's lift moved (a referee's decision): the old lift's waiting clip isn't needed
+    // her best lift moved (a referee's decision): the old lift's waiting clip isn't needed
     await tx.delete(judgeQueue).where(and(eq(judgeQueue.kind, 'clip'), isNull(judgeQueue.workerId), sql`${judgeQueue.attemptId} <> ${a.id}`,
       inArray(judgeQueue.attemptId, tx.select({ id: attempts.id }).from(attempts).where(eq(attempts.lifterId, l.id)))));
     return a.id;
   });
-  if (queued) await logEvent(db, 'clip_queued', { lifter_id: l.id }, queued);
+  if (queued) await logEvent(db, 'clip_queued', { lifter_id: l.id, bombed: it.bombed || undefined }, queued);
   return queued;
 }
 
@@ -147,14 +166,19 @@ export async function clipJob(db: Db, store: ClipStore, attemptId: string, worke
     }
   }
   const lights = (a.lights ?? (a.call === 'white' ? ['white', 'white', 'white'] : ['red', 'red', 'red'])) as ('white' | 'red')[];
-  const token = await ensureCardToken(db, l);
+  // a bomb-out has no card (5.28): the clip ends on her best lift's end frame, which only the run can fetch
+  const it = await clipLiftOf(db, l);
+  const cardPath = it?.bombed && it.top.id === a.id
+    ? endFramePath(a.id, process.env.JUDGE_CALLBACK_SECRET ?? '')
+    : `/api/card/${await ensureCardToken(db, l)}.png?f=story`;
   return {
     attempt_id: a.id, worker_id: workerId, video_url: await store.signedGet(a.videoKey!, CLIP_LEASE_S),
     start_ms: w.startMs, end_ms: w.endMs, judged_ms: judgedMs, lamps: lights, marks, mirror: !a.isSampleClip,
-    card_path: `/api/card/${token}.png?f=story`,
+    card_path: cardPath,
     lift_line: `${liftName(a.lift, l.division).toUpperCase()} · ${a.number} OF 3`,
     weight: weightText(a.weight, l.units, a.repsDeclared),
     upload_url: await store.signedPut(keys.clip(a.id), CLIP_LEASE_S),
+    poster_url: await store.signedPut(keys.clipPoster(a.id), CLIP_LEASE_S),
     times: CLIP_TIMES,
     ...(process.env.FAULT === 'clip' ? { fault: true as const } : {}),
   };

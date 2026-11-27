@@ -115,6 +115,25 @@ class Render(unittest.TestCase):
             px = np.frombuffer(last, dtype=np.uint8).reshape(1920, 1080, 3)[960, 540]
             self.assertTrue(all(abs(int(a) - b) < 8 for a, b in zip(px, (40, 40, 60))), px)
 
+    def test_the_poster_is_the_first_frame_of_the_hold_at_432_by_768(self):
+        # look 9 "The bomb-out clip": the judged frame with the marks under the lit lamps, a JPEG beside the clip
+        with tempfile.TemporaryDirectory() as d:
+            src = str(Path(d) / 'attempt.webm')
+            subprocess.run([clip.ffmpeg_exe(), '-v', 'error', '-f', 'lavfi', '-i', 'color=c=0x204060:size=360x640:rate=30:duration=2',
+                            '-c:v', 'libvpx', '-b:v', '500k', src], check=True, timeout=60)
+            card = Image.new('RGB', (1080, 1920), (40, 40, 60))
+            job = {'start_ms': 0, 'end_ms': 1900, 'judged_ms': 1500, 'lamps': ['white'] * 3, 'mirror': False, 'marks': None,
+                   'lift_line': 'DEADLIFT · 2 OF 3', 'weight': '155 lb'}
+            poster = str(Path(d) / 'poster.jpg')
+            clip.render(job, src, card, str(Path(d) / 'clip.mp4'), d, poster)
+            im = Image.open(poster)
+            self.assertEqual(im.format, 'JPEG')
+            self.assertEqual(im.size, (432, 768))
+            # the footage, dimmed for the hold, not the card
+            r, g, b = im.convert('RGB').getpixel((216, 500))
+            self.assertGreater(b, r + 20, (r, g, b))
+            self.assertNotEqual((round(r / 8), round(g / 8), round(b / 8)), (5, 5, 8))
+
 
 class RenderClipTask(unittest.TestCase):
     def setUp(self):
