@@ -21,3 +21,12 @@ test('meet control is for the host and admins', async ({ page }) => {
   const post = await page.request.post('/api/host/control', { form: { do: 'close' }, maxRedirects: 0 });
   expect([401, 403]).toContain(post.status());
 });
+
+test('/status: three rows with their lamps, never red, and when it was updated', async ({ page }) => {
+  await page.goto('/status');
+  await expect(page.getByRole('heading', { name: 'Platform status' })).toBeVisible();
+  for (const r of ['Lifting and recording', 'Judging', 'Referee bot']) await expect(page.getByText(r, { exact: true })).toBeVisible();
+  await expect(page.locator('.status-rows .mini-lamp')).toHaveCount(3);
+  await expect(page.locator('.status-rows .mini-lamp.red')).toHaveCount(0);
+  await expect(page.getByText(/^Updated \d+ seconds? ago\.$/)).toBeVisible();
+});
