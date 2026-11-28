@@ -8,7 +8,7 @@ import { meetLifters } from '@/lib/host-data';
 import { hasR2, r2 } from '@/lib/r2';
 import { botOn } from '@/lib/referee/words';
 import { divisionName, liftName, weightText } from '@/lib/referee-view';
-import { botLine, spotAttempts, syncSpotChecks, topThree } from './spot';
+import { botLine, spotAttempts, topThree } from './spot';
 
 export type SpotDeskClip = { attemptId: string; hud: string; name: string; weight: string; video: string | null; press: boolean; light: 'white' | 'red' | 'off' };
 export type SpotDeskRow = {
@@ -33,8 +33,9 @@ async function deskMeet(db: Db) {
 export async function spotDesk(db: Db, env: Record<string, string | undefined> = process.env, meetId?: string): Promise<SpotDesk> {
   const m = meetId ? (await db.select().from(meets).where(eq(meets.id, meetId)))[0] : await deskMeet(db);
   if (!m) return null;
-  // the top 3 is worked out again on every look (3.4d step 8); with the bot on, the worker sends the jobs
-  if (m.status !== 'final' && !botOn(env)) await syncSpotChecks(db, m, { env });
+  // the top 3 is worked out again on every look (3.4d step 8), with the bot's own tick: a row made here
+  // gets its job here (the row's insert is the lock), so a person can decide before the worker's next tick
+  if (m.status !== 'final') await (await import('./bot')).spotTick(db, env);
   const list = await meetLifters(db, m.id);
   const top = topThree(list);
   if (!top.length) return { meetName: m.name, final: m.status === 'final', rows: [], toCheck: 0, checked: 0 };

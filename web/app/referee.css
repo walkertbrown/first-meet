@@ -262,7 +262,8 @@ span.bot-frame { aspect-ratio: var(--ar, 9 / 16); }
 .spot-thumb video { width: 100%; height: 100%; object-fit: contain; display: block; }
 .spot-hud { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; font-size: 17px; line-height: 20px; letter-spacing: .04em; text-transform: uppercase; }
 .spot-place { font-family: var(--font-display); font-weight: 600; font-stretch: 75%; font-size: 17px; line-height: 24px; letter-spacing: .01em; }
-.spot-clip figcaption { display: flex; align-items: center; gap: 8px; }
+.spot-clip figcaption { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; }
+.spot-hud, .spot-weight { white-space: nowrap; }
 .spot-clip .mini-lamp { margin-left: auto; transition: background 180ms var(--ease-lamp), box-shadow 180ms var(--ease-lamp); }
 @media (prefers-reduced-motion: reduce) { .spot-clip .mini-lamp { transition: none; } }
 @media (max-width: 860px) { .spot-lifter { grid-template-columns: 1fr; } }
