@@ -1,0 +1,62 @@
+5  | h:- | s:- | T-1 | H-1 | P-1 | B0
+39 -,-,- | h:- | s:- | T32 | H0 | P0 | B0
+56 -,-,- | h:- | s:- | T32 | H812 | P0 | B0
+1092 -,-,- | h:- | s:- | T328 | H219 | P0 | B0
+13557 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T328 | H219 | P0 | B1
+13573 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T328 | H219 | P33 | B1
+13589 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T312 | H219 | P70 | B1
+13606 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T293 | H219 | P114 | B1
+13623 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T272 | H219 | P165 | B1
+13639 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T246 | H219 | P222 | B1
+13656 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T217 | H219 | P273 | B1
+13673 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T192 | H219 | P306 | B1
+13690 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T175 | H219 | P328 | B1
+13706 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T164 | H219 | P344 | B1
+13722 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T156 | H219 | P355 | B1
+13739 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T151 | H219 | P364 | B1
+13758 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T147 | H219 | P370 | B1
+13772 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T143 | H219 | P376 | B1
+13789 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T140 | H219 | P380 | B1
+13806 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T138 | H219 | P381 | B1
+14656 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T138 | H219 | P365 | B1
+14672 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T146 | H219 | P352 | B1
+14689 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T153 | H219 | P342 | B1
+14706 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T158 | H219 | P335 | B1
+14723 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T161 | H219 | P330 | B1
+14739 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T163 | H219 | P327 | B1
+14756 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T165 | H219 | P324 | B1
+14773 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T166 | H219 | P323 | B1
+14790 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T167 | H219 | P322 | B1
+14824 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T167 | H219 | P321 | B1
+14839 pulse,pulse,pulse | h:To a referee@1.00 | s:- | T168 | H219 | P321 | B1
+16772 white,-,- | h:To a referee@1.00 | s:- | T168 | H219 | P321 | B0
+16789 white,-,- | h:To a referee@0.73 | s:- | T168 | H219 | P321 | B0
+16806 white,-,- | h:To a referee@0.51 | s:- | T168 | H219 | P321 | B0
+16822 white,-,- | h:To a referee@0.34 | s:- | T168 | H219 | P321 | B0
+16839 white,-,- | h:To a referee@0.23 | s:- | T168 | H219 | P321 | B0
+16855 white,-,- | h:To a referee@0.15 | s:- | T168 | H219 | P321 | B0
+16872 white,-,- | h:To a referee@0.09 | s:- | T168 | H219 | P321 | B0
+16889 white,-,- | h:To a referee@0.06 | s:- | T168 | H219 | P321 | B0
+16905 white,-,- | h:To a referee@0.03 | s:- | T168 | H219 | P321 | B0
+16922 white,-,- | h:To a referee@0.02 | s:- | T168 | H219 | P321 | B0
+16939 white,-,- | h:To a referee@0.01 | s:- | T168 | H219 | P321 | B0
+16972 white,-,- | h:To a referee@0.00 | s:- | T168 | H219 | P321 | B0
+17106 white,white,- | h:To a referee@0.00 | s:- | T168 | H219 | P321 | B0
+17440 white,white,white | h:Good lift@0.00 | s:- | T168 | H219 | P321 | B0
+17856 white,white,white | h:Good lift@0.00 | s:This sample is a squat, standing in for @0.00 | T168 | H219 | P321 | B1
+17873 white,white,white | h:Good lift@0.27 | s:This sample is a squat, standing in for @0.00 | T168 | H219 | P318 | B1
+17890 white,white,white | h:Good lift@0.49 | s:This sample is a squat, standing in for @0.00 | T169 | H219 | P316 | B1
+17907 white,white,white | h:Good lift@0.66 | s:This sample is a squat, standing in for @0.00 | T170 | H219 | P314 | B1
+17923 white,white,white | h:Good lift@0.77 | s:This sample is a squat, standing in for @0.00 | T171 | H219 | P313 | B1
+17940 white,white,white | h:Good lift@0.85 | s:This sample is a squat, standing in for @0.06 | T172 | H219 | P312 | B1
+17956 white,white,white | h:Good lift@0.91 | s:This sample is a squat, standing in for @0.32 | T172 | H219 | P312 | B1
+17973 white,white,white | h:Good lift@0.94 | s:This sample is a squat, standing in for @0.53 | T172 | H219 | P312 | B1
+17989 white,white,white | h:Good lift@0.97 | s:This sample is a squat, standing in for @0.68 | T173 | H219 | P311 | B1
+18006 white,white,white | h:Good lift@0.98 | s:This sample is a squat, standing in for @0.79 | T173 | H219 | P311 | B1
+18022 white,white,white | h:Good lift@0.99 | s:This sample is a squat, standing in for @0.87 | T173 | H219 | P311 | B1
+18039 white,white,white | h:Good lift@0.99 | s:This sample is a squat, standing in for @0.92 | T173 | H219 | P311 | B1
+18056 white,white,white | h:Good lift@1.00 | s:This sample is a squat, standing in for @0.95 | T173 | H219 | P311 | B1
+18073 white,white,white | h:Good lift@1.00 | s:This sample is a squat, standing in for @0.97 | T173 | H219 | P311 | B1
+18089 white,white,white | h:Good lift@1.00 | s:This sample is a squat, standing in for @0.98 | T173 | H219 | P311 | B1
+18106 white,white,white | h:Good lift@1.00 | s:This sample is a squat, standing in for @0.99 | T173 | H219 | P311 | B1
+18123 white,white,white | h:Good lift@1.00 | s:This sample is a squat, standing in for @1.00 | T173 | H219 | P311 | B1

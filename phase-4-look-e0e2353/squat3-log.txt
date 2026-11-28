@@ -1,0 +1,29 @@
+14  | h:- | s:- | T-1 | H-1 | P-1 | B0
+52 -,-,- | h:- | s:- | T32 | H0 | P0 | B0
+67 -,-,- | h:- | s:- | T32 | H812 | P0 | B0
+1181 -,-,- | h:- | s:- | T328 | H219 | P0 | B0
+9114 -,-,- | h:- | s:- | T328 | H219 | P33 | B0
+9131 -,-,- | h:- | s:- | T312 | H219 | P70 | B0
+9147 -,-,- | h:- | s:- | T293 | H219 | P113 | B0
+9165 -,-,- | h:- | s:- | T272 | H219 | P154 | B0
+9182 -,-,- | h:- | s:- | T251 | H219 | P154 | B0
+11598 white,-,- | h:- | s:- | T251 | H219 | P154 | B0
+11931 white,white,- | h:- | s:- | T251 | H219 | P154 | B0
+12265 white,white,white | h:Good lift@0.00 | s:- | T251 | H219 | P154 | B0
+12682 white,white,white | h:Good lift@0.00 | s:The referee bot couldn't look at this on@0.00 | T251 | H219 | P154 | B1
+12697 white,white,white | h:Good lift@0.27 | s:The referee bot couldn't look at this on@0.00 | T251 | H219 | P196 | B1
+12714 white,white,white | h:Good lift@0.49 | s:The referee bot couldn't look at this on@0.00 | T230 | H219 | P231 | B1
+12731 white,white,white | h:Good lift@0.66 | s:The referee bot couldn't look at this on@0.00 | T213 | H219 | P257 | B1
+12748 white,white,white | h:Good lift@0.78 | s:The referee bot couldn't look at this on@0.00 | T200 | H219 | P276 | B1
+12764 white,white,white | h:Good lift@0.85 | s:The referee bot couldn't look at this on@0.06 | T190 | H219 | P288 | B1
+12781 white,white,white | h:Good lift@0.91 | s:The referee bot couldn't look at this on@0.32 | T184 | H219 | P296 | B1
+12797 white,white,white | h:Good lift@0.94 | s:The referee bot couldn't look at this on@0.53 | T180 | H219 | P302 | B1
+12814 white,white,white | h:Good lift@0.97 | s:The referee bot couldn't look at this on@0.68 | T177 | H219 | P306 | B1
+12832 white,white,white | h:Good lift@0.98 | s:The referee bot couldn't look at this on@0.79 | T176 | H219 | P308 | B1
+12852 white,white,white | h:Good lift@0.99 | s:The referee bot couldn't look at this on@0.87 | T174 | H219 | P309 | B1
+12869 white,white,white | h:Good lift@0.99 | s:The referee bot couldn't look at this on@0.92 | T174 | H219 | P310 | B1
+12885 white,white,white | h:Good lift@1.00 | s:The referee bot couldn't look at this on@0.95 | T173 | H219 | P311 | B1
+12901 white,white,white | h:Good lift@1.00 | s:The referee bot couldn't look at this on@0.97 | T173 | H219 | P311 | B1
+12916 white,white,white | h:Good lift@1.00 | s:The referee bot couldn't look at this on@0.98 | T173 | H219 | P311 | B1
+12931 white,white,white | h:Good lift@1.00 | s:The referee bot couldn't look at this on@0.99 | T173 | H219 | P311 | B1
+12948 white,white,white | h:Good lift@1.00 | s:The referee bot couldn't look at this on@1.00 | T173 | H219 | P311 | B1
