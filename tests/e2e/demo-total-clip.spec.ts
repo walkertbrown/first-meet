@@ -99,6 +99,18 @@ test(`the demo meet to a total on staging: her card's clip is ${expectFailed ? "
     }
     console.log(results.join('\n'));
 
+    // "See your total" the moment the ninth lights show (LookieBot saw "a client-side exception" here once at e0e2353,
+    // not reproduced): the total page opens, and no script on it throws or fails to load
+    const pageErrors: string[] = [];
+    page.on('pageerror', (e) => pageErrors.push(`${e.name}: ${e.message}`));
+    page.on('requestfailed', (r) => { if (/\/_next\/static\//.test(r.url())) pageErrors.push(`script failed to load: ${r.url()}`); });
+    await page.getByRole('button', { name: 'See your total' }).or(page.getByRole('link', { name: 'See your total' })).first().click();
+    await expect(page).toHaveURL(/\/platform\/total$/, { timeout: 30_000 });
+    await expect(page.getByRole('heading', { name: /^(You totaled, E2E total\.|You finished your first meet\.)$/, level: 1 })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Application error', { exact: false })).toHaveCount(0);
+    await page.waitForTimeout(3000); // the count-up runs
+    expect(pageErrors, 'the total page, no page error').toEqual([]);
+
     // her card: the clip is being made, then made (or, with FAULT=clip, couldn't be)
     await page.goto('/me/card');
     await expect(page.getByRole('heading', { name: 'Your meet card', level: 1 })).toBeVisible({ timeout: 30_000 });
