@@ -7,6 +7,7 @@
 //   was read or crossed gets one email with her moment ("We'll email you", 5.29)
 // - "Status message": a Sheet title and a sentence for /status (5.7)
 import { and, asc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
+import { remakeAtFinal } from '@/lib/card/clip-remake';
 import type { Db } from '@/db';
 import { awards as awardsTable, emails, lifters, meets, readouts } from '@/db/schema';
 import { awards } from '@/lib/board';
@@ -207,6 +208,8 @@ export async function runControl(db: Db, meet: MeetRow, a: ControlAction, now = 
         if (won.length) await tx.insert(awardsTable).values(won.map(w => ({ meetId: meet.id, lifterId: w.lifterId, kind: w.kind }))).onConflictDoNothing();
         await tx.update(meets).set({ status: 'final' }).where(eq(meets.id, meet.id));
       });
+      // item 119 (held): one sweep for any made clip whose end card still differs, made now. No change, no run.
+      await remakeAtFinal(db, meet.id, now);
       return { ok: true };
     }
     case 'replay': {

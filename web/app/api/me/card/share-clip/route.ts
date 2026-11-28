@@ -1,12 +1,15 @@
 // GET /api/me/card/share-clip: {ready, failed, shared}, for 5.30's Clip while "Your clip is being made".
-// POST /api/me/card/share-clip: "Share" or "Copy my card link" on 5.30's Clip segment, the first time
-// (item 99). Her card clip goes on her card link; her other videos don't change. "Save to my phone" doesn't
-// call this: that file stays with her.
+// POST /api/me/card/share-clip {via}: a tap on 5.30's Clip segment.
+// - "share" or "copy" ("Share", "Copy my card link"), the first time (item 99): her card clip goes on her card
+//   link; her other videos don't change.
+// - "share" or "save" ("Save to my phone"): this is the clip she sent, so a clip made again later for a new
+//   total says so on this segment (item 119). "Save" doesn't put it on her card link: that file stays with her.
 import { eq } from 'drizzle-orm';
 import { db, hasDb } from '@/db';
 import { lifters } from '@/db/schema';
 import { cardFor, clipState, shareCardClip } from '@/lib/card/card-data';
 import { queueOnRead } from '@/lib/card/clip-job';
+import { markClipSent } from '@/lib/card/clip-remake';
 import { logEvent } from '@/lib/queue';
 import { sessionFrom } from '@/lib/session';
 
@@ -35,7 +38,13 @@ export async function POST(req: Request) {
   if (!card) return Response.json({ error: 'sign in first' }, { status: 401 });
   const l = card.lifter;
   if (!card?.clip || card.clip.status !== 'ready') return Response.json({ error: 'no clip yet' }, { status: 409 });
-  const first = await shareCardClip(db(), l.id, card.clip.attemptId);
-  if (first) await logEvent(db(), 'clip_shared', { lifter_id: l.id }, card.clip.attemptId);
-  return Response.json({ shared: true });
+  const body = await req.json().catch(() => null) as { via?: unknown } | null;
+  // an older page posts no body: that was "Share" or "Copy my card link"
+  const via = body?.via === 'save' || body?.via === 'copy' ? body.via : body?.via === 'share' ? 'share' : 'copy';
+  if (via !== 'save') {
+    const first = await shareCardClip(db(), l.id, card.clip.attemptId);
+    if (first) await logEvent(db(), 'clip_shared', { lifter_id: l.id }, card.clip.attemptId);
+  }
+  if (via !== 'copy') await markClipSent(db(), l.id, card.clip.attemptId);
+  return Response.json({ shared: via !== 'save' });
 }

@@ -18,11 +18,14 @@
 .card-making p { color: #F1EFE8; margin: 0; }
 .card-page .caption.honest { color: var(--ink-3); margin: 12px auto 0; max-width: 360px; text-align: center; }
 .card-page .clip-line { margin: 12px auto 0; max-width: 360px; }
+/* item 119: in the Clip line's place, in --ink so it reads above the line under it; that line follows 8 px under */
+.card-page .clip-new { margin: 12px auto 0; max-width: 360px; color: var(--ink); }
+.card-page .clip-new + .clip-line { margin-top: 8px; }
 .card-print-frame { display: block; width: 100%; max-width: 360px; aspect-ratio: 8.5 / 11; margin: 0 auto; border: 0; border-radius: 4px; box-shadow: 0 0 0 1px var(--rule); background: #F3F4F1; position: relative; overflow: hidden; }
 .card-print-frame iframe { position: absolute; top: 0; left: 0; }
 .card-link-shown { word-break: break-all; }
 @media (min-width: 900px) {
-  .card-frame, .card-print-frame, .card-page .caption.honest, .card-page .clip-line { max-width: 420px; }
+  .card-frame, .card-print-frame, .card-page .caption.honest, .card-page .clip-line, .card-page .clip-new { max-width: 420px; }
 }
 
 /* ---------- The certificate: ink on chalk, at any printer ---------- */

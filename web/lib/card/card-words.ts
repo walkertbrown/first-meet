@@ -15,6 +15,8 @@ export const CARD_WORDS = {
   failedBody: 'Your card is ready to share. You can try the clip again.',
   failedFinal: "We've told the team.",
   tryAgain: 'Try again',
+  /** Item 119 (held): she sent a clip that ended on another total, and the new one is made. */
+  newTotal: 'Your clip ends on your new total now. Share or save it again to send the new one.',
   print: 'Print',
   pdf: 'Or choose Save as PDF in the print window.',
 } as const;

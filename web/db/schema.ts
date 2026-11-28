@@ -177,6 +177,12 @@ export const attempts = pgTable('attempts', {
   clipRetried: boolean('clip_retried').notNull().default(false),
   /** When she shared her card clip from 5.30's Clip segment: this clip, and only this clip, is public (5.30, 5.5). */
   clipSharedAt: at('clip_shared_at'),
+  /** Item 119: the content hash of the end card the made clip ends on (her Story's CardView). */
+  clipCardHash: text('clip_card_hash'),
+  /** Item 119: the end card hash of the clip she last tapped Share or Save to my phone on, on 5.30's Clip segment. */
+  clipSentHash: text('clip_sent_hash'),
+  /** Item 119: making the clip again for a changed end card failed twice; she keeps the old one, and /ops names it. */
+  clipRemakeFailed: boolean('clip_remake_failed').notNull().default(false),
   refereeId: uuid('referee_id').references(() => lifters.id),
   spotChecked: boolean('spot_checked').notNull().default(false),
   isSampleClip: boolean('is_sample_clip').notNull().default(false),
@@ -332,6 +338,10 @@ export const judgeQueue = pgTable('judge_queue', {
   workerId: text('worker_id'),
   leasedUntil: at('leased_until'),
   clipSeconds: real('clip_seconds').notNull().default(30),
+  /** Item 119: a clip made again because her end card changed; her old clip stays `ready` meanwhile. */
+  remake: boolean('remake').notNull().default(false),
+  /** The end card hash this clip run was given (item 119), kept on her attempt when the clip is made. */
+  cardHash: text('card_hash'),
   startedAt: at('started_at'),
   lastError: text('last_error'),
 }, t => [

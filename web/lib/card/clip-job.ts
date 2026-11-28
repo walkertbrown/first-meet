@@ -2,13 +2,16 @@
 // worker only draws. Queued once when her total (or Home score, or her bomb-out) lands, for her best lift,
 // and again only if a referee changes which lift that is. Claimed only while no `poses` row waits.
 // A bomb-out's clip (item 101) ends on her best lift's end frame in place of the story card.
+// Item 119 (held, ITEM_119=on): a made clip whose end card changes is made again (clip-remake.ts); the old one
+// stays `ready` while it is.
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, judgeQueue, judgeWorkers, lifters } from '@/db/schema';
 import { asMeetAttempt, meetAttempts, totalFor, type LifterRow } from '@/lib/meet-flow';
 import { bestLiftOf, type MeetAttempt } from '@/lib/meet';
 import { clipCardPath, endFramePath } from '@/lib/card/best-lift';
-import { ensureCardToken } from '@/lib/card/card-data';
+import { cardFor, ensureCardToken } from '@/lib/card/card-data';
+import { endCardHash } from '@/lib/card/card-hash';
 import { drawAhead } from '@/lib/card/draw-ahead';
 import { judgedLift, logEvent } from '@/lib/queue';
 import { keys } from '@/lib/r2';
@@ -148,7 +151,8 @@ export async function claimClip(db: Db, store: ClipStore, workerId: string): Pro
     if (!r) return null;
     await tx.update(judgeQueue).set({ workerId, startedAt: sql`now()`, leasedUntil: sql`now() + make_interval(secs => ${CLIP_LEASE_S})` })
       .where(and(eq(judgeQueue.attemptId, r.attempt_id), eq(judgeQueue.kind, 'clip')));
-    await tx.update(attempts).set({ clipStatus: 'rendering' }).where(eq(attempts.id, r.attempt_id));
+    // a clip made again (item 119) stays `ready`: her old clip plays and shares until the new one replaces it
+    await tx.update(attempts).set({ clipStatus: 'rendering' }).where(and(eq(attempts.id, r.attempt_id), sql`${attempts.clipStatus} is distinct from 'ready'`));
     return r.attempt_id;
   });
   await db.update(judgeWorkers).set({ lastSeenAt: sql`now()` }).where(eq(judgeWorkers.workerId, workerId));
@@ -175,7 +179,12 @@ export async function clipJob(db: Db, store: ClipStore, attemptId: string, worke
   // a bomb-out has no card (5.28): the clip ends on her best lift's end frame, which only the run can fetch
   const it = await clipLiftOf(db, l);
   const secret = process.env.JUDGE_CALLBACK_SECRET ?? '';
-  const cardPath = it?.bombed && it.top.id === a.id ? endFramePath(a.id, secret) : clipCardPath(await ensureCardToken(db, l), secret);
+  const bombOut = !!it?.bombed && it.top.id === a.id;
+  const cardPath = bombOut ? endFramePath(a.id, secret) : clipCardPath(await ensureCardToken(db, l), secret);
+  // the end card this run draws (item 119): kept on her attempt when the clip is made, to tell when it changes
+  const card = bombOut ? null : await cardFor(db, l);
+  await db.update(judgeQueue).set({ cardHash: card ? endCardHash(card.view) : null })
+    .where(and(eq(judgeQueue.attemptId, a.id), eq(judgeQueue.kind, 'clip'), eq(judgeQueue.workerId, workerId)));
   return {
     attempt_id: a.id, worker_id: workerId, video_url: await store.signedGet(a.videoKey!, CLIP_LEASE_S),
     start_ms: w.startMs, end_ms: w.endMs, judged_ms: judgedMs, lamps: lights, marks, mirror: !a.isSampleClip,
@@ -209,17 +218,31 @@ export async function takeClip(db: Db, store: ClipStore, p: ClipPost): Promise<{
   if (p.ok && head && head.bytes > 0) {
     await db.transaction(async tx => {
       await tx.delete(judgeQueue).where(and(eq(judgeQueue.attemptId, p.attempt_id), eq(judgeQueue.kind, 'clip')));
-      await tx.update(attempts).set({ clipStatus: 'ready', clipKey: keys.clip(p.attempt_id) }).where(eq(attempts.id, p.attempt_id));
+      await tx.update(attempts).set({ clipStatus: 'ready', clipKey: keys.clip(p.attempt_id), clipCardHash: q.cardHash, clipRemakeFailed: false }).where(eq(attempts.id, p.attempt_id));
       await tx.update(judgeWorkers).set({ attemptsDone: sql`${judgeWorkers.attemptsDone} + 1`, lastSeenAt: sql`now()` }).where(eq(judgeWorkers.workerId, p.worker_id));
     });
-    await logEvent(db, 'clip_rendered', { secs: p.secs ?? null, bytes: head.bytes, commit: p.commit ?? null, worker_id: p.worker_id }, p.attempt_id);
+    await logEvent(db, 'clip_rendered', { secs: p.secs ?? null, bytes: head.bytes, commit: p.commit ?? null, worker_id: p.worker_id, remake: q.remake || undefined }, p.attempt_id);
+    // her card changed while this was being made (item 119): it's made again after the usual minute
+    await remakeAfterChange(db, p.attempt_id);
     return { status: 200 };
   }
-  await clipFailed(db, p.attempt_id, q.requeued, p.error ?? (p.ok ? 'clip not in storage' : 'failed'));
+  await clipFailed(db, p.attempt_id, q.requeued, p.error ?? (p.ok ? 'clip not in storage' : 'failed'), q.remake);
   return { status: 200 };
 }
 
-async function clipFailed(db: Db, attemptId: string, requeued: boolean, why: string) {
+async function clipFailed(db: Db, attemptId: string, requeued: boolean, why: string, remake = false) {
+  if (remake) {
+    // item 119: two tries, then she keeps the old clip, with no line, and /ops names it ("Old total on her clip")
+    if (!requeued) {
+      await db.update(judgeQueue).set({ requeued: true, workerId: null, leasedUntil: null, startedAt: null, nextTryAt: sql`now()`, lastError: why.slice(0, 300) })
+        .where(and(eq(judgeQueue.attemptId, attemptId), eq(judgeQueue.kind, 'clip')));
+    } else {
+      await db.delete(judgeQueue).where(and(eq(judgeQueue.attemptId, attemptId), eq(judgeQueue.kind, 'clip')));
+      await db.update(attempts).set({ clipRemakeFailed: true }).where(and(eq(attempts.id, attemptId), eq(attempts.clipStatus, 'ready')));
+    }
+    await logEvent(db, requeued ? 'clip_remake_failed' : 'clip_remake_requeued', { why: why.slice(0, 300) }, attemptId);
+    return;
+  }
   if (!requeued) {
     await db.update(judgeQueue).set({ requeued: true, workerId: null, leasedUntil: null, startedAt: null, nextTryAt: sql`now()`, lastError: why.slice(0, 300) })
       .where(and(eq(judgeQueue.attemptId, attemptId), eq(judgeQueue.kind, 'clip')));
@@ -251,10 +274,10 @@ export async function retryClip(db: Db, lifterId: string, attemptId: string): Pr
 
 /** Clip leases that ran out (the dispatcher's tick): tried once more, then `failed`. */
 export async function expireClipLeases(db: Db): Promise<string[]> {
-  const rows = await db.execute<{ attempt_id: string; requeued: boolean; worker_id: string }>(sql`
-    select attempt_id, requeued, worker_id from judge_queue where kind = 'clip' and leased_until < now()`);
+  const rows = await db.execute<{ attempt_id: string; requeued: boolean; worker_id: string; remake: boolean }>(sql`
+    select attempt_id, requeued, worker_id, remake from judge_queue where kind = 'clip' and leased_until < now()`);
   for (const r of rows) {
-    await clipFailed(db, r.attempt_id, r.requeued, `lease ran out (${r.worker_id})`);
+    await clipFailed(db, r.attempt_id, r.requeued, `lease ran out (${r.worker_id})`, r.remake);
     await db.update(judgeWorkers).set({ endedAt: sql`now()` }).where(and(eq(judgeWorkers.workerId, r.worker_id), sql`${judgeWorkers.endedAt} is null`));
   }
   return rows.map(r => r.attempt_id);
@@ -320,8 +343,9 @@ export async function queueOnRead(db: Db, lifterId: string, attemptId: string, c
 }
 
 /**
- * After an attempt gets its lights (the judge, the bar tracker or a referee): queue her clip if that
- * gave her a total. Never fails the caller: a clip that couldn't be queued is logged and tried at her next lights.
+ * After an attempt gets its lights (the judge, the bar tracker, a referee or a spot check): queue her clip if
+ * that gave her a total, and (item 119) queue her made clip again if its end card changed. Never fails the
+ * caller: a clip that couldn't be queued is logged and tried at her next lights.
  */
 export async function clipAfterLights(db: Db, attemptId: string): Promise<void> {
   try {
@@ -329,5 +353,18 @@ export async function clipAfterLights(db: Db, attemptId: string): Promise<void> 
     if (a?.status === 'judged') await queueCardClip(db, a.lifterId);
   } catch (e) {
     console.log(JSON.stringify({ msg: 'clip not queued', attempt_id: attemptId, error: (e as Error).message }));
+  }
+  await remakeAfterChange(db, attemptId);
+}
+
+/** Item 119's check, for the lifter whose attempt this is. Loaded when called: clip-remake uses this file. */
+async function remakeAfterChange(db: Db, attemptId: string): Promise<void> {
+  try {
+    const { remakeOn, remakeAfterChange: check } = await import('@/lib/card/clip-remake');
+    if (!remakeOn()) return;
+    const [a] = await db.select({ lifterId: attempts.lifterId }).from(attempts).where(eq(attempts.id, attemptId));
+    if (a) await check(db, a.lifterId);
+  } catch (e) {
+    console.log(JSON.stringify({ msg: 'clip remake not checked', attempt_id: attemptId, error: (e as Error).message }));
   }
 }
