@@ -5,6 +5,7 @@
 import type { CardView } from '@/lib/card/card-view';
 import { CARD_FOOTER } from '@/lib/card/card-view';
 import type { BestLiftView } from '@/lib/card/best-lift';
+import { BODY_ADVANCE, NAME_ADVANCE } from '@/lib/card/card-metrics';
 
 export const K = 1080 / 390;
 const px = (n: number) => Math.round(n * K * 100) / 100;
@@ -108,19 +109,19 @@ function Wordmark({ season }: { season: string }) {
   );
 }
 
-function Name({ v }: { v: Pick<CardView, 'name' | 'meta'> }) {
+function Name({ v, wrap = false, size = 34 }: { v: Pick<CardView, 'name' | 'meta'>; wrap?: boolean; size?: number }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-      <div style={{ fontFamily: F.name, fontSize: px(34), lineHeight: `${px(36)}px`, letterSpacing: px(34) * -0.01, color: C.ink }}>{v.name}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0, ...(wrap ? { flexShrink: 1, minWidth: 0, width: '100%', wordBreak: 'break-word' as const } : {}) }}>
+      <div style={{ fontFamily: F.name, fontSize: px(size), lineHeight: `${px(size * 36 / 34)}px`, letterSpacing: px(size) * -0.01, color: C.ink }}>{v.name}</div>
       <div style={{ fontFamily: F.body, fontSize: px(16), lineHeight: `${px(22)}px`, color: C.ink2, marginTop: px(6) }}>{v.meta}</div>
     </div>
   );
 }
 
-function Total({ v }: { v: CardView }) {
+function Total({ v, size = 118 }: { v: CardView; size?: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(26), flexShrink: 0 }}>
-      <div style={{ fontFamily: F.total, fontSize: px(118), lineHeight: `${px(100)}px`, letterSpacing: px(118) * -0.04, color: C.ink }}>{v.total}</div>
+      <div style={{ fontFamily: F.total, fontSize: px(size), lineHeight: `${px(size * TOTAL_LINE)}px`, letterSpacing: px(size) * -0.04, color: C.ink }}>{v.total}</div>
       <div style={{ display: 'flex', alignItems: 'center', marginTop: px(10) }}>
         <span style={{ fontFamily: F.unit, fontSize: px(20), lineHeight: `${px(24)}px`, letterSpacing: px(20) * 0.06, color: C.ink2 }}>{v.unitLine}</span>
         {v.nineForNine && (
@@ -231,15 +232,63 @@ export function BestLiftCard({ v }: { v: BestLiftView }) {
 }
 
 /** Post, 4:5 (look 9): the lamps and the name side by side, and the heaviest bar dropped. */
+/** How many lines `text` wraps to in `width` (the sample's 390 px scale), breaking at spaces and after hyphens. */
+export function wrappedLines(text: string, advance: Record<string, number>, size: number, tracking: number, width: number) {
+  const widest = Math.max(...Object.values(advance));
+  // 2 % over, so a line it counts as fitting never wraps in Satori: a card counts a line too many, never too few
+  const w = (s: string) => [...s].reduce((a, ch) => a + ((advance[ch] ?? widest) / 2000 + tracking) * size, 0) * 1.02;
+  const words = text.trim().split(/\s+/).flatMap(word => word.split(/(?<=-)/)).filter(Boolean);
+  let lines = 1;
+  let line = '';
+  for (const word of words) {
+    const next = line ? (line.endsWith('-') ? line + word : `${line} ${word}`) : word;
+    if (!line || w(next) <= width) { line = next; continue; }
+    lines++;
+    line = word;
+  }
+  // a word wider than the column breaks inside itself (wordBreak below)
+  return words.reduce((n, word) => n + Math.max(0, Math.ceil(w(word) / width) - 1), lines);
+}
+
+// The Post's height in the sample's scale, and everything in it but the total's line (look 9): the padding, the
+// header, the 40 above the lamps row, the 26 under the meta, the unit line, the three lifts and the footer.
+const POST_H = 1350 / K;
+const POST_FIXED = 34 + 30 + 28 + 40 + 26 + 10 + 24 + 16 + 16 + 1 + 28 + 30 + 18 + 18;
+// the name column beside the lamps: the card less its padding, three 40 px lamps 10 apart, and the 22 px gap
+const POST_NAME_COLUMN = 390 - 60 - (3 * 40 + 2 * 10) - 22;
+const TOTAL_LINE = 100 / 118;
+
+/**
+ * The Post's name and meta lines and the total's size (LookieBot at e0e2353): the name and meta wrap inside the
+ * padding, the total sits 26 under them, and when the stack doesn't fit it steps down, as `bestWeightSize` does,
+ * rather than overlap.
+ */
+export function postLayout(v: Pick<CardView, 'name' | 'meta' | 'total'>) {
+  const metaLines = v.meta ? wrappedLines(v.meta, BODY_ADVANCE, 16, 0, POST_NAME_COLUMN) : 0;
+  const fit = (nameSize: number) => {
+    const nameLines = wrappedLines(v.name, NAME_ADVANCE, nameSize, -0.01, POST_NAME_COLUMN);
+    const row = Math.max(40, nameLines * nameSize * 36 / 34 + (metaLines ? 6 + metaLines * 22 : 0));
+    let size = Math.min(118, bestWeightSize(v.total, 330));
+    while (size > 40 && size * TOTAL_LINE > POST_H - POST_FIXED - row) size -= 2;
+    return { nameSize, nameLines, metaLines, row, size };
+  };
+  // the total steps down first; a name so long the total would go under 72 steps down itself, to 20 at the least
+  let out = fit(34);
+  for (let n = 32; out.size < POST_TOTAL_FLOOR && n >= 20; n -= 2) out = fit(n);
+  return out;
+}
+const POST_TOTAL_FLOOR = 72;
+
 export function PostCard({ v }: { v: CardView }) {
+  const { size, nameSize, row } = postLayout(v);
   return (
     <div style={frame(1080, 1350)}>
       <Wordmark season={v.season} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: px(22), margin: `${px(40)}px 0 0` }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: px(22), margin: `${px(40)}px 0 0`, flexShrink: 0, height: px(row) }}>
         <Lamps size={px(40)} gap={px(10)} />
-        <div style={{ display: 'flex', flex: 1 }}><Name v={v} /></div>
+        <div style={{ display: 'flex', flex: 1, minWidth: 0 }}><Name v={v} wrap size={nameSize} /></div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto' }}><Total v={v} /></div>
+      <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto' }}><Total v={v} size={size} /></div>
       <Lifts v={v} />
       <Foot />
     </div>

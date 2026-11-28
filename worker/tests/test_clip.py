@@ -64,6 +64,24 @@ class Layout(unittest.TestCase):
         self.assertEqual((x, w), (0, 1080))   # full width, never cropped
         self.assertTrue(560 <= y and y + h <= 1168)
 
+    def test_the_lift_line_sits_on_one_baseline(self):
+        # LookieBot at e0e2353: each letter at its own top raised the middle dot to cap height
+        from PIL import ImageDraw
+        hud = clip._font('anybody-800-112.ttf', 40)
+
+        def ink_rows(text):
+            im = Image.new('L', (900, 120), 0)
+            clip.tracked(ImageDraw.Draw(im), (450, 20), text, hud, 255, 0.04 * 40)
+            rows = np.nonzero(np.asarray(im).max(axis=1))[0]
+            return int(rows.min()), int(rows.max())
+
+        cap_top, base = ink_rows('DEADLIFT')
+        self.assertEqual(cap_top, 20)                            # the capitals' top stays where look 9 puts it
+        dot_top, dot_bottom = ink_rows('·')
+        mid = (dot_top + dot_bottom) / 2
+        self.assertGreater(mid, cap_top + (base - cap_top) * 0.3)  # at the letters' middle, not their top
+        self.assertLess(mid, cap_top + (base - cap_top) * 0.7)
+
     def test_portrait_fills_the_frame_uncropped(self):
         lay = clip.layout(720, 1280)
         self.assertFalse(lay.landscape)

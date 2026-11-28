@@ -223,11 +223,16 @@ class Painter:
 
 
 def tracked(d: ImageDraw.ImageDraw, at: tuple[float, float], text: str, font: ImageFont.FreeTypeFont, fill, spacing: float) -> None:
-    """Centred text with letter-spacing (HUD label type is +0.04em)."""
+    """Centred text with letter-spacing (HUD label type is +0.04em), every letter on one baseline.
+
+    `at[1]` is the top of the capitals. Each letter is drawn at the baseline ('ls'), not at its own top ('lt'): a
+    middle dot's top is the whole dot, so 'lt' raised it to cap height (LookieBot at e0e2353, `DEADLIFT ˙ 3 OF 3`).
+    """
     widths = [font.getlength(ch) for ch in text]
     x = at[0] - (sum(widths) + spacing * max(0, len(text) - 1)) / 2
+    baseline = at[1] - font.getbbox('H', anchor='ls')[1]
     for ch, w in zip(text, widths):
-        d.text((x, at[1]), ch, font=font, fill=fill, anchor='lt')
+        d.text((x, baseline), ch, font=font, fill=fill, anchor='ls')
         x += w + spacing
 
 

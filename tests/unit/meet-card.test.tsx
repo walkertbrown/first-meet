@@ -107,4 +107,30 @@ describe('the card PNGs (Satori)', () => {
     const pad = Math.floor(30 * (1080 / 390)) - 2;
     for (let y = png.h - pad; y < png.h; y += 4) for (let x = 0; x < png.w; x += 6) expect(png.px(x, y)).toEqual([0x0d, 0x0e, 0x13]);
   }, 30_000);
+
+  // LookieBot at e0e2353: on the Post, a name or meta that wraps ran into the total, and a long name ran off the edge.
+  // The name and meta wrap inside the padding, the total keeps at least 26 px (the sample's scale) of stage above it,
+  // and steps down when the stack needs the room.
+  it.each([
+    ['diane', her],
+    ['rosa', { ...her, cardName: 'Rosa Lookie' }],
+    ['june', { ...her, cardName: 'June Okonkwo-Beaumont' }],
+    ['long', { ...her, cardName: 'Maria-Fernanda Castellanos-Whitfield', hometown: 'Rancho Santa Margarita, CA' }],
+  ] as const)('the Post with %s: nothing touches the total, and nothing leaves the card', async (name, who) => {
+    const card = cardView(who, 'Winter 2027', { value: 1375, best: barbell, nineForNine: true });
+    const b = Buffer.from(await (await cardImage(card, 'post')).arrayBuffer());
+    if (out) writeFileSync(`${out}/post-${name}.png`, b);
+    const png = pngRows(b);
+    const stage = (x: number, y: number) => { const [r, g, bl] = png.px(x, y); return Math.abs(r - 0x0d) + Math.abs(g - 0x0e) + Math.abs(bl - 0x13) < 12; };
+    const pad = Math.floor(30 * (1080 / 390)) - 2;
+    // the right and bottom padding stay empty stage
+    for (let y = 0; y < png.h; y += 3) for (let x = png.w - pad; x < png.w; x += 4) expect(stage(x, y), `right padding at ${x},${y}`).toBe(true);
+    for (let y = png.h - pad; y < png.h; y += 3) for (let x = 0; x < png.w; x += 4) expect(stage(x, y), `bottom padding at ${x},${y}`).toBe(true);
+    // rows of nothing but stage: the band under the header and the band of at least 26 px over the total
+    const blank = (y: number) => { for (let x = pad; x < png.w - pad; x += 2) if (!stage(x, y)) return false; return true; };
+    const bands: number[] = [];
+    let run = 0;
+    for (let y = pad; y < png.h - pad; y++) { if (blank(y)) run++; else { if (run) bands.push(run); run = 0; } }
+    expect(bands.filter(n => n >= Math.floor(26 * (1080 / 390)) - 4).length, `blank bands ${bands.join(',')}`).toBeGreaterThanOrEqual(2);
+  }, 30_000);
 });
