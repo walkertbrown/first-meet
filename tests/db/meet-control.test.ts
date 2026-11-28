@@ -38,6 +38,14 @@ describe.skipIf(!URL_)('meet control', () => {
     expect((await controlMeet(db))?.id).toBe(m.id);
   });
 
+  it('keeps to the meet the page was on, even once its board is final (no jump to the next meet)', async () => {
+    const fall = (await db.select().from(meets).where(eq(meets.slug, 'fall')))[0];
+    expect((await controlMeet(db, 'fall'))?.id).toBe(fall.id);
+    // a slug that isn't a meet control works on falls back to the current one
+    expect((await controlMeet(db, 'no-such-meet'))?.slug).toBe('winter');
+    expect((await controlMeet(db, null))?.slug).toBe('winter');
+  });
+
   it('opens early by pulling the opening time to now, and closes with the status', async () => {
     const m = (await controlMeet(db))!;
     const now = new Date('2027-02-25T12:00:00Z');

@@ -16,7 +16,13 @@ import { boardFinalReady } from '@/lib/meet-window';
 import { getSetting, setSetting } from '@/lib/referee/bot';
 
 /** The meet control works on: the first real (or staging's test) meet whose board isn't final yet; else the last one made final. */
-export async function controlMeet(db: Db): Promise<MeetRow | null> {
+// With `slug` (the meet a form was posted from, or the one a post went back to), that meet when it is one
+// control works on, so making a board final doesn't move the page to the next meet.
+export async function controlMeet(db: Db, slug?: string | null): Promise<MeetRow | null> {
+  if (slug) {
+    const [it] = await db.select().from(meets).where(and(eq(meets.slug, slug), inArray(meets.kind, ['real', 'test']))).limit(1);
+    if (it) return it;
+  }
   const [open] = await db.select().from(meets).where(and(inArray(meets.kind, ['real', 'test']), ne(meets.status, 'final')))
     .orderBy(sql`${meets.opensAt} asc nulls last`, asc(meets.slug)).limit(1);
   if (open) return open;

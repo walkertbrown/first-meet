@@ -3,8 +3,8 @@
 // bottom sheet. Escape or Cancel closes it; the form posts only from the sheet's own button.
 import { useEffect, useRef, useState } from 'react';
 
-export function ConfirmPost({ action, label, title, body, yes, disabled, ghost }:
-  { action: string; label: string; title: string; body?: string; yes: string; disabled?: boolean; ghost?: boolean }) {
+export function ConfirmPost({ meet, action, label, title, body, yes, disabled, ghost }:
+  { meet: string; action: string; label: string; title: string; body?: string; yes: string; disabled?: boolean; ghost?: boolean }) {
   const [open, setOpen] = useState(false);
   const sheet = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -24,6 +24,7 @@ export function ConfirmPost({ action, label, title, body, yes, disabled, ghost }
             <h2 className="sheet-title" id={`c-${action}`}>{title}</h2>
             {body && <p className="body">{body}</p>}
             <form method="post" action="/api/host/control" className="try-actions">
+              <input type="hidden" name="meet" value={meet} />
               <input type="hidden" name="do" value={action} />
               <button className="btn" type="submit">{yes}</button>
               <button className="btn ghost" type="button" onClick={() => setOpen(false)}>Cancel</button>
