@@ -18,7 +18,7 @@ describe('item 119 on her Clip segment', () => {
 
   it('shows in the Clip line\'s place, above the visibility line and the buttons, only when she sent the old clip', () => {
     const html = screen({ clip: { ready: true, failed: null, shared: true, newTotal: true, version: 'h2' } });
-    const line = html.indexOf(`<p class="small clip-new">${CARD_WORDS.newTotal}</p>`);
+    const line = html.indexOf(`<p class="body clip-new">${CARD_WORDS.newTotal}</p>`);
     expect(line).toBeGreaterThan(html.indexOf('caption honest'));
     expect(line).toBeLessThan(html.indexOf(CARD_WORDS.shared));
     expect(html.indexOf(CARD_WORDS.shared)).toBeLessThan(html.indexOf('>Share</button>'));
@@ -38,9 +38,12 @@ describe('item 119 on her Clip segment', () => {
     expect(screen()).toContain('src="/api/card/AbCdEfGhIjKlMnOp.mp4"');
   });
 
-  it('look: Small in --ink, 12 px under, the visibility line 8 px under it; no motion', () => {
+  it('look (LookieBot, reading 5): Body in --ink like the visibility line, 12 px under, that line 8 px under it; no motion', () => {
+    const html = screen({ clip: { ready: true, failed: null, shared: true, newTotal: true } });
+    expect(html).toContain('<p class="body clip-new">');
+    expect(html).toContain('<p class="body clip-line"');
     const css = readFileSync('web/app/card.css', 'utf8');
-    expect(css).toMatch(/\.card-page \.clip-new \{ margin: 12px auto 0; max-width: 360px; color: var\(--ink\); \}/);
+    expect(css).toMatch(/\.card-page \.clip-new \{ margin: 12px auto 0; max-width: 360px; \}/);
     expect(css).toMatch(/\.card-page \.clip-new \+ \.clip-line \{ margin-top: 8px; \}/);
     expect(css).not.toMatch(/clip-new[^}]*(animation|transition)/);
   });

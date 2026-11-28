@@ -187,7 +187,7 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
       {seg === 'Print' && <PrintPreview frame={printFrame} />}
 
       <p className="caption honest">{HONEST_LINE}</p>
-      {newTotalLine && <p className="small clip-new">{CARD_WORDS.newTotal}</p>}
+      {newTotalLine && <p className="body clip-new">{CARD_WORDS.newTotal}</p>}
       {clipLine && <p className="body clip-line" aria-live="polite">{clipLine}</p>}
 
       <div className="try-actions">
