@@ -7,6 +7,13 @@
 .card-frame.story { aspect-ratio: 9 / 16; }
 .card-frame.post { aspect-ratio: 4 / 5; }
 .card-frame.story img, .card-frame.story video { height: 100%; object-fit: contain; }
+/* Her card while it's drawn (look 5.15): the frame pulses until the image is there, then stops with no fade. */
+.card-frame.drawing { position: relative; background: transparent; }
+.card-frame.drawing::before { content: ''; position: absolute; inset: 0; background: var(--surface-2); animation: card-wait 1.6s var(--ease-in-out) infinite; }
+.card-frame.drawing img { position: relative; }
+.card-frame.drawing[data-drawn]::before { content: none; }
+@keyframes card-wait { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+@media (prefers-reduced-motion: reduce) { .card-frame.drawing::before { animation: none !important; opacity: .8; } }
 .card-making { display: grid; place-items: center; padding: 24px; text-align: center; }
 .card-making p { color: #F1EFE8; margin: 0; }
 .card-page .caption.honest { color: var(--ink-3); margin: 12px auto 0; max-width: 360px; text-align: center; }

@@ -135,7 +135,34 @@ test(`the demo meet to a total on staging: her card's clip is ${expectFailed ? "
       const anon = await browser.newContext();
       try {
         const pub = await anon.newPage();
+        // look 5.15: while her Story is still being drawn, its frame pulses (`--surface-2`, 1 → .6 → 1 over
+        // 1.6 s), holds at .8 with motion off, and stops with no fade once the image is there.
+        let release!: () => void;
+        const held = new Promise<void>(r => { release = r; });
+        await pub.route(/\/api\/card\/[^/]+\.png\?f=story$/, async route => { await held; await route.continue(); });
         await pub.goto(`/card/${token}`);
+        const waiting = pub.locator('.card-frame.story.drawing:not([data-drawn])');
+        await expect(waiting).toHaveCount(1, { timeout: 30_000 });
+        const pulse = () => waiting.evaluate(el => {
+          const b = getComputedStyle(el, '::before');
+          const probe = document.createElement('i');
+          probe.style.color = 'var(--surface-2)';
+          document.body.append(probe);
+          const surface2 = getComputedStyle(probe).color;
+          probe.remove();
+          return { content: b.content, bg: b.backgroundColor, surface2, name: b.animationName, s: b.animationDuration, opacity: b.opacity };
+        });
+        const moving = await pulse();
+        expect(moving.content).not.toBe('none');
+        expect(moving.bg).toBe(moving.surface2);
+        expect({ name: moving.name, s: moving.s }).toEqual({ name: 'card-wait', s: '1.6s' });
+        await pub.emulateMedia({ reducedMotion: 'reduce' });
+        expect(await pulse()).toMatchObject({ name: 'none', opacity: '0.8' });
+        await pub.emulateMedia({ reducedMotion: 'no-preference' });
+        release();
+        await expect(pub.locator('.card-frame.story.drawing[data-drawn]')).toHaveCount(1, { timeout: 60_000 });
+        expect(await pub.locator('.card-frame.story').evaluate(el => getComputedStyle(el, '::before').content)).toBe('none');
+        await pub.unroute(/\/api\/card\/[^/]+\.png\?f=story$/);
         await expect(pub.getByRole('img', { name: /meet card$/ })).toBeVisible({ timeout: 30_000 });
         await expect(pub.getByRole('button', { name: 'Watch her lift' })).toHaveCount(0);
         expect((await pub.request.get(`/api/card/${token}.mp4`)).status(), 'the clip file is closed before she shares').not.toBe(200);

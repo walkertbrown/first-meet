@@ -7,7 +7,7 @@ import { BestLiftCard, FORMATS, PostCard, StoryCard, type CardFormat } from '@/l
 import type { CardView } from '@/lib/card/card-view';
 import type { BestLiftView } from '@/lib/card/best-lift';
 
-/** How long a clip run's ask for its end card waits before it's told to ask again (worker/main.py waits 60 s). */
+/** How long a clip run's ask for its end card waits before it's told to ask again (worker/main.py's fetch_card keeps asking for up to 150 s). */
 export const CLIP_ASK_MS = 20_000;
 /** The seconds render_clip waits before it asks for a card not drawn yet. */
 export const RETRY_AFTER_S = 3;

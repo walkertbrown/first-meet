@@ -1,5 +1,4 @@
 'use client';
-/* eslint-disable @next/next/no-img-element -- the card PNGs are drawn at their final size by /api/card */
 // "Your meet card" (plan 5.30, look 9) in her browser: the four formats in segments, and the buttons.
 //   Share: Web Share with the file where the phone can, or the file downloads.
 //   Save to my phone: always the download. It never shares anything (item 99).
@@ -7,6 +6,7 @@
 // On the Clip segment, "Share" or "Copy my card link" puts this clip, and only this clip, on her card
 // link the first time (item 99), so the line under it changes.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CardPng } from '@/components/card-png-frame';
 import { CARD_WORDS, type CardSegment } from '@/lib/card/card-words';
 import { HONEST_LINE } from '@/lib/site';
 
@@ -153,8 +153,8 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
         ))}
       </fieldset>
 
-      {seg === 'Story' && <div className="card-frame story"><img src={fileUrl(token, 'Story')} alt={`${name}'s meet card, story size`} width={1080} height={1920} /></div>}
-      {seg === 'Post' && <div className="card-frame post"><img src={fileUrl(token, 'Post')} alt={`${name}'s meet card, post size`} width={1080} height={1350} /></div>}
+      {seg === 'Story' && <CardPng key="Story" kind="story" src={fileUrl(token, 'Story')} alt={`${name}'s meet card, story size`} height={1920} />}
+      {seg === 'Post' && <CardPng key="Post" kind="post" src={fileUrl(token, 'Post')} alt={`${name}'s meet card, post size`} height={1350} />}
       {seg === 'Clip' && (
         <div className="card-frame story">
           {ready
