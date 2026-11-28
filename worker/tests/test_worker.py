@@ -159,5 +159,61 @@ class OneBadClip(unittest.TestCase):
             self.main.APP_URL = old
 
 
+class EndCardStillDrawing(unittest.TestCase):
+    """render_clip's end card (NerdCider, 64d5e85): a 503 is "still drawing", so the run waits and asks again."""
+
+    def setUp(self):
+        try:
+            import main
+        except ImportError as e:  # the Render SDK isn't installed
+            self.skipTest(str(e))
+        self.main = main
+        self.now = 0.0
+        self.slept = []
+
+    def sleep(self, s):
+        self.slept.append(s)
+        self.now += s
+
+    def opener(self, answers):
+        import io
+        import urllib.error
+        asked = []
+
+        def open_url(url):
+            asked.append(url)
+            code = answers.pop(0)
+            if code == 200:
+                class R(io.BytesIO):
+                    def __enter__(self):
+                        return self
+
+                    def __exit__(self, *a):
+                        return False
+                return R(b'PNG!')
+            raise urllib.error.HTTPError(url, code, 'busy', {'Retry-After': '3'}, None)
+        return open_url, asked
+
+    def test_asks_again_until_it_is_drawn(self):
+        open_url, asked = self.opener([503, 503, 503, 200])
+        png = self.main.fetch_card('/api/card/x.png?f=story&clip=1', open_url=open_url, sleep=self.sleep, clock=lambda: self.now)
+        self.assertEqual(png, b'PNG!')
+        self.assertEqual(self.slept, [3.0, 3.0, 3.0])
+        self.assertEqual(len(asked), 4)
+
+    def test_a_card_never_drawn_fails_after_the_wait(self):
+        open_url, _ = self.opener([503] * 100)
+        with self.assertRaisesRegex(RuntimeError, 'end card not drawn'):
+            self.main.fetch_card('/c', wait_s=20, open_url=open_url, sleep=self.sleep, clock=lambda: self.now)
+        self.assertLessEqual(self.now, 20)
+
+    def test_any_other_error_fails_at_once(self):
+        import urllib.error
+        open_url, _ = self.opener([404])
+        with self.assertRaises(urllib.error.HTTPError):
+            self.main.fetch_card('/c', open_url=open_url, sleep=self.sleep, clock=lambda: self.now)
+        self.assertEqual(self.slept, [])
+
+
 if __name__ == '__main__':
     unittest.main()

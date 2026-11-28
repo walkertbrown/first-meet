@@ -182,6 +182,33 @@ def put_file(url: str, data: bytes, kind: str) -> None:
             raise RuntimeError(f'upload: {r.status}')
 
 
+# The end card is drawn first in the web service's line; while it draws, the service answers 503 with
+# Retry-After and the run asks again (NerdCider, 64d5e85). Waiting isn't a failed try (item 102): only a
+# real failure, or a card still not drawn after CARD_WAIT_S, is. The lease is 300 s.
+CARD_WAIT_S = 150
+
+
+def fetch_card(path: str, wait_s: float = CARD_WAIT_S, open_url=None, sleep=time.sleep, clock=time.monotonic) -> bytes:
+    """Her end card's PNG, asking again while the web service says it's still being drawn."""
+    open_url = open_url or (lambda u: urllib.request.urlopen(u, timeout=60))
+    until = clock() + wait_s
+    while True:
+        try:
+            with open_url(APP_URL + path) as r:
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.code != 503:
+                raise
+            try:
+                after = float(e.headers.get('Retry-After') or 3)
+            except ValueError:
+                after = 3.0
+            after = min(max(after, 1.0), 30.0)
+            if clock() + after > until:
+                raise RuntimeError(f'end card not drawn in {wait_s:.0f} s') from e
+            sleep(after)
+
+
 def one_clip(job: dict) -> dict:
     """One lift clip: her attempt and her story card in, the MP4 PUT to R2."""
     t0 = time.monotonic()
@@ -190,9 +217,8 @@ def one_clip(job: dict) -> dict:
     with tempfile.TemporaryDirectory() as d:
         video = os.path.join(d, 'attempt')
         urllib.request.urlretrieve(job['video_url'], video)
-        with urllib.request.urlopen(APP_URL + job['card_path'], timeout=60) as r:
-            card = Image.open(io.BytesIO(r.read()))
-            card.load()
+        card = Image.open(io.BytesIO(fetch_card(job['card_path'])))
+        card.load()
         out = os.path.join(d, 'clip.mp4')
         poster = os.path.join(d, 'poster.jpg') if job.get('poster_url') else None
         made = clip.render(job, video, card, out, d, poster)

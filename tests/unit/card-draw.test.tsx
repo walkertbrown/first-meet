@@ -1,10 +1,11 @@
 // Card PNGs are drawn off the server's thread (CI on 4fcdf4b: a Story PNG drawn in the request held the web
 // process past Render's 5 s health check, staging was restarted, and her share save got a 502).
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { ImageResponse } from 'next/og';
-import { drawPng, plainTree } from '@/lib/card/card-draw';
+import { drawPng, forTests, plainTree } from '@/lib/card/card-draw';
+import { clipCardImage, RETRY_AFTER_S } from '@/lib/card/card-png';
 import { cardFonts } from '@/lib/card/card-fonts';
-import { FORMATS, StoryCard } from '@/lib/card/card-image';
+import { FORMATS, PostCard, StoryCard } from '@/lib/card/card-image';
 import { juneCardView } from '@/lib/corner-view';
 
 const june = juneCardView()!;
@@ -51,4 +52,72 @@ describe('card PNGs, drawn off the server thread', () => {
     expect(() => plainTree({} as never)).toThrow("a card can't draw");
     expect(JSON.parse(JSON.stringify(plainTree(<StoryCard v={june} />)))).toEqual(plainTree(<StoryCard v={june} />));
   });
+});
+
+
+// NerdCider, 64d5e85: 30 Stories asked for at once, and every card behind the 120 s mark failed with the one
+// that hit it, though none had hung; on staging, two new Stories ahead of render_clip's end card cost her a run.
+describe('the drawing line', () => {
+  const post = (name: string) => <PostCard v={{ ...june, name }} />;
+  const story = (name: string) => <StoryCard v={{ ...june, name }} />;
+  afterEach(() => forTests.setDrawMs(120_000));
+
+  it('N cards at once, N times one drawing over the limit: every card is drawn, and the end card comes out first', async () => {
+    await drawPng(post('Warm Card'), FORMATS.post);   // the thread's first Post is slower
+    const t = performance.now();
+    await drawPng(post('One Card'), FORMATS.post);
+    const one = performance.now() - t;
+    const limit = Math.max(4 * one, 4000);
+    const n = Math.ceil(limit / one) + 2;
+    forTests.setDrawMs(limit);
+    const out: string[] = [];
+    const ask = (name: string, p: Promise<Buffer>) => p.then(b => { out.push(name); return b; });
+    const all: Promise<Buffer>[] = [ask('asked 0', drawPng(post('Line 0'), FORMATS.post, 'asked'))];
+    // drawn ahead when her result settled, then asked for again as a claimed clip's end card: it moves up
+    const endAhead = drawPng(story('End Card'), FORMATS.story, 'ahead');
+    all.push(ask('later', drawPng(post('Drawn Ahead'), FORMATS.post, 'ahead')));
+    for (let i = 1; i < n; i++) all.push(ask(`asked ${i}`, drawPng(post(`Line ${i}`), FORMATS.post, 'asked')));
+    const end = drawPng(story('End Card'), FORMATS.story, 'clip');
+    expect(end).toBe(endAhead);
+    all.push(ask('end card', end));
+    const took = performance.now();
+    const pngs = await Promise.all(all);   // none fails
+    expect(performance.now() - took, `${n} cards of ~${Math.round(one)} ms each`).toBeGreaterThan(limit);
+    expect(pngs.every(b => b.subarray(1, 4).toString() === 'PNG')).toBe(true);
+    expect(out).toEqual(['asked 0', 'end card', ...Array.from({ length: n - 1 }, (_, i) => `asked ${i + 1}`), 'later']);
+    expect(forTests.lineLength()).toBe(0);
+  }, 300_000);
+
+  it('a drawing that runs over fails alone; the cards behind it are drawn on a new thread', async () => {
+    forTests.setDrawMs(30);
+    const hung = drawPng(post('Hung Card'), FORMATS.post);
+    forTests.setDrawMs(120_000);
+    const next = [drawPng(post('After Hung 1'), FORMATS.post), drawPng(post('After Hung 2'), FORMATS.post)];
+    await expect(hung).rejects.toThrow('the card drawing took over 0.03 s');
+    for (const b of await Promise.all(next)) expect(b.subarray(1, 4).toString()).toBe('PNG');
+    // not kept: asked for again, it's drawn again
+    expect(await drawPng(post('Hung Card'), FORMATS.post)).toBeInstanceOf(Buffer);
+  }, 300_000);
+
+  it("a clip run's end card behind a long line: told to ask again, never a failure, and drawn before the line", async () => {
+    const line = Array.from({ length: 4 }, (_, i) => drawPng(post(`Long Line ${i}`), FORMATS.post));
+    const done = new Set<number>();
+    line.forEach((p, i) => p.then(() => done.add(i)));
+    const v = { ...june, name: 'Claimed Clip' };
+    let busy = 0, res: Response;
+    // worker/main.py's fetch_card: a 503 waits Retry-After and asks again; only a real failure is a try
+    for (;;) {
+      res = await clipCardImage(v, 200);
+      if (res.status !== 503) break;
+      busy++;
+      expect(res.headers.get('Retry-After')).toBe(String(RETRY_AFTER_S));
+      await new Promise(r => setTimeout(r, 100));
+    }
+    expect(res.status).toBe(200);
+    expect(busy).toBeGreaterThan(0);
+    expect(done.size, 'cards of the line drawn before the end card').toBeLessThanOrEqual(1);
+    const b = Buffer.from(await res.arrayBuffer());
+    expect(b.equals(await drawPng(<StoryCard v={v} />, FORMATS.story))).toBe(true);   // the same drawing, kept
+    await Promise.all(line);
+  }, 300_000);
 });

@@ -4,10 +4,12 @@
 //     Public once it's on her card link (shared, or her videos are "Anyone with my card link"; item 99),
 //     and always to her. Anyone else, or no clip yet: 404.
 // `?download=1` makes either a file to save ("Save to my phone"). No total yet, or no such card: 404.
+// `?clip=1&t=&s=`, signed by the clip job: a claimed clip's end card, drawn first; 503 + Retry-After until it is.
 import { db, hasDb } from '@/db';
 import { cardForToken, clipOnCardLink } from '@/lib/card/card-data';
 import { fileStem } from '@/lib/card/card-view';
-import { cardImage } from '@/lib/card/card-png';
+import { cardImage, clipCardImage } from '@/lib/card/card-png';
+import { clipCardOk } from '@/lib/card/best-lift';
 import type { CardFormat } from '@/lib/card/card-image';
 import { hasR2, r2 } from '@/lib/r2';
 import { currentViewer } from '@/lib/roles';
@@ -39,6 +41,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   const stem = `first-meet-${fileStem(card.lifter.cardName)}`;
 
   if (m[2] === 'png') {
+    if (f === 'story' && q.get('clip') === '1' && clipCardOk(m[1], q.get('t'), q.get('s'), process.env.JUDGE_CALLBACK_SECRET)) {
+      const img = await clipCardImage(card.view);
+      img.headers.set('Cache-Control', 'no-store');
+      return img;
+    }
     const img = await cardImage(card.view, f as CardFormat);
     // a referee can still change a light until the board is final, so the card is cached only briefly
     img.headers.set('Cache-Control', 'public, max-age=60');

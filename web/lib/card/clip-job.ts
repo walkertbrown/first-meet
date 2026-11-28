@@ -7,8 +7,9 @@ import type { Db } from '@/db';
 import { attempts, judgeQueue, judgeWorkers, lifters } from '@/db/schema';
 import { asMeetAttempt, meetAttempts, totalFor, type LifterRow } from '@/lib/meet-flow';
 import { bestLiftOf, type MeetAttempt } from '@/lib/meet';
-import { endFramePath } from '@/lib/card/best-lift';
+import { clipCardPath, endFramePath } from '@/lib/card/best-lift';
 import { ensureCardToken } from '@/lib/card/card-data';
+import { drawAhead } from '@/lib/card/draw-ahead';
 import { judgedLift, logEvent } from '@/lib/queue';
 import { keys } from '@/lib/r2';
 import { liftName, weightText } from '@/lib/referee-view';
@@ -127,7 +128,11 @@ export async function queueCardClip(db: Db, lifterId: string, now = new Date()):
       inArray(judgeQueue.attemptId, tx.select({ id: attempts.id }).from(attempts).where(eq(attempts.lifterId, l.id)))));
     return a.id;
   });
-  if (queued) await logEvent(db, 'clip_queued', { lifter_id: l.id, bombed: it.bombed || undefined }, queued);
+  if (queued) {
+    await logEvent(db, 'clip_queued', { lifter_id: l.id, bombed: it.bombed || undefined }, queued);
+    // her result has settled: her cards are drawn ahead, behind anyone waiting on one
+    await drawAhead(db, l, { bombed: it.bombed, attemptId: queued }, now);
+  }
   return queued;
 }
 
@@ -169,9 +174,8 @@ export async function clipJob(db: Db, store: ClipStore, attemptId: string, worke
   const lights = (a.lights ?? (a.call === 'white' ? ['white', 'white', 'white'] : ['red', 'red', 'red'])) as ('white' | 'red')[];
   // a bomb-out has no card (5.28): the clip ends on her best lift's end frame, which only the run can fetch
   const it = await clipLiftOf(db, l);
-  const cardPath = it?.bombed && it.top.id === a.id
-    ? endFramePath(a.id, process.env.JUDGE_CALLBACK_SECRET ?? '')
-    : `/api/card/${await ensureCardToken(db, l)}.png?f=story`;
+  const secret = process.env.JUDGE_CALLBACK_SECRET ?? '';
+  const cardPath = it?.bombed && it.top.id === a.id ? endFramePath(a.id, secret) : clipCardPath(await ensureCardToken(db, l), secret);
   return {
     attempt_id: a.id, worker_id: workerId, video_url: await store.signedGet(a.videoKey!, CLIP_LEASE_S),
     start_ms: w.startMs, end_ms: w.endMs, judged_ms: judgedMs, lamps: lights, marks, mirror: !a.isSampleClip,
@@ -265,30 +269,37 @@ export async function clipCounts(db: Db): Promise<{ waiting: number; running: nu
   return { waiting: Number(c.waiting), running: Number(c.running) };
 }
 
-/**
- * A total or bomb-out can settle with no new lights (piece 7): the platform closes before her last attempt,
- * or the clip deadline voids an upload that never finished. Runs the clip deadline's job, then queues the clip
- * of each lifter on a closed real or test meet who has a judged attempt, nothing still on its way or with a
- * referee, and no clip yet. The dispatcher runs it every minute; her card and her best lift also queue on read.
- * Returns the attempts queued.
- */
-export async function queueSettledClips(db: Db, now = new Date()): Promise<string[]> {
-  await runClipDeadline(db, now);
+/** The lifters whose clip the sweep queues now (the select of queueSettledClips). */
+export async function settledLifters(db: Db, now = new Date()): Promise<string[]> {
   const due = await db.execute<{ id: string }>(sql`
     select l.id from lifters l join meets m on m.id = l.meet_id
     where m.kind in ('real', 'test') and m.closes_at is not null and m.closes_at <= ${now.toISOString()}
       and l.deleted_at is null
-      and exists (select 1 from attempts a where a.lifter_id = l.id and a.meet_id = m.id and a.status = 'judged')
+      -- a good lift to make the clip of: an all-red bomb-out never gets one, so she isn't picked every minute
+      and exists (select 1 from attempts a where a.lifter_id = l.id and a.meet_id = m.id and a.status = 'judged' and a.call = 'white')
       and not exists (select 1 from attempts a where a.lifter_id = l.id and a.meet_id = m.id
         and (a.clip_status is not null or a.status in ('recording', 'uploading', 'queued', 'judging', 'close_call')))
     order by l.id limit 200`);
+  return due.map(r => r.id);
+}
+
+/**
+ * A total or bomb-out can settle with no new lights (piece 7): the platform closes before her last attempt,
+ * or the clip deadline voids an upload that never finished. Runs the clip deadline's job, then queues the clip
+ * of each lifter on a closed real or test meet who has a judged attempt, nothing still on its way or with a
+ * referee, a good lift, and no clip yet. The dispatcher runs it every minute; her card and her best lift also
+ * queue on read.
+ * Returns the attempts queued.
+ */
+export async function queueSettledClips(db: Db, now = new Date()): Promise<string[]> {
+  await runClipDeadline(db, now);
   const out: string[] = [];
-  for (const r of due) {
+  for (const lifterId of await settledLifters(db, now)) {
     try {
-      const id = await queueCardClip(db, r.id, now);
+      const id = await queueCardClip(db, lifterId, now);
       if (id) out.push(id);
     } catch (e) {
-      console.log(JSON.stringify({ msg: 'clip not queued', lifter_id: r.id, error: (e as Error).message }));
+      console.log(JSON.stringify({ msg: 'clip not queued', lifter_id: lifterId, error: (e as Error).message }));
     }
   }
   return out;

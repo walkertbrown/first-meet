@@ -5,5 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('../../web', import.meta.url)) } },
-  test: { include: ['tests/db/**/*.test.ts'], environment: 'node', testTimeout: 30_000, hookTimeout: 60_000, fileParallelism: false },
+  // the clip job draws her cards ahead (card-png.tsx)
+  oxc: { jsx: { runtime: 'automatic' } },
+  test: { include: ['tests/db/**/*.test.ts'], environment: 'node', env: { CARD_DRAW_AHEAD: 'off' }, testTimeout: 30_000, hookTimeout: 60_000, fileParallelism: false },
 });

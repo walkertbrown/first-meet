@@ -7,7 +7,12 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers, lifters, meets } from '../../web/db/schema';
 import { ORDER } from '../../web/lib/meet';
-import { claimClip, clipAfterLights, clipCounts, expireClipLeases, queueCardClip, queueOnRead, queueSettledClips, retryClip, takeClip } from '../../web/lib/card/clip-job';
+import { claimClip, clipAfterLights, clipCounts, expireClipLeases, queueCardClip, queueOnRead, queueSettledClips, retryClip, settledLifters, takeClip } from '../../web/lib/card/clip-job';
+import { clipCardOk } from '../../web/lib/card/best-lift';
+import { createElement } from 'react';
+import { forTests as drawing } from '../../web/lib/card/card-draw';
+import { BestLiftCard, FORMATS, PostCard, StoryCard } from '../../web/lib/card/card-image';
+import { endFrameView } from '../../web/lib/card/draw-ahead';
 import { cardFor, clipState } from '../../web/lib/card/card-data';
 import { opsNumbers } from '../../web/lib/ops';
 import { resetBackoff, tick, type Runner } from '../../web/lib/dispatcher';
@@ -74,6 +79,26 @@ describe.skipIf(!URL_)('her lift clip', () => {
     expect(ev).toHaveLength(1);
   });
 
+  it('her result settles: her Story and Post are drawn ahead, behind anyone waiting, as her card link asks for them', async () => {
+    process.env.CARD_DRAW_AHEAD = 'on';
+    try {
+      const { l, rows } = await lifter();
+      expect(await queueCardClip(db, l.id, NOW)).toBe(rows[8].id);
+      const card = await cardFor(db, (await db.select().from(lifters).where(eq(lifters.id, l.id)))[0]);
+      const at = (el: ReturnType<typeof createElement>, size: { width: number; height: number }) => drawing.state(el, size);
+      expect(['ahead', 'kept']).toContain(at(createElement(StoryCard, { v: card!.view }), FORMATS.story));
+      expect(['ahead', 'kept']).toContain(at(createElement(PostCard, { v: card!.view }), FORMATS.post));
+      // a bomb-out: her best lift's end frame, as the end-frame route builds it
+      const b = await lifter(3);
+      await db.update(attempts).set({ status: 'declared' }).where(and(eq(attempts.lifterId, b.l.id), eq(attempts.status, 'queued')));
+      await db.update(attempts).set({ call: 'red', lights: ['red', 'red', 'red'] }).where(eq(attempts.id, b.rows[2].id));
+      await db.update(meets).set({ closesAt: new Date(NOW.getTime() - 60_000) }).where(eq(meets.id, b.l.meetId!));
+      expect(await queueCardClip(db, b.l.id, NOW)).toBe(b.rows[1].id);
+      const v = await endFrameView(db, b.rows[1].id);
+      expect(['ahead', 'kept']).toContain(at(createElement(BestLiftCard, { v: v! }), FORMATS.story));
+    } finally { process.env.CARD_DRAW_AHEAD = 'off'; }
+  }, 60_000);
+
   it('a referee who changes her best lift moves the waiting clip to it', async () => {
     const { l, rows } = await lifter();
     await queueCardClip(db, l.id, NOW);
@@ -84,6 +109,13 @@ describe.skipIf(!URL_)('her lift clip', () => {
   });
 
   it('only while no poses row waits, then leased to the run asking', async () => {
+    const saved = process.env.JUDGE_CALLBACK_SECRET;
+    process.env.JUDGE_CALLBACK_SECRET = 'clip-card-test';
+    try { await leased(); } finally {
+      if (saved === undefined) delete process.env.JUDGE_CALLBACK_SECRET; else process.env.JUDGE_CALLBACK_SECRET = saved;
+    }
+  });
+  async function leased() {
     const { l, rows } = await lifter();
     await queueCardClip(db, l.id, NOW);
     const other = await lifter(8);
@@ -97,12 +129,17 @@ describe.skipIf(!URL_)('her lift clip', () => {
       lift_line: 'DEADLIFT · 3 OF 3', weight: '155 lb', start_ms: 0, end_ms: 7000,   // from "loaded" (clamped at 0) to a second after "rack"
       upload_url: `https://r2.test/${keys.clip(rows[8].id)}?put`,
     });
-    expect(job!.card_path).toMatch(/^\/api\/card\/[\w-]+\.png\?f=story$/);
+    // her Story at her card link, signed as a claimed clip's end card so it's drawn first (NerdCider, 64d5e85)
+    expect(job!.card_path).toMatch(/^\/api\/card\/[\w-]{16}\.png\?f=story&clip=1&t=\d+&s=[0-9a-f]{64}$/);
+    const u = new URL(job!.card_path, 'https://x');
+    const token = u.pathname.match(/card\/(.+)\.png$/)![1];
+    expect(clipCardOk(token, u.searchParams.get('t'), u.searchParams.get('s'), process.env.JUDGE_CALLBACK_SECRET)).toBe(true);
+    expect(clipCardOk('AbCdEfGhIjKlMnOp', u.searchParams.get('t'), u.searchParams.get('s'), process.env.JUDGE_CALLBACK_SECRET)).toBe(false);
     expect(job!.judged_ms).toBeGreaterThanOrEqual(job!.start_ms);
     expect(job!.judged_ms).toBeLessThan(job!.end_ms);
     expect(await status(rows[8].id)).toBe('rendering');
     expect(await claimClip(db, store, 'c-1')).toBeNull();
-  });
+  }
 
   it('made: the MP4 must be in storage, then it is ready', async () => {
     const { l, rows } = await lifter();
@@ -255,6 +292,8 @@ describe.skipIf(!URL_)('her lift clip', () => {
       await close(none.rows[0].meetId);
       expect((await queueSettledClips(db, NOW)).filter(id => none.rows.some(r => r.id === id))).toEqual([]);
       expect(await clipRows(none.rows.map(r => r.id))).toHaveLength(0);
+      // and the sweep doesn't pick her at all, so 200 a minute can't fill up with her (NerdCider, 64d5e85)
+      expect(await settledLifters(db, NOW)).not.toContain(none.l.id);
     });
 
     it('a bomb-out whose last attempt is voided at the clip deadline: her best lift gets its clip', async () => {

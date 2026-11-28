@@ -48,18 +48,35 @@ export function bestLiftView(
 /** The end frame's link lasts as long as the clip run's lease, with a minute's room. */
 export const END_FRAME_S = 360;
 
-const sign = (attemptId: string, t: number, secret: string) => createHmac('sha256', secret).update(`end-frame.${t}.${attemptId}`).digest('hex');
+const sign = (what: string, id: string, t: number, secret: string) => createHmac('sha256', secret).update(`${what}.${t}.${id}`).digest('hex');
 
 /** render_clip's `card_path` for a bomb-out: her best lift's end frame, signed, since it has no card link. */
 export function endFramePath(attemptId: string, secret: string, now = Math.floor(Date.now() / 1000)) {
-  return `/api/internal/end-frame/${attemptId}.png?t=${now}&s=${sign(attemptId, now, secret)}`;
+  return `/api/internal/end-frame/${attemptId}.png?t=${now}&s=${sign('end-frame', attemptId, now, secret)}`;
 }
 
-export function endFrameOk(attemptId: string, t: string | null, s: string | null, secret: string | undefined, now = Math.floor(Date.now() / 1000)): boolean {
+function signedOk(what: string, id: string, t: string | null, s: string | null, secret: string | undefined, now: number): boolean {
   if (!secret || !t || !s || !/^\d{9,11}$/.test(t) || !/^[0-9a-f]{64}$/.test(s)) return false;
   const at = Number(t);
   if (at > now + 60 || now - at > END_FRAME_S) return false;
-  return timingSafeEqual(Buffer.from(sign(attemptId, at, secret), 'hex'), Buffer.from(s, 'hex'));
+  return timingSafeEqual(Buffer.from(sign(what, id, at, secret), 'hex'), Buffer.from(s, 'hex'));
+}
+
+export function endFrameOk(attemptId: string, t: string | null, s: string | null, secret: string | undefined, now = Math.floor(Date.now() / 1000)): boolean {
+  return signedOk('end-frame', attemptId, t, s, secret, now);
+}
+
+/**
+ * render_clip's `card_path` for a total: her Story at her card link, marked as a claimed clip's end card so
+ * it's drawn first and the run is told to ask again rather than wait out its fetch (NerdCider, 64d5e85).
+ * Signed, so a person's ask can't jump the line.
+ */
+export function clipCardPath(token: string, secret: string, now = Math.floor(Date.now() / 1000)) {
+  return `/api/card/${token}.png?f=story&clip=1&t=${now}&s=${sign('clip-card', token, now, secret)}`;
+}
+
+export function clipCardOk(token: string, t: string | null, s: string | null, secret: string | undefined, now = Math.floor(Date.now() / 1000)): boolean {
+  return signedOk('clip-card', token, t, s, secret, now);
 }
 
 // the block's words live where the browser can have them (no node:crypto)
