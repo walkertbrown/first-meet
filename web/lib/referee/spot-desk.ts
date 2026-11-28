@@ -1,6 +1,6 @@
-// `/referee/spot` (plan 5.33): each lifter now in a top 3, with all nine clips, the bot's line, and a
-// person's finding if one stands. The lifter's name is never shown: only division, age group and place.
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+// `/referee/spot` (plan 5.33): each lifter now in a top 3 (and one a spot red took out of it, while the red
+// stands), with all nine clips, the bot's line, and a person's finding if one stands. The lifter's name is never shown: only division, age group and place.
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { meets, refereeJobs, spotChecks, type SpotFinding } from '@/db/schema';
 import { boardRows } from '@/lib/board';
@@ -15,6 +15,11 @@ export type SpotDeskRow = {
   lifterId: string; group: string; place: string; clips: SpotDeskClip[]; botLine: string; person: SpotFinding | null; done: boolean;
 };
 export type SpotDesk = { meetName: string; final: boolean; rows: SpotDeskRow[]; toCheck: number; checked: number } | null;
+
+/** The place of a held lifter whose red left her with no total. */
+export const NO_TOTAL = 'No total';
+/** A finding whose problem made an attempt red ("not the same lifter" makes nothing red). */
+const redStands = (f: SpotFinding | null) => !!f && f.outcome === 'problem' && f.problems.some(p => p.kind !== 'not_same_lifter');
 
 const ordinal = (n: number) => `${n}${n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th'}`;
 
@@ -38,10 +43,13 @@ export async function spotDesk(db: Db, env: Record<string, string | undefined> =
   if (m.status !== 'final') await (await import('./bot')).spotTick(db, env);
   const list = await meetLifters(db, m.id);
   const top = topThree(list);
-  if (!top.length) return { meetName: m.name, final: m.status === 'final', rows: [], toCheck: 0, checked: 0 };
   const checks = await db.select({ s: spotChecks, job: refereeJobs.status }).from(spotChecks).leftJoin(refereeJobs, eq(refereeJobs.id, spotChecks.jobId))
-    .where(and(eq(spotChecks.meetId, m.id), inArray(spotChecks.lifterId, top)));
+    .where(eq(spotChecks.meetId, m.id));
   const by = new Map(checks.map(c => [c.s.lifterId, c]));
+  // a lifter whose spot check made an attempt red stays on the page while that red stands, even when
+  // the red took her out of the top 3: "Checked" is how a person puts it back (5.33, 3.4d step 8)
+  const held = checks.filter(c => !top.includes(c.s.lifterId) && redStands(c.s.person ?? c.s.bot)).map(c => c.s.lifterId);
+  if (!top.length && !held.length) return { meetName: m.name, final: m.status === 'final', rows: [], toCheck: 0, checked: 0 };
   // the board's order: Barbell then Home, each age group's top 3 by place (look 5.13a: one group each)
   const place = new Map<string, { group: string; place: string }>();
   for (const d of ['barbell', 'home'] as const) {
@@ -52,8 +60,19 @@ export async function spotDesk(db: Db, env: Record<string, string | undefined> =
       place.set(r.id, { group: `${divisionName(d)} · ${r.ageGroup}`, place: `${ordinal(k)} · ${r.totalText} ${r.units}` });
     }
   }
+  const groupOf = (id: string) => {
+    const l = list.find(x => x.id === id)!;
+    return place.get(id)?.group ?? `${divisionName(l.division)} · ${l.ageGroup ?? 'Open'}`;
+  };
+  // each held lifter goes after her group's top 3
+  const order = [...top];
+  for (const id of held) {
+    const g = groupOf(id);
+    const last = order.map(groupOf).lastIndexOf(g);
+    order.splice(last < 0 ? order.length : last + 1, 0, id);
+  }
   const rows: SpotDeskRow[] = [];
-  for (const id of top) {
+  for (const id of order) {
     const l = list.find(x => x.id === id)!;
     const c = by.get(id);
     const mine = await spotAttempts(db, id);
@@ -66,7 +85,7 @@ export async function spotDesk(db: Db, env: Record<string, string | undefined> =
     const labelOf = (aid: string) => clips.find(x => x.attemptId === aid)?.name ?? 'an attempt';
     const at = place.get(id);
     rows.push({
-      lifterId: id, group: at?.group ?? divisionName(l.division), place: at?.place ?? '', clips, person: c?.s.person ?? null,
+      lifterId: id, group: groupOf(id), place: at?.place ?? NO_TOTAL, clips, person: c?.s.person ?? null,
       botLine: botLine({ bot: c?.s.bot ?? null, job: c?.job ? { status: c.job } : null, botOn: botOn(env) }, labelOf),
       done: !!(c?.s.person || c?.s.bot),
     });

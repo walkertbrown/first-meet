@@ -6,7 +6,11 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, flightHourVotes, flights, lifters, meets } from '../../web/db/schema';
 import { meetWeekPlace, saveOpeners, saveVotes } from '../../web/lib/meet-week';
-import { meetWeekAccount, setTestHourNow, testAccount, testMeetDates, testMeetExists, testMeetWindow, TEST_MEET_SLUG } from '../../web/lib/test-signin';
+import { meetWeekAccount, setTestHourNow, testAccount, testMeetDates, testMeetExists, testMeetWindow, testSpotScene, SPOT_SCENE_TOTALS, TEST_MEET_SLUG } from '../../web/lib/test-signin';
+import { boardRows } from '../../web/lib/board';
+import { topThree } from '../../web/lib/referee/spot';
+import { meetLifters } from '../../web/lib/host-data';
+import { pastDeadline } from '../../web/lib/meet-window';
 import { platformView } from '../../web/lib/platform-view';
 import { boardFinalReady } from '../../web/lib/meet-window';
 import { freshDb, URL_ } from './setup';
@@ -200,5 +204,24 @@ describe.skipIf(!URL_)('meet week', () => {
     const p = await meetWeekPlace(db, l, NOW);
     if (p.kind !== 'week') throw new Error(p.kind);
     expect(p.view.flight).toMatchObject({ open: false, hour: null, counts: [0, 0, 0, 0, 0, 0, 0, 0] });
+  });
+
+  it("phase 5's spot-check scene: past the deadline, five Barbell totals with hers first, and her squat 1 her only good squat", async () => {
+    const { id } = await meetWeekAccount(db, 'meetweek', NOW);
+    const later = new Date(NOW.getTime() + 86_400_000);
+    expect(await testSpotScene(db, later)).toBe(true);
+    const [m] = await db.select().from(meets).where(eq(meets.slug, TEST_MEET_SLUG));
+    expect(m.status).toBe('closed');
+    expect(pastDeadline(m, later)).toBe(true);
+    const list = await meetLifters(db, m.id);
+    const rows = boardRows(list, 'barbell');
+    expect(rows.map(r => r.total)).toEqual([SPOT_SCENE_TOTALS.her, ...SPOT_SCENE_TOTALS.mates]);
+    expect(rows[0].id).toBe(id);
+    expect(topThree(list)).toHaveLength(3);
+    expect(topThree(list)[0]).toBe(id);
+    // with her squat 1 red she has no total, and the 4th is in the top 3
+    await db.update(attempts).set({ call: 'red' }).where(and(eq(attempts.lifterId, id), eq(attempts.lift, 'squat'), eq(attempts.number, 1)));
+    const after = boardRows(await meetLifters(db, m.id), 'barbell');
+    expect(after.map(r => r.total)).toEqual([...SPOT_SCENE_TOTALS.mates]);
   });
 });

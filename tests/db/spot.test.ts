@@ -2,14 +2,14 @@
 // the job, the frames, the bot's one call (faked by staging's `spot_weight_1` only where Anthropic
 // answers), the red it makes, a person standing over it, and "Make the board final" waiting for them.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, lifters, meets, opsSettings, refereeJobs, reviews, spotChecks } from '../../web/db/schema';
 import { LIFTS } from '../../web/lib/meet';
 import { keys } from '../../web/lib/r2';
 import { boardFinalReady } from '../../web/lib/meet-window';
 import { framesJob, framesStarted, lease, runJob, setSetting, spotTick, takeFrames, TEST_ANSWERS_KEY, type FrameStore } from '../../web/lib/referee/bot';
-import { decideSpot, notSameLifter, spotChecksDone, topThree } from '../../web/lib/referee/spot';
+import { decideSpot, landSpot, notSameLifter, spotChecksDone, topThree } from '../../web/lib/referee/spot';
 import { meetLifters } from '../../web/lib/host-data';
 import { resultsLines, spotChangedLine } from '../../web/lib/referee/spot';
 import { spotDesk } from '../../web/lib/referee/spot-desk';
@@ -128,6 +128,41 @@ describe.skipIf(!URL_)('spot checks', () => {
     expect((back.measures as { spot_check: { undone?: string } }).spot_check.undone).toBeTruthy();
     await db.update(meets).set({ status: 'final' }).where(eq(meets.id, m.id));
     expect(await decideSpot(db, bea.id, null, { outcome: 'problem', problems: [{ kind: 'weight_not_visible', attemptId: a.id }] })).toBe('final');
+  });
+
+  it("phase 5's done: her red bombs her out, the 4th moves in and gets a check, she stays on the desk, and Checked puts her back", async () => {
+    await db.delete(opsSettings);
+    const m = await meet('moves-in');
+    const fi = await lifter(m.id, 'Fi', 200);
+    // squat 1 is her only good squat, so its red leaves her with no total
+    for (const n of [2, 3]) await db.update(attempts).set({ call: 'red', lights: ['red', 'red', 'red'] })
+      .where(sql`${attempts.lifterId} = ${fi.id} and ${attempts.lift} = 'squat' and ${attempts.number} = ${n}`);
+    const [gu, ha, iv] = [await lifter(m.id, 'Gu', 150), await lifter(m.id, 'Ha', 140), await lifter(m.id, 'Iv', 130)];
+    await setSetting(db, TEST_ANSWERS_KEY, 'spot_weight_1');
+    await spotTick(db, STAGING);
+    const row = await spot(fi.id);
+    expect(row.jobId).toBeTruthy();
+    expect(await spot(iv.id)).toBeUndefined();
+    // the bot is off here: a person checks the other two
+    for (const x of [gu, ha]) expect(await decideSpot(db, x.id, null, { outcome: 'checked', problems: [] })).toBe('ok');
+    const s1 = await squat1(fi.id);
+    await landSpot(db, row.jobId!, { outcome: 'problem', problems: [{ kind: 'weight_not_visible', attemptId: s1.id }] });
+    expect(topThree(await meetLifters(db, m.id))).toEqual([gu.id, ha.id, iv.id]);
+    await spotTick(db, STAGING);
+    expect(await spot(iv.id)).toMatchObject({ bot: null, person: null });
+    expect(await spotChecksDone(db, m.id)).toEqual({ done: false, waiting: 1 });
+    expect(await boardFinalReady(db, m)).toMatchObject({ ok: false, why: 'spot_checks' });
+
+    const desk = (await spotDesk(db, STAGING, m.id))!;
+    expect(desk.rows.map(r => r.lifterId)).toEqual([gu.id, ha.id, iv.id, fi.id]);
+    expect(desk.rows[3]).toMatchObject({ place: 'No total', group: 'Barbell · Open', botLine: 'Referee bot: weight not visible on Squat 1.', done: true });
+    expect(desk.toCheck).toBe(1);
+
+    expect(await decideSpot(db, fi.id, null, { outcome: 'checked', problems: [] })).toBe('ok');
+    expect((await squat1(fi.id)).call).toBe('white');
+    const after = (await spotDesk(db, STAGING, m.id))!;
+    expect(after.rows.map(r => r.lifterId)).toEqual([fi.id, gu.id, ha.id]);
+    expect(await spotChecksDone(db, m.id)).toEqual({ done: true, waiting: 0 });
   });
 
   it('with the bot on and no key: doubt at once, which counts as checked and changes nothing', async () => {

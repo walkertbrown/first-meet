@@ -3,7 +3,7 @@
 // .invalid addresses never get mail.
 import { db, hasDb } from '@/db';
 import { cookieHeader, encodeSession } from '@/lib/session';
-import { MEET_WEEK_ACCOUNTS, TEST_ACCOUNTS, WINDOW_BUTTONS, demoTotaledAccount, meetWeekAccount, setTestHourNow, testAccount, testMeetWindow, testSigninOn, type MeetWeekWho, type TestWho, type WindowButton } from '@/lib/test-signin';
+import { MEET_WEEK_ACCOUNTS, TEST_ACCOUNTS, WINDOW_BUTTONS, demoTotaledAccount, meetWeekAccount, setTestHourNow, testAccount, testMeetWindow, testSigninOn, testSpotScene, type MeetWeekWho, type TestWho, type WindowButton } from '@/lib/test-signin';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +20,11 @@ export async function POST(req: Request) {
   if (who in WINDOW_BUTTONS) {
     if (!await testMeetWindow(db(), who as WindowButton)) return new Response('No test meet yet', { status: 409 });
     return new Response(null, { status: 303, headers: { location: '/platform' } });
+  }
+  // phase 5 (item 104): the spot checks' scene; meet control shows "Make the board final" waiting
+  if (who === 'spot-scene') {
+    if (!await testSpotScene(db())) return new Response('Sign in as a test lifter in meet week first', { status: 409 });
+    return new Response(null, { status: 303, headers: { location: '/host/control' } });
   }
   // 5.36: a demo lifter who has totaled, for the sample host desk
   if (who === 'demo-totaled') {
