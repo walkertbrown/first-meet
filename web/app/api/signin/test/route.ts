@@ -3,7 +3,7 @@
 // .invalid addresses never get mail.
 import { db, hasDb } from '@/db';
 import { cookieHeader, encodeSession } from '@/lib/session';
-import { MEET_WEEK_ACCOUNTS, TEST_ACCOUNTS, WINDOW_BUTTONS, meetWeekAccount, setTestHourNow, testAccount, testMeetWindow, testSigninOn, type MeetWeekWho, type TestWho, type WindowButton } from '@/lib/test-signin';
+import { MEET_WEEK_ACCOUNTS, TEST_ACCOUNTS, WINDOW_BUTTONS, demoTotaledAccount, meetWeekAccount, setTestHourNow, testAccount, testMeetWindow, testSigninOn, type MeetWeekWho, type TestWho, type WindowButton } from '@/lib/test-signin';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +20,12 @@ export async function POST(req: Request) {
   if (who in WINDOW_BUTTONS) {
     if (!await testMeetWindow(db(), who as WindowButton)) return new Response('No test meet yet', { status: 409 });
     return new Response(null, { status: 303, headers: { location: '/platform' } });
+  }
+  // 5.36: a demo lifter who has totaled, for the sample host desk
+  if (who === 'demo-totaled') {
+    const { id, next } = await demoTotaledAccount(db());
+    const s = encodeSession(id, 'lifter');
+    return new Response(null, { status: 303, headers: { location: next, 'set-cookie': cookieHeader(s.value, s.maxAge) } });
   }
   if (!(who in TEST_ACCOUNTS) && !(who in MEET_WEEK_ACCOUNTS)) return new Response('Unknown test account', { status: 400 });
   const { id, next } = who in MEET_WEEK_ACCOUNTS ? await meetWeekAccount(db(), who as MeetWeekWho) : await testAccount(db(), who as TestWho);

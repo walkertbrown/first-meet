@@ -29,13 +29,13 @@ export function DeskStage({ children, label, inert = false }: { children: ReactN
   );
 }
 
-export type Readout = { id: string; name: string; sayIt?: string | null; ageGroup: string; division?: string | null; hometown?: string | null; total: string; units: string; line?: string | null };
+export type Readout = { id: string; name: string; sayIt?: string | null; ageGroup: string; division?: string | null; hometown?: string | null; total: string; units: string; line?: string | null; award?: string | null };
 
 export function ReadoutCard({ r, eyebrow, leaving = false }: { r: Readout; eyebrow: string; leaving?: boolean }) {
   const meta = [r.ageGroup, r.division, r.hometown].filter(Boolean).join(' · ');
   return (
     <article className={`desk-card${leaving ? ' leaving' : ''}`} key={r.id}>
-      <span className="desk-eyebrow">{eyebrow}</span>
+      <span className="desk-eyebrow">{eyebrow}{r.award && <span className="desk-award"> · {r.award}</span>}</span>
       <h2 className="desk-name">{r.name}</h2>
       {r.sayIt && <p className="desk-say">{r.sayIt}</p>}
       <p className="desk-meta">{meta}</p>

@@ -297,3 +297,22 @@
   .best-frame.arrived .best-tag, .best-actions.opening, .best-actions.opening .btn { animation: none; }
   .best-actions.opening .best-actions-in { overflow: visible; }
 }
+
+/* Soo banners (look 5.10, plan 5.29): --stage in both themes, never red */
+.host-sample-link { margin-top: 16px; }
+.banner.soo-banner { background: var(--stage); color: var(--stage-ink); box-shadow: 0 0 0 1px rgb(255 255 255 / .08), 0 18px 40px -18px rgb(0 0 0 / .5); align-items: flex-start; cursor: default; }
+.soo-banner .soo-lamp { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.soo-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.soo-words .eyebrow, .soo-sheet .eyebrow { color: var(--stage-ink-2); }
+.soo-line { font-weight: 700; }
+.soo-watch { color: var(--lamp-white); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.soo-scrim { z-index: 98; animation: scrim-in 320ms var(--ease-out); }
+.soo-sheet { position: fixed; z-index: 99; top: 0; left: 0; right: 0; padding: calc(28px + var(--sa-t)) 20px 32px; background: var(--stage); color: var(--stage-ink);
+  border-radius: 0 0 12px 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px; outline: none;
+  animation: soo-down 480ms var(--ease-sheet); }
+.soo-sheet .page-title { color: var(--stage-ink); margin: 8px 0; overflow-wrap: anywhere; }
+.soo-sheet-words { max-width: 536px; }
+.soo-sheet-words.waiting { opacity: 0; }
+.soo-lamps { display: flex; }
+@keyframes soo-down { from { transform: translateY(-104%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .soo-sheet, .soo-scrim { animation: none; } .soo-sheet-words.fade-in { animation: none; } }

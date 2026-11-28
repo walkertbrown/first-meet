@@ -23,6 +23,7 @@ export default async function Page() {
           <button className="btn ghost" name="who" value="lifter" type="submit">Sign in as a test lifter</button>
           <button className="btn ghost" name="who" value="meetweek" type="submit">Sign in as a test lifter in meet week</button>
           <button className="btn ghost" name="who" value="meetweek-home" type="submit">Sign in as a test lifter in meet week, Home</button>
+          <button className="btn ghost" name="who" value="demo-totaled" type="submit">Sign in as a demo lifter who has totaled</button>
           {testMeet && <button className="btn ghost" name="who" value="hour-now" type="submit">Set the test meet&apos;s flight hour now</button>}
           {testMeet && Object.entries(WINDOW_BUTTONS).map(([v, label]) => (
             <button key={v} className="btn ghost" name="who" value={v} type="submit">{label}</button>

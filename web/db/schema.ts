@@ -278,7 +278,28 @@ export const readouts = pgTable('readouts', {
   kind: text('kind').$type<'read' | 'rollcall'>().notNull(),
   at: at('at').notNull().defaultNow(),
   streamOffsetS: real('stream_offset_s'),
-});
+}, t => [index('readouts_meet_kind').on(t.meetId, t.kind), index('readouts_lifter_at').on(t.lifterId, t.at)]);
+
+export type EmailKind = 'signin' | 'read' | 'rollcall' | 'replay';
+/**
+ * Email waiting to go through Resend (plan 2, 5.29; The Playner, Nov 28): sent in kind order
+ * (sign-in links, "Soo just read your name", the roll call's, the replay's) up to the day's limit.
+ * A read-out's waits about 50 s, and goes only if her phone never showed it.
+ */
+export const emails = pgTable('emails', {
+  id: id(),
+  lifterId: uuid('lifter_id').notNull().references(() => lifters.id, { onDelete: 'cascade' }),
+  kind: text('kind').$type<EmailKind>().notNull(),
+  readoutId: uuid('readout_id').references(() => readouts.id, { onDelete: 'cascade' }),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  sendAfter: at('send_after').notNull().defaultNow(),
+  status: text('status').$type<'waiting' | 'sent' | 'seen' | 'no_key' | 'failed'>().notNull().default('waiting'),
+  sentAt: at('sent_at'),
+  providerId: text('provider_id'),
+  error: text('error'),
+  createdAt: createdAt(),
+}, t => [index('emails_waiting').on(t.status, t.sendAfter), index('emails_sent_at').on(t.sentAt)]);
 
 export const judgeQueue = pgTable('judge_queue', {
   attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),

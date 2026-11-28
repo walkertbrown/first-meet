@@ -3,6 +3,7 @@ import { AutoRefresh } from '@/components/auto-refresh';
 import { Footer, Wordmark } from '@/components/chrome';
 import { db } from '@/db';
 import { budgetsFromEnv } from '@/lib/dispatcher';
+import { emailLimitLine } from '@/lib/email';
 import { requireRole } from '@/lib/guard';
 import { commitsDiffer, opsNumbers, opsSections } from '@/lib/ops';
 import { botOps } from '@/lib/referee/bot';
@@ -21,6 +22,8 @@ export default async function Page() {
   const bot = await botOps(db());
   const sections = [...opsSections(n, budgets), { eyebrow: 'REFEREE BOT', rows: botRows(bot) }];
   const botLine = notRunningLine(bot);
+  // The Playner, Nov 28: at the day's limit, say so, with the count not sent
+  const mailLine = await emailLimitLine(db());
   return (
     <div className="wrap page desk">
       <AutoRefresh everyMs={10_000} />
@@ -29,6 +32,7 @@ export default async function Page() {
         <h1 className="page-title">Ops</h1>
         {commitsDiffer(n.commits) && <p className="ops-warn strong" role="alert">Judge and web are on different commits</p>}
         {botLine && <p className="ops-warn strong" role="alert">{botLine}</p>}
+        {mailLine && <p className="ops-warn strong" role="alert">{mailLine}</p>}
         <div className="ops-grid">
           {sections.map(s => (
             <section key={s.eyebrow} className="ops-section" aria-labelledby={`ops-${s.eyebrow.replace(/\W+/g, '-')}`}>

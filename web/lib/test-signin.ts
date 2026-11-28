@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { attempts, flightHourVotes, flights, judgedSets, lifters, meets, sessions, type Division, type Lift } from '@/db/schema';
 import { LIFTS } from '@/lib/meet';
-import { DEMO_CAPS, DEMO_HOME_WEIGHTS } from '@/lib/demo';
+import { DEMO_CAPS, DEMO_HOME_WEIGHTS, demoMeet, demoOpener, newCornerToken } from '@/lib/demo';
 import { easternDay } from '@/lib/next-block';
 import { etWallToUtc } from '@/lib/meet-week-words';
 import { CLIP_GRACE_MS, runClipDeadline } from '@/lib/meet-window';
@@ -38,6 +38,21 @@ export const TEST_MEET_SLUG = 'test';
 export const TEST_FLIGHTMATES = [
   { name: 'Ada', slot: 0 }, { name: 'Bea', slot: 0 }, { name: 'Cleo', slot: 5 }, { name: 'Dot', slot: 5 },
 ] as const;
+
+/**
+ * The demo host desk's test (5.36): a new demo lifter, her nine lifts already judged good, so she is on
+ * /host/sample's Read list at once. Each sign-in makes a new one (the desk reads the newest first).
+ */
+export async function demoTotaledAccount(db: Db): Promise<{ id: string; next: string }> {
+  const meet = await demoMeet(db);
+  const [l] = await db.insert(lifters).values({ cardName: 'Test demo total', division: 'barbell', isDemo: true, meetId: meet.id, cornerToken: newCornerToken() }).returning({ id: lifters.id });
+  const at = new Date();
+  await db.insert(attempts).values(LIFTS.flatMap((lift: Lift) => [1, 2, 3].map(number => {
+    const o = demoOpener('barbell', lift);
+    return { lifterId: l.id, meetId: meet.id, lift, number, weight: o.weight + (number - 1) * 5, repsDeclared: o.reps, status: 'judged' as const, call: 'white' as const, lights: ['white', 'white', 'white'] as ('white' | 'red')[], judgedAt: at };
+  })));
+  return { id: l.id, next: '/platform/total' };
+}
 
 /** Makes the account if it doesn't exist (keeping its role as the plan has it), and returns its id. */
 export async function testAccount(db: Db, who: TestWho): Promise<{ id: string; next: string }> {

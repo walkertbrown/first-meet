@@ -6,6 +6,7 @@ import { db, hasDb } from '@/db';
 import { lifters, meets } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
 import { TotalCheers } from '@/components/cheer-banner';
+import { SooReadouts } from '@/components/soo-readout';
 import { cornerBlock, herCheers } from '@/lib/cheers';
 import { LiveRefresh } from '@/components/live-refresh';
 import { currentViewer } from '@/lib/roles';
@@ -114,6 +115,9 @@ export default async function TotalPage() {
       <Link className="btn" href={w.primary.href}>{w.primary.label}</Link>
       <Link className="btn ghost" href={w.ghost.href}>{w.ghost.label}</Link>
     </div>
+    {/* 5.28, from phase 5: her name tops /host/sample's Read list, and this tab shows the read-out sheet */}
+    {l.isDemo && <p className="body host-sample-link"><a className="link" href="/host/sample" target="_blank" rel="noopener">Read your own name on the host desk</a></p>}
+    {l.isDemo && <SooReadouts />}
   </>);
 }
 

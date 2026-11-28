@@ -1,6 +1,7 @@
 // The sample meet (plan 5.3): 40 made-up lifters in content/sample-meet.json, and the 90-second
 // scripted replay over them. Everything here is a pure function of the replay's clock, so any
 // moment (and every chapter) can be jumped to.
+import { rollEntries } from '@/lib/host';
 import data from '../../content/sample-meet.json';
 import type { Lift } from '@/db/schema';
 import { ORDER, meetTotal, type MeetAttempt } from '@/lib/meet';
@@ -99,9 +100,5 @@ export const totalsAt = (t: number) => {
   return boardRows(ls, 'barbell', false).length + boardRows(ls, 'home', false).length;
 };
 
-/** The roll call (5.35): everyone who totaled, in age-group order, oldest group first. */
-export function rollCall(list: BoardLifter[]) {
-  const order = ['70+', '60–69', '50–59', '40–49', 'Open'];
-  const rows = [...boardRows(list, 'barbell'), ...boardRows(list, 'home')];
-  return order.flatMap(g => rows.filter(r => r.ageGroup === g)).map(r => ({ id: r.id, name: r.name, ageGroup: r.ageGroup, total: `${r.totalText} ${r.units}` }));
-}
+/** The roll call (5.35): the host desk's own order. */
+export const rollCall = rollEntries;
