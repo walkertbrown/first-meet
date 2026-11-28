@@ -141,8 +141,16 @@ test(`the demo meet to a total on staging: her card's clip is ${expectFailed ? "
         expect((await pub.request.get(`/api/card/${token}.mp4`)).status(), 'the clip file is closed before she shares').not.toBe(200);
         // Share: headless Chromium can't share a file, so it saves it, and that shares the clip all the same
         const saved = page.waitForEvent('download');
+        const shareSave = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/api/me/card/share-clip'), { timeout: 60_000 });
         await page.getByRole('button', { name: 'Share', exact: true }).click();
         await saved;
+        // CI on 0dcae82: the save never landed and nothing said why. Render's edge refusing the POST (Cloudflare,
+        // 429 or 403) is the edge, not the app; any other failure is ours.
+        const res = await shareSave;
+        if (!res.ok() && /cloudflare/i.test(res.headers()['server'] ?? '') && [403, 429].includes(res.status())) {
+          throw new Error(`Render's edge bot check (Cloudflare ${res.status()}) refused her share save; wait a while before running this again`);
+        }
+        expect(res.status(), 'her share save').toBe(200);
         await expect(page.getByText('Your clip is on your card link now. Anyone with the link can watch it.', { exact: true })).toBeVisible();
         await page.reload();
         await page.getByRole('radio', { name: 'Clip' }).check();
