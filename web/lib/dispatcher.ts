@@ -6,7 +6,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '@/db';
 import { events, judgeWorkers } from '@/db/schema';
 import { expireLeases, giveUpWaiting } from '@/lib/queue';
-import { CLIP_WORKER, clipCounts, expireClipLeases } from '@/lib/card/clip-job';
+import { CLIP_WORKER, clipCounts, expireClipLeases, queueSettledClips } from '@/lib/card/clip-job';
 import { framesStarted, framesToStart } from '@/lib/referee/bot';
 
 export const LOCK_KEY = 0x46_4d_44_31; // "FMD1"
@@ -209,15 +209,22 @@ async function startClipRun(tx: { insert: Db['insert']; execute: Db['execute'] }
 }
 
 let timer: ReturnType<typeof setInterval> | null = null;
+const SETTLED_EVERY_MS = 60_000;
 
 /** Starts the 2-second loop once per process (called from instrumentation.ts). */
 export function startDispatcher(db: Db, runner: Runner = new RenderRunner(), budgets = budgetsFromEnv(), everyMs = 2000) {
   if (timer) return;
   let busy = false;
+  let n = 0;
   timer = setInterval(async () => {
     if (busy) return;
     busy = true;
     try {
+      // once a minute: totals that settled with no new lights (a closed platform, the clip deadline) get their clip
+      if (n++ % Math.max(1, Math.round(SETTLED_EVERY_MS / everyMs)) === 0) {
+        const q = await queueSettledClips(db).catch((e: Error) => { console.log(JSON.stringify({ msg: 'settled clips error', error: e.message })); return []; });
+        if (q.length) console.log(JSON.stringify({ msg: 'clips queued after the close', attempts: q }));
+      }
       const r = await tick(db, runner, budgets);
       if (r.started.length || r.clipStarted.length || r.framesStarted.length || r.clipExpired.length || r.failed || r.requeued.length || r.closeCalls.length) console.log(JSON.stringify({ msg: 'dispatch', ...r }));
       for (const id of [...r.requeued, ...r.closeCalls]) {

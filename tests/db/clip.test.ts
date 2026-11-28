@@ -7,7 +7,7 @@ import { sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers, lifters, meets } from '../../web/db/schema';
 import { ORDER } from '../../web/lib/meet';
-import { claimClip, clipAfterLights, clipCounts, expireClipLeases, queueCardClip, retryClip, takeClip } from '../../web/lib/card/clip-job';
+import { claimClip, clipAfterLights, clipCounts, expireClipLeases, queueCardClip, queueOnRead, queueSettledClips, retryClip, takeClip } from '../../web/lib/card/clip-job';
 import { cardFor, clipState } from '../../web/lib/card/card-data';
 import { opsNumbers } from '../../web/lib/ops';
 import { resetBackoff, tick, type Runner } from '../../web/lib/dispatcher';
@@ -201,5 +201,72 @@ describe.skipIf(!URL_)('her lift clip', () => {
     const t3 = await tick(db, r, BIG);
     expect(t3.clipStarted).toEqual([]);
     expect(t3.starting).toBe(0);
+  });
+
+  // NerdCider at e0e2353: a total can settle with no new lights, and her clip still runs once (piece 7)
+  describe('a total or bomb-out that settles with no new lights', () => {
+    const CLOSED = new Date(NOW.getTime() - 60_000);
+    /** her first `judged` attempts have lights; the rest she never lifted (declared) */
+    async function stopped(judged: number) {
+      const r = await lifter(judged);
+      await db.update(attempts).set({ status: 'declared' }).where(and(eq(attempts.lifterId, r.l.id), eq(attempts.status, 'queued')));
+      return r;
+    }
+    const close = (meetId: string, deadline?: Date) =>
+      db.update(meets).set({ closesAt: CLOSED, ...(deadline ? { clipDeadlineAt: deadline } : {}) }).where(eq(meets.id, meetId));
+
+    it('the platform closes before her ninth: the sweep queues her best lift, once', async () => {
+      const { l, rows } = await stopped(7);
+      expect(await queueSettledClips(db, NOW)).not.toContain(rows[6].id);   // still open: she's lifting
+      await close(rows[0].meetId);
+      expect(await queueSettledClips(db, NOW)).toContain(rows[6].id);       // 135 deadlift, her heaviest bar
+      expect(await status(rows[6].id)).toBe('queued');
+      expect(await queueSettledClips(db, NOW)).not.toContain(rows[6].id);
+      expect(await queueCardClip(db, l.id, NOW)).toBeNull();
+      expect(await clipRows(rows.map(r => r.id))).toHaveLength(1);
+    });
+
+    it('her last attempt is voided at the clip deadline: she gets her clip', async () => {
+      const { rows } = await lifter(8);
+      await db.update(attempts).set({ status: 'uploading' }).where(eq(attempts.id, rows[8].id));
+      await close(rows[0].meetId, CLOSED);
+      expect(await queueSettledClips(db, NOW)).toContain(rows[7].id);       // the 145 deadlift
+      expect((await db.select().from(attempts).where(eq(attempts.id, rows[8].id)))[0]).toMatchObject({ status: 'void', voidReason: 'upload_late' });
+    });
+
+    it('not while a clip is still sending before the deadline, or a close call waits', async () => {
+      const sending = await lifter(8);
+      await db.update(attempts).set({ status: 'uploading' }).where(eq(attempts.id, sending.rows[8].id));
+      await close(sending.rows[0].meetId, new Date(NOW.getTime() + 60_000));
+      const ref = await stopped(7);
+      await db.update(attempts).set({ status: 'close_call', call: 'close' }).where(eq(attempts.id, ref.rows[6].id));
+      await close(ref.rows[0].meetId);
+      const q = await queueSettledClips(db, NOW);
+      expect(q.filter(id => [...sending.rows, ...ref.rows].some(r => r.id === id))).toEqual([]);
+    });
+
+    it('a bomb-out with a good attempt, closed early: her best lift gets its clip; with none, nothing', async () => {
+      const { rows } = await stopped(7);
+      await db.update(attempts).set({ call: 'red', lights: ['red', 'red', 'red'] }).where(sql`${attempts.id} in ${rows.slice(0, 3).map(r => r.id)}`);
+      await close(rows[0].meetId);
+      expect(await queueSettledClips(db, NOW)).toContain(rows[6].id);
+      const none = await stopped(3);
+      await db.update(attempts).set({ call: 'red', lights: ['red', 'red', 'red'] }).where(sql`${attempts.id} in ${none.rows.slice(0, 3).map(r => r.id)}`);
+      await close(none.rows[0].meetId);
+      expect((await queueSettledClips(db, NOW)).filter(id => none.rows.some(r => r.id === id))).toEqual([]);
+      expect(await clipRows(none.rows.map(r => r.id))).toHaveLength(0);
+    });
+
+    it('her card queues it on read, if the sweep hasn\'t yet', async () => {
+      const { l, rows } = await stopped(7);
+      await close(rows[0].meetId);
+      const [row] = await db.select().from(lifters).where(eq(lifters.id, l.id));
+      const card = (await cardFor(db, row, NOW))!;
+      expect(card.clip).toMatchObject({ attemptId: rows[6].id, status: null });
+      expect(await queueOnRead(db, l.id, card.clip!.attemptId, card.clip!.status, NOW)).toBe(true);
+      expect(await status(rows[6].id)).toBe('queued');
+      expect(clipState((await cardFor(db, row, NOW))!.clip)).toEqual({ ready: false, failed: null });
+      expect(await queueOnRead(db, l.id, rows[6].id, 'queued', NOW)).toBe(false);
+    });
   });
 });

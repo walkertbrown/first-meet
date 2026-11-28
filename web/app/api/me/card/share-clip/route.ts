@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { db, hasDb } from '@/db';
 import { lifters } from '@/db/schema';
 import { cardFor, clipState, shareCardClip } from '@/lib/card/card-data';
+import { queueOnRead } from '@/lib/card/clip-job';
 import { logEvent } from '@/lib/queue';
 import { sessionFrom } from '@/lib/session';
 
@@ -23,6 +24,8 @@ export async function GET(req: Request) {
   if (!hasDb()) return Response.json({ error: 'no database' }, { status: 503 });
   const card = await cardOf(req);
   if (!card) return Response.json({ error: 'no card' }, { status: 401 });
+  // her Clip segment asks every 8 s: a total that settled with no new lights is queued now
+  if (card.clip && await queueOnRead(db(), card.lifter.id, card.clip.attemptId, card.clip.status)) card.clip.status = 'queued';
   return Response.json({ ...clipState(card.clip), shared: !!card.clip?.sharedAt }, { headers: { 'Cache-Control': 'no-store' } });
 }
 

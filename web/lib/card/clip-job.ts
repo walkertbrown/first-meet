@@ -16,6 +16,7 @@ import { nearSide, poseAt, type Frame, type Side } from '@/lib/judge/pose';
 import { timesOnly } from '@/lib/judge/bar-measure';
 import { liftMarks } from '@/lib/stage/snap';
 import { heldFrameMs } from '@/lib/stage/held-frame';
+import { runClipDeadline } from '@/lib/meet-window';
 import type { RepLight } from '@/db/schema';
 
 /** The clip is 15 s or less: her attempt, the lamps (1.41 s), a 2 s hold, the card (0.4 s + 3 s). */
@@ -262,6 +263,49 @@ export async function clipCounts(db: Db): Promise<{ waiting: number; running: nu
       (select count(*) from judge_queue where kind = 'clip' and worker_id is null and next_try_at <= now()) as waiting,
       (select count(*) from judge_workers where ended_at is null and worker_id like ${CLIP_WORKER + '%'}) as running`);
   return { waiting: Number(c.waiting), running: Number(c.running) };
+}
+
+/**
+ * A total or bomb-out can settle with no new lights (piece 7): the platform closes before her last attempt,
+ * or the clip deadline voids an upload that never finished. Runs the clip deadline's job, then queues the clip
+ * of each lifter on a closed real or test meet who has a judged attempt, nothing still on its way or with a
+ * referee, and no clip yet. The dispatcher runs it every minute; her card and her best lift also queue on read.
+ * Returns the attempts queued.
+ */
+export async function queueSettledClips(db: Db, now = new Date()): Promise<string[]> {
+  await runClipDeadline(db, now);
+  const due = await db.execute<{ id: string }>(sql`
+    select l.id from lifters l join meets m on m.id = l.meet_id
+    where m.kind in ('real', 'test') and m.closes_at is not null and m.closes_at <= ${now.toISOString()}
+      and l.deleted_at is null
+      and exists (select 1 from attempts a where a.lifter_id = l.id and a.meet_id = m.id and a.status = 'judged')
+      and not exists (select 1 from attempts a where a.lifter_id = l.id and a.meet_id = m.id
+        and (a.clip_status is not null or a.status in ('recording', 'uploading', 'queued', 'judging', 'close_call')))
+    order by l.id limit 200`);
+  const out: string[] = [];
+  for (const r of due) {
+    try {
+      const id = await queueCardClip(db, r.id, now);
+      if (id) out.push(id);
+    } catch (e) {
+      console.log(JSON.stringify({ msg: 'clip not queued', lifter_id: r.id, error: (e as Error).message }));
+    }
+  }
+  return out;
+}
+
+/**
+ * On read (her card, her best lift): an attempt whose clip was never queued, though her total or bomb-out
+ * has settled, is queued now. True when it was.
+ */
+export async function queueOnRead(db: Db, lifterId: string, attemptId: string, clipStatus: string | null, now = new Date()): Promise<boolean> {
+  if (clipStatus !== null) return false;
+  try {
+    return (await queueCardClip(db, lifterId, now)) === attemptId;
+  } catch (e) {
+    console.log(JSON.stringify({ msg: 'clip not queued', attempt_id: attemptId, error: (e as Error).message }));
+    return false;
+  }
 }
 
 /**

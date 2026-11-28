@@ -7,7 +7,7 @@ import type { LifterRow } from '@/lib/meet-flow';
 import type { Units } from '@/lib/meet';
 import { bestLiftView, type BestLiftView } from '@/lib/card/best-lift';
 import { clipState } from '@/lib/card/card-data';
-import { clipLength, clipLiftOf, clipWindow, retryClip } from '@/lib/card/clip-job';
+import { clipLength, clipLiftOf, clipWindow, queueOnRead, retryClip } from '@/lib/card/clip-job';
 
 export type BestLift = {
   attemptId: string;
@@ -24,6 +24,8 @@ export async function bestLiftFor(db: Db, l: LifterRow, now = new Date()): Promi
   if (!it?.bombed || !it.top.id) return null;
   const [a] = await db.select().from(attempts).where(eq(attempts.id, it.top.id));
   if (!a) return null;
+  // a bomb-out that settled with no new lights (the platform closed, or the clip deadline) is queued now
+  if (await queueOnRead(db, l.id, a.id, a.clipStatus, now)) a.clipStatus = 'queued';
   const [m] = l.meetId ? await db.select({ name: meets.name }).from(meets).where(eq(meets.id, l.meetId)) : [];
   const w = clipWindow({ call: a.call, repLights: a.repLights, commandTimes: a.commandTimes });
   const st = clipState({ attemptId: a.id, status: a.clipStatus, key: a.clipKey, sharedAt: null, retried: a.clipRetried });

@@ -6,6 +6,7 @@ import { lifters } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
 import { CardScreen } from '@/components/card-screen';
 import { cardFor, clipState, ensureCardToken } from '@/lib/card/card-data';
+import { queueOnRead } from '@/lib/card/clip-job';
 import { currentViewer } from '@/lib/roles';
 import '../../try.css';
 import '../../platform.css';
@@ -26,6 +27,8 @@ export default async function MeCardPage() {
   if (!card) redirect('/platform/total');
   const token = await ensureCardToken(db(), l);
   const clip = card.clip;
+  // a total that settled with no new lights (the platform closed, or the clip deadline) is queued now
+  if (clip && await queueOnRead(db(), l.id, clip.attemptId, clip.status)) clip.status = 'queued';
   return (
     <>
       {l.isDemo && <DemoStrip />}
