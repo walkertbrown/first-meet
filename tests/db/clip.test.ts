@@ -257,6 +257,16 @@ describe.skipIf(!URL_)('her lift clip', () => {
       expect(await clipRows(none.rows.map(r => r.id))).toHaveLength(0);
     });
 
+    it('a bomb-out whose last attempt is voided at the clip deadline: her best lift gets its clip', async () => {
+      const { rows } = await lifter(8);
+      await db.update(attempts).set({ call: 'red', lights: ['red', 'red', 'red'] }).where(sql`${attempts.id} in ${rows.slice(0, 3).map(r => r.id)}`);
+      await db.update(attempts).set({ status: 'uploading' }).where(eq(attempts.id, rows[8].id));
+      await close(rows[0].meetId, CLOSED);
+      expect(await queueSettledClips(db, NOW)).toContain(rows[7].id);       // the 145 deadlift, her best lift
+      expect(await status(rows[7].id)).toBe('queued');
+      expect(await clipRows(rows.map(r => r.id))).toHaveLength(1);
+    });
+
     it('her card queues it on read, if the sweep hasn\'t yet', async () => {
       const { l, rows } = await stopped(7);
       await close(rows[0].meetId);
