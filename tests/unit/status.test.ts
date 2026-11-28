@@ -23,6 +23,8 @@ describe('/status', () => {
     expect(recordingTrouble(100, 5)).toBe(false);
     expect(recordingTrouble(100, 6)).toBe(true);
     expect(recordingTrouble(0, 3)).toBe(true);
+    // a failing database or R2 check is trouble whatever the counts (The Playner, Nov 28)
+    expect(recordingTrouble(100, 0, false)).toBe(true);
   });
   it('the Small line', () => {
     expect(updatedWords(1)).toBe('Updated 1 second ago.');

@@ -25,6 +25,13 @@ describe.skipIf(!URL_)('platformStatus', () => {
     expect(s.rows[2].value).toMatch(/^\d[\d,]* waiting · about \d+ minutes?$/);
   });
 
+  it('a failing R2 check reads trouble; with the database down only that row shows', async () => {
+    await db.execute(sql`delete from events`);
+    expect((await platformStatus(db, { db: true, r2: false })).rows[0]).toMatchObject({ value: 'Having trouble', ok: false });
+    expect((await platformStatus(db, { db: true, r2: true })).rows[0].value).toBe('Normal');
+    expect((await platformStatus(db, { db: false, r2: true })).rows).toEqual([{ label: 'Lifting and recording', value: 'Having trouble', ok: false }]);
+  });
+
   it('the incident card is the status message', async () => {
     await setStatusMessage(db, 'Judging is slow', 'Your lifts are saved.');
     expect((await platformStatus(db)).incident).toEqual({ title: 'Judging is slow', sentence: 'Your lifts are saved.' });

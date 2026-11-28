@@ -1,4 +1,5 @@
 import '../referee.css';
+import Link from 'next/link';
 import { AutoRefresh } from '@/components/auto-refresh';
 import { Footer, Wordmark } from '@/components/chrome';
 import { db } from '@/db';
@@ -7,6 +8,7 @@ import { emailLimitLine } from '@/lib/email';
 import { requireRole } from '@/lib/guard';
 import { commitsDiffer, opsNumbers, opsSections } from '@/lib/ops';
 import { botOps } from '@/lib/referee/bot';
+import { statusMessage } from '@/lib/meet-control';
 import { botRows, notRunningLine, TEST_ANSWER_CHOICES } from '@/lib/referee/ops-words';
 
 // /ops (plan 2.4, 5.39): how the judge is running. Admins only (an email in ADMIN_EMAILS).
@@ -24,6 +26,8 @@ export default async function Page() {
   const botLine = notRunningLine(bot);
   // The Playner, Nov 28: at the day's limit, say so, with the count not sent
   const mailLine = await emailLimitLine(db());
+  // the status message is written on meet control (5.7, The Playner, Nov 28): /ops links to it
+  const said = await statusMessage(db());
   return (
     <div className="wrap page desk">
       <AutoRefresh everyMs={10_000} />
@@ -33,6 +37,10 @@ export default async function Page() {
         {commitsDiffer(n.commits) && <p className="ops-warn strong" role="alert">Judge and web are on different commits</p>}
         {botLine && <p className="ops-warn strong" role="alert">{botLine}</p>}
         {mailLine && <p className="ops-warn strong" role="alert">{mailLine}</p>}
+        <p className="small ops-status">
+          {said && <>On /status: {said.title || said.sentence} · </>}
+          <Link href="/host/control#c-status">Write the status message</Link>
+        </p>
         <div className="ops-grid">
           {sections.map(s => (
             <section key={s.eyebrow} className="ops-section" aria-labelledby={`ops-${s.eyebrow.replace(/\W+/g, '-')}`}>
