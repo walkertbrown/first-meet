@@ -31,8 +31,10 @@ export async function platformStatus(db: Db): Promise<{ rows: StatusRow[]; incid
     db.execute<{ tried: number; failed: number; lights_s: number | null; waiting: number; bot_s: number | null }>(sql`
       select
         (select count(*)::int from events where at > now() - interval '15 minutes'
-           and (kind = 'upload_started' or (kind = 'upload_failed' and (detail->>'before_start')::boolean))) as tried,
-        (select count(*)::int from events where at > now() - interval '15 minutes' and kind in ('upload_failed', 'upload_refused')) as failed,
+           and (kind = 'upload_started' or (kind = 'upload_failed' and (detail->>'before_start')::boolean))
+           and not exists (select 1 from attempts x where x.id = attempt_id and x.is_sample_clip)) as tried,
+        (select count(*)::int from events where at > now() - interval '15 minutes' and kind in ('upload_failed', 'upload_refused')
+           and not exists (select 1 from attempts x where x.id = attempt_id and x.is_sample_clip)) as failed,
         (select percentile_cont(0.5) within group (order by (detail->>'upload_to_lights_s')::float)
            from events where kind = 'judged' and at > now() - interval '15 minutes' and detail->>'upload_to_lights_s' is not null) as lights_s,
         (select count(*)::int from referee_jobs where status in ('waiting_frames', 'ready', 'running')) as waiting,
