@@ -109,7 +109,8 @@ test('spot checks: the bot reds her squat 1, the 4th moves in, the board waits, 
     await r.getByRole('button', { name: 'Checked', exact: true }).click();
     await expect(r.getByRole('button', { name: 'Checked', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 60_000 });
   }
-  await expect(desk.getByText('0 to check · 3 checked')).toBeVisible();
+  // the count is the server's, so it comes with the desk's refresh after the last save: a minute on staging
+  await expect(desk.getByText('0 to check · 3 checked')).toBeVisible({ timeout: 60_000 });
 
   // every check done: the board can be made final
   await admin.goto('/host/control');
