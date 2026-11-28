@@ -41,8 +41,8 @@ export function LiveCountdown({ at }: { at: string }) {
 const AGES = [null, ...AGE_GROUPS] as const;
 
 /** The board (5.6, look 5.11): Barbell or Home, an age group, and "Find a lifter". Her row marked. */
-export function LiveBoard({ lifters, meId, start = 'barbell', empty = BOARD_EMPTY }: {
-  lifters: BoardLifter[]; meId?: string | null; start?: Division; empty?: string;
+export function LiveBoard({ lifters, meId, start = 'barbell', empty = BOARD_EMPTY, notes, heading = 'THE BOARD' }: {
+  lifters: BoardLifter[]; meId?: string | null; start?: Division; empty?: string; notes?: Record<string, string>; heading?: string;
 }) {
   const [division, setDivision] = useState<Division>(start);
   const [age, setAge] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function LiveBoard({ lifters, meId, start = 'barbell', empty = BOARD_EMPT
   const anyone = lifters.some(l => boardRows([l], l.division).length);
   return (
     <section className="live-board" aria-labelledby="live-board-h">
-      <h2 className="eyebrow" id="live-board-h">THE BOARD</h2>
+      <h2 className="eyebrow" id="live-board-h">{heading}</h2>
       <div className="live-filters">
         <fieldset className="segments">
           <legend>Division</legend>
@@ -72,7 +72,7 @@ export function LiveBoard({ lifters, meId, start = 'barbell', empty = BOARD_EMPT
         </label>
       </div>
       {!anyone ? <p className="body board-empty">{empty}</p>
-        : rows.length ? <Board rows={rows} division={division} meId={meId} caption={`Meet board, ${division === 'home' ? 'Home' : 'Barbell'}${age ? `, ${age}` : ''}`} />
+        : rows.length ? <Board rows={rows} division={division} meId={meId} notes={notes} caption={`Meet board, ${division === 'home' ? 'Home' : 'Barbell'}${age ? `, ${age}` : ''}`} />
         : <p className="body board-empty">{q.trim() ? `No lifter called “${q.trim()}” here.` : 'No totals here yet.'}</p>}
     </section>
   );

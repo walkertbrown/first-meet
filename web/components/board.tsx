@@ -38,8 +38,10 @@ function useArrivals(rows: Shown[]) {
   return fresh;
 }
 
-export function Board({ rows, division, meId, empty = BOARD_EMPTY, caption }: {
+export function Board({ rows, division, meId, empty = BOARD_EMPTY, caption, notes }: {
   rows: Shown[]; division: Division; meId?: string | null; empty?: string; caption?: string;
+  /** A Small second line under a name: "Checked by the referee bot" on the final board (5.31, item 105). */
+  notes?: Record<string, string>;
 }) {
   const [open, setOpen] = useState<string | null>(null);
   const fresh = useArrivals(rows);
@@ -67,10 +69,11 @@ export function Board({ rows, division, meId, empty = BOARD_EMPTY, caption }: {
           const isOpen = open === r.id, arrived = fresh.has(r.id);
           return (
             <Fragment key={r.id}>
-              <tr className={`${r.id === meId ? 'me' : ''}${arrived ? ' arrive' : ''}`.trim() || undefined}>
+              <tr className={`${r.id === meId ? 'me' : ''}${arrived ? ' arrive' : ''}${notes?.[r.id] ? ' noted' : ''}`.trim() || undefined}>
                 <td className="b-place num">{r.place}</td>
                 <td className="b-name">
                   <button type="button" className="b-open" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : r.id)}>{r.name}</button>
+                  {notes?.[r.id] && <span className="b-note small">{notes[r.id]}</span>}
                 </td>
                 <td className="b-age">{r.ageGroup}</td>
                 {LIFTS.map((l, k) => (

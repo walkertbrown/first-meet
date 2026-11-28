@@ -25,6 +25,9 @@
 @keyframes row-in { from { opacity: 0; transform: translateY(-12px); } }
 @keyframes mini-in { from { background: var(--lamp-off); box-shadow: 0 0 0 1.5px var(--lamp-bezel); } }
 .board-empty { padding: 16px 0; color: var(--ink-2); }
+/* a row's second line (5.31, look 5.13a): Small, --ink-2, 4 px under the name; the numbers stay on the name's line */
+.board tr.noted > td { vertical-align: top; padding-top: 12px; padding-bottom: 12px; }
+.board .b-note { display: block; margin-top: 4px; font-family: var(--font-text); font-weight: 400; font-stretch: 100%; letter-spacing: 0; font-size: 15px; line-height: 22px; color: var(--ink-2); white-space: normal; }
 @media (min-width: 900px) {
   .board { font-size: 19px; line-height: 28px; }
   .board td { height: 56px; }
@@ -34,6 +37,7 @@
   .board .b-lift, .board .b-lamps { display: none; }
   .b-open { cursor: pointer; display: block; min-height: 48px; line-height: 48px; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 4px; }
   .b-open:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .board tr.noted .b-open { min-height: 0; line-height: inherit; }
   .b-more { display: table-row; }
   .b-more td { height: auto; padding: 4px 12px 12px; }
   .b-more dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0; }

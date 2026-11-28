@@ -58,6 +58,10 @@ export function shownRows(rows: BoardRow[], ageGroup: string | null, search = ''
     .filter(r => !q || r.name.toLowerCase().includes(q));
 }
 
+/** 5.31's row card: "3rd of 41 in Barbell · 40–49". */
+export const rowCard = (place: number, of: number, division: Division, ageGroup: string) =>
+  `${ordinal(place)} of ${of} in ${division === 'home' ? 'Home' : 'Barbell'} · ${ageGroup}`;
+
 /** Her place in her division and age group (5.29's card, 5.31's row card), or null with no total. */
 export function placeOf(rows: BoardRow[], id: string): { place: number; of: number; ageGroup: string; division: Division } | null {
   const me = rows.find(r => r.id === id);

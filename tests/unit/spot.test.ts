@@ -2,6 +2,7 @@
 // counts as a problem, the second call, the lines /referee/spot and /results show.
 import { describe, expect, it } from 'vitest';
 import type { RefereeCall } from '@/db/schema';
+import { rowCard } from '@/lib/board';
 import {
   SPOT_SCHEMA, askSpot, botLine, fakeSpotCall, parseSpot, resultsLine, spotFinding, startMs, totalLine, type SpotOutcome,
 } from '@/lib/referee/spot';
@@ -78,5 +79,10 @@ describe('spot checks', () => {
     expect(resultsLine({ bot: null, person: { outcome: 'checked', problems: [] } })).toBe('Checked by a referee');
     expect(resultsLine(null)).toBeNull();
     expect(totalLine('Squat', 1)).toBe('A spot check found a problem with your Squat 1, so your total changed.');
+  });
+
+  it("5.31's row card", () => {
+    expect(rowCard(3, 41, 'barbell', '40–49')).toBe('3rd of 41 in Barbell · 40–49');
+    expect(rowCard(1, 1, 'home', 'Open')).toBe('1st of 1 in Home · Open');
   });
 });

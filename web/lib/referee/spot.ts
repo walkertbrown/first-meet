@@ -403,3 +403,14 @@ export async function spotChangedLine(db: Db, l: { id: string; division: 'barbel
   const first = marked.sort((a, b) => order(a) - order(b))[0];
   return totalLine(liftWord(first.lift, l.division), first.number);
 }
+
+/** 5.31's Small lines on the final board, for each lifter now in a top 3 whose check was done by someone. */
+export async function resultsLines(db: Db, meetId: string, list: BoardLifter[]): Promise<Record<string, string>> {
+  const top = topThree(list);
+  if (!top.length) return {};
+  const rows = await db.select({ lifterId: spotChecks.lifterId, bot: spotChecks.bot, person: spotChecks.person })
+    .from(spotChecks).where(and(eq(spotChecks.meetId, meetId), inArray(spotChecks.lifterId, top)));
+  const out: Record<string, string> = {};
+  for (const r of rows) { const line = resultsLine(r); if (line) out[r.lifterId] = line; }
+  return out;
+}

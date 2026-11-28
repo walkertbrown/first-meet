@@ -11,7 +11,7 @@ import { boardFinalReady } from '../../web/lib/meet-window';
 import { framesJob, framesStarted, lease, runJob, setSetting, spotTick, takeFrames, TEST_ANSWERS_KEY, type FrameStore } from '../../web/lib/referee/bot';
 import { decideSpot, notSameLifter, spotChecksDone, topThree } from '../../web/lib/referee/spot';
 import { meetLifters } from '../../web/lib/host-data';
-import { spotChangedLine } from '../../web/lib/referee/spot';
+import { resultsLines, spotChangedLine } from '../../web/lib/referee/spot';
 import { spotDesk } from '../../web/lib/referee/spot-desk';
 import { freshDb, MemStore, URL_ } from './setup';
 
@@ -163,5 +163,13 @@ describe.skipIf(!URL_)('spot checks', () => {
     expect(await spotChangedLine(db, { ...di, division: 'barbell' })).toBe('A spot check found a problem with your Squat 1, so your total changed.')
     expect((await db.select().from(attempts).where(eq(attempts.id, dl3.id)))[0]).toMatchObject({ lights: ['red', 'red', 'white'], reason: 'no_lockout' });
     expect(await notSameLifter(db, m.id)).toEqual([{ id: di.id, name: 'Di' }]);
+    // 5.31: the final board's line for a person's check; a doubt gets none
+    const ed = await lifter(m.id, 'Ed', 60);
+    await db.update(spotChecks).set({ bot: { outcome: 'doubt', problems: [] } }).where(eq(spotChecks.lifterId, ed.id));
+    await spotTick(db, STAGING);
+    await db.update(spotChecks).set({ bot: { outcome: 'doubt', problems: [] } }).where(eq(spotChecks.lifterId, ed.id));
+    const lines = await resultsLines(db, m.id, await meetLifters(db, m.id));
+    expect(lines[di.id]).toBe('Checked by a referee');
+    expect(lines[ed.id]).toBeUndefined();
   });
 });
