@@ -1,5 +1,6 @@
 import '../referee.css';
 import Link from 'next/link';
+import { notSameLifter } from '@/lib/referee/spot';
 import { AutoRefresh } from '@/components/auto-refresh';
 import { Footer, Wordmark } from '@/components/chrome';
 import { db } from '@/db';
@@ -28,6 +29,8 @@ export default async function Page() {
   const mailLine = await emailLimitLine(db());
   // the status message is written on meet control (5.7, The Playner, Nov 28): /ops links to it
   const said = await statusMessage(db());
+  // 3.4d step 8: a sure "not the same lifter" shows here for admins and does nothing automatic
+  const notSame = await notSameLifter(db());
   return (
     <div className="wrap page desk">
       <AutoRefresh everyMs={10_000} />
@@ -71,6 +74,15 @@ export default async function Page() {
                 <p className="small">For the next job only. Each fakes only what comes back from Anthropic.</p>
                 <button className="btn ghost" type="submit">Use for the next job</button>
               </form>
+            </section>
+          )}
+          {notSame.length > 0 && (
+            <section className="ops-section" aria-labelledby="ops-spot">
+              <h2 className="eyebrow" id="ops-spot">SPOT CHECKS</h2>
+              {notSame.map(l => (
+                <p key={l.id} className="ops-row"><span>Not the same lifter · {l.name}</span></p>
+              ))}
+              <p className="small"><Link href="/referee/spot">Open spot checks</Link></p>
             </section>
           )}
           <section className="ops-section ops-errors" aria-labelledby="ops-ERRORS">

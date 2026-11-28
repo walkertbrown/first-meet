@@ -267,8 +267,35 @@ def render_clip(ctx: TaskContext, worker_id: str) -> dict:
 BENCH_POSE_FPS = rf.BENCH_POSE_FPS
 
 
+def put_frame(url: str, data: bytes, n: int) -> None:
+    put = urllib.request.Request(url, data=data, method='PUT', headers={'content-type': 'image/jpeg', 'content-length': str(len(data))})
+    with urllib.request.urlopen(put, timeout=60) as r:
+        if r.status >= 300:
+            raise RuntimeError(f'upload {n}: {r.status}')
+
+
+def one_spot_frames(job: dict) -> dict:
+    """3.4d steps 1 and 8: a spot check's frames, two from each of her clips, stamped with the attempt."""
+    t0 = time.monotonic()
+    urls = job['upload_urls']
+    out = []
+    with tempfile.TemporaryDirectory() as d:
+        for i, clip in enumerate(job['clips']):
+            video = os.path.join(d, f'clip{i}')
+            urllib.request.urlretrieve(clip['video_url'], video)
+            for t, data in rf.make_spot_frames(video, clip):
+                n = len(out)
+                if n >= len(urls):
+                    break
+                put_frame(urls[n], data, n)
+                out.append({'n': n, 't_ms': t, 'attempt_id': clip['attempt_id'], 'sha256': hashlib.sha256(data).hexdigest()})
+    return {'frames': out, 'bench_way': None, 'secs': round(time.monotonic() - t0, 2)}
+
+
 def one_referee_frames(job: dict) -> dict:
     """3.4d step 1: the attempt's frames, picked, stamped and PUT to R2 (the web service says where)."""
+    if job.get('clips') is not None:
+        return one_spot_frames(job)
     t0 = time.monotonic()
     commands = [(int(t), w) for t, w in job['commands']]
     urls = job['upload_urls']
@@ -290,7 +317,7 @@ def referee_frames_or_report(job_id: str, run=None) -> dict:
     """Whatever happens, the web service hears: the frames, or why there are none."""
     try:
         status, job = post('/api/internal/referee-frames-job', {'job_id': job_id})
-        if status != 200 or not job or not job.get('video_url'):
+        if status != 200 or not job or not (job.get('video_url') or job.get('clips')):
             return {'job_id': job_id, 'skipped': status}
         if job.get('fault'):
             raise RuntimeError('FAULT=referee set')

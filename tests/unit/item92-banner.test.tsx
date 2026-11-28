@@ -47,14 +47,18 @@ describe('item 92: the banner over a sheet', () => {
     expect(html).toContain('<strong>Good lift</strong>');
     expect(html).toContain('<span class="banner-more"> Your next attempt stays as declared.</span>');
     expect(renderToStaticMarkup(<LightsBanner lights={['red', 'red', 'red']} text="x " call="red" onDismiss={() => {}} />)).toContain('<strong>No lift</strong>');
+    // a spot-check red (look 5.13a): "Spot check" is regular, in --ink-2, after the Strong
+    expect(renderToStaticMarkup(<LightsBanner lights={['red', 'red', 'red']} text="Squat 1 · 110 kg · " call="red" after=" · Spot check" onDismiss={() => {}} />))
+      .toContain('<strong>No lift</strong><span class="banner-after"> · Spot check</span>');
   });
 
   it('sits above the sheet scrim and the corner player, and an open sheet stops under it', () => {
-    const p = css('platform.css'), c = css('corner.css');
-    const banner = zOf(p, '.banner');
+    // the banner's rules are global (the spot-check banner, 5.27, shows on any page)
+    const p = css('platform.css'), c = css('corner.css'), g = css('globals.css');
+    const banner = zOf(g, '.banner');
     expect(banner).toBeGreaterThan(zOf(p, '.sheet-scrim'));
     expect(banner).toBeGreaterThan(zOf(c, '.corner-player'));
-    expect(p).toContain(':root:has(.banner) .bottom-sheet { max-height: calc(var(--vh) - var(--banner-bottom, 24px) - 8px); }');
+    expect(g).toContain(':root:has(.banner) .bottom-sheet { max-height: calc(var(--vh) - var(--banner-bottom, 24px) - 8px); }');
   });
 
   it('every banner uses the shared layer: its room on the root, and the press that keeps focus', () => {

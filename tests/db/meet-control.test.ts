@@ -1,4 +1,4 @@
-// Meet control (plan 5.35): open and close, "Make the board final" (awards written, only when ready),
+// Meet control (plan 5.35): open and close, "Make the board final" (awards written, only when ready, spot checks done),
 // the replay's one email each, and the status message.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq } from 'drizzle-orm';
@@ -8,6 +8,7 @@ import { recordReadout } from '../../web/lib/host-data';
 import { controlMeet, runControl, statusMessage } from '../../web/lib/meet-control';
 import { platformOpen } from '../../web/lib/meet-flow';
 import { LIFTS } from '../../web/lib/meet';
+import { decideSpot, syncSpotChecks } from '../../web/lib/referee/spot';
 import { freshDb, URL_ } from './setup';
 
 describe.skipIf(!URL_)('meet control', () => {
@@ -61,6 +62,11 @@ describe.skipIf(!URL_)('meet control', () => {
     const after = new Date(closes.getTime() + 7 * 3_600_000);
     expect(await runControl(db, m, { do: 'final' }, after)).toMatchObject({ ok: false });
     await db.update(attempts).set({ status: 'judged', call: 'white' }).where(eq(attempts.lifterId, cleo.id));
+    // then the spot checks (item 104): a person checks each of the top 3
+    expect(await runControl(db, m, { do: 'final' }, after)).toMatchObject({ ok: false });
+    const checked = await syncSpotChecks(db, m, { env: {}, now: after });
+    expect(checked).toHaveLength(2);
+    for (const id of checked) await decideSpot(db, id, null, { outcome: 'checked', problems: [] });
     expect(await runControl(db, m, { do: 'final' }, after)).toEqual({ ok: true });
     const [r] = await db.select().from(meets).where(eq(meets.id, m.id));
     expect(r.status).toBe('final');

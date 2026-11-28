@@ -5,6 +5,7 @@ import './landing.css';
 import './pages.css';
 import { EarlyTaps } from '@/components/early-taps';
 import { RefereeBotProvider } from '@/components/referee-bot';
+import { SpotBanner } from '@/components/spot-banner';
 import { earlyTapScript } from '@/lib/early-taps';
 import { botOn } from '@/lib/referee/words';
 
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: earlyTapScript }} />
       </head>
-      <body><RefereeBotProvider on={botOn()}>{children}</RefereeBotProvider><EarlyTaps /></body>
+      <body><RefereeBotProvider on={botOn()}>{children}</RefereeBotProvider><SpotBanner /><EarlyTaps /></body>
     </html>
   );
 }

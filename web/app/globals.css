@@ -207,3 +207,16 @@ h1, h2, h3, p, ul, ol { margin: 0; }
 .fade-in { animation: fade-in 200ms var(--ease-out); }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+
+/* Banner (look 5.10): referee lights in */
+.banner { position: fixed; z-index: 100; top: calc(12px + var(--sa-t)); left: 12px; right: 12px; max-width: 536px; margin: 0 auto;
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; border-radius: 4px; text-align: left; cursor: pointer;
+  background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--rule), 0 18px 40px -18px rgb(0 0 0 / .5); font: inherit; animation: banner-in 420ms var(--ease-sheet); }
+.banner-lamps { display: flex; gap: 6px; flex: none; }
+.banner-more { display: block; color: var(--ink-2); }
+.banner-after { color: var(--ink-2); }
+@keyframes banner-in { from { transform: translateY(-140%); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .banner { animation: none; } }
+/* A banner is above everything, sheets included (look 5.10, item 92): the page, the scrim, the sheet,
+   then the banner, the highest layer the page has. An open sheet's top edge stays under its bottom edge. */
+:root:has(.banner) .bottom-sheet { max-height: calc(var(--vh) - var(--banner-bottom, 24px) - 8px); }

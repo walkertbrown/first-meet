@@ -245,3 +245,24 @@ span.bot-frame { aspect-ratio: var(--ar, 9 / 16); }
 .control .field { display: flex; flex-direction: column; gap: 4px; font-size: 15px; line-height: 22px; color: var(--ink-2); }
 .control .field input, .control .field textarea { min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--rule); border-radius: 4px; background: var(--chalk); color: var(--ink); font: inherit; font-size: 17px; }
 .control-said { color: var(--ink); }
+
+/* Spot checks (look 5.13a): one group per board group; a lifter is 4 columns of words and 8 of clips */
+.spot-count { margin-top: 4px; }
+.spot-group { display: flex; flex-direction: column; margin-top: 32px; }
+.spot-group > .eyebrow { color: var(--ink-2); }
+.spot-lifter { display: grid; grid-template-columns: 4fr 8fr; gap: 24px; padding: 24px 0; border-bottom: 1px solid var(--rule); }
+.spot-side { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.spot-buttons { display: flex; gap: 12px; }
+.spot-buttons .btn[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink); }
+.spot-buttons .btn[disabled][aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink-3); }
+.spot-reasons { margin-top: 4px; }
+.spot-clips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.spot-clip { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.spot-thumb { aspect-ratio: 16 / 9; border-radius: 4px; overflow: hidden; background: var(--stage); }
+.spot-thumb video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.spot-hud { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; font-size: 17px; line-height: 20px; letter-spacing: .04em; text-transform: uppercase; }
+.spot-place { font-family: var(--font-display); font-weight: 600; font-stretch: 75%; font-size: 17px; line-height: 24px; letter-spacing: .01em; }
+.spot-clip figcaption { display: flex; align-items: center; gap: 8px; }
+.spot-clip .mini-lamp { margin-left: auto; transition: background 180ms var(--ease-lamp), box-shadow 180ms var(--ease-lamp); }
+@media (prefers-reduced-motion: reduce) { .spot-clip .mini-lamp { transition: none; } }
+@media (max-width: 860px) { .spot-lifter { grid-template-columns: 1fr; } }

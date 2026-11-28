@@ -22,6 +22,7 @@ import { bombedWords, formatTotal, homeSum, totalLifts, totalWords, unitLine, wa
 import '../../try.css';
 import '../../platform.css';
 import { botOn } from '@/lib/referee/words';
+import { spotChangedLine } from '@/lib/referee/spot';
 import { bestLiftFor } from '@/lib/card/best-lift-data';
 import { playLength } from '@/lib/card/best-lift';
 import { BestLiftClip } from '@/components/best-lift-clip';
@@ -78,6 +79,9 @@ export default async function TotalPage() {
     </>);
   }
 
+  // 3.4d step 8: a spot-check red that changed her total says so (item 105)
+  const spot = await spotChangedLine(db(), l).catch(() => null);
+
   if (t.kind === 'bombed') {
     const w = bombedWords(t.lift, division, l.isDemo);
     // her best good lift's clip (item 101), under the free-meet line; with no good attempt, none of it shows
@@ -87,6 +91,7 @@ export default async function TotalPage() {
       <SeenBombed storeKey={storeKey} />
       <h1 className="page-title">You finished your first meet.</h1>
       <p className="body-l">{w.body}</p>
+      {spot && <p className="small">{spot}</p>}
       <p className="body">{w.free}</p>
       {best && <BestLiftClip ready={best.ready} failed={best.failed} length={playLength(best.lengthMs)} label={best.view.label} />}
       {corner}
@@ -109,6 +114,7 @@ export default async function TotalPage() {
       nineForNine={t.nineForNine} lifts={lifts} title={`You totaled, ${l.cardName}.`}
       late={late ? { lift: late.lift, line: lateLine(late, division) } : null} />
     {division === 'home' && <p className="small total-sum">{homeSum(t.best)}</p>}
+    {spot && <p className="small">{spot}</p>}
     <p className="body-l">{w.body}</p>
     {corner}
     <div className="try-actions">

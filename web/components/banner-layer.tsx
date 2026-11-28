@@ -40,15 +40,18 @@ export function useBannerRoom<T extends HTMLElement>() {
 }
 
 /** The lights banner (look 5.10): three mini lamps, then the line with "Good lift" or "No lift" Strong. */
-export function LightsBanner({ lights, text, call, more, onDismiss, onOpen }: {
-  lights: string[]; text: string; call: string; more?: string | null; onDismiss: () => void; onOpen?: () => void;
+export function LightsBanner({ lights, text, call, more, after, onDismiss, onOpen }: {
+  lights: string[]; text: string; call: string; more?: string | null;
+  /** On the same line, after "No lift": " · Spot check" (5.27, item 105). */
+  after?: string | null;
+  onDismiss: () => void; onOpen?: () => void;
 }) {
   const ref = useBannerRoom<HTMLButtonElement>();
   return (
     <button type="button" className="banner" ref={ref} onMouseDown={keepFocus} onClick={bannerTap(onDismiss, onOpen)}>
       <span className="banner-lamps" aria-hidden="true">{lights.map((l, i) => <i key={i} className={`mini-lamp ${l}`} />)}</span>
       <span className="body">
-        {text}<strong>{call === 'white' ? 'Good lift' : 'No lift'}</strong>
+        {text}<strong>{call === 'white' ? 'Good lift' : 'No lift'}</strong>{after && <span className="banner-after">{after}</span>}
         {more && <span className="banner-more"> {more}</span>}
       </span>
     </button>

@@ -155,6 +155,8 @@ export const keys = {
   clipPoster: (attempt: string) => `clips/${attempt}.jpg`,
   /** The referee bot's frames (3.4d step 1). */
   refereeFrame: (attempt: string, n: number) => `referee/${attempt}/${n}.jpg`,
+  /** A spot check's frames (3.4d step 8), by job: one lifter's nine clips. */
+  spotFrame: (job: string, n: number) => `referee/spot/${job}/${n}.jpg`,
   health: 'health/ok.txt',
 };
 

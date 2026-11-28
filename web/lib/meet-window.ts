@@ -112,11 +112,15 @@ export async function startAfterClose(db: Db, attemptId: string, lifterId: strin
  * waits on the deadline: "Clips can still arrive until Sunday 5 am Eastern."
  */
 export async function boardFinalReady(db: Db, m: MeetTimes & { id: string }, now = new Date()):
-  Promise<{ ok: true } | { ok: false; why: 'clip_deadline' | 'close_calls'; line: string | null }> {
+  Promise<{ ok: true } | { ok: false; why: 'clip_deadline' | 'close_calls' | 'spot_checks'; line: string | null }> {
   const d = clipDeadline(m);
   if (d && now <= d) return { ok: false, why: 'clip_deadline', line: `Clips can still arrive until ${windowTime(d.toISOString(), { weekday: true, local: null })}.` };
   const [waiting] = await db.select({ id: attempts.id }).from(attempts)
     .where(and(eq(attempts.meetId, m.id), eq(attempts.status, 'close_call'))).limit(1);
   if (waiting) return { ok: false, why: 'close_calls', line: null };
+  // 3.4d step 8, item 104: every lifter now in a top 3 has a finished spot check
+  const { spotChecksDone } = await import('@/lib/referee/spot');
+  const spot = await spotChecksDone(db, m.id);
+  if (!spot.done) return { ok: false, why: 'spot_checks', line: null };
   return { ok: true };
 }

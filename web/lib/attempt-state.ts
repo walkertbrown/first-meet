@@ -23,6 +23,8 @@ export type AttemptState = {
   reason: string | null;
   /** Home: the rep the red reason is for ("REP <k> · <REASON>"). */
   red_rep: number | null;
+  /** A spot check made this attempt red and nobody put it back (3.4d step 8): 3.5's spot-check sentence. */
+  spot_check: boolean;
   sample: boolean;
   /** The sample that stood in (5.36): its credit and reps, so a reload keeps the SAMPLE LIFT box. */
   sample_clip: { id: string; credit: string; reps: number } | null;
@@ -41,7 +43,7 @@ export async function attemptState(db: Db, id: string, lifterId: string, withWai
   const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
   if (!a) return { status: 404, error: 'no such attempt' };
   if (a.lifterId !== lifterId) return { status: 403, error: 'not your attempt' };
-  const m = (a.measures ?? {}) as { red_rep?: number; referee_unavailable?: boolean };
+  const m = (a.measures ?? {}) as { red_rep?: number; referee_unavailable?: boolean; spot_check?: { undone?: string } };
   // 3.4d step 7: the bot couldn't look, so three whites. The attempt keeps no reason (a white has
   // none); the doubt is in its measures, and her screen shows it as `referee_unavailable`.
   const reason = a.call === 'white' && m.referee_unavailable === true ? 'referee_unavailable' : a.reason;
@@ -50,7 +52,7 @@ export async function attemptState(db: Db, id: string, lifterId: string, withWai
     attempt: {
       id: a.id, status: a.status, lift: a.lift, shown_lift: judgedLift(a), number: a.number, weight: a.weight, reps_declared: a.repsDeclared,
       call: a.call, lights: (a.lights as AttemptState['lights']) ?? null, reason,
-      red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip,
+      red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, spot_check: a.call === 'red' && !!m.spot_check && !m.spot_check.undone, sample: a.isSampleClip,
       sample_clip: a.isSampleClip ? await sampleOfAttempt(db, a.id, a.commandTimes) : null, judged_frame_ms: a.judgedFrameMs ?? null,
       ...(withWait && WAITING.includes(a.status)
         ? await judgingState(db, a.id).then(j => ({ wait_minutes: j.minutes, judging: j.state }))

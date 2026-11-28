@@ -31,7 +31,7 @@ describe("/ops's referee bot", () => {
   });
 
   it("the staging choice is step 7's six, in its order, Real first", () => {
-    expect(TEST_ANSWER_CHOICES.map(c => c.label)).toEqual(['Real', 'No key', 'Spend limit reached', 'Errors for 30 minutes', 'Red, white, white', 'Not sure, twice']);
+    expect(TEST_ANSWER_CHOICES.map(c => c.label)).toEqual(['Real', 'No key', 'Spend limit reached', 'Errors for 30 minutes', 'Red, white, white', 'Not sure, twice', 'Spot check: weight not visible on attempt 1']);
     expect(TEST_ANSWER_CHOICES.slice(1).map(c => c.value).sort()).toEqual([...TEST_ANSWERS].sort());
   });
 });

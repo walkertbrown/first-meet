@@ -40,6 +40,16 @@ export function reasonSentence(code: ReasonCode, lift: string, division: string)
 }
 
 /**
+ * A spot check's sentence (3.5, item 105): it ran after the deadline, when she can't lift again, so
+ * no "next attempt". Only these two reasons come from a spot check.
+ */
+export function spotSentence(code: ReasonCode): string | null {
+  if (code === 'weight_not_shown') return "We couldn't see the weight clearly in this video, so it can't count. At your next meet, turn the plates or dumbbells toward the phone before you start.";
+  if (code === 'no_lockout') return "Your arms didn't straighten all the way in this video, so it can't count. At your next meet, press until your elbows lock and hold for the command.";
+  return null;
+}
+
+/**
  * The reasons a referee can give on a lift (3.5's "who can give it"): depth is the squat's,
  * the pause is the Barbell bench's (Home's overhead press has no "Press!"), and a hitch (the
  * weight going down partway up) is the deadlift's.

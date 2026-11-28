@@ -284,6 +284,8 @@ export const CHECKLIST = [
   '<openers>',
   'Water, and something to eat an hour before',
   'Charge your phone',
+  // item 105: the weight has to show (a spot check looks, 3.4d step 8)
+  'Keep your plates or dumbbells where the phone can see them',
 ] as const;
 
 /** The ticks are kept on her phone only (5.23). */

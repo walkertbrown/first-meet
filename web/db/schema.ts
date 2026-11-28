@@ -242,6 +242,28 @@ export const refereeJobs = pgTable('referee_jobs', {
   uniqueIndex('referee_jobs_one_open').on(t.attemptId, t.kind).where(sql`${t.status} in ('waiting_frames', 'ready', 'running')`),
 ]);
 
+/** A spot check's problem (3.4d step 8, 5.33): an attempt whose weight didn't show, a Home press with bent arms, or not the same lifter. */
+export type SpotProblem = { kind: 'weight_not_visible' | 'arms_bent'; attemptId: string } | { kind: 'not_same_lifter' };
+/** What a spot check found. `checked`: nothing (a not-sure answer too). `doubt`: the bot couldn't look (counts as checked). */
+export type SpotFinding = { outcome: 'checked' | 'problem' | 'doubt'; problems: SpotProblem[] };
+
+/**
+ * One lifter's spot check (3.4d step 8, 5.33, item 104): made once she's in a top 3 after the clip
+ * deadline, and kept if she moves out. `bot` is the referee bot's finding (its job is `job_id`);
+ * `person` is a referee's on `/referee/spot`, which stands over the bot's.
+ */
+export const spotChecks = pgTable('spot_checks', {
+  id: id(),
+  meetId: uuid('meet_id').notNull().references(() => meets.id, { onDelete: 'cascade' }),
+  lifterId: uuid('lifter_id').notNull().references(() => lifters.id, { onDelete: 'cascade' }),
+  jobId: uuid('job_id').references(() => refereeJobs.id, { onDelete: 'set null' }),
+  bot: jsonb('bot').$type<SpotFinding>(),
+  person: jsonb('person').$type<SpotFinding>(),
+  refereeId: uuid('referee_id').references(() => lifters.id),
+  decidedAt: at('decided_at'),
+  createdAt: createdAt(),
+}, t => [uniqueIndex('spot_checks_lifter').on(t.lifterId), index('spot_checks_meet').on(t.meetId)]);
+
 /** Small settings an admin sets on /ops: staging's "Referee bot test answers" (3.4d step 7). */
 export const opsSettings = pgTable('ops_settings', {
   key: text('key').primaryKey(),

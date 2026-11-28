@@ -20,6 +20,9 @@ import { WHY } from '@/lib/referee';
 import { divisionName, liftName, measuredLines, weightText } from '@/lib/referee-view';
 import { PRODUCTION_SERVICE } from '@/lib/test-signin';
 import { askLamps, lampAsker, SDK_RETRIES, CALL_TIMEOUT_MS, TEST_ANSWERS, type LampResult, type Prefix, type TestAnswers } from './lamps';
+import {
+  SPOT_FRAME_CAP, SPOT_TEST, askSpot, attemptLabel, fakeSpotCall, landSpot, realSpotCall, spotAttempts, spotFinding, spotTime, spotWords, startMs, syncSpotChecks,
+} from './spot';
 
 export const BOT_LOCK_KEY = 0x46_4d_52_42; // "FMRB"
 export const WORKERS = 4;
@@ -72,7 +75,9 @@ const fast = (test: string | null) => (test === 'errors_30m' ? FAST_CLOCK : 1);
  */
 export async function enqueue(db: Db, env: Record<string, string | undefined> = process.env): Promise<string[]> {
   const on = botOn(env);
-  const test = await pendingTestAnswers(db, env);
+  // the spot check's test answer is for the next spot-check job, never a close call
+  const pending = await pendingTestAnswers(db, env);
+  const test = pending === SPOT_TEST ? null : pending;
   if (!on && !test) return [];
   // a test answer's time: only a close call that came in once it was set takes it
   const since = sql`(select s.updated_at from ${opsSettings} s where s.key = ${TEST_ANSWERS_KEY})`;
@@ -179,6 +184,8 @@ export interface FrameStore {
 
 /** POST /api/internal/referee-frames-job: what `referee_frames` needs for one job, or null. */
 export async function framesJob(db: Db, store: FrameStore, jobId: string, env: Record<string, string | undefined> = process.env) {
+  const [spot] = await db.select().from(refereeJobs).where(and(eq(refereeJobs.id, jobId), eq(refereeJobs.kind, 'spot_check')));
+  if (spot) return spotFramesJob(db, store, spot, env);
   const [row] = await db.select({ j: refereeJobs, a: attempts }).from(refereeJobs).innerJoin(attempts, eq(attempts.id, refereeJobs.attemptId))
     .where(eq(refereeJobs.id, jobId));
   if (!row || row.j.status !== 'waiting_frames' || !row.a.videoKey) return null;
@@ -212,16 +219,36 @@ export async function framesJob(db: Db, store: FrameStore, jobId: string, env: R
   };
 }
 
-export type FramesPost = { job_id: string; ok: boolean; frames?: { n: number; t_ms: number; sha256?: string }[]; error?: string; bench_way?: 'path' | 'partway' | 'wrists' | 'window' | null; secs?: number; commit?: string | null };
+/** A spot check's run (3.4d step 8): two frames from each of her clips, at "Start!" and where the weight is clearest. */
+async function spotFramesJob(db: Db, store: FrameStore, j: JobRow, env: Record<string, string | undefined>) {
+  if (j.status !== 'waiting_frames' || !j.lifterId) return null;
+  const [l] = await db.select({ division: lifters.division, units: lifters.units }).from(lifters).where(eq(lifters.id, j.lifterId));
+  const list = l ? await spotAttempts(db, j.lifterId) : [];
+  if (!list.length) return null;
+  const clips = await Promise.all(list.map(async a => ({
+    attempt_id: a.id, n: a.n, label: `Attempt ${a.n}: ${attemptLabel(a, l.division, l.units)}`, video_url: await store.signedGet(a.videoKey!),
+    start_ms: startMs(a.commandTimes as Record<string, number> | null), weight_ms: a.judgedFrameMs,
+  })));
+  const upload_urls = await Promise.all(Array.from({ length: SPOT_FRAME_CAP }, (_, n) => store.signedPut(keys.spotFrame(j.id, n))));
+  return { job_id: j.id, clips, upload_urls, ...(env.FAULT === 'referee' ? { fault: true as const } : {}) };
+}
+
+export type FramesPost = { job_id: string; ok: boolean; frames?: { n: number; t_ms: number; sha256?: string; attempt_id?: string }[]; error?: string; bench_way?: 'path' | 'partway' | 'wrists' | 'window' | null; secs?: number; commit?: string | null };
 
 /** POST /api/internal/referee-frames: the frames are ready, or the run failed (a retry, then `no_frames`). */
 export async function takeFrames(db: Db, p: FramesPost) {
   const [row] = await db.select({ j: refereeJobs }).from(refereeJobs).where(eq(refereeJobs.id, p.job_id));
-  if (!row || !row.j.attemptId) return { status: 404 as const };
+  const spot = row?.j.kind === 'spot_check';
+  if (!row || !(row.j.attemptId || (spot && row.j.lifterId))) return { status: 404 as const };
   if (row.j.status !== 'waiting_frames') return { status: 409 as const };
-  const frames: RefereeFrame[] = p.ok ? (p.frames ?? []).filter(f => Number.isInteger(f.n) && f.n >= 0 && f.n < FRAME_CAP && Number.isFinite(f.t_ms))
-    .map(f => ({ n: f.n, t_ms: Math.round(f.t_ms), key: keys.refereeFrame(row.j.attemptId!, f.n), ...(f.sha256 ? { sha256: String(f.sha256).slice(0, 64) } : {}) })) : [];
-  await logEvent(db, 'referee_frames', { job_id: p.job_id, ok: p.ok && frames.length > 0, frames: frames.length, secs: p.secs ?? null, bench_way: p.bench_way ?? null, error: p.error?.slice(0, 300), commit: p.commit ?? null }, row.j.attemptId);
+  const cap = spot ? SPOT_FRAME_CAP : FRAME_CAP;
+  const frames: RefereeFrame[] = p.ok ? (p.frames ?? []).filter(f => Number.isInteger(f.n) && f.n >= 0 && f.n < cap && Number.isFinite(f.t_ms))
+    .map(f => ({
+      n: f.n, t_ms: Math.round(f.t_ms), key: spot ? keys.spotFrame(row.j.id, f.n) : keys.refereeFrame(row.j.attemptId!, f.n),
+      ...(spot && f.attempt_id ? { attempt_id: String(f.attempt_id).slice(0, 36) } : {}),
+      ...(f.sha256 ? { sha256: String(f.sha256).slice(0, 64) } : {}),
+    })) : [];
+  await logEvent(db, 'referee_frames', { job_id: p.job_id, ok: p.ok && frames.length > 0, frames: frames.length, secs: p.secs ?? null, bench_way: p.bench_way ?? null, error: p.error?.slice(0, 300), commit: p.commit ?? null, spot: spot || undefined }, row.j.attemptId ?? undefined);
   if (p.ok && frames.length) {
     await db.update(refereeJobs).set({ status: 'ready', frames, framesReadyAt: sql`now()` })
       .where(and(eq(refereeJobs.id, p.job_id), eq(refereeJobs.status, 'waiting_frames')));
@@ -260,7 +287,7 @@ export function promptMd() {
 }
 
 /** The cached prefix (step 3): the words, the frames, and `cache_control` on the last block. */
-export async function buildPrefix(store: Pick<FrameStore, 'get'>, words: string, frames: RefereeFrame[]): Promise<Prefix> {
+export async function buildPrefix(store: Pick<FrameStore, 'get'>, words: string, frames: RefereeFrame[], o: { system?: string; ask?: string } = {}): Promise<Prefix> {
   const images = await Promise.all(frames.map(async f => {
     const res = await store.get(f.key);
     if (!res) throw new Error(`frame ${f.n} missing`);
@@ -269,9 +296,9 @@ export async function buildPrefix(store: Pick<FrameStore, 'get'>, words: string,
   const content: Prefix['content'] = [
     { type: 'text', text: words },
     ...images.map(data => ({ type: 'image' as const, source: { type: 'base64' as const, media_type: 'image/jpeg' as const, data } })),
-    { type: 'text', text: 'Give your light.', cache_control: { type: 'ephemeral' } },
+    { type: 'text', text: o.ask ?? 'Give your light.', cache_control: { type: 'ephemeral' } },
   ];
-  return { system: promptMd(), content };
+  return { system: o.system ?? promptMd(), content };
 }
 
 type JobRow = typeof refereeJobs.$inferSelect;
@@ -287,6 +314,12 @@ async function setDoubt(db: Db, jobId: string, reason: DoubtReason, extra: { wor
 /** Step 7: `doubt` means three whites. The reason is `referee_unavailable`, not a red-light reason. */
 export async function doubt(db: Db, jobId: string, reason: DoubtReason, workerId?: string) {
   const j = await setDoubt(db, jobId, reason, { workerId });
+  if (j?.kind === 'spot_check') {
+    // a spot check in doubt counts as "Checked" (step 7)
+    await logEvent(db, 'referee_bot_doubt', { job_id: jobId, reason, kind: 'spot_check' });
+    await landSpot(db, jobId, { outcome: 'doubt', problems: [] });
+    return true;
+  }
   if (!j?.attemptId) return false;
   await logEvent(db, 'referee_bot_doubt', { job_id: jobId, reason }, j.attemptId);
   console.log(JSON.stringify({ msg: 'referee bot doubt', job_id: jobId, reason }));
@@ -359,6 +392,9 @@ export type JobDeps = { store: Pick<FrameStore, 'get'>; client: Anthropic | null
 /** One leased job: three lamps, then the lights land; or a try that failed, or `doubt`. */
 export async function runJob(db: Db, jobId: string, workerId: string, deps: JobDeps) {
   const now = deps.now ?? Date.now;
+  const [spot] = await db.select().from(refereeJobs)
+    .where(and(eq(refereeJobs.id, jobId), eq(refereeJobs.kind, 'spot_check'), eq(refereeJobs.workerId, workerId), eq(refereeJobs.status, 'running')));
+  if (spot) return runSpot(db, spot, workerId, deps);
   const [row] = await db.select({ j: refereeJobs, a: attempts, division: lifters.division, ageGroup: lifters.ageGroup, units: lifters.units })
     .from(refereeJobs).innerJoin(attempts, eq(attempts.id, refereeJobs.attemptId)).innerJoin(lifters, eq(lifters.id, attempts.lifterId))
     .where(and(eq(refereeJobs.id, jobId), eq(refereeJobs.workerId, workerId), eq(refereeJobs.status, 'running')));
@@ -396,6 +432,51 @@ export async function runJob(db: Db, jobId: string, workerId: string, deps: JobD
     return failTry(db, j, workerId, out.why, out.calls, now);
   }
   return finish(db, j, workerId, out.lamps, home, now() - t0);
+}
+
+/** A spot check's one call (step 8). Its finding lands on `/referee/spot`, and its reds on her attempts. */
+async function runSpot(db: Db, j: JobRow, workerId: string, deps: JobDeps) {
+  const now = deps.now ?? Date.now;
+  const test = j.testAnswers === SPOT_TEST;
+  if (!test && !deps.client) return (await doubt(db, j.id, 'no_key', workerId)) ? 'doubt' as const : 'gone' as const;
+  const [l] = await db.select({ division: lifters.division, ageGroup: lifters.ageGroup, units: lifters.units }).from(lifters).where(eq(lifters.id, j.lifterId!));
+  const list = l ? await spotAttempts(db, j.lifterId!) : [];
+  const frames = (j.frames ?? []).slice().sort((x, y) => x.n - y.n);
+  const press = (a: { lift: string }) => l?.division === 'home' && a.lift === 'bench';
+  let prefix: Prefix | null = null;
+  try {
+    prefix = await buildPrefix(deps.store, spotWords({
+      division: l?.division ?? 'barbell', ageGroup: l?.ageGroup ?? null, frames: frames.length,
+      clips: list.map(a => ({ n: a.n, label: attemptLabel(a, l!.division, l!.units), press: press(a) })),
+    }), frames, { system: spotPromptMd(), ask: 'Give your spot check.' });
+  } catch (e) {
+    return failTry(db, j, workerId, `frames: ${(e as Error).message}`.slice(0, 300), [], now);
+  }
+  const out = await askSpot(n => (test ? Promise.resolve(fakeSpotCall(list.map(a => a.n), n)) : realSpotCall(deps.client!, prefix!, n)));
+  const cost = out.calls.reduce((s, c) => s + c.cost_usd, 0);
+  await db.update(refereeJobs).set({
+    calls: sql`${refereeJobs.calls} || ${JSON.stringify(out.calls)}::jsonb`, costUsd: sql`${refereeJobs.costUsd} + ${cost}`,
+  }).where(eq(refereeJobs.id, j.id));
+  if (out.kind === 'failed') {
+    if (out.spend) return (await doubt(db, j.id, 'spend_limit', workerId)) ? 'doubt' as const : 'gone' as const;
+    return failTry(db, j, workerId, out.why, out.calls, now);
+  }
+  const byN = new Map(list.map(a => [a.n, { id: a.id, press: press(a) }]));
+  const finding = out.answer ? spotFinding(out.answer, byN) : { outcome: 'checked' as const, problems: [] };
+  const [done] = await db.update(refereeJobs).set({ status: 'done', answers: out.answer ? [out.answer] : [], decidedAt: sql`now()`, workerId: null, leaseUntil: null })
+    .where(and(eq(refereeJobs.id, j.id), eq(refereeJobs.workerId, workerId), eq(refereeJobs.status, 'running'))).returning({ id: refereeJobs.id });
+  if (!done) return 'gone' as const;
+  await landSpot(db, j.id, finding);
+  return 'done' as const;
+}
+
+let spotPrompt: string | null = null;
+export function spotPromptMd() {
+  if (spotPrompt === null) {
+    const dir = process.cwd().endsWith(`${path.sep}web`) ? process.cwd() : path.join(process.cwd(), 'web');
+    spotPrompt = readFileSync(path.join(dir, 'lib', 'referee', 'spot-prompt.md'), 'utf8');
+  }
+  return spotPrompt;
 }
 
 async function failTry(db: Db, j: JobRow, workerId: string, why: string, _calls: RefereeCall[], now: () => number) {
@@ -494,6 +575,23 @@ export function makeClient(env: Record<string, string | undefined> = process.env
   return env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: SDK_RETRIES, timeout: CALL_TIMEOUT_MS }) : null;
 }
 
+/** The spot checks for every meet past its clip deadline (step 8): a new one for whoever is now in a top 3. */
+export async function spotTick(db: Db, env: Record<string, string | undefined> = process.env) {
+  const due = await db.select().from(meets).where(and(sql`${meets.kind} in ('real', 'test')`, sql`${meets.status} <> 'final'`, sql`${meets.closesAt} is not null`));
+  const made: string[] = [];
+  for (const m of due) {
+    if (!spotTime(m)) continue;
+    made.push(...await syncSpotChecks(db, m, {
+      env,
+      hasKey: hasKey(env),
+      test: async () => (await pendingTestAnswers(db, env)) === SPOT_TEST,
+      useTest: () => setSetting(db, TEST_ANSWERS_KEY, null),
+      doubt: (d, id) => doubt(d, id, 'no_key'),
+    }));
+  }
+  return made;
+}
+
 /** One tick of the worker: new jobs, housekeeping, and leases for the free slots. Jobs run in the background. */
 export async function botTick(db: Db, deps: JobDeps & { workerId: string; running: Set<string> }) {
   const env = deps.env ?? process.env;
@@ -502,6 +600,7 @@ export async function botTick(db: Db, deps: JobDeps & { workerId: string; runnin
     if (!locked) return;
     const txDb = tx as unknown as Db;
     await enqueue(txDb, env);
+    await spotTick(txDb, env);
     await sweep(txDb);
   });
   const ids = await lease(db, deps.workerId, WORKERS - deps.running.size);

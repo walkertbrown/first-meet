@@ -100,7 +100,7 @@ type BarMark = { x: number; y: number; size: number; n: number; on: boolean };
 /** Her bench clip's marks (look 5.14c): the plate's path in pieces (broken where it was lost), and the "Press!" tick. */
 type BenchPath = { pieces: { x: number; y: number }[][]; press: { x: number; y: number } | null };
 type Command = { text: string; kind: 'soft' | 'on' } | null;
-type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null; sample?: boolean; sample_clip?: { credit: string; reps: number } | null };
+type State = { status: string; shown_lift?: string; spot_check?: boolean; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null; sample?: boolean; sample_clip?: { credit: string; reps: number } | null };
 type SampleClip = { id: string; file: string; credit: string; judged_frame_ms?: number; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
@@ -1407,6 +1407,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             {phase === 'spot-done' && (
               <>
                 <p className="sheet-title">Good spot. You&apos;re ready.</p>
+                <p className="body">Keep your plates or dumbbells where the phone can see them.</p>
                 <div className="try-actions"><button className="btn" type="button" onClick={toCard}>Back to my attempt</button></div>
               </>
             )}
