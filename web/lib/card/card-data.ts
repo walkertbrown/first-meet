@@ -26,7 +26,11 @@ export async function ensureCardToken(db: Db, l: Pick<LifterRow, 'id' | 'cardTok
 }
 
 /** Her card clip: `render_clip`'s MP4 of the lift on her card (5.30). */
-export type CardClip = { attemptId: string; status: 'queued' | 'rendering' | 'ready' | 'failed' | null; key: string | null; sharedAt: Date | null; retried?: boolean };
+export type CardClip = {
+  attemptId: string; status: 'queued' | 'rendering' | 'ready' | 'failed' | null; key: string | null; sharedAt: Date | null; retried?: boolean;
+  /** item 119: the end card the made clip ends on, and the one on the clip she last tapped Share or Save on */
+  cardHash?: string | null; sentHash?: string | null;
+};
 
 /** Her Clip segment (5.30, item 102): being made, ready, or couldn't be made ('retry' offers "Try again" once, then 'final'). */
 export function clipState(clip: CardClip | null): { ready: boolean; failed: null | 'retry' | 'final' } {
@@ -67,8 +71,8 @@ export async function cardFor(db: Db, l: LifterRow, now = new Date()): Promise<C
   const top = t.top;
   let clip: CardClip | null = null;
   if (top.id) {
-    const [a] = await db.select({ status: attempts.clipStatus, key: attempts.clipKey, sharedAt: attempts.clipSharedAt, retried: attempts.clipRetried }).from(attempts).where(eq(attempts.id, top.id));
-    clip = { attemptId: top.id, status: a?.status ?? null, key: a?.key ?? null, sharedAt: a?.sharedAt ?? null, retried: a?.retried ?? false };
+    const [a] = await db.select({ status: attempts.clipStatus, key: attempts.clipKey, sharedAt: attempts.clipSharedAt, retried: attempts.clipRetried, cardHash: attempts.clipCardHash, sentHash: attempts.clipSentHash }).from(attempts).where(eq(attempts.id, top.id));
+    clip = { attemptId: top.id, status: a?.status ?? null, key: a?.key ?? null, sharedAt: a?.sharedAt ?? null, retried: a?.retried ?? false, cardHash: a?.cardHash ?? null, sentHash: a?.sentHash ?? null };
   }
   return { lifter: l, view: cardView({ ...l, units: l.units as Units }, m?.name ?? null, t), clip };
 }

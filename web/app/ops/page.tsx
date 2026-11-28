@@ -10,6 +10,7 @@ import { requireRole } from '@/lib/guard';
 import { commitsDiffer, opsNumbers, opsSections } from '@/lib/ops';
 import { botOps } from '@/lib/referee/bot';
 import { statusMessage } from '@/lib/meet-control';
+import { failedRemakes, remakeOn } from '@/lib/card/clip-remake';
 import { botRows, notRunningLine, TEST_ANSWER_CHOICES } from '@/lib/referee/ops-words';
 
 // /ops (plan 2.4, 5.39): how the judge is running. Admins only (an email in ADMIN_EMAILS).
@@ -31,6 +32,9 @@ export default async function Page() {
   const said = await statusMessage(db());
   // 3.4d step 8: a sure "not the same lifter" shows here for admins and does nothing automatic
   const notSame = await notSameLifter(db());
+  // item 119 (held): a clip made again for her changed end card failed twice; she keeps the old one
+  const oldTotals = remakeOn() ? await failedRemakes(db()) : [];
+  const clipsFailed = n.clipsFailed + oldTotals.length;
   return (
     <div className="wrap page desk">
       <AutoRefresh everyMs={10_000} />
@@ -87,7 +91,14 @@ export default async function Page() {
           )}
           <section className="ops-section ops-errors" aria-labelledby="ops-ERRORS">
             <h2 className="eyebrow" id="ops-ERRORS">ERRORS</h2>
-            {n.clipsFailed > 0 && <p className="ops-row"><span>Clips that failed · <span className="num">{n.clipsFailed}</span></span></p>}
+            {clipsFailed > 0 && <p className="ops-row"><span>Clips that failed · <span className="num">{clipsFailed}</span></span></p>}
+            {oldTotals.map(c => (
+              <form key={c.attemptId} method="post" action="/api/ops/clip-remake" className="ops-row">
+                <span>Old total on her clip · {c.name}</span>
+                <input type="hidden" name="attempt" value={c.attemptId} />
+                <button className="btn ghost" type="submit">Try again</button>
+              </form>
+            ))}
             <p className="ops-row"><span>Stuck bar tracks · <span className="num">{n.stuckTracks}</span></span></p>
             {n.errors.length === 0 ? <p className="small">No errors yet.</p> : (
               <ol>

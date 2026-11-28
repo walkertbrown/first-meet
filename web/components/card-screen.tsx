@@ -14,16 +14,17 @@ type Props = {
   token: string;
   name: string;
   /** `failed`: couldn't be made (item 102); 'retry' offers "Try again" once, 'final' doesn't */
-  clip: { ready: boolean; failed: null | 'retry' | 'final'; shared: boolean };
+  clip: { ready: boolean; failed: null | 'retry' | 'final'; shared: boolean; newTotal?: boolean; version?: string | null };
   /** her videos are "Only the judges", so the Clip says who can watch it */
   judgesOnly: boolean;
   /** the segment it opens on (Story; a test can open it on Clip) */
   start?: CardSegment;
 };
 
-const fileUrl = (token: string, seg: CardSegment, download = false) => {
+const fileUrl = (token: string, seg: CardSegment, download = false, version?: string | null) => {
   const q = download ? 'download=1' : '';
-  if (seg === 'Clip') return `/api/card/${token}.mp4${q ? `?${q}` : ''}`;
+  // a clip made again (item 119) is at the same file: its card's hash keeps a cached old one from playing
+  if (seg === 'Clip') return `/api/card/${token}.mp4${q || version ? `?${[q, version ? `v=${version}` : ''].filter(Boolean).join('&')}` : ''}`;
   return `/api/card/${token}.png?f=${seg === 'Post' ? 'post' : 'story'}${q ? `&${q}` : ''}`;
 };
 
@@ -51,6 +52,8 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
   const [ready, setReady] = useState(clip.ready);
   const [failed, setFailed] = useState(clip.failed);
   const [shared, setShared] = useState(clip.shared);
+  // item 119: "Your clip ends on your new total now…", until she taps Share or Save to my phone on this clip
+  const [newTotal, setNewTotal] = useState(!!clip.newTotal);
   const [copied, setCopied] = useState(false);
   const [shown, setShown] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -85,7 +88,7 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
     let gone = false;
     (async () => {
       try {
-        const r = await fetch(fileUrl(token, seg));
+        const r = await fetch(fileUrl(token, seg, false, clip.version));
         if (!r.ok) return;
         const b = await r.blob();
         const ext = seg === 'Clip' ? 'mp4' : 'png';
@@ -93,40 +96,48 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
       } catch { /* the button downloads instead */ }
     })();
     return () => { gone = true; };
-  }, [seg, ready, token]);
+  }, [seg, ready, token, clip.version]);
 
-  const shareClip = useCallback(async () => {
-    if (seg !== 'Clip' || !ready || shared) return;
+  // `via`: Share and Copy my card link put her clip on her card link (item 99); Share and Save to my phone
+  // send this clip, so a clip made again later says so (item 119).
+  const shareClip = useCallback(async (via: 'share' | 'save' | 'copy') => {
+    if (seg !== 'Clip' || !ready) return;
+    if (via === 'copy' && shared) return;
     // The line says her clip is on her card link only once that's saved: a reload or a tab closed right after
     // the tap still saves it (keepalive), and a save that fails leaves the line as it was for the next tap.
     try {
-      const r = await fetch('/api/me/card/share-clip', { method: 'POST', keepalive: true });
-      if (r.ok) setShared(true);
+      const r = await fetch('/api/me/card/share-clip', {
+        method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ via }),
+      });
+      if (!r.ok) return;
+      if (via !== 'save') setShared(true);
+      if (via !== 'copy') setNewTotal(false);
     } catch { /* the next tap tries again */ }
   }, [seg, ready, shared]);
 
-  const download = () => {
+  const saveFile = () => {
     const a = document.createElement('a');
-    a.href = fileUrl(token, seg, true);
+    a.href = fileUrl(token, seg, true, clip.version);
     a.download = '';
     document.body.appendChild(a);
     a.click();
     a.remove();
   };
+  const download = () => { saveFile(); void shareClip('save'); };
 
   const share = async () => {
     if (file && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: `${name}'s meet card` });
-        void shareClip();
+        void shareClip('share');
       } catch (e) {
         // she closed the share sheet: nothing was shared
-        if ((e as Error)?.name !== 'AbortError') { download(); void shareClip(); }
+        if ((e as Error)?.name !== 'AbortError') { saveFile(); void shareClip('share'); }
       }
       return;
     }
-    download();
-    void shareClip();
+    saveFile();
+    void shareClip('share');
   };
 
   const copy = async () => {
@@ -136,10 +147,11 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch { setShown(url); }
-    void shareClip();
+    void shareClip('copy');
   };
 
   const clipLine = judgesOnly && seg === 'Clip' && ready ? (shared ? CARD_WORDS.shared : CARD_WORDS.onlyYou) : null;
+  const newTotalLine = seg === 'Clip' && ready && newTotal;
   const fileButtons = seg !== 'Print';
   const noFile = seg === 'Clip' && !ready;
 
@@ -158,7 +170,7 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
       {seg === 'Clip' && (
         <div className="card-frame story">
           {ready
-            ? <video src={fileUrl(token, 'Clip')} controls playsInline preload="metadata" aria-label={`${name}'s lift clip`} />
+            ? <video src={fileUrl(token, 'Clip', false, clip.version)} controls playsInline preload="metadata" aria-label={`${name}'s lift clip`} />
             : failed
               ? (
                 <div className="card-making card-failed" style={{ height: '100%' }} role="status">
@@ -175,6 +187,7 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
       {seg === 'Print' && <PrintPreview frame={printFrame} />}
 
       <p className="caption honest">{HONEST_LINE}</p>
+      {newTotalLine && <p className="body clip-new">{CARD_WORDS.newTotal}</p>}
       {clipLine && <p className="body clip-line" aria-live="polite">{clipLine}</p>}
 
       <div className="try-actions">

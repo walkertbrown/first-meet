@@ -10,6 +10,8 @@ import { easternDay } from '@/lib/next-block';
 import { etWallToUtc } from '@/lib/meet-week-words';
 import { CLIP_GRACE_MS, runClipDeadline } from '@/lib/meet-window';
 import { keys } from '@/lib/r2';
+import { logEvent } from '@/lib/queue';
+import { clipAfterLights } from '@/lib/card/clip-job';
 
 export const PRODUCTION_SERVICE = 'first-meet-web';
 
@@ -223,4 +225,50 @@ export async function testSpotScene(db: Db, now = new Date()) {
   })));
   await db.insert(attempts).values(rows);
   return true;
+}
+
+/** Item 119's staging run (held, ITEM_119=on): the button beside the platform's, and its refusal on /ops. */
+export const GOOD_PRESSES_LABEL = 'Give the test lifter good bench and deadlift attempts now';
+export const GOOD_PRESSES_REFUSED = 'Test bench and deadlift not written: the test lifter has no good squat yet.';
+/** Each lift's three attempts, as shares of her heaviest good squat. */
+export const GOOD_PRESSES_SHARES = [0.4, 0.45, 0.5] as const;
+
+/**
+ * "Give the test lifter good bench and deadlift attempts now" (item 119): the Barbell meet-week test lifter's
+ * bench and deadlift, three whites each, at about 40%, 45% and 50% of her heaviest good squat (to the plate:
+ * 2.5 kg or 5 lb), so a squat 1 on the stand-in camera gives her a total, and a card, and a clip. Her squats
+ * stay as they are. Written only in the shared test meet, so they show only on its board and /ops. Without a
+ * good squat it writes nothing and says so on /ops. They're marked as the referee bot's lights, so the test
+ * referee can change one, as the staging run does. Returns 'no-meet', 'no-squat' or 'ok'.
+ */
+export async function testGoodPresses(db: Db, now = new Date()): Promise<'no-meet' | 'no-squat' | 'ok'> {
+  const [m] = await db.select().from(meets).where(and(eq(meets.slug, TEST_MEET_SLUG), eq(meets.kind, 'test')));
+  if (!m) return 'no-meet';
+  const [l] = await db.select().from(lifters).where(and(eq(lifters.email, MEET_WEEK_ACCOUNTS.meetweek.email), eq(lifters.meetId, m.id)));
+  const mine = l ? await db.select().from(attempts).where(and(eq(attempts.lifterId, l.id), eq(attempts.meetId, m.id))) : [];
+  const squat = mine.filter(a => a.lift === 'squat' && a.status === 'judged' && a.call === 'white' && a.weight)
+    .sort((a, b) => Number(b.weight) - Number(a.weight))[0];
+  if (!l || !squat) {
+    await logEvent(db, 'error', { message: GOOD_PRESSES_REFUSED });
+    return 'no-squat';
+  }
+  const step = l.units === 'lb' ? 5 : 2.5;
+  const best = Number(squat.weight);
+  const weights = GOOD_PRESSES_SHARES.reduce<number[]>((w, share) => {
+    const v = Math.max(step, Math.round((best * share) / step) * step);
+    return [...w, w.length && v <= w[w.length - 1] ? w[w.length - 1] + step : v];
+  }, []);
+  await db.delete(attempts).where(and(eq(attempts.lifterId, l.id), eq(attempts.meetId, m.id), inArray(attempts.lift, ['bench', 'deadlift'])));
+  const rows = (['bench', 'deadlift'] as const).flatMap(lift => weights.map((weight, i) => ({
+    lifterId: l.id, meetId: m.id, lift, number: i + 1, weight, status: 'judged' as const, call: 'white' as const,
+    lights: ['white', 'white', 'white'] as ('white' | 'red')[], videoKey: squat.videoKey ?? keys.sample('good-lift-wabba.mp4'),
+    judgedFrameMs: 3000, recordedAt: now, judgedAt: now,
+    commandTimes: { loaded: 200, start: 1000, rack: 5000 } as Record<string, number>,
+    // as the referee bot's lights, so the test referee can turn one red ("change", item 88): the staging run's referee change
+    measures: { referee_bot: true } as Record<string, unknown>,
+  })));
+  const made = await db.insert(attempts).values(rows).returning({ id: attempts.id });
+  // her total lands with these: her clip is queued as it is after any lights
+  await clipAfterLights(db, made[made.length - 1].id);
+  return 'ok';
 }

@@ -42,7 +42,7 @@ describe.skipIf(!URL_)('the meet card', () => {
     const { l, rows } = await totaled();
     const card = await cardFor(db, l, NOW);
     expect(card?.view.total).toBe('345');
-    expect(card?.clip).toEqual({ attemptId: rows[8].id, status: null, key: null, sharedAt: null, retried: false });
+    expect(card?.clip).toEqual({ attemptId: rows[8].id, status: null, key: null, sharedAt: null, retried: false, cardHash: null, sentHash: null });
     const token = await ensureCardToken(db, l);
     expect(await ensureCardToken(db, { id: l.id, cardToken: token })).toBe(token);
     expect((await cardForToken(db, token, NOW))?.lifter.id).toBe(l.id);

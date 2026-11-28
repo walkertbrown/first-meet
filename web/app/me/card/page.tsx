@@ -7,6 +7,7 @@ import { DemoStrip } from '@/components/demo-strip';
 import { CardScreen } from '@/components/card-screen';
 import { cardFor, clipState, ensureCardToken } from '@/lib/card/card-data';
 import { queueOnRead } from '@/lib/card/clip-job';
+import { newTotalLine } from '@/lib/card/clip-remake';
 import { currentViewer } from '@/lib/roles';
 import '../../try.css';
 import '../../platform.css';
@@ -37,7 +38,7 @@ export default async function MeCardPage() {
           <CardScreen
             token={token}
             name={card.view.name}
-            clip={{ ...clipState(clip), shared: !!clip?.sharedAt }}
+            clip={{ ...clipState(clip), shared: !!clip?.sharedAt, newTotal: newTotalLine(clip ? { status: clip.status, cardHash: clip.cardHash ?? null, sentHash: clip.sentHash ?? null } : null), version: clip?.cardHash ?? null }}
             judgesOnly={l.clipVisibility === 'judges'}
           />
         </main>

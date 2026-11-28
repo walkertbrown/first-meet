@@ -2,8 +2,9 @@
 // 90-day session cookie, then goes to its page. Anywhere but staging, a 404. No mail is sent:
 // .invalid addresses never get mail.
 import { db, hasDb } from '@/db';
+import { remakeOn } from '@/lib/card/clip-remake';
 import { cookieHeader, encodeSession } from '@/lib/session';
-import { MEET_WEEK_ACCOUNTS, TEST_ACCOUNTS, WINDOW_BUTTONS, demoTotaledAccount, meetWeekAccount, setTestHourNow, testAccount, testMeetWindow, testSigninOn, testSpotScene, TEST_MEET_SLUG, type MeetWeekWho, type TestWho, type WindowButton } from '@/lib/test-signin';
+import { MEET_WEEK_ACCOUNTS, TEST_ACCOUNTS, WINDOW_BUTTONS, testGoodPresses, demoTotaledAccount, meetWeekAccount, setTestHourNow, testAccount, testMeetWindow, testSigninOn, testSpotScene, TEST_MEET_SLUG, type MeetWeekWho, type TestWho, type WindowButton } from '@/lib/test-signin';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,12 @@ export async function POST(req: Request) {
   if (who in WINDOW_BUTTONS) {
     if (!await testMeetWindow(db(), who as WindowButton)) return new Response('No test meet yet', { status: 409 });
     return new Response(null, { status: 303, headers: { location: '/platform' } });
+  }
+  // item 119 (held): good bench and deadlift for the test lifter; without a good squat, a line on /ops
+  if (who === 'good-presses' && remakeOn()) {
+    const r = await testGoodPresses(db());
+    if (r === 'no-meet') return new Response('No test meet yet', { status: 409 });
+    return new Response(null, { status: 303, headers: { location: r === 'ok' ? '/platform/total' : '/ops' } });
   }
   // phase 5 (item 104): the spot checks' scene; meet control shows "Make the board final" waiting
   if (who === 'spot-scene') {
