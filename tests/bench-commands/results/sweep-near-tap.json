@@ -1,0 +1,2344 @@
+[
+ {
+  "row": "today's rule (0.4 s, anywhere before Start!)",
+  "scores": "as recorded",
+  "cadence": "grid",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.00 s",
+  "holdsVoided": [
+   "m-k8-r3",
+   "VM_y"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "VM_y"
+  ],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [
+   "m-k8-r3"
+  ],
+  "stuckBeforeStart": [
+   "m-k8 1.50",
+   "m-k8-r3 16.27",
+   "VM_y 5.30"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "m-k8-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": null,
+   "holdVoided": true,
+   "lost": 11.2,
+   "settled": 9.8,
+   "descent": 11.434,
+   "log": "Rack!(void) 11.20"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 5.30 (stuck)",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "today's rule (0.4 s, anywhere before Start!)",
+  "scores": "as recorded",
+  "cadence": "tick",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 32 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.02 s",
+  "holdsVoided": [
+   "m-k8-r3",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "VM_y"
+  ],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [
+   "m-k8-r3",
+   "VM_y-r2",
+   "VM_y-r4"
+  ],
+  "stuckBeforeStart": [
+   "m-k8 1.50",
+   "m-k8-r3 16.28",
+   "VM_y 5.32",
+   "VM_y-r2 6.65",
+   "VM_y-r4 9.67"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "m-k8-r3",
+   "Nv9h",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r4",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": null,
+   "holdVoided": true,
+   "lost": 11.2,
+   "settled": 9.8,
+   "descent": 11.434,
+   "log": "Rack!(void) 11.20"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 5.32 (stuck)",
+   "VM_y-r2: no Start!, void 6.65 (stuck)",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: no Start!, void 9.67 (stuck)"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "today's rule (0.4 s, anywhere before Start!)",
+  "scores": "as recorded",
+  "cadence": "three",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 0.99 s",
+  "holdsVoided": [
+   "m-k8-r3",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "VM_y"
+  ],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [
+   "m-k8-r3",
+   "VM_y-r2",
+   "VM_y-r4"
+  ],
+  "stuckBeforeStart": [
+   "m-k8 1.50",
+   "m-k8-r3 16.29",
+   "VM_y 5.30",
+   "VM_y-r2 6.66",
+   "VM_y-r4 9.66"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "m-k8-r3",
+   "Nv9h",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r4",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": null,
+   "holdVoided": true,
+   "lost": 11.2,
+   "settled": 9.8,
+   "descent": 11.434,
+   "log": "Rack!(void) 11.20"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 5.30 (stuck)",
+   "VM_y-r2: no Start!, void 6.66 (stuck)",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: no Start!, void 9.66 (stuck)"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "today's rule (0.4 s, anywhere before Start!)",
+  "scores": "lifted to 0.995",
+  "cadence": "grid",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 13 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 13 of 34. Latest: 1.00 s",
+  "holdsVoided": [
+   "6K8v",
+   "6K8v-r2",
+   "83WA-r2",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "hIuj",
+   "IA0P",
+   "IA0P-r3",
+   "IKuX-r4",
+   "KrDo",
+   "Lj0X",
+   "m-k8-r2",
+   "m-k8-r3",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "uGCh",
+   "VM_y",
+   "xXFj",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "6K8v",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "IA0P",
+   "Nv9h",
+   "VM_y",
+   "xXFj"
+  ],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "6K8v-r2",
+   "83WA-r2",
+   "IA0P-r3",
+   "IKuX-r4",
+   "m-k8-r2",
+   "m-k8-r3",
+   "NFjK-r5",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "6K8v 3.30",
+   "6K8v-r2 6.67",
+   "83WA-r2 9.02",
+   "cE2t 20.69",
+   "Ecs1 24.33",
+   "Ecs2 44.23",
+   "hIuj 1.37",
+   "IA0P 7.54",
+   "IA0P-r3 15.41",
+   "IKuX-r4 6.93",
+   "KrDo 50.87",
+   "Lj0X 2.37",
+   "m-k8 1.23",
+   "m-k8-r2 13.87",
+   "m-k8-r3 16.27",
+   "Nazt 11.50",
+   "NFjK-r5 21.76",
+   "Nv9h 10.77",
+   "Nv9h-r2 13.53",
+   "Nv9h-r3 15.67",
+   "Nv9h-r4 18.10",
+   "uGCh 28.37",
+   "VM_y 4.57",
+   "xXFj 15.07",
+   "z838 0.87",
+   "z838-r2 4.57",
+   "z838-r3 8.00",
+   "z838-r4 11.13"
+  ],
+  "noStart": [
+   "6K8v",
+   "6K8v-r2",
+   "6K8v-r3",
+   "83WA-r2",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "hIuj",
+   "IA0P",
+   "IA0P-r3",
+   "IKuX-r4",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "m-k8-r2",
+   "m-k8-r3",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "uGCh",
+   "VM_y",
+   "xXFj",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": null,
+   "holdVoided": true,
+   "lost": 11.2,
+   "settled": 9.8,
+   "descent": 11.434,
+   "log": "Rack!(void) 11.20"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 4.57 (stuck)",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "today's rule (0.4 s, anywhere before Start!)",
+  "scores": "lifted to 0.995",
+  "cadence": "tick",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 11 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 11 of 34. Latest: 1.00 s",
+  "holdsVoided": [
+   "6K8v",
+   "6K8v-r2",
+   "83WA-r2",
+   "ak3m3",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "hIuj",
+   "IA0P",
+   "IKuX-r2",
+   "IKuX-r3",
+   "IKuX-r4",
+   "KrDo",
+   "Lj0X",
+   "m-k8-r2",
+   "m-k8-r3",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "uGCh",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r3",
+   "VM_y-r4",
+   "xXFj",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "6K8v",
+   "ak3m3",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "IA0P",
+   "Nv9h",
+   "VM_y",
+   "xXFj"
+  ],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "6K8v-r2",
+   "83WA-r2",
+   "IKuX-r2",
+   "IKuX-r3",
+   "IKuX-r4",
+   "m-k8-r2",
+   "m-k8-r3",
+   "NFjK-r5",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "VM_y-r2",
+   "VM_y-r3",
+   "VM_y-r4",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "6K8v 3.30",
+   "6K8v-r2 6.62",
+   "83WA-r2 8.88",
+   "ak3m3 44.41",
+   "cE2t 20.70",
+   "Ecs1 24.33",
+   "Ecs2 44.25",
+   "hIuj 1.38",
+   "IA0P 7.58",
+   "IKuX-r2 3.90",
+   "IKuX-r3 5.35",
+   "IKuX-r4 6.92",
+   "KrDo 50.88",
+   "Lj0X 2.39",
+   "m-k8 1.18",
+   "m-k8-r2 13.78",
+   "m-k8-r3 16.28",
+   "Nazt 11.50",
+   "NFjK-r5 21.71",
+   "Nv9h 10.80",
+   "Nv9h-r2 13.48",
+   "Nv9h-r3 15.65",
+   "Nv9h-r4 17.75",
+   "uGCh 28.38",
+   "VM_y 4.58",
+   "VM_y-r2 6.65",
+   "VM_y-r3 8.12",
+   "VM_y-r4 9.67",
+   "xXFj 15.07",
+   "z838 0.88",
+   "z838-r2 4.38",
+   "z838-r3 7.98",
+   "z838-r4 11.15"
+  ],
+  "noStart": [
+   "6K8v",
+   "6K8v-r2",
+   "6K8v-r3",
+   "83WA-r2",
+   "ak3m3",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "hIuj",
+   "IA0P",
+   "IKuX-r2",
+   "IKuX-r3",
+   "IKuX-r4",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "m-k8-r2",
+   "m-k8-r3",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "uGCh",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r3",
+   "VM_y-r4",
+   "xXFj",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.18"
+  },
+  "mk8TapAt9": {
+   "start": null,
+   "holdVoided": true,
+   "lost": 11.2,
+   "settled": 9.8,
+   "descent": 11.434,
+   "log": "Rack!(void) 11.20"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 4.58 (stuck)",
+   "VM_y-r2: no Start!, void 6.65 (stuck)",
+   "VM_y-r3: no Start!, void 8.12 (stuck)",
+   "VM_y-r4: no Start!, void 9.67 (stuck)"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "today's rule (0.4 s, anywhere before Start!)",
+  "scores": "lifted to 0.995",
+  "cadence": "three",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 11 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 11 of 34. Latest: 0.99 s",
+  "holdsVoided": [
+   "6K8v",
+   "6K8v-r2",
+   "83WA-r2",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "hIuj",
+   "IA0P",
+   "IKuX-r2",
+   "IKuX-r3",
+   "IKuX-r4",
+   "IKuX-r5",
+   "KrDo",
+   "Lj0X",
+   "m-k8-r2",
+   "m-k8-r3",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "uGCh",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r3",
+   "VM_y-r4",
+   "xXFj",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "6K8v",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "IA0P",
+   "Nv9h",
+   "VM_y",
+   "xXFj"
+  ],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "6K8v-r2",
+   "83WA-r2",
+   "IKuX-r2",
+   "IKuX-r3",
+   "IKuX-r4",
+   "IKuX-r5",
+   "m-k8-r2",
+   "m-k8-r3",
+   "NFjK-r5",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "VM_y-r2",
+   "VM_y-r3",
+   "VM_y-r4",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "6K8v 3.28",
+   "6K8v-r2 6.60",
+   "83WA-r2 8.87",
+   "cE2t 20.69",
+   "Ecs1 24.33",
+   "Ecs2 44.23",
+   "hIuj 1.39",
+   "IA0P 7.56",
+   "IKuX-r2 3.89",
+   "IKuX-r3 5.36",
+   "IKuX-r4 6.92",
+   "IKuX-r5 8.42",
+   "KrDo 50.89",
+   "Lj0X 2.39",
+   "m-k8 1.23",
+   "m-k8-r2 13.77",
+   "m-k8-r3 16.29",
+   "Nazt 11.50",
+   "NFjK-r5 21.69",
+   "Nv9h 10.79",
+   "Nv9h-r2 13.47",
+   "Nv9h-r3 15.65",
+   "Nv9h-r4 18.08",
+   "uGCh 28.39",
+   "VM_y 4.57",
+   "VM_y-r2 6.66",
+   "VM_y-r3 8.12",
+   "VM_y-r4 9.66",
+   "xXFj 15.07",
+   "z838 0.89",
+   "z838-r2 4.40",
+   "z838-r3 8.00",
+   "z838-r4 11.16"
+  ],
+  "noStart": [
+   "6K8v",
+   "6K8v-r2",
+   "6K8v-r3",
+   "83WA-r2",
+   "cE2t",
+   "Ecs1",
+   "Ecs2",
+   "hIuj",
+   "IA0P",
+   "IKuX-r2",
+   "IKuX-r3",
+   "IKuX-r4",
+   "IKuX-r5",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "m-k8-r2",
+   "m-k8-r3",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "Nv9h-r2",
+   "Nv9h-r3",
+   "Nv9h-r4",
+   "uGCh",
+   "VM_y",
+   "VM_y-r2",
+   "VM_y-r3",
+   "VM_y-r4",
+   "xXFj",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": null,
+   "holdVoided": true,
+   "lost": 11.2,
+   "settled": 9.8,
+   "descent": 11.434,
+   "log": "Rack!(void) 11.20"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 4.57 (stuck)",
+   "VM_y-r2: no Start!, void 6.66 (stuck)",
+   "VM_y-r3: no Start!, void 8.12 (stuck)",
+   "VM_y-r4: no Start!, void 9.66 (stuck)"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 5%",
+  "scores": "as recorded",
+  "cadence": "grid",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.00 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 5%",
+  "scores": "as recorded",
+  "cadence": "tick",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 32 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.02 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 5%",
+  "scores": "as recorded",
+  "cadence": "three",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 0.99 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 5%",
+  "scores": "lifted to 0.995",
+  "cadence": "grid",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 21 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 22 of 34. Latest: 1.27 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 9.02",
+   "hIuj 1.37",
+   "KrDo 50.87",
+   "Lj0X 2.37",
+   "m-k8 1.23",
+   "Nazt 11.50",
+   "uGCh 28.37",
+   "z838 0.87",
+   "z838-r2 4.57",
+   "z838-r3 8.00",
+   "z838-r4 11.13"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 5%",
+  "scores": "lifted to 0.995",
+  "cadence": "tick",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 20 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 21 of 34. Latest: 1.30 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "ak3m3",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "ak3m3"
+  ],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 8.88",
+   "ak3m3 44.41",
+   "hIuj 1.38",
+   "KrDo 50.88",
+   "Lj0X 2.39",
+   "m-k8 1.18",
+   "Nazt 11.50",
+   "uGCh 28.38",
+   "z838 0.88",
+   "z838-r2 4.38",
+   "z838-r3 7.98",
+   "z838-r4 11.15"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "ak3m3",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.18"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 5%",
+  "scores": "lifted to 0.995",
+  "cadence": "three",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 21 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 22 of 34. Latest: 1.29 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 8.87",
+   "hIuj 1.39",
+   "KrDo 50.89",
+   "Lj0X 2.39",
+   "m-k8 1.23",
+   "Nazt 11.50",
+   "uGCh 28.39",
+   "z838 0.89",
+   "z838-r2 4.40",
+   "z838-r3 8.00",
+   "z838-r4 11.16"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 6%",
+  "scores": "as recorded",
+  "cadence": "grid",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.00 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 6%",
+  "scores": "as recorded",
+  "cadence": "tick",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 32 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.02 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 6%",
+  "scores": "as recorded",
+  "cadence": "three",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 0.99 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 6%",
+  "scores": "lifted to 0.995",
+  "cadence": "grid",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 21 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 22 of 34. Latest: 1.27 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 9.02",
+   "hIuj 1.37",
+   "KrDo 50.87",
+   "Lj0X 2.37",
+   "m-k8 1.23",
+   "Nazt 11.50",
+   "uGCh 28.37",
+   "z838 0.87",
+   "z838-r2 4.57",
+   "z838-r3 8.00",
+   "z838-r4 11.13"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 6%",
+  "scores": "lifted to 0.995",
+  "cadence": "tick",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 20 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 21 of 34. Latest: 1.30 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "ak3m3",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "ak3m3"
+  ],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 8.88",
+   "ak3m3 44.41",
+   "hIuj 1.38",
+   "KrDo 50.88",
+   "Lj0X 2.39",
+   "m-k8 1.18",
+   "Nazt 11.50",
+   "uGCh 28.38",
+   "z838 0.88",
+   "z838-r2 4.38",
+   "z838-r3 7.98",
+   "z838-r4 11.15"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "ak3m3",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.18"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 6%",
+  "scores": "lifted to 0.995",
+  "cadence": "three",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 21 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 22 of 34. Latest: 1.29 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 8.87",
+   "hIuj 1.39",
+   "KrDo 50.89",
+   "Lj0X 2.39",
+   "m-k8 1.23",
+   "Nazt 11.50",
+   "uGCh 28.39",
+   "z838 0.89",
+   "z838-r2 4.40",
+   "z838-r3 8.00",
+   "z838-r4 11.16"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 8%",
+  "scores": "as recorded",
+  "cadence": "grid",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.00 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 8%",
+  "scores": "as recorded",
+  "cadence": "tick",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 32 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.02 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 8%",
+  "scores": "as recorded",
+  "cadence": "three",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 0.99 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [
+   "m-k8 1.50"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "m-k8",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.50"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 8%",
+  "scores": "lifted to 0.995",
+  "cadence": "grid",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 20 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 21 of 34. Latest: 1.27 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "NFjK-r5",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "NFjK-r5",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 9.02",
+   "hIuj 1.37",
+   "KrDo 50.87",
+   "Lj0X 2.37",
+   "m-k8 1.23",
+   "Nazt 11.50",
+   "NFjK-r5 21.76",
+   "uGCh 28.37",
+   "z838 0.87",
+   "z838-r2 4.57",
+   "z838-r3 8.00",
+   "z838-r4 11.13"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 8%",
+  "scores": "lifted to 0.995",
+  "cadence": "tick",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 19 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 20 of 34. Latest: 1.30 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "ak3m3",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "NFjK-r5",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [
+   "ak3m3"
+  ],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "NFjK-r5",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 8.88",
+   "ak3m3 44.41",
+   "hIuj 1.38",
+   "KrDo 50.88",
+   "Lj0X 2.39",
+   "m-k8 1.18",
+   "Nazt 11.50",
+   "NFjK-r5 21.71",
+   "uGCh 28.38",
+   "z838 0.88",
+   "z838-r2 4.38",
+   "z838-r3 7.98",
+   "z838-r4 11.15"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "ak3m3",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.18"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "near the tap, D = 8%",
+  "scores": "lifted to 0.995",
+  "cadence": "three",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "PASS",
+   "line4": "PASS"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 20 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 21 of 34. Latest: 1.29 s",
+  "holdsVoided": [
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "NFjK-r5",
+   "uGCh",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "Nazt",
+   "uGCh",
+   "z838"
+  ],
+  "holdsVoidedLater": [
+   "83WA-r2",
+   "NFjK-r5",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "stuckBeforeStart": [
+   "83WA-r2 8.87",
+   "hIuj 1.39",
+   "KrDo 50.89",
+   "Lj0X 2.39",
+   "m-k8 1.23",
+   "Nazt 11.50",
+   "NFjK-r5 21.69",
+   "uGCh 28.39",
+   "z838 0.89",
+   "z838-r2 4.40",
+   "z838-r3 8.00",
+   "z838-r4 11.16"
+  ],
+  "noStart": [
+   "6K8v-r3",
+   "83WA-r2",
+   "hIuj",
+   "KrDo",
+   "Lj0X",
+   "m-k8",
+   "Nazt",
+   "NFjK-r5",
+   "Nv9h",
+   "uGCh",
+   "VM_y",
+   "xXFj-r4",
+   "z838",
+   "z838-r2",
+   "z838-r3",
+   "z838-r4"
+  ],
+  "mk8": {
+   "start": null,
+   "startEarly": false,
+   "log": "Rack!(void) 1.23"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "off before Start!",
+  "scores": "as recorded",
+  "cadence": "grid",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "FAIL",
+   "line4": "FAIL"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.00 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [],
+  "noStart": [
+   "6K8v-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": 1.567,
+   "startEarly": true,
+   "log": "start 1.57, press 13.13, rack 14.43"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "off before Start!",
+  "scores": "as recorded",
+  "cadence": "tick",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "FAIL",
+   "line4": "FAIL"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 32 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 1.02 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [],
+  "noStart": [
+   "6K8v-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": 1.5833333333333335,
+   "startEarly": true,
+   "log": "start 1.58, press 13.15, rack 14.47"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "off before Start!",
+  "scores": "as recorded",
+  "cadence": "three",
+  "lines": {
+   "line1": "NOT SHOWN",
+   "line2": "PASS",
+   "line3": "FAIL",
+   "line4": "FAIL"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 33 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 33 of 34. Latest: 0.99 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [],
+  "noStart": [
+   "6K8v-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": 1.567,
+   "startEarly": true,
+   "log": "start 1.57, press 13.13, rack 14.43"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ },
+ {
+  "row": "off before Start!",
+  "scores": "lifted to 0.995",
+  "cadence": "grid",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "PASS",
+   "line3": "FAIL",
+   "line4": "FAIL"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 31 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 32 of 34. Latest: 1.27 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [],
+  "noStart": [
+   "6K8v-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": 1.567,
+   "startEarly": true,
+   "log": "start 1.57, press 13.13, rack 14.43"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.93",
+   "VM_y-r2: Start! 6.90",
+   "VM_y-r3: Start! 8.37",
+   "VM_y-r4: Start! 9.90"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.733,
+   "got": false
+  }
+ },
+ {
+  "row": "off before Start!",
+  "scores": "lifted to 0.995",
+  "cadence": "tick",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "FAIL",
+   "line3": "FAIL",
+   "line4": "FAIL"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 30 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 32 of 34. Latest: 1.30 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [],
+  "noStart": [
+   "6K8v-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": 1.5833333333333335,
+   "startEarly": true,
+   "log": "start 1.58, press 13.15, rack 14.47"
+  },
+  "mk8TapAt9": {
+   "start": 11.450666666666667,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.850999999999999,
+   "log": "start 11.45, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.92",
+   "VM_y-r2: Start! 6.82",
+   "VM_y-r3: Start! 8.30",
+   "VM_y-r4: Start! 9.82"
+  ],
+  "longestStartWait": {
+   "id": "6K8v-r3",
+   "s": 4.683,
+   "got": false
+  }
+ },
+ {
+  "row": "off before Start!",
+  "scores": "lifted to 0.995",
+  "cadence": "three",
+  "lines": {
+   "line1": "FAIL",
+   "line2": "PASS",
+   "line3": "FAIL",
+   "line4": "FAIL"
+  },
+  "line2": "2. Press! within 1 s of the stop on at least 90%: 31 of 34; past 1.5 s and not late: 0 (none). Within 1.5 s: 32 of 34. Latest: 1.29 s",
+  "holdsVoided": [],
+  "racked": 13,
+  "holdsVoidedRacked": [],
+  "holdsVoidedOut": [],
+  "holdsVoidedLater": [],
+  "stuckBeforeStart": [],
+  "noStart": [
+   "6K8v-r3",
+   "Nv9h",
+   "VM_y",
+   "xXFj-r4"
+  ],
+  "mk8": {
+   "start": 1.567,
+   "startEarly": true,
+   "log": "start 1.57, press 13.13, rack 14.43"
+  },
+  "mk8TapAt9": {
+   "start": 11.467333333333334,
+   "holdVoided": false,
+   "lost": null,
+   "settled": 9.8,
+   "descent": 11.866999999999999,
+   "log": "start 11.47, press 13.56"
+  },
+  "vmy": [
+   "VM_y: no Start!, void 7.91",
+   "VM_y-r2: Start! 6.80",
+   "VM_y-r3: Start! 8.27",
+   "VM_y-r4: Start! 9.80"
+  ],
+  "longestStartWait": {
+   "id": "xXFj-r4",
+   "s": 4.689,
+   "got": false
+  }
+ }
+]

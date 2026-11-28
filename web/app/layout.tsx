@@ -3,6 +3,8 @@ import './globals.css';
 import './stage.css';
 import './landing.css';
 import './pages.css';
+import { RefereeBotProvider } from '@/components/referee-bot';
+import { botOn } from '@/lib/referee/words';
 
 export const metadata: Metadata = {
   title: { default: 'First Meet', template: '%s · First Meet' },
@@ -31,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body>{children}</body>
+      <body><RefereeBotProvider on={botOn()}>{children}</RefereeBotProvider></body>
     </html>
   );
 }

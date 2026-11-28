@@ -10,7 +10,9 @@ import { asMeetAttempt, meetAttempts, platformOpen, type AttemptRow, type Lifter
 import { nineRow, notJudgedVoid, type RowCell } from '@/lib/platform-view';
 import { meetClosed } from '@/lib/meet-window';
 import { formatTotal } from '@/lib/total-view';
-import { juneAt, JUNE } from '@/lib/june';
+import { juneAt, JUNE, JUNE_CYCLE_S } from '@/lib/june';
+import { ensureCardToken } from '@/lib/card/card-data';
+import { cardView, type CardView } from '@/lib/card/card-view';
 import { liftWord } from '@/lib/stage/meet-words';
 import { keepWhole } from '@/lib/site';
 
@@ -38,7 +40,8 @@ export type CornerView =
   /** after the close, nothing judged and nothing on its way: she didn't lift this time (5.4, item 90) */
   | { kind: 'closed'; meetName: string; name: string; title: string }
   | (Shared & { kind: 'live'; notStarted: string | null })
-  | (Shared & { kind: 'totaled'; total: string; unit: Units })
+  /** `card`: her story card's PNG (5.4 "After she totals", phase 4) */
+  | (Shared & { kind: 'totaled'; total: string; unit: Units; card: string })
   | (Shared & { kind: 'bombed' });
 
 const SENT = ['uploading', 'queued', 'judging', 'close_call', 'judged'];
@@ -121,7 +124,7 @@ async function lifterView(db: Db, l: LifterRow, m: typeof meets.$inferSelect, no
   const list = await Promise.all(sent.map(async a => rowOf(a, division, units, canShowClip && a.clipKey ? await clipUrl(a.clipKey) : null)));
   const shared: Shared = { meetName: m.name, name, division, demo, june: false, row: nineRow(rows, null, closed), list, nextAt: null };
   const t = meetTotal(rows.map(a => asMeetAttempt(a, l)), division, closed);
-  if (t.kind === 'total') return { ...shared, kind: 'totaled', total: formatTotal(t.value), unit: units };
+  if (t.kind === 'total') return { ...shared, kind: 'totaled', total: formatTotal(t.value), unit: units, card: `/api/card/${await ensureCardToken(db, l)}.png?f=story` };
   if (t.kind === 'bombed') return { ...shared, kind: 'bombed' };
   // the demo meet never closes, so a demo corner page never shows this
   if (t.kind === 'none' && !demo) return { kind: 'closed', meetName: m.name, name, title: closedTitle(name) };
@@ -139,7 +142,18 @@ export function juneView(now = new Date()): CornerView {
     row: nineRow(rows, null), list, nextAt,
   };
   const t = meetTotal(rows.map((a): MeetAttempt => ({ ...a, recordedAt: null })), division);
-  if (t.kind === 'total') return { ...shared, kind: 'totaled', total: formatTotal(t.value), unit: units };
+  if (t.kind === 'total') return { ...shared, kind: 'totaled', total: formatTotal(t.value), unit: units, card: JUNE_CARD };
   if (t.kind === 'bombed') return { ...shared, kind: 'bombed' };
   return { ...shared, kind: 'live', notStarted: list.length ? null : notStartedLine(null) };
+}
+
+/** June's story card, drawn by /api/card/demo.png (she has no account, so no card token). */
+export const JUNE_CARD = '/api/card/demo.png?f=story';
+
+/** June's card (5.36): her nine as the clock ends each demo meet, all judged. */
+export function juneCardView(): CardView | null {
+  const { list } = juneAt(new Date(JUNE_CYCLE_S * 1000 - 1));
+  const t = meetTotal(list.map((a): MeetAttempt => ({ ...a, repsDeclared: null, recordedAt: null })), JUNE.division);
+  if (t.kind !== 'total') return null;
+  return cardView({ cardName: JUNE.cardName, ageGroup: null, division: JUNE.division, hometown: '', units: JUNE.units }, 'Demo meet', t);
 }

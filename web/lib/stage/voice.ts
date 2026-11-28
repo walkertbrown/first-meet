@@ -74,7 +74,12 @@ export class Voice {
     }
   }
 
-  say(k: VoiceKey) {
+  /**
+   * `onSaid` (item 114, `said_at`): when the word actually plays, on performance.now()'s clock. A recorded voice
+   * plays as it starts, plus the audio's output latency; Web Speech when its utterance starts. Never called with the
+   * voice off. Only for /ops: never used to judge.
+   */
+  say(k: VoiceKey, onSaid?: (at: number) => void) {
     if (!this.on) return;
     const buf = this.buffers.get(k);
     const a = audio();
@@ -85,6 +90,8 @@ export class Voice {
       src.buffer = buf;
       src.connect(g).connect(a.destination);
       src.start();
+      const lag = (a as AudioContext & { outputLatency?: number }).outputLatency || a.baseLatency || 0;
+      onSaid?.(performance.now() + lag * 1000);
       return;
     }
     if (typeof speechSynthesis === 'undefined') return;
@@ -93,6 +100,7 @@ export class Voice {
     u.rate = 0.95;
     u.pitch = 0.9;
     u.volume = volumeOf(k);
+    if (onSaid) u.onstart = () => onSaid(performance.now());
     speechSynthesis.speak(u);
   }
 }

@@ -14,7 +14,25 @@ import { BAR_RULES, BarCaller, type BarCmd, type BarRel } from './bar-caller';
 import { BAR_TRACK, PlateTracker, type Gray, type TrackOpts } from './plate-tracker';
 import type { PlateTap } from './bar-measure';
 
-export type BarPathPoint = { t: number; x: number; y: number; lost: boolean };
+export type BarPathPoint = { t: number; x: number; y: number; score: number; lost: boolean };
+
+/** One point of `bar_path` as the phone sends it (item 110): `[t, x, y, score, lost]`, `lost` 1 or 0. */
+export type SentBarPoint = [number, number, number, number, 0 | 1];
+
+/**
+ * The phone's path as it's sent with the upload (item 110): `t` in ms from the clip's 0 ("Bar is loaded.", on the
+ * frames' clock), which sits `zero` ms after the path's own 0; `x` and `y` to 4 places, `score` to 2. Points before
+ * the clip's 0 are left out, and so is a point whose rounded `t` isn't later than the one before.
+ */
+export function sentPath(path: readonly BarPathPoint[], zero: number): SentBarPoint[] {
+  const out: SentBarPoint[] = [];
+  for (const p of path) {
+    const t = Math.round(p.t - zero);
+    if (t < 0 || (out.length && t <= out[out.length - 1][0])) continue;
+    out.push([t, round4(p.x), round4(p.y), Math.round(p.score * 100) / 100, p.lost ? 1 : 0]);
+  }
+  return out;
+}
 
 export type BarStageEvent =
   /** where the mark sits now, fractions of the camera frame */
@@ -45,15 +63,16 @@ export class BarStage {
 
   /**
    * Her tap at (x, y), fractions of the camera frame (the footage as recorded, not the mirrored screen).
-   * Taken before "Start!" while the bar is on the hooks; false otherwise.
+   * Taken before "Start!" while the bar is on the hooks; false otherwise. `t` is the tap's ms in the recording
+   * (item 110), 0 before it starts.
    */
-  tap(g: Gray, x: number, y: number): boolean {
+  tap(g: Gray, x: number, y: number, t = 0): boolean {
     if (this.state === 'lifting' || this.state === 'done') return false;
     if (this.caller && this.caller.state !== 'racked') return false;
     const cx = Math.min(1, Math.max(0, x)), cy = Math.min(1, Math.max(0, y));
     this.tracker = new PlateTracker(g, cx, cy, this.track);
     this.caller = new BarCaller({ x: cx, y: cy }, this.dims, this.r);
-    this.plateTap = { x: round4(cx), y: round4(cy), size: this.track.tpl };
+    this.plateTap = { x: round4(cx), y: round4(cy), size: this.track.tpl, t: Math.max(0, Math.round(t)) };
     this.state = 'racked'; this.lowSince = null; this.stuckSeen = 0;
     this.path = []; this.cmds = [];
     return true;
@@ -68,11 +87,11 @@ export class BarStage {
     // the stuck-track rule takes a stretch out once it sees it: those frames were never the bar
     if (c.frozeAt.length > this.stuckSeen) {
       this.stuckSeen = c.frozeAt.length;
-      const from = t - this.r.freezeMs;
+      const from = c.frozeFrom.at(-1)!;
       for (const q of this.path) if (q.t >= from) q.lost = true;
     }
     const lost = m.score < this.r.lostScore || c.frozeAt.at(-1) === t;
-    this.path.push({ t, x: m.x, y: m.y, lost });
+    this.path.push({ t, x: m.x, y: m.y, score: m.score, lost });
     if (this.state === 'racked' && c.state === 'racked') {
       // lost on the hooks: under the line for tapLostMs
       this.lowSince = m.score < this.r.lostScore ? (this.lowSince ?? t) : null;
@@ -90,6 +109,31 @@ export class BarStage {
       if (cmd.cmd === 'rack') { this.state = 'done'; this.voided = !!cmd.void; }
     }
     return out;
+  }
+
+  /**
+   * Item 114 (3.2, "The time rules keep running with no frames"): the refresh tick with no new camera frame, at `t` on
+   * the frames' clock. The caller's time rules run (bar-caller.ts `tick`), and on the hooks, noFrameMs with no frame
+   * counts as lost from the last frame, so the 1 s tap loss still comes. Nothing is added to the path.
+   */
+  idle(t: number): BarStageEvent[] {
+    if (this.state === 'tap' || this.state === 'done' || !this.caller) return [];
+    const c = this.caller, last = this.path.at(-1);
+    if (!last || t <= last.t) return [];
+    if (this.state === 'racked' && c.state === 'racked') {
+      if (t - last.t >= (this.r.noFrameMs ?? 500)) this.lowSince ??= last.t;
+      if (this.lowSince !== null && t - this.lowSince >= this.r.tapLostMs) {
+        this.state = 'tap'; this.tracker = null; this.caller = null; this.plateTap = null; this.path = [];
+        return [{ type: 'lost', t }];
+      }
+      return [];
+    }
+    const cmd = c.tick(t);
+    if (!cmd) return [];
+    this.cmds.push(cmd);
+    if (cmd.cmd === 'start') this.state = 'lifting';
+    if (cmd.cmd === 'rack') { this.state = 'done'; this.voided = !!cmd.void; }
+    return [{ type: 'cmd', ...cmd }];
   }
 }
 

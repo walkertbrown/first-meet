@@ -11,6 +11,7 @@ import type { CornerRow, CornerView } from '@/lib/corner-view';
 import { CHEERS, CHEER_KINDS, cheerEyebrow, cleanCornerName, type CheerKind } from '@/lib/cheer-words';
 import { notJudgedLine } from '@/lib/stage/meet-words';
 import { LightsBanner } from '@/components/banner-layer';
+import { useRefereeWords } from '@/components/referee-bot';
 
 export const NAME_COOKIE = 'fm_corner_name';
 type Live = Exclude<CornerView, { kind: 'gone' } | { kind: 'before' } | { kind: 'closed' }>;
@@ -120,7 +121,7 @@ export function CornerLive({ view, token, savedName, children }: { view: Live; t
               <div className="corner-what">
                 <span className="corner-name">{`${r.name} · `}<span className={r.state === 'void' ? 'nj-weight' : undefined}>{r.weight}</span></span>
                 {r.state === 'looking' && <span className="small">The judges are looking</span>}
-                {r.state === 'close' && <span className="small">A referee is looking at this one.</span>}
+                {r.state === 'close' && <CloseLine />}
               </div>
               {r.state === 'void' ? <span className="small nj-line">{notJudgedLine(r.voidReason)}</span>
                 : r.state === 'close' ? <span className="lamps-mini" aria-hidden="true"><i className="mini-lamp pulse" /></span>
@@ -242,4 +243,9 @@ export function CheerSheet({ lifter, row, name, onClose, onSend }: {
       </div>
     </div>
   );
+}
+
+/** 5.24: a close call on her corner's list, as a referee or the referee bot looks (item 88). */
+function CloseLine() {
+  return <span className="small">{`${useRefereeWords().looking}.`}</span>;
 }

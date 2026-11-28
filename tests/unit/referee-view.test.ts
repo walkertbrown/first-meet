@@ -82,7 +82,47 @@ describe('a Barbell bench (3.4b, 5.33, look 5.13)', () => {
     const still = measuredLines('bench_referee', {}, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'still', rack: 4000 } });
     expect(still).toEqual([BENCH_LINES.every, 'The phone called Press! late, after 1.5 s still.']);
     const lost = measuredLines('bench_referee', {}, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'lost', rack: 4000 } });
-    expect(lost).toEqual([BENCH_LINES.every, 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.']);
+    expect(lost).toEqual(['Pause: not measured. The phone lost the bar.', BENCH_LINES.every, 'The phone lost the bar and called Press! late. Judge the pause by eye, from the clip.']);
+  });
+  it('a lost bar never shows a pause or a sinking line, even from measures stored before 5.33 said so (item 107)', () => {
+    const lostCt = { start: 1000, press_late: 3000, press_late_why: 'lost', rack: 4000 };
+    const lines = measuredLines('bench_referee', { pause_s: 0, press_while_sinking: true }, { commandTimes: lostCt });
+    expect(lines).toEqual([BENCH_LINES.pauseLost, BENCH_LINES.every, BENCH_LINES.lateLost]);
+    expect(lines.some(l => l.includes('still 0.0 s'))).toBe(false);
+    expect(lines).not.toContain(BENCH_LINES.sinking);
+  });
+  it("the server's path lost or stuck near the pause (item 108, 5.33): not measured, no red for the pause, no sinking line", () => {
+    expect(BENCH_LINES.lostNear).toBe("The phone lost the bar around the pause, so its Press! may have come early. If she pressed on or after the call, don't give a red for the pause.");
+    const lines = measuredLines('bench_referee', { pause_s: null, press_while_sinking: true, pause_lost: true }, { commandTimes: ct });
+    expect(lines).toEqual([BENCH_LINES.pauseLost, BENCH_LINES.every, BENCH_LINES.lostNear]);
+    expect(lines).not.toContain(BENCH_LINES.sinking);
+    // the old line (2:16 AM) is gone: "judge it by eye" left her red on a tick 3 frames early (IA0P rep 3)
+    expect(lines).not.toContain('The phone lost the bar around the pause. Judge the pause by eye, from the clip.');
+    // with a late Press! for still (IA0P rep 1): both lines, each true
+    const still = measuredLines('bench_referee', { pause_lost: true }, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'still', rack: 4000 } });
+    expect(still).toEqual([BENCH_LINES.pauseLost, BENCH_LINES.every, 'The phone called Press! late, after 1.5 s still.', BENCH_LINES.lostNear]);
+    // a late Press! for lost already says the phone lost the bar: not twice
+    const lost = measuredLines('bench_referee', { pause_lost: true }, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'lost', rack: 4000 } });
+    expect(lost).toEqual([BENCH_LINES.pauseLost, BENCH_LINES.every, BENCH_LINES.lateLost]);
+    // not lost: unchanged
+    expect(measuredLines('bench_referee', { pause_s: 0.62, pause_lost: false }, { commandTimes: ct })).not.toContain(BENCH_LINES.lostNear);
+  });
+  it("item 116: Rack! 3 s after a loss (rack_why lost) gets 5.33's lockout line; up and no_rep never do", () => {
+    expect(BENCH_LINES.rackLost).toBe("The phone lost the bar during the press and called Rack! 3 s later. Judge the lockout by eye, from the clip. If she was still pressing up when Rack! came, that's the phone's mistake: don't give a red for the lockout.");
+    const lines = (why?: string) => measuredLines('bench_referee', { pause_s: 0.62 }, { commandTimes: { start: 1000, press: 3000, rack: 7500, ...(why ? { rack_why: why } : {}) } });
+    expect(lines('lost')).toEqual(['Pause: the bar was still 0.6 s before Press!', BENCH_LINES.every, BENCH_LINES.rackLost]);
+    for (const why of ['up', 'no_rep', undefined]) expect(lines(why)).not.toContain(BENCH_LINES.rackLost);
+    // with a late Press! for lost too: both lines, each about its own command
+    const both = measuredLines('bench_referee', {}, { commandTimes: { start: 1000, press_late: 3000, press_late_why: 'lost', rack: 7000, rack_why: 'lost' } });
+    expect(both).toEqual([BENCH_LINES.pauseLost, BENCH_LINES.every, BENCH_LINES.lateLost, BENCH_LINES.rackLost]);
+  });
+  it("item 116: the referee bot is sent the same line, only on rack_why lost (5.33)", async () => {
+    const { attemptWords } = await import('@/lib/referee/bot');
+    const words = (why: string) => attemptWords({ lift: 'bench', division: 'barbell', ageGroup: null, weight: 60, units: 'kg', repsDeclared: null,
+      reason: 'bench_referee', measures: { pause_s: 0.62 }, commandTimes: { start: 1000, press: 3000, rack: 7500, rack_why: why }, bench: true, frames: 12 });
+    expect(words('lost')).toContain(`- ${BENCH_LINES.rackLost}`);
+    expect(words('up')).not.toContain('called Rack! 3 s later');
+    expect(words('no_rep')).not.toContain('called Rack! 3 s later');
   });
   it('a command_times bench is still only the commands line', () => {
     expect(measuredLines('command_times', { command_times: 'missing_start' }, { commandTimes: {} })).toEqual(['Commands: the start command is missing. Judge this one by eye, from the clip.']);
@@ -109,6 +149,17 @@ describe('a Barbell bench (3.4b, 5.33, look 5.13)', () => {
     const late = barTrackOf(bar, { start: 1000, press_late: 3100, press_late_why: 'lost', rack: 3800 }, null)!;
     const p = late.ticks.find(t => t.cmd === 'press')!;
     expect([p.label, p.y]).toEqual(['PRESS!', yAt(2900) * 1000 + 2]);
+  });
+  it('a Rack! on a lost bar (rack_why lost, item 116; look 5.14c) sits on the last point seen, the same tick as any other', () => {
+    // seen until 3000 ms mid-press, lost for good after, Rack! 3 s later
+    const lostAfter = { ...bar, path: path.map(q => (q[0] > 2900 ? ([q[0], q[1], q[2], lostScore] as BarPoint) : q)) };
+    const b = barTrackOf(lostAfter, { start: 1000, press: 2600, rack: 5900, rack_why: 'lost' }, null)!;
+    const r = b.ticks.find(t => t.cmd === 'rack')!;
+    expect([r.label, r.x, r.y, r.wide]).toEqual(['RACK!', 500, yAt(2900) * 1000 + 2, false]);
+    expect(Object.keys(r).sort()).toEqual(['cmd', 'label', 'wide', 'x', 'y']);
+  });
+  it('the Press! tick is not wide when the pause was not measured (item 108)', () => {
+    expect(barTrackOf(bar, ct, { press_while_sinking: true, pause_lost: true })!.ticks.find(t => t.cmd === 'press')!.wide).toBe(false);
   });
   it('nothing to draw without a path or commands', () => {
     expect(barTrackOf(null, ct, null)).toBeNull();

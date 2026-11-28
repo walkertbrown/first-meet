@@ -1,7 +1,9 @@
 // A meet attempt's words (plan 5.25, 3.5, 3.11, 5.36), exactly, and which ones an attempt's
 // state gets. The stage (meet-attempt.tsx) only draws these.
+import type { VoidWhy } from '@/lib/judge/bar-caller';
 import type { LampState } from '@/components/lamps';
 import { REASON_EYEBROW, reasonEyebrow, reasonSentence, type ReasonCode } from '@/lib/reason-words';
+import { refereeWords, UNAVAILABLE_SMALL } from '@/lib/referee/words';
 
 export const MEET_WORDS = {
   soft: { barbell: 'Bar is loaded.', home: 'Weights ready.' },
@@ -24,8 +26,7 @@ export const MEET_WORDS = {
     lifter: "That's 30 demo lifts today, the most for one demo lifter. Come back tomorrow, or watch a meet night.",
     everyone: 'The demo judge is resting until midnight Eastern. You can still watch a meet night and see the referee\'s side.',
   },
-  refereeLink: "See the referee's side of this close call",
-  /** The Barbell bench (3.4b, look 5.14c): the tap, the lost bar, the void sheet, and "To a referee". */
+  /** The Barbell bench (3.4b, look 5.14c): the tap, the lost bar and the void sheet. Who it goes to: referee/words.ts. */
   bench: {
     tap: 'Tap the end of the bar on your screen.',
     tapSmall: 'So the phone can follow the bar.',
@@ -34,14 +35,33 @@ export const MEET_WORDS = {
     voidTitle: 'We lost the bar',
     voidBody: "So we couldn't give you the start. This one doesn't count against you.",
     filmAgain: 'Film again',
-    sending: 'Sending to the referee',
-    looking: 'A referee is looking at this one',
-    refereeLink: "See the referee's side of this bench",
   },
 } as const;
 
+/** Item 112 (3.4b): the void sheet by its cause, the first in a row and the second (the third and later show the
+ *  second). `again: 'spot'` is "Find my spot again", back to "Find your spot"; `'tap'` is "Film again", a new tap. */
+export const VOID_SHEETS = {
+  no_start_5s: {
+    first: { title: "We didn't get the start", body: 'The bar has to be still for "Start!". This one doesn\'t count against you.', button: 'Film again', again: 'tap' },
+    second: { title: "We didn't get the start again", body: 'Lift the bar out and hold it still with your arms straight. Don\'t lower it until you hear "Start!". It can take a second. This one doesn\'t count against you either.', button: 'Film again', again: 'tap' },
+  },
+  stuck: {
+    first: { title: MEET_WORDS.bench.voidTitle, body: MEET_WORDS.bench.voidBody, button: MEET_WORDS.bench.filmAgain, again: 'tap' },
+    second: { title: 'We lost the bar again', body: 'Your phone may be too far away to follow the bar. Move it as close as you can, with your head and feet still on the screen. This one doesn\'t count against you either.', button: 'Find my spot again', again: 'spot' },
+  },
+  low_score: {
+    first: { title: MEET_WORDS.bench.voidTitle, body: MEET_WORDS.bench.voidBody, button: MEET_WORDS.bench.filmAgain, again: 'tap' },
+    second: { title: 'We lost the bar again', body: 'We couldn\'t keep sight of the end of the bar. Check it\'s in good light and nothing is in front of it, then tap it again. This one doesn\'t count against you either.', button: 'Film again', again: 'tap' },
+  },
+} as const satisfies Record<VoidWhy, Record<'first' | 'second', { title: string; body: string; button: string; again: 'tap' | 'spot' }>>;
+
+/** On `no_start_5s` the phone never lost the bar, so it says nothing after "Rack!" (3.4b); "We lost the bar." otherwise. */
+export const voidSaysLost = (why: VoidWhy) => why !== 'no_start_5s';
+
 export type MeetResult = {
-  title: 'Good lift' | 'No lift' | 'Close call' | 'To a referee';
+  title: 'Good lift' | 'No lift' | 'Close call' | 'To a referee' | 'To the referee bot';
+  /** Every Barbell bench (3.4b): "To a referee" or "To the referee bot". */
+  bench?: boolean;
   body?: string;
   small?: string;
   reason?: { eyebrow: string; text: string };
@@ -57,16 +77,17 @@ export const WHITE_SENTENCE: Record<string, string> = {
 /** 5.34, on #home-press A (3.4c). */
 export const HOME_PRESS_WHITE = "Your arms pressed up overhead, nearly straight, and you held them there. That's a good lift at First Meet.";
 const RED_BODY = 'Red lights happen to everyone, even world champions. Most women take it again.';
-const CLOSE_BODY = 'A referee is looking at this one, usually within 15 minutes. You can take your next attempt while you wait.';
-/** 5.25 step 9, every Barbell bench (3.4b): it goes to a referee, judged or not by the phone. */
-export const BENCH_REFEREE_BODY = 'A referee judges every bench from your video, usually within 15 minutes. You can take your next attempt while you wait.';
 
-/** 5.25 step 9: what a judged (or close-call) attempt shows. */
-export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; lift?: string; shown_lift?: string }): MeetResult | null {
+/**
+ * 5.25 step 9: what a judged (or close-call) attempt shows. `bot`: REFEREE_BOT is on, so close
+ * calls and benches go to the referee bot (item 88).
+ */
+export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; lift?: string; shown_lift?: string }, bot = false): MeetResult | null {
+  const w = refereeWords(bot);
   // a sample lift's words are for the lift the clip shows (5.36)
   const lift = a.shown_lift ?? a.lift ?? 'squat';
-  if (a.call === 'close' && a.reason === 'bench_referee') return { title: 'To a referee', body: BENCH_REFEREE_BODY, lamps: ['off', 'off', 'off'] };
-  if (a.call === 'close') return { title: 'Close call', body: CLOSE_BODY, lamps: ['off', 'off', 'off'] };
+  if (a.call === 'close' && a.reason === 'bench_referee') return { title: w.benchTitle as MeetResult['title'], bench: true, body: w.benchBody, lamps: ['off', 'off', 'off'] };
+  if (a.call === 'close') return { title: 'Close call', body: w.closeBody, lamps: ['off', 'off', 'off'] };
   if (!a.call) return null;
   const lights = a.lights && a.lights.length === 3 ? a.lights : [a.call, a.call, a.call] as ('white' | 'red')[];
   const whites = lights.filter(l => l === 'white').length;
@@ -75,7 +96,8 @@ export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: 
   if (a.call === 'white') {
     // 5.34 (#home-press A): the Home overhead press has its own good-lift sentence
     const body = a.reps_declared ? (lift === 'bench' ? HOME_PRESS_WHITE : `All ${a.reps_declared} reps counted. A referee would pass that.`) : (WHITE_SENTENCE[lift] ?? WHITE_SENTENCE.squat);
-    return { title: 'Good lift', body, small: split, lamps };
+    // 3.4d step 7: the referee bot couldn't run, so three whites with an honest line
+    return { title: 'Good lift', body, small: a.reason === 'referee_unavailable' ? UNAVAILABLE_SMALL : split, lamps };
   }
   const code = (a.reason && a.reason in REASON_EYEBROW ? a.reason : 'depth') as ReasonCode;
   const home = !!a.reps_declared;

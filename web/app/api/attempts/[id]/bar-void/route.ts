@@ -10,6 +10,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const s = sessionFrom(req);
   if (!s) return Response.json({ error: 'sign in' }, { status: 401 });
   const { id } = await params;
-  const r = await lostBarVoid(db(), id, s.lifterId);
+  // item 112: the phone's cause, `why` (no_start_5s, stuck or low_score)
+  const body = await req.json().catch(() => null) as { why?: unknown } | null;
+  const r = await lostBarVoid(db(), id, s.lifterId, body?.why);
   return Response.json(r.body, { status: r.status, headers: { 'cache-control': 'no-store' } });
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "attempts" ADD COLUMN "bar_server_key" text;

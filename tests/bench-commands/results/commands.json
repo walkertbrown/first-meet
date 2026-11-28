@@ -15,6 +15,7 @@
   "pressStillMs": 500,
   "pressStill": 0.01,
   "pastPeakDown": 0,
+  "smoothMs": 100,
   "rackRel": 0.05,
   "rackBack": 0.02,
   "rackHoldMs": 400,
@@ -30,11 +31,25 @@
   "stuckRule": true,
   "freezeScore": 0.99,
   "freezeMs": 400,
+  "freezeBeforeMs": 400,
+  "freezeAfterMs": 1500,
+  "freezeNearTapPct": 8,
+  "lowScoreBeforeMs": 1000,
+  "stuckStill": 0.002,
+  "stuckMs": 800,
+  "stuckCarryStep": 0.0002,
+  "pauseLostMs": 500,
+  "noFrameMs": 500,
   "voidRule": true,
   "voidMs": 5000,
   "lostLateMs": 2000,
   "lostRackMs": 3000,
   "tapLostMs": 1000,
+  "frozenPressMs": 1000,
+  "frozenStill": 0.002,
+  "guardAfterPress": "from",
+  "samePoint": true,
+  "samePointMs": 1500,
   "sinkAfterPress": 0.01,
   "trainingNoDescentMs": 8000
  },
@@ -49,7 +64,7 @@
   },
   "line3": {
    "status": "PASS",
-   "text": "3. No Start! before the bar settled, all 22 reps: 0 early (none). No Start!: m-k8, Nv9h, VM_y; each must be voided within 5 s of leaving the hooks, or at the loss: m-k8 void 0.43 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 2.40 s after leaving the hooks (at the loss)"
+   "text": "3. No Start! before the bar settled, all 22 reps: 0 early (none). No Start!: m-k8, Nv9h, VM_y; each must be voided within 5 s of leaving the hooks, or at the loss: m-k8 void 0.43 s after leaving the hooks (at the loss); Nv9h void 5.00 s after leaving the hooks; VM_y void 5.03 s after leaving the hooks"
   },
   "line4": {
    "status": "PASS",
@@ -70,14 +85,17 @@
  "rows": [
   {
    "id": "6K8vpaHae6M",
+   "rep": 1,
    "group": "paused",
    "inHand": false,
    "start": 3.433333333333333,
    "press": 5.833333333333333,
    "late": false,
    "rack": 7.033333333333334,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 0.667,
    "voided": null,
    "voidAfterHooks": null,
@@ -101,6 +119,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 3,
+    "press": 4.7,
+    "rack": 5.7
+   },
+   "clipFrame": {
+    "start": 90,
+    "press": 141,
+    "rack": 171
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.87,
+   "pauseStuck": false,
    "sink": 0.00016776742490204333,
    "sinking": false,
    "refSink": null,
@@ -133,14 +169,17 @@
   },
   {
    "id": "83WAq9kcQ0k",
+   "rep": 1,
    "group": "paused",
    "inHand": true,
    "start": 1.102,
    "press": 5.576786096256685,
    "late": false,
    "rack": 6.979323529411765,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 0.601,
    "voided": null,
    "voidAfterHooks": null,
@@ -164,6 +203,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.393048128342244,
+   "clipAt": {
+    "start": 1.102,
+    "press": 5.176,
+    "rack": 6.612
+   },
+   "clipFrame": {
+    "start": 18,
+    "press": 140,
+    "rack": 183
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.8,
+   "pauseStuck": false,
    "sink": 0,
    "sinking": false,
    "refSink": null,
@@ -187,14 +244,17 @@
   },
   {
    "id": "8qzWMdTtQLI",
+   "rep": 1,
    "group": "paused",
    "inHand": false,
    "start": 7.041,
    "press": 10.413463035019454,
    "late": false,
    "rack": 13.64775486381323,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 5.606,
    "voided": null,
    "voidAfterHooks": null,
@@ -218,6 +278,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.36575875486381,
+   "clipAt": {
+    "start": 7.041,
+    "press": 10.01,
+    "rack": 13.214
+   },
+   "clipFrame": {
+    "start": 46,
+    "press": 135,
+    "rack": 231
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.84,
+   "pauseStuck": false,
    "sink": 0.007402097953013054,
    "sinking": false,
    "refSink": null,
@@ -241,14 +319,17 @@
   },
   {
    "id": "ak3m2",
+   "rep": 1,
    "group": "meet",
    "inHand": false,
    "start": 28.394939929328622,
    "press": 31.331024734982332,
    "late": false,
    "rack": 32.99933215547703,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 27.894,
    "voided": null,
    "voidAfterHooks": null,
@@ -272,6 +353,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.36749116607774,
+   "clipAt": {
+    "start": 27.994,
+    "press": 30.33,
+    "rack": 31.698
+   },
+   "clipFrame": {
+    "start": 59,
+    "press": 129,
+    "rack": 170
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.9,
+   "pauseStuck": false,
    "sink": 0.0017198234273274604,
    "sinking": false,
    "refSink": null,
@@ -304,14 +403,17 @@
   },
   {
    "id": "ak3m3",
+   "rep": 1,
    "group": "meet",
    "inHand": false,
    "start": 44.510822742474915,
    "press": 47.44747826086956,
    "late": false,
    "rack": 49.115759197324415,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 44.01,
    "voided": null,
    "voidAfterHooks": null,
@@ -335,6 +437,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.364548494983275,
+   "clipAt": {
+    "start": 44.144,
+    "press": 46.58,
+    "rack": 47.948
+   },
+   "clipFrame": {
+    "start": 94,
+    "press": 167,
+    "rack": 208
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.9,
+   "pauseStuck": false,
    "sink": 0.005559602940209518,
    "sinking": false,
    "refSink": null,
@@ -367,14 +487,17 @@
   },
   {
    "id": "AMih",
+   "rep": 1,
    "group": "meet",
    "inHand": false,
    "start": 20.5,
    "press": 26.09933333333333,
    "late": false,
    "rack": 29.467333333333332,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 19.567,
    "voided": null,
    "voidAfterHooks": null,
@@ -398,6 +521,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 20.5,
+    "press": 25.666,
+    "rack": 28.734
+   },
+   "clipFrame": {
+    "start": 45,
+    "press": 200,
+    "rack": 292
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.93,
+   "pauseStuck": false,
    "sink": 0.005809418699398938,
    "sinking": false,
    "refSink": null,
@@ -421,14 +562,17 @@
   },
   {
    "id": "cE2t",
+   "rep": 1,
    "group": "meet",
    "inHand": false,
    "start": 20.938,
    "press": 25.276,
    "late": false,
    "rack": 29.321,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 19.728,
    "voided": null,
    "voidAfterHooks": null,
@@ -452,6 +596,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 41.7056856187291,
+   "clipAt": {
+    "start": 20.938,
+    "press": 25.276,
+    "rack": 29.321
+   },
+   "clipFrame": {
+    "start": 46,
+    "press": 150,
+    "rack": 247
+   },
+   "inHold": {
+    "start": false,
+    "press": false,
+    "rack": false
+   },
+   "pause": 0,
+   "pauseStuck": false,
    "sink": 0,
    "sinking": false,
    "refSink": 0,
@@ -465,14 +627,17 @@
   },
   {
    "id": "Ecs1",
+   "rep": 1,
    "group": "meet",
    "inHand": false,
    "start": 24.533,
    "press": 27.3,
    "late": false,
    "rack": 30.834,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 22.566,
    "voided": null,
    "voidAfterHooks": null,
@@ -496,6 +661,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 24.533,
+    "press": 26.867,
+    "rack": 30.434
+   },
+   "clipFrame": {
+    "start": 106,
+    "press": 176,
+    "rack": 283
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.77,
+   "pauseStuck": false,
    "sink": 0.007616912037318291,
    "sinking": false,
    "refSink": null,
@@ -519,14 +702,17 @@
   },
   {
    "id": "Ecs2",
+   "rep": 1,
    "group": "meet",
    "inHand": false,
    "start": 44.634,
    "press": 47.66666666666667,
    "late": false,
    "rack": 50.93366666666667,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 43.267,
    "voided": null,
    "voidAfterHooks": null,
@@ -550,6 +736,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 44.634,
+    "press": 47.234,
+    "rack": 50.467
+   },
+   "clipFrame": {
+    "start": 79,
+    "press": 157,
+    "rack": 254
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.83,
+   "pauseStuck": false,
    "sink": 0.006541341819800928,
    "sinking": false,
    "refSink": null,
@@ -573,14 +777,17 @@
   },
   {
    "id": "hIuj1H1WOxM",
+   "rep": 1,
    "group": "paused",
    "inHand": true,
    "start": 1.601836734693877,
    "press": 4.004346938775511,
    "late": false,
    "rack": 5.37165306122449,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 1.101,
    "voided": null,
    "voidAfterHooks": null,
@@ -604,6 +811,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.36734693877551,
+   "clipAt": {
+    "start": 1.201,
+    "press": 3.136,
+    "rack": 4.404
+   },
+   "clipFrame": {
+    "start": 6,
+    "press": 64,
+    "rack": 102
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.83,
+   "pauseStuck": false,
    "sink": 0,
    "sinking": false,
    "refSink": null,
@@ -636,14 +861,17 @@
   },
   {
    "id": "IA0PhDBzsz0",
+   "rep": 1,
    "group": "paused",
    "inHand": false,
    "start": 7.907836393989984,
-   "press": 10.610283806343904,
+   "press": 10.476814691151917,
    "late": true,
-   "rack": 11.978589315525877,
+   "rack": 11.84512020033389,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 6.206,
    "voided": null,
    "voidAfterHooks": null,
@@ -651,13 +879,13 @@
    "voidOk": false,
    "startIn": "replay",
    "pressIn": "replay",
-   "pressClip": 9.643,
+   "pressClip": 9.576,
    "settled": 6.8,
    "descent": 8.308,
    "stop": 9.707,
-   "pauseEnd": 10.914,
-   "backUpEye": 11.744,
-   "delay": 0.9032838063439037,
+   "pauseEnd": 10.780999999999999,
+   "backUpEye": 11.611,
+   "delay": 0.7698146911519164,
    "early": false,
    "within1": true,
    "within15": true,
@@ -667,7 +895,25 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
-   "sink": 0.000001003311861536016,
+   "frame": 33.36727879799666,
+   "clipAt": {
+    "start": 7.508,
+    "press": 9.576,
+    "rack": 10.744
+   },
+   "clipFrame": {
+    "start": 225,
+    "press": 287,
+    "rack": 322
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": null,
+   "pauseStuck": false,
+   "sink": 0,
    "sinking": false,
    "refSink": null,
    "refSinking": false,
@@ -684,7 +930,7 @@
     {
      "what": "press",
      "at": 9.676,
-     "s": 0.767,
+     "s": 0.634,
      "got": true,
      "from": 9.276,
      "to": 9.676,
@@ -693,20 +939,23 @@
    ],
    "log": [
     "start 7.91",
-    "press(late) 10.61",
-    "rack 11.98"
+    "press(late) 10.48",
+    "rack 11.85"
    ]
   },
   {
    "id": "IKuXsXyFqUQ",
+   "rep": 1,
    "group": "paused",
    "inHand": true,
    "start": 2.1663333333333337,
    "press": 4.463333333333334,
    "late": false,
    "rack": 11.800333333333334,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 1.1,
    "voided": null,
    "voidAfterHooks": null,
@@ -730,6 +979,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 1.533,
+    "press": 2.767,
+    "rack": 10.067
+   },
+   "clipFrame": {
+    "start": 16,
+    "press": 53,
+    "rack": 272
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.83,
+   "pauseStuck": false,
    "sink": 0.012232383002838465,
    "sinking": true,
    "refSink": null,
@@ -762,14 +1029,17 @@
   },
   {
    "id": "KrDo",
+   "rep": 1,
    "group": "meet",
    "inHand": true,
    "start": 51.1,
    "press": 57.466699999999996,
    "late": false,
    "rack": 59.8333,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 50.6,
    "voided": null,
    "voidAfterHooks": null,
@@ -793,6 +1063,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 51.1,
+    "press": 57.466699999999996,
+    "rack": 59.8333
+   },
+   "clipFrame": {
+    "start": 18,
+    "press": 209,
+    "rack": 280
+   },
+   "inHold": {
+    "start": false,
+    "press": false,
+    "rack": false
+   },
+   "pause": 0.9,
+   "pauseStuck": false,
    "sink": 0,
    "sinking": false,
    "refSink": 0.000347222222222221,
@@ -806,14 +1094,17 @@
   },
   {
    "id": "Lj0X",
+   "rep": 1,
    "group": "meet",
    "inHand": true,
    "start": 2.603100917431193,
    "press": 5.1719724770642195,
    "late": false,
    "rack": 7.941275229357798,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 2.102,
    "voided": null,
    "voidAfterHooks": null,
@@ -837,6 +1128,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.36697247706422,
+   "clipAt": {
+    "start": 2.202,
+    "press": 4.371,
+    "rack": 7.007
+   },
+   "clipFrame": {
+    "start": 6,
+    "press": 71,
+    "rack": 150
+   },
+   "inHold": {
+    "start": true,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.83,
+   "pauseStuck": false,
    "sink": 0.0002957397539260498,
    "sinking": false,
    "refSink": null,
@@ -869,14 +1178,17 @@
   },
   {
    "id": "m-k8mm8-HTg",
+   "rep": 1,
    "group": "bounced",
    "inHand": false,
    "start": null,
    "press": null,
    "late": false,
    "rack": null,
+   "rackWhy": null,
    "noRep": false,
    "lostBeforeStart": 1.5,
+   "stuckBeforeStart": true,
    "leftHooks": 1.067,
    "voided": 1.5,
    "voidAfterHooks": 0.433,
@@ -900,6 +1212,24 @@
    "backPhone": false,
    "backEye": false,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": null,
+    "press": null,
+    "rack": null
+   },
+   "clipFrame": {
+    "start": null,
+    "press": null,
+    "rack": null
+   },
+   "inHold": {
+    "start": false,
+    "press": false,
+    "rack": false
+   },
+   "pause": null,
+   "pauseStuck": false,
    "sink": null,
    "sinking": false,
    "refSink": null,
@@ -911,14 +1241,17 @@
   },
   {
    "id": "Nazt",
+   "rep": 1,
    "group": "meet",
    "inHand": true,
    "start": 12.433666666666667,
    "press": 15.733366666666667,
    "late": false,
    "rack": 20.166666666666668,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 11.1,
    "voided": null,
    "voidAfterHooks": null,
@@ -942,6 +1275,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 12.033299999999999,
+    "press": 15.1667,
+    "rack": 19.6
+   },
+   "clipFrame": {
+    "start": 31,
+    "press": 125,
+    "rack": 258
+   },
+   "inHold": {
+    "start": true,
+    "press": false,
+    "rack": false
+   },
+   "pause": 0.83,
+   "pauseStuck": false,
    "sink": 0,
    "sinking": false,
    "refSink": 0,
@@ -965,14 +1316,17 @@
   },
   {
    "id": "NFjKcUxgqzA",
+   "rep": 1,
    "group": "paused",
    "inHand": true,
    "start": 4.104,
    "press": 7.137413073713492,
    "late": false,
    "rack": 8.474705146036161,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 3.604,
    "voided": null,
    "voidAfterHooks": null,
@@ -996,6 +1350,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.36578581363004,
+   "clipAt": {
+    "start": 4.104,
+    "press": 6.273,
+    "rack": 7.407
+   },
+   "clipFrame": {
+    "start": 18,
+    "press": 83,
+    "rack": 117
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.9,
+   "pauseStuck": false,
    "sink": 0.00220915846350922,
    "sinking": false,
    "refSink": null,
@@ -1028,14 +1400,17 @@
   },
   {
    "id": "Nv9hrTzZxJ0",
+   "rep": 1,
    "group": "bounced",
    "inHand": false,
    "start": null,
    "press": null,
    "late": false,
    "rack": null,
+   "rackWhy": null,
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 9.566,
    "voided": 14.567,
    "voidAfterHooks": 5.001,
@@ -1059,6 +1434,24 @@
    "backPhone": false,
    "backEye": true,
    "backAgree": false,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": null,
+    "press": null,
+    "rack": null
+   },
+   "clipFrame": {
+    "start": null,
+    "press": null,
+    "rack": null
+   },
+   "inHold": {
+    "start": false,
+    "press": false,
+    "rack": false
+   },
+   "pause": null,
+   "pauseStuck": false,
    "sink": null,
    "sinking": false,
    "refSink": null,
@@ -1080,14 +1473,17 @@
   },
   {
    "id": "uGCh",
+   "rep": 1,
    "group": "meet",
    "inHand": true,
    "start": 28.60033333333333,
    "press": 30.80033333333333,
    "late": false,
    "rack": 33.666333333333334,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 28.1,
    "voided": null,
    "voidAfterHooks": null,
@@ -1111,6 +1507,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 28.234,
+    "press": 30.167,
+    "rack": 33.033
+   },
+   "clipFrame": {
+    "start": 7,
+    "press": 65,
+    "rack": 151
+   },
+   "inHold": {
+    "start": true,
+    "press": false,
+    "rack": false
+   },
+   "pause": 0.7,
+   "pauseStuck": false,
    "sink": 0.0005756570496201485,
    "sinking": false,
    "refSink": 0,
@@ -1134,27 +1548,30 @@
   },
   {
    "id": "VM_y8r4ZLBw",
+   "rep": 1,
    "group": "bounced",
    "inHand": false,
    "start": null,
    "press": null,
    "late": false,
    "rack": null,
+   "rackWhy": null,
    "noRep": false,
-   "lostBeforeStart": 5.299666666666667,
+   "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 2.9,
-   "voided": 5.299666666666667,
-   "voidAfterHooks": 2.4,
-   "voidAtLoss": true,
+   "voided": 7.933000000000001,
+   "voidAfterHooks": 5.033,
+   "voidAtLoss": false,
    "voidOk": true,
    "startIn": null,
    "pressIn": null,
    "pressClip": null,
    "settled": 3.267,
-   "descent": 5.4,
-   "stop": 6.1370000000000005,
-   "pauseEnd": 6.337,
-   "backUpEye": 6.8340000000000005,
+   "descent": 8.033000000000001,
+   "stop": 8.77,
+   "pauseEnd": 8.969999999999999,
+   "backUpEye": 9.467,
    "delay": null,
    "early": false,
    "within1": false,
@@ -1165,6 +1582,24 @@
    "backPhone": false,
    "backEye": true,
    "backAgree": false,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": null,
+    "press": null,
+    "rack": null
+   },
+   "clipFrame": {
+    "start": null,
+    "press": null,
+    "rack": null
+   },
+   "inHold": {
+    "start": false,
+    "press": false,
+    "rack": false
+   },
+   "pause": null,
+   "pauseStuck": false,
    "sink": null,
    "sinking": false,
    "refSink": null,
@@ -1173,7 +1608,7 @@
     {
      "what": "start",
      "at": 4.7330000000000005,
-     "s": 0.567,
+     "s": 3.2,
      "got": false,
      "from": 4.333000000000001,
      "to": 4.7330000000000005,
@@ -1181,19 +1616,22 @@
     }
    ],
    "log": [
-    "Rack!(void) 5.30"
+    "Rack!(void) 7.93"
    ]
   },
   {
    "id": "xXFjNqroOQ0",
+   "rep": 1,
    "group": "bounced",
    "inHand": false,
    "start": 15.166,
    "press": 17.263298765432097,
    "late": false,
    "rack": 18.59961975308642,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 13.533,
    "voided": null,
    "voidAfterHooks": null,
@@ -1217,6 +1655,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.3320987654321,
+   "clipAt": {
+    "start": 15.166,
+    "press": 16.233,
+    "rack": 17.333
+   },
+   "clipFrame": {
+    "start": 455,
+    "press": 487,
+    "rack": 520
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.83,
+   "pauseStuck": false,
    "sink": 0,
    "sinking": false,
    "refSink": null,
@@ -1249,14 +1705,17 @@
   },
   {
    "id": "z838WQVSBmk",
+   "rep": 1,
    "group": "paused",
    "inHand": true,
    "start": 1.1,
    "press": 3.0003333333333333,
    "late": false,
    "rack": 4.200333333333333,
+   "rackWhy": "up",
    "noRep": false,
    "lostBeforeStart": null,
+   "stuckBeforeStart": false,
    "leftHooks": 0.6,
    "voided": null,
    "voidAfterHooks": null,
@@ -1280,6 +1739,24 @@
    "backPhone": true,
    "backEye": true,
    "backAgree": true,
+   "frame": 33.333333333333336,
+   "clipAt": {
+    "start": 1.1,
+    "press": 2.567,
+    "rack": 3.867
+   },
+   "clipFrame": {
+    "start": 18,
+    "press": 62,
+    "rack": 101
+   },
+   "inHold": {
+    "start": false,
+    "press": true,
+    "rack": false
+   },
+   "pause": 0.57,
+   "pauseStuck": false,
    "sink": 0.00747916003799598,
    "sinking": false,
    "refSink": null,

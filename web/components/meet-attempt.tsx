@@ -9,8 +9,10 @@ import type React from 'react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { SpeakerHigh, SpeakerSlash, X } from '@phosphor-icons/react';
-import { RULES, type Dims, type Part } from '@/lib/judge';
-import { MeetLift, type MeetLiftName } from '@/lib/judge/meet-lift';
+import { RULES, type Dims, type Part, type VoidWhy } from '@/lib/judge';
+import { MeetLift, type MeetEvent, type MeetLiftName } from '@/lib/judge/meet-lift';
+import { sentPath } from '@/lib/judge/bar-stage';
+import { checkPhonePath } from '@/lib/judge/bar-measure';
 import { nearSide, type Pt } from '@/lib/judge/pose';
 import { BAR_FRAME_H } from '@/lib/judge/plate-tracker';
 import { smallWidth } from '@/lib/judge/bar-stage';
@@ -25,13 +27,16 @@ import { DeepestFrames, liftMarks, type LiftMarks, type Snap } from '@/lib/stage
 import { Recording, readyToSeek, seekTo, sleep, within } from '@/lib/stage/recorder';
 import { heldFrameMs } from '@/lib/stage/held-frame';
 import { STAGE_WORDS } from '@/lib/stage/try-words';
+import { useRefereeBot } from '@/components/referee-bot';
+import { refereeWords } from '@/lib/referee/words';
 import {
   COMMAND_TEXT, MEET_WORDS, REFUSED_WORDS, hudLine, liftCaps, liftCommands, loadingLine, meetResult, nextButton, noRepLine, sampleRepsLine,
-  setupLine, spotLineShown, standInLine, weightDigits, WINDOW_WORDS, type MeetResult,
+  setupLine, spotLineShown, standInLine, VOID_SHEETS, voidSaysLost, weightDigits, WINDOW_WORDS, type MeetResult,
 } from '@/lib/stage/meet-words';
 import { WindowText } from '@/components/window-words';
 import { keepSending, getPending, savePending, type UploadStatus } from '@/lib/stage/uploader';
 import { apiFetch, phoneNow } from '@/lib/stage/server-clock';
+import { bumpVoids, resetVoids, secondSheet, syncVoids, voidsInRow } from '@/lib/stage/void-count';
 import samples from '../../content/samples/samples.json';
 import { WaitLine } from '@/components/wait-line';
 import { useLand } from '@/lib/stage/land';
@@ -41,6 +46,7 @@ import { useOrientation } from '@/lib/stage/use-gravity';
 import { useDrawnTurn } from '@/lib/stage/drawn-turn';
 import { useLinger } from '@/lib/stage/linger';
 import { FrameTurner } from '@/lib/stage/frame-turn';
+import { BarFeed, CadencePick, everyFrame, hasFrameCallback, HIDDEN_TICK_MS, type FrameMeta } from '@/lib/stage/bar-cadence';
 
 export type MeetAttemptProps = {
   attempt: { id: string; lift: string; number: number; weight: number; reps_declared: number | null; status: string; kind?: 'pair' | 'bell' | null; sample?: boolean };
@@ -112,6 +118,9 @@ const SLOW_UPLOAD_MS = 20_000;
 const POLL_MS = 5000;
 const BUSY_REFRESH_MS = 30_000;
 
+/** The panel's scroll limit (look 4), and its one move when its height changes (item 98). */
+const PANEL_MAX_PX = 400;
+const PANEL_MOVE_MS = 260;
 const reduced = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /** Look's waits. Motion off drops the movement, never the reading time, so they stay as they are. */
 const wait = (ms: number) => sleep(ms);
@@ -135,6 +144,9 @@ async function getJson(path: string, init?: RequestInit) {
 
 export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextLabel: nextLabelProp, nextGhost = false, top, notJudged, demoReferee = false, strip, onBusy, closesAt = null, anyJudged = false }: MeetAttemptProps) {
   const [win, setWin] = useState<WindowStop | null>(null);
+  // item 88: close calls and benches go to the referee bot once REFEREE_BOT is on (item 103)
+  const bot = useRefereeBot();
+  const rw = refereeWords(bot);
   // "Use a sample lift instead" is the demo meet's only (5.36): a real meet's lifts are filmed
   const demo = demoReferee;
   const first = attempt;
@@ -197,6 +209,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   if (turnShown && !turnedOnce) setTurnedOnce(true);
   /** which void sheet: the bench's lost bar (3.4b) or a phone that turned during the lift (3.10) */
   const [voidWhy, setVoidWhy] = useState<'bar' | 'turned'>('bar');
+  // item 112: the second void in a row on this attempt (or later) gets the second sheet, by the void's cause
+  const [voidAgain, setVoidAgain] = useState(false);
+  const [barVoidWhy, setBarVoidWhy] = useState<VoidWhy>('stuck');
   /** the motion step (look 4b) waits for her answer, then films this */
   const [askFor, setAskFor] = useState<Mode | null>(null);
   // Look 4b: rotation lock kept the screen portrait while gravity says the phone is on its side, so the page
@@ -227,6 +242,18 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   // an alert dialog takes focus when it opens, so a screen reader lands in the void sheet (The Playner, 13 Nov)
   const voidRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (phase === 'void') voidRef.current?.focus(); }, [phase]);
+  // look 5.14c (item 112): the rule over the button shows only while the sheet's text runs under it
+  const [voidUnder, setVoidUnder] = useState(false);
+  const voidTextRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = voidTextRef.current;
+    if (phase !== 'void' || !el) { setVoidUnder(false); return; }
+    const check = () => setVoidUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    check();
+    const ro = new ResizeObserver(check); ro.observe(el);
+    el.addEventListener('scroll', check, { passive: true });
+    return () => { ro.disconnect(); el.removeEventListener('scroll', check); };
+  }, [phase, voidAgain, voidWhy, barVoidWhy]);
   /** The bench's tap, while the bar stage takes one (set by runCamera). */
   const tapRef = useRef<((x: number, y: number) => void) | null>(null);
 
@@ -236,7 +263,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   useLayoutEffect(() => {
     const el = stageRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setStageSize({ w: e.contentRect.width, h: e.contentRect.height }));
+    // rendered before the paint (item 98): set plainly, her frame moved a frame after the panel did, two steps where
+    // motion off asks for one
+    const ro = new ResizeObserver(([e]) => flushSync(() => setStageSize({ w: e.contentRect.width, h: e.contentRect.height })));
     ro.observe(el);
     return () => ro.disconnect();
   }, [view]);
@@ -255,7 +284,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     setFrozen(false); setMarks(null); setReplaying(false); setSample(null); setError(''); setShownLift(attempt.lift);
     setResumedSample(false); setSettledOpen(false);
     setTapWords(null); setBarMark(null); setBenchPath(null); tapRef.current = null;
-    setTurnShown(false); setVoidWhy('bar');
+    setTurnShown(false); setVoidWhy('bar'); setVoidAgain(false); setBarVoidWhy('stuck');
   };
 
   /** Freezes the stage on the judged moment: the deepest frame the phone saw. */
@@ -281,8 +310,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // 45 s or 90 s lines; it waits, pulsing, for the referee's lights
     let lookingAt = closeNow ? -Infinity : t0;
     if (!closeNow) {
-    // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee", with no panel
-    setPhase('held'); setCommand(null); setWaitLine(bench ? MEET_WORDS.bench.sending : MEET_WORDS.sending);
+    // every Barbell bench goes to a referee (3.4b, look 5.14c): "Sending to the referee (bot)", with no panel
+    setPhase('held'); setCommand(null); setWaitLine(bench ? rw.benchSending : MEET_WORDS.sending);
     const ok = await sent;
     if (!ok || !alive()) return;
     await sleep(Math.max(0, SENDING_MIN_MS - (performance.now() - t0)));
@@ -292,8 +321,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // once it's sent: the close call's pulse and line, and "To a referee" in the panel, with no
       // thock, spill or total drop (nothing was judged). Then her clip: the last 2 s, and the
       // "Press!" frame held with the bar's path.
-      setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(MEET_WORDS.bench.looking);
-      setResult(meetResult({ call: 'close', lights: null, reason: 'bench_referee', red_rep: null, reps_declared: null, lift: attempt.lift }));
+      setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(rw.looking);
+      setResult(meetResult({ call: 'close', lights: null, reason: 'bench_referee', red_rep: null, reps_declared: null, lift: attempt.lift }, bot));
       setPhase('close'); setResultOn(true);
       await wait(900);
       if (!alive()) return;
@@ -346,10 +375,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
           if (!alive()) return;
           clearTimeout(t45); clearTimeout(t90); clearInterval(every);
-          setLamps(['pulse', 'pulse', 'pulse']); setWaitLine('A referee is looking at this one');
+          setLamps(['pulse', 'pulse', 'pulse']); setWaitLine(rw.looking);
           const shownC = s.shown_lift ?? attempt.lift;
           setShownLift(shownC);
-          setResult(meetResult({ ...s, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+          setResult(meetResult({ ...s, lift: attempt.lift }, bot)); setPhase('close'); setResultOn(true);
           // look step 10 (LookieBot 1): while a referee looks, the stage holds the judged frame with its marks,
           // as after the lights: the server's judged moment when it says which, else the phone's own
           let judged = snap;
@@ -366,7 +395,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await sleep(Math.max(0, RULES.tryALift.judgeLookingMinMs - (performance.now() - lookingAt)));
       if (!alive()) return;
       const s = state as unknown as State;
-      const res = meetResult({ ...s, lift: attempt.lift })!;
+      const res = meetResult({ ...s, lift: attempt.lift }, bot)!;
       const shown = s.shown_lift ?? attempt.lift;
       setShownLift(shown);
       // a close call that opened settled lights its lamps, spill and result as any other (F-E); its
@@ -407,7 +436,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       if (bench && path) setBenchPath(path);
       setPhase('hold');
     } finally { stop(); }
-  }, [attempt.lift, bench]);
+  }, [attempt.lift, bench, bot, rw]);
 
   /** Sends the saved recording, telling the stage how it goes; resolves once the server has it. */
   const send = useCallback((alive: () => boolean, attemptId: string) => {
@@ -513,8 +542,11 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // The bench's grey frames (3.4b): BAR_FRAME_H tall, the camera frame's shape
     const gc = document.createElement('canvas');
     const gw = smallWidth(d.w, d.h, BAR_FRAME_H);
-    const grey = () => greyFrame(video, gc, gw, BAR_FRAME_H);
+    const greyOf = (src: CanvasImageSource) => greyFrame(src, gc, gw, BAR_FRAME_H);
+    const grey = () => greyOf(video);
     let pressSnap: SideSnap | null = null, voidSnap: SideSnap | null = null, voided = false, marks = 0;
+    // item 112: the server's count of voids in a row, once it answers (null until then)
+    let serverVoids: number | null = null, phoneVoids = 0, voidCause: VoidWhy = 'no_start_5s';
     const extras: Record<string, unknown> = {};
     // the bar mark follows the plate every frame with no easing (look 5.14c): set on the element, not in state
     const placeMark = (x: number, y: number) => {
@@ -526,10 +558,25 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     const recording = new Recording(home ? 1_500_000 : 2_500_000);
     const ct: Record<string, number> = {};
     const t0 = performance.now();
+    // Item 114 (3.2): the bench's bar stage runs once per new camera frame, at that frame's time, where the camera's
+    // own video has requestVideoFrameCallback (on a turned phone, the turner's source, not its canvas stream); the
+    // refresh tick is the fallback, chosen per attempt by what happens, never mid-lift
+    const turner = turnerRef.current;
+    const camVideo = turner?.cameraVideo ?? video;
+    const pick = new CadencePick(ml.byBar && hasFrameCallback(camVideo));
+    const feed = new BarFeed(ml, pick, t0);
+    // one clock (3.2): on the bench the clip's 0 is the frame that earned "Bar is loaded.", on the frames' clock
+    let zeroAt: number | null = null;
+    // when each command's word actually played (`said_at`), for /ops only, never to judge
+    const saidAt: Record<string, number> = {};
     let lastMedia = -1, recTimer: ReturnType<typeof setInterval> | null = null, liftAt = 0, endAt = 0, noRep = false, spotDone = false;
     // command_times and the 1.5 s after "Rack!" run from the frame that earned each command
     // (plan 3.4 piece 2, 3.10), not from after the pose model has run on it
-    const since = (frameAt: number) => Math.round(frameAt - recording.startedAt);
+    const since = (frameAt: number) => Math.round(frameAt - (zeroAt ?? recording.startedAt));
+    const say = (k: VoiceKey, key?: string) => voice.say(k, ml.byBar && key ? at => {
+      const z = zeroAt ?? recording.startedAt;
+      if (z) saidAt[key] = Math.max(0, Math.round(at - z));
+    } : undefined);
     // REC and its timer run from her start command; the deadlift has none, so from "Bar is loaded."
     const startRec = (at: number) => {
       if (liftAt) return;
@@ -552,7 +599,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       // in the stage's own px (the tap target fills the stage), so it holds when the page is drawn turned (4b)
       const p = tapToFrame({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight }, cx, cy, true);
       const again = ml.phase === 'loaded';
-      if (!ml.tapBar(g, p.x, p.y)) return;
+      // the tap's time in the recording (item 110): the first tap comes just before it starts at "Bar is loaded.", so 0
+      if (!ml.tapBar(g, p.x, p.y, recording.startedAt ? Math.max(0, since(performance.now())) : 0)) return;
       flushSync(() => { setTapWords(w => w && { ...w, on: false }); setBarMark({ x: p.x, y: p.y, size: ml.plateTap?.size ?? 0.08, n: ++marks, on: true }); });
       placeMark(p.x, p.y);
       // a re-tap after the bar was lost on the hooks: "Bar is loaded." again (3.4b)
@@ -582,11 +630,99 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     let reTurn = false;
 
     await new Promise<void>(resolve => {
-      const done = () => { if (recTimer) clearInterval(recTimer); resolve(); };
+      let over = false, stopFrames = () => {}, hiddenTimer: ReturnType<typeof setInterval> | null = null;
+      const done = () => {
+        over = true; stopFrames();
+        if (hiddenTimer) clearInterval(hiddenTimer);
+        if (recTimer) clearInterval(recTimer);
+        resolve();
+      };
+      /** The events from the judge, on the frame (or tick) at `now`. True once the attempt's loop is over. */
+      const handle = (evs: MeetEvent[], now: number): boolean => {
+        const o = orientRef.current;
+        for (const ev of evs) {
+          if (ev.type === 'spot') { setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts)); setLine(spotLineShown(setup, seenYet, ev.spot.line)); }
+          else if (ev.type === 'good-spot') {
+            setPhase('good-spot'); setLine(null); setParts({ head: true, hips: true, knees: true, feet: true });
+            setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');
+            if (spotOnly) { spotDone = true; done(); return true; }
+          } else if (ev.type === 'tap-ask') {
+            // the bench (3.4b): "Tap the end of the bar on your screen." once "Good spot." has held
+            setPhase('tap'); setCommand(null); setLine(null); setTapWords({ which: 'tap', on: true });
+          } else if (ev.type === 'mark') {
+            placeMark(ev.x, ev.y);
+          } else if (ev.type === 'lost') {
+            // lost on the hooks before "Start!": the mark goes, the words and the voice together
+            lostOnHooks = true;
+            setBarMark(m => m && { ...m, on: false }); setCommand(null); setTapWords({ which: 'lost', on: true }); voice.say('lost-bar');
+          } else if (ev.type === 'loaded') {
+            // 5.25 step 4: the soft command; the recording starts here, so it is 0 in command_times
+            setPhase('loaded'); softCommand();
+            loaded = true; settled = o.watch.quarter;
+            screenAt = settled === null && o.touch ? screenSideNow() : null;
+            if (turnUp) { turnUp = false; setTurnShown(false); }
+            if (ml.byBar) zeroAt = now;
+            recording.start(filmed);
+            ct.loaded = 0;
+            if (lift === 'deadlift') startRec(now);
+          } else if (ev.type === 'call') {
+            ct[ev.key] = since(now);
+            if (ev.word !== 'press') startRec(now);
+            // the bench: the mark goes at "Start!"; her clip holds on the "Press!" frame (look 5.14c)
+            if (ml.byBar && ev.word === 'start') setBarMark(m => m && { ...m, on: false });
+            if (ml.byBar && ev.word === 'press' && !pressSnap) pressSnap = grab(video, d);
+            if (ev.why) extras.press_late_why = ev.why;
+            if (ev.held) extras.press_held = true; // item 109: /ops counts how often she waits the extra 0.5 s
+            show(COMMAND_TEXT[ev.word]); say(ev.word, ev.key);
+          } else if (ev.type === 'rep') {
+            ct[ev.key] = since(now); setReps(ev.k);
+            // a Home deadlift says "Down!" after each rep (3.8a); the others count softly
+            if (ev.down) { show(COMMAND_TEXT.down); voice.say('down'); }
+            else if (ev.k <= 20) voice.say(`count-${ev.k}` as VoiceKey);
+          } else if (ev.type === 'end') {
+            endAt = now; ct[ev.key] = since(now); noRep = ev.noRep;
+            // no "Start!" out of the rack (3.4b): "Rack!", then the void sheet, frozen on this frame
+            if (ev.void) {
+              voided = true; voidSnap = grab(video, d); voidCause = ev.voidWhy ?? 'no_start_5s';
+              // item 112: posted as soon as it's voided, with its cause; the sheet never waits for the answer
+              phoneVoids = bumpVoids(attempt.id);
+              void apiFetch(`/api/attempts/${attempt.id}/bar-void`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ why: voidCause }) })
+                .then(r => (r.ok ? r.json() : null)).then((b: { n?: number } | null) => {
+                  if (typeof b?.n === 'number') { serverVoids = b.n; syncVoids(attempt.id, b.n); }
+                }).catch(() => {});
+            }
+            show(endWord); say(ev.key, ev.key);
+            done(); return true;
+          }
+        }
+        return false;
+      };
+      // a camera frame (item 114): the bar stage on that frame, at its own time, on the turned picture if turned
+      const greyNow = () => greyOf(turner ? turner.picture : video);
+      const onFrame = (cbNow: number, meta: FrameMeta) => {
+        if (over || !alive()) return;
+        const r = feed.frame(cbNow, meta, greyNow);
+        if (r) handle(r.evs, r.at);
+      };
+      if (pick.cadence === 'frame') {
+        if (turner) { turner.onFrame = onFrame; stopFrames = () => { turner.onFrame = null; }; }
+        else stopFrames = everyFrame(video, onFrame);
+      }
+      // the bar's time rules while the tab isn't drawn, when no animation frame comes (3.2)
+      hiddenTimer = setInterval(() => {
+        if (over || !alive() || typeof document === 'undefined' || document.visibilityState !== 'hidden') return;
+        const now = performance.now();
+        if (ml.byBar) handle(feed.tick(now, camVideo.currentTime, false, grey), now);
+      }, HIDDEN_TICK_MS);
       const tick = () => {
+        if (over) return;
         if (!alive()) return done();
         const now = performance.now();
-        if (video.currentTime === lastMedia) return void requestAnimationFrame(tick);
+        if (video.currentTime === lastMedia) {
+          // no new picture: the bench's fallback check and its time rules still run (3.2)
+          if (ml.byBar && handle(feed.tick(now, camVideo.currentTime, false, grey), now)) return;
+          return void requestAnimationFrame(tick);
+        }
         lastMedia = video.currentTime;
         const o = orientRef.current;
         if (!loaded) {
@@ -608,11 +744,13 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           show(endWord); voice.say(lift === 'deadlift' ? 'down' : 'rack');
           return done();
         }
-        let evs;
-        if (ml.wantsBar) {
-          // the bench follows the bar from the tap (3.4b): grey frames, no pose run
-          const g = grey();
-          evs = g ? ml.feedBar(g, now - t0) : [];
+        let evs: MeetEvent[];
+        const byBar = ml.wantsBar;
+        // the bench: the fallback's check on every tick from the attempt's start, and from the tap the bar (3.4b):
+        // on "frame" its time rules only (the frame callback feeds it), on "refresh" the grey frame on screen
+        const barEvs = ml.byBar ? feed.tick(now, camVideo.currentTime, true, grey) : [];
+        if (byBar) {
+          evs = barEvs;
         } else {
           const f = { t: now - t0, p: pose.detect(video) };
           // the squat's held frame is its deepest; other lifts hold their last frame
@@ -620,51 +758,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           evs = ml.feed(f);
           seenYet ||= f.p !== null;
         }
-        for (const ev of evs) {
-          if (ev.type === 'spot') { setParts(cur => (PARTS.every(k => cur[k] === ev.spot.parts[k]) ? cur : ev.spot.parts)); setLine(spotLineShown(setup, seenYet, ev.spot.line)); }
-          else if (ev.type === 'good-spot') {
-            setPhase('good-spot'); setLine(null); setParts({ head: true, hips: true, knees: true, feet: true });
-            setCommand({ text: STAGE_WORDS.goodSpot, kind: 'soft' }); voice.say('good-spot');
-            if (spotOnly) { spotDone = true; return done(); }
-          } else if (ev.type === 'tap-ask') {
-            // the bench (3.4b): "Tap the end of the bar on your screen." once "Good spot." has held
-            setPhase('tap'); setCommand(null); setLine(null); setTapWords({ which: 'tap', on: true });
-          } else if (ev.type === 'mark') {
-            placeMark(ev.x, ev.y);
-          } else if (ev.type === 'lost') {
-            // lost on the hooks before "Start!": the mark goes, the words and the voice together
-            lostOnHooks = true;
-            setBarMark(m => m && { ...m, on: false }); setCommand(null); setTapWords({ which: 'lost', on: true }); voice.say('lost-bar');
-          } else if (ev.type === 'loaded') {
-            // 5.25 step 4: the soft command; the recording starts here, so it is 0 in command_times
-            setPhase('loaded'); softCommand();
-            loaded = true; settled = o.watch.quarter;
-            screenAt = settled === null && o.touch ? screenSideNow() : null;
-            if (turnUp) { turnUp = false; setTurnShown(false); }
-            recording.start(filmed);
-            ct.loaded = 0;
-            if (lift === 'deadlift') startRec(now);
-          } else if (ev.type === 'call') {
-            ct[ev.key] = since(now);
-            if (ev.word !== 'press') startRec(now);
-            // the bench: the mark goes at "Start!"; her clip holds on the "Press!" frame (look 5.14c)
-            if (ml.byBar && ev.word === 'start') setBarMark(m => m && { ...m, on: false });
-            if (ml.byBar && ev.word === 'press' && !pressSnap) pressSnap = grab(video, d);
-            if (ev.why) extras.press_late_why = ev.why;
-            show(COMMAND_TEXT[ev.word]); voice.say(ev.word);
-          } else if (ev.type === 'rep') {
-            ct[ev.key] = since(now); setReps(ev.k);
-            // a Home deadlift says "Down!" after each rep (3.8a); the others count softly
-            if (ev.down) { show(COMMAND_TEXT.down); voice.say('down'); }
-            else if (ev.k <= 20) voice.say(`count-${ev.k}` as VoiceKey);
-          } else if (ev.type === 'end') {
-            endAt = now; ct[ev.key] = since(now); noRep = ev.noRep;
-            // no "Start!" out of the rack (3.4b): "Rack!", then the void sheet, frozen on this frame
-            if (ev.void) { voided = true; voidSnap = grab(video, d); }
-            show(endWord); voice.say(ev.key);
-            return done();
-          }
-        }
+        if (handle(evs, now)) return;
         if (home && liftAt && now - liftAt > HOME_CAP_MS) {
           // 90 s is the most a Home set can run: the end command now, on what was seen
           const key = lift === 'deadlift' ? 'down' : 'rack';
@@ -717,9 +811,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       await wait(900);
       if (!alive()) return;
       freeze(voidSnap);
-      flushSync(() => { setCommand(null); setBarMark(null); setTapWords(null); setPhase('void'); });
-      voice.say('lost-bar');
-      void apiFetch(`/api/attempts/${attempt.id}/bar-void`, { method: 'POST' }).catch(() => {});
+      const again = secondSheet(voidsInRow(serverVoids, phoneVoids));
+      flushSync(() => { setCommand(null); setBarMark(null); setTapWords(null); setVoidAgain(again); setBarVoidWhy(voidCause); setPhase('void'); });
+      // on no_start_5s the phone never lost the bar: "Rack!" and nothing after it (3.4b)
+      if (voidSaysLost(voidCause)) voice.say('lost-bar');
       return;
     }
     const last = grab(video, d);
@@ -735,16 +830,27 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
       setCommand(null); setPhase('norep'); setWaitLine(noRepLine(lift, lifter.division));
       return;
     }
+    // filmed through to "Rack!": the next void on this attempt is the first again (item 112)
+    resetVoids(attempt.id);
     // Saved on the phone before anything is sent (3.10), so a reload or a lost signal keeps it.
     // by the corrected clock (item 86), so a slow phone clock can't put a lift before the close
     const savedAt = phoneNow();
     // the bench's `plate_tap` and `press_late_why` go with the command times (3.4b); the server checks them
-    const commandTimes = { ...ct, ...(ml.plateTap ? { plate_tap: ml.plateTap } : {}), ...extras } as unknown as Record<string, number>;
-    await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes, uploadId: null, savedAt, recordedAt: Math.round(savedAt - (performance.now() - recording.startedAt)) });
+    // `said_at` (item 114): when each command's word played, on the same clock, for /ops only
+    const said = Object.fromEntries(Object.entries(saidAt).filter(([k]) => k in ct));
+    const commandTimes = { ...ct, ...(ml.plateTap ? { plate_tap: ml.plateTap } : {}), ...extras, ...(Object.keys(said).length ? { said_at: said } : {}) } as unknown as Record<string, number>;
+    // the bench's own path (item 110) and how it was fed (item 114): one bar_path, one cadence
+    const benchBar = ml.bar && zeroAt !== null ? {
+      barPath: sentPath(ml.bar.path, zeroAt - t0), barCadence: pick.cadence,
+      barFrames: { fell_back: pick.fellBack, frames: pick.frames, skipped: pick.skipped },
+    } : {};
+    await savePending({ attemptId: attempt.id, blob, type: blob.type || recording.mimeType, commandTimes, uploadId: null, savedAt, recordedAt: Math.round(savedAt - (performance.now() - recording.startedAt)), ...benchBar });
     const heldSnap = (ml.byBar && pressSnap) || (lift === 'squat' && deeperOf(deepest)) || last;
     freeze(heldSnap);
-    // her bench clip's marks: the phone's own path, broken where it was lost, and the "Press!" tick
-    const bar = ml.bar;
+    // her bench clip's marks: the phone's own path, broken where it was lost, and the "Press!" tick. With no usable path
+    // to send (one the server's check turns down, item 110), the plain "Press!" frame: no path, no tick (look 5.14c)
+    const sendable = !!benchBar.barPath && 'path' in checkPhonePath(benchBar.barPath, Math.ceil(performance.now() - (zeroAt ?? t0)));
+    const bar = sendable ? ml.bar : null;
     const pressAt = bar?.cmds.find(c => c.cmd === 'press')?.t;
     const path: BenchPath | null = bar ? { pieces: pathPieces(bar.path), press: pressAt === undefined ? null : tickAt(bar.path, pressAt) } : null;
     const clipUrl = URL.createObjectURL(blob);
@@ -933,7 +1039,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (st?.sample) { setResumedSample(true); if (st.sample_clip) setSample({ credit: st.sample_clip.credit, reps: st.sample_clip.reps }); }
     if (st?.call === 'white' || st?.call === 'red') {
       const shown = st.shown_lift ?? attempt.lift;
-      const res = meetResult({ ...st, lift: attempt.lift })!;
+      const res = meetResult({ ...st, lift: attempt.lift }, bot)!;
       setShownLift(shown); setSettledOpen(true);
       setResult(res); setLamps(res.lamps); setSpill(st.call === 'white' ? 'white' : 'red');
       setResultOn(true); setWaitLine(''); setBusy(false); setPhase('hold');
@@ -947,8 +1053,8 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (st?.call === 'close') {
       setShownLift(st.shown_lift ?? attempt.lift); setSettledOpen(true);
       setLamps(['pulse', 'pulse', 'pulse']); setCommand(null);
-      setWaitLine(bench ? MEET_WORDS.bench.looking : 'A referee is looking at this one');
-      setResult(meetResult({ ...st, lift: attempt.lift })); setPhase('close'); setResultOn(true);
+      setWaitLine(rw.looking);
+      setResult(meetResult({ ...st, lift: attempt.lift }, bot)); setPhase('close'); setResultOn(true);
       // the judged frame and its marks (LookieBot 1), else the held frame
       const judged = bench ? null : await snapAt().catch(() => null);
       if (!alive()) return;
@@ -964,7 +1070,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     if (!alive()) return;
     freeze(snap);
     await awaitLights(alive, attempt.id, sent, snap, async () => {}, snapAt);
-  }, [attempt.id, attempt.lift, bench, send, awaitLights]);
+  }, [attempt.id, attempt.lift, bench, send, awaitLights, bot, rw]);
 
   const start = (m: Mode) => {
     // her tap: an iPhone that allowed motion before gets it back with no question (look 4b)
@@ -1018,7 +1124,56 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // busy from "I'm ready" until the result panel has slid in (480 ms; at once with motion off)
+  const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'tap' || phase === 'loaded' || phase === 'lifting';
+  // the bench: no panel while it sends (look 5.14c), so the stage keeps the full width
+  const panelOpen = !lifting && !(phase === 'loading' && !slow && !error) && !(bench && phase === 'held');
+
+  // Item 98 (5.25 step 9, look 9 "The frame holds still under the lamps"): the stage fills what the panel leaves, so
+  // every change to the panel's height moves her frame. Through the lamps the panel keeps the height it had before the
+  // first lamp (a fixed `height`, set before the words go). Every other change after it has opened (the result, "Close
+  // call", the 90 s busy line, the lights landing on a close call) is one move to the new full height, measured settled
+  // before its fade starts: 260 ms --ease-out, at once with motion off, ending at the 400 px scroll limit. Its first
+  // opening keeps the slide-up's own 480 ms (the CSS max-height), and a reload of a decided attempt opens settled.
+  // Portrait and the desktop column only: the turned phone's side panel is the screen's full height.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const panelInRef = useRef<HTMLDivElement>(null);
+  const panelH = useRef<number | null>(null);
+  const moveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [panelMoving, setPanelMoving] = useState(false);
+  const holdPanel = phase === 'lit' && !resultOn;
+  // after every render, with no list: what the panel shows can change with any of its state. It sets state only when
+  // the height changed, so the run after it stops.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const el = panelRef.current, inner = panelInRef.current;
+    if (!el || !inner) return;
+    const free = () => { el.style.height = ''; el.style.transition = ''; el.style.overflowY = ''; };
+    if (view !== 'stage' || !panelOpen || land) { free(); panelH.current = null; return; }
+    if (holdPanel) {
+      // the words that have gone keep their space, and the next ones (still invisible) never show a scroll bar
+      if (panelH.current !== null) { el.style.transition = 'none'; el.style.height = `${panelH.current}px`; el.style.overflowY = 'hidden'; }
+      return;
+    }
+    el.style.overflowY = '';
+    const to = Math.min(PANEL_MAX_PX, inner.getBoundingClientRect().height);
+    const from = panelH.current;
+    panelH.current = to;
+    if (from === null) { free(); return; }
+    if (Math.abs(to - from) < 0.5) return;
+    el.style.transition = 'none';
+    if (reduced() || (settledOpen && phase !== 'close')) { el.style.height = `${to}px`; return; }
+    el.style.height = `${from}px`;
+    void el.offsetHeight;
+    el.style.transition = `height ${PANEL_MOVE_MS}ms var(--ease-out)`;
+    el.style.height = `${to}px`;
+    // the platform's banners wait for the panel to settle (look 9: a banner never lands during the move)
+    setPanelMoving(true);
+    clearTimeout(moveTimer.current);
+    moveTimer.current = setTimeout(() => setPanelMoving(false), PANEL_MOVE_MS + 20);
+  });
+  useEffect(() => () => clearTimeout(moveTimer.current), []);
+
+  // busy from "I'm ready" until the result panel has slid in (480 ms; at once with motion off), and through its moves
   const resultIn = ['held', 'offline', 'lit', 'close', 'replay', 'hold', 'norep', 'refused'].includes(phase);
   const [settled, setSettled] = useState(false);
   useEffect(() => {
@@ -1026,7 +1181,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
     const t = setTimeout(() => setSettled(true), reduced() ? 0 : 480);
     return () => clearTimeout(t);
   }, [view, resultIn]);
-  const underBar = view === 'stage' && !settled;
+  const underBar = view === 'stage' && (!settled || panelMoving);
   useEffect(() => { onBusy?.(underBar); }, [underBar, onBusy]);
   useEffect(() => () => onBusy?.(false), [onBusy]);
 
@@ -1131,9 +1286,6 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
   // The stage.
   const isSample = mode === 'sample' || resumedSample;
   const box = containBox(stageSize, dims);
-  const lifting = phase === 'spot' || phase === 'good-spot' || phase === 'tap' || phase === 'loaded' || phase === 'lifting';
-  // the bench: no panel while it sends (look 5.14c), so the stage keeps the full width
-  const panelOpen = !lifting && !(phase === 'loading' && !slow && !error) && !(bench && phase === 'held');
   const stageClass = ['stage',
     turnUp.on ? 'turning' : '',
     turnedOnce ? 'turned-once' : '',
@@ -1218,7 +1370,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               {sound ? <SpeakerHigh weight="bold" /> : <SpeakerSlash weight="bold" />}
             </button>
           </div>
-          <Lamps states={lamps} settled={settledOpen} />
+          <Lamps states={lamps} settled={settledOpen} bot={bot} />
           <WaitLine text={waitLine} lineRef={waitLineRef} />
           <div className="command" aria-live="assertive">
             {command && <span key={command.text} className={`c ${command.kind === 'soft' ? 'soft hold' : 'on'}`}>{command.text}</span>}
@@ -1248,8 +1400,9 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           {isSample && sample && <div className="credit">{sample.credit}</div>}
         </div>
 
-        <div className="panel" aria-hidden={!panelOpen}>
-          <div className="panel-in">
+        {/* the void sheet holds the panel to the screen, so its text scrolls above the pinned button (5.14c) */}
+        <div className={`panel${phase === 'void' ? ' void-panel' : ''}`} aria-hidden={!panelOpen} ref={panelRef}>
+          <div className="panel-in" ref={panelInRef}>
             {slow && <p className="small">{STAGE_WORDS.slowModel}</p>}
             {phase === 'spot-done' && (
               <>
@@ -1281,10 +1434,17 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
               // 3.4b, look 5.14c: the bench's void sheet. "Film again" is the only way on.
               // 3.10: a phone that turned during the lift gets the same sheet with its own words, and films the
               // attempt again from the frame check, since the phone has moved.
-              <div className="void-sheet" role="alertdialog" aria-labelledby="void-title" aria-describedby="void-body" tabIndex={-1} ref={voidRef}>
-                <p className="sheet-title" id="void-title">{voidWhy === 'turned' ? ORIENT_WORDS.turned.title : MEET_WORDS.bench.voidTitle}</p>
-                <p className="body" id="void-body">{voidWhy === 'turned' ? ORIENT_WORDS.turned.body : MEET_WORDS.bench.voidBody}</p>
-                <div className="try-actions"><button className="btn" type="button" onClick={() => go(voidWhy === 'turned' ? 'lift' : 'refilm')}>{voidWhy === 'turned' ? ORIENT_WORDS.turned.filmAgain : MEET_WORDS.bench.filmAgain}</button></div>
+              <div className={`void-sheet${voidUnder ? ' under' : ''}`} role="alertdialog" aria-labelledby="void-title" aria-describedby="void-body" tabIndex={-1} ref={voidRef}>
+                {(() => {
+                  // item 112: from the second void in a row, "We lost the bar again", and back to "Find your spot"
+                  // and its words follow the void's cause; "Find my spot again" goes back to the frame check, "Film again" to the tap
+                  const w = voidWhy === 'turned' ? { title: ORIENT_WORDS.turned.title, body: ORIENT_WORDS.turned.body, button: ORIENT_WORDS.turned.filmAgain, again: 'spot' as const }
+                    : VOID_SHEETS[barVoidWhy][voidAgain ? 'second' : 'first'];
+                  return (<>
+                    <div className="void-text" ref={voidTextRef}><p className="sheet-title" id="void-title">{w.title}</p><p className="body" id="void-body">{w.body}</p></div>
+                    <div className="try-actions"><button className="btn" type="button" onClick={() => go(w.again === 'spot' ? 'lift' : 'refilm')}>{w.button}</button></div>
+                  </>);
+                })()}
               </div>
             )}
             {phase === 'refused' && (
@@ -1321,7 +1481,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
                 <hr className="rule" />
                 <div className="try-actions">
                   {onNext && <button className={nextGhost ? 'btn ghost' : 'btn'} type="button" onClick={onNext}>{nextLabel}</button>}
-                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{result?.title === 'To a referee' ? MEET_WORDS.bench.refereeLink : MEET_WORDS.refereeLink}</Link>}
+                  {phase === 'close' && demoReferee && <Link className="link" href={`/referee/demo/${attempt.id}`}>{result?.bench ? rw.benchRefereeLink : rw.refereeLink}</Link>}
                 </div>
               </div>
             )}

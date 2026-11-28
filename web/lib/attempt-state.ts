@@ -41,12 +41,15 @@ export async function attemptState(db: Db, id: string, lifterId: string, withWai
   const [a] = await db.select().from(attempts).where(eq(attempts.id, id));
   if (!a) return { status: 404, error: 'no such attempt' };
   if (a.lifterId !== lifterId) return { status: 403, error: 'not your attempt' };
-  const m = (a.measures ?? {}) as { red_rep?: number };
+  const m = (a.measures ?? {}) as { red_rep?: number; referee_unavailable?: boolean };
+  // 3.4d step 7: the bot couldn't look, so three whites. The attempt keeps no reason (a white has
+  // none); the doubt is in its measures, and her screen shows it as `referee_unavailable`.
+  const reason = a.call === 'white' && m.referee_unavailable === true ? 'referee_unavailable' : a.reason;
   return {
     status: 200,
     attempt: {
       id: a.id, status: a.status, lift: a.lift, shown_lift: judgedLift(a), number: a.number, weight: a.weight, reps_declared: a.repsDeclared,
-      call: a.call, lights: (a.lights as AttemptState['lights']) ?? null, reason: a.reason,
+      call: a.call, lights: (a.lights as AttemptState['lights']) ?? null, reason,
       red_rep: typeof m.red_rep === 'number' ? m.red_rep : null, sample: a.isSampleClip,
       sample_clip: a.isSampleClip ? await sampleOfAttempt(db, a.id, a.commandTimes) : null, judged_frame_ms: a.judgedFrameMs ?? null,
       ...(withWait && WAITING.includes(a.status)

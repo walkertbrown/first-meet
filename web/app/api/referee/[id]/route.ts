@@ -1,16 +1,18 @@
 // A referee's close call (plan 5.33):
 //   POST {action: 'save', lights: [l, head, r], reasons?: [l, head, r], rep?, note?}  → {call, lights, next}
 //   POST {action: 'ask', note?}                                         → {next}  ("Ask another referee")
+//   POST {action: 'change', lights, reasons?, rep?}                     → {call, lights, next}  (the bot's lights, item 88)
 // Only a referee (3.1); a lifter without the role gets a 403.
 import { db, hasDb } from '@/db';
 import { hasRole } from '@/lib/guard';
-import { askAnother, nextCloseCall, saveLights, type SaveInput } from '@/lib/referee';
+import { clipAfterLights } from '@/lib/card/clip-job';
+import { askAnother, changeLights, nextCloseCall, saveLights, type SaveInput } from '@/lib/referee';
 import { viewerOf } from '@/lib/roles';
 import { sessionFrom } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 type Ctx = { params: Promise<{ id: string }> };
-type Body = SaveInput & { action?: 'save' | 'ask' };
+type Body = SaveInput & { action?: 'save' | 'ask' | 'change' };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,11 +25,13 @@ export async function POST(req: Request, { params }: Ctx) {
   const body = await req.json().catch(() => null) as Body | null;
   if (!body || typeof body !== 'object') return Response.json({ error: 'bad body' }, { status: 400 });
   const note = typeof body.note === 'string' ? body.note : null;
-  const r = body.action === 'ask'
-    ? await askAnother(db(), id, v!.id, note)
-    : await saveLights(db(), id, { kind: 'referee', id: v!.id }, { lights: body.lights, reasons: Array.isArray(body.reasons) ? body.reasons : null, reason: body.reason ?? null, rep: body.rep ?? null, note });
+  const input: SaveInput = { lights: body.lights, reasons: Array.isArray(body.reasons) ? body.reasons : null, reason: body.reason ?? null, rep: body.rep ?? null, note };
+  const r = body.action === 'ask' ? await askAnother(db(), id, v!.id, note)
+    : body.action === 'change' ? await changeLights(db(), id, v!.id, input)
+      : await saveLights(db(), id, { kind: 'referee', id: v!.id }, input);
   const { status, ...rest } = r;
   if (status !== 200) return Response.json(rest, { status });
+  if (body.action !== 'ask') await clipAfterLights(db(), id);
   const next = await nextCloseCall(db(), v!.id);
   return Response.json({ ...rest, next });
 }

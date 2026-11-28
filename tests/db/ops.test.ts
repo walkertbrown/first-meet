@@ -2,10 +2,10 @@
 // only; the phone's lines count every real phone's filming, demo and test meets included, never a sample; the
 // server's lines count every run. DEMO also has its own counts (5.36).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Db } from '../../web/db';
 import { attempts, events, judgeQueue, judgeWorkers, lifters, meets } from '../../web/db/schema';
-import { benchRows, commitsDiffer, errorText, failedOf, opsNumbers, opsSections, poseRunRows, uploadRows, type OpsNumbers } from '../../web/lib/ops';
+import { benchRows, commitsDiffer, errorText, failedOf, feedRows, opsNumbers, opsSections, poseRunRows, uploadRows, type OpsNumbers } from '../../web/lib/ops';
 import { freshDb, URL_ } from './setup';
 
 const BUDGETS = { runStartsPerMin: 10, cpuPerMin: 4, workersMax: 30 };
@@ -63,6 +63,11 @@ describe.skipIf(!URL_)('/ops numbers', () => {
       { kind: 'close_call', attemptId: q2, detail: { reason: 'judge_unavailable', why: 'no worker' } },
       { kind: 'close_call', attemptId: q2, detail: { reason: 'depth' } },
       { kind: 'demo_run', detail: { lifter_id: 'x' } }, { kind: 'demo_run', detail: { lifter_id: 'y' } },
+      // stuck bar tracks (5.39, item 108): q1's bench stuck twice in 7 days counts once; none stuck, and 8 days old, never
+      { kind: 'close_call', attemptId: q1, detail: { reason: 'bench_referee', stuck: 1 } },
+      { kind: 'close_call', attemptId: q1, detail: { reason: 'bench_referee', stuck: 2 } },
+      { kind: 'close_call', attemptId: judged, detail: { reason: 'bench_referee', stuck: 0 } },
+      { kind: 'close_call', attemptId: djudged, detail: { reason: 'bench_referee', stuck: 1 }, at: sql`now() - interval '8 days'` as never },
     ]);
     // uploads (2.4): Chrome tried 3, one refused by the server (its device from its upload); Safari
     // tried 1 and the phone turned one down before it began; one from two days ago doesn't count
@@ -131,6 +136,10 @@ describe.skipIf(!URL_)('/ops numbers', () => {
     expect(n.errors[1].attemptId).toBeTruthy();
   });
 
+  it('ERRORS: stuck bar tracks, bench attempts in the last 7 days whose track stuck (5.39, item 108)', () => {
+    expect(n.stuckTracks).toBe(1);
+  });
+
   it('commits: the web one passed in and the judge\'s newest, both shortened', () => {
     expect(n.commits.web).toBe('ccccccc');
     expect(['aaaaaaa', 'bbbbbbb']).toContain(n.commits.judge);
@@ -175,39 +184,43 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
     const [real] = await db.insert(meets).values({ slug: 'm1', name: 'Meet 1', kind: 'real', status: 'open' }).returning();
     const [demo] = await db.insert(meets).values({ slug: 'demo', name: 'Demo', kind: 'demo', status: 'open' }).returning();
     const [test] = await db.insert(meets).values({ slug: 'test', name: 'Test', kind: 'test', status: 'open' }).returning();
-    type Row = { status: string; call?: 'white' | 'red'; shadow?: 'white' | 'red'; referee?: boolean; uploaded?: boolean; sinking?: boolean; lost?: boolean; lift?: 'bench' | 'squat'; home?: boolean; sample?: boolean };
+    type Row = { status: string; call?: 'white' | 'red'; shadow?: 'white' | 'red'; referee?: boolean; uploaded?: boolean; sinking?: boolean; lost?: boolean; lift?: 'bench' | 'squat'; home?: boolean; sample?: boolean; name?: string; lifterId?: string; held?: boolean; noPath?: boolean };
     const mk = async (meetId: string, r: Row) => {
-      const [l] = await db.insert(lifters).values({ cardName: 'L', isDemo: meetId === demo.id, division: r.home ? 'home' : 'barbell' }).returning();
+      const [l] = r.lifterId ? await db.select().from(lifters).where(eq(lifters.id, r.lifterId))
+        : await db.insert(lifters).values({ cardName: r.name ?? 'L', isDemo: meetId === demo.id, division: r.home ? 'home' : 'barbell' }).returning();
       const [a] = await db.insert(attempts).values({
-        lifterId: l.id, meetId, lift: r.lift ?? 'bench', number: 1, weight: 60, status: r.status as never,
+        lifterId: l.id, meetId, lift: r.lift ?? 'bench', number: r.lifterId ? 2 : 1, weight: 60, status: r.status as never,
         call: r.call ?? null, lights: r.call ? [r.call, r.call, r.call] : null,
         shadowLights: r.shadow ? [r.shadow, r.shadow, r.shadow] : null,
         uploadedAt: r.uploaded ? new Date() : null, isSampleClip: !!r.sample,
-        measures: { press_while_sinking: !!r.sinking, lost_after_start: !!r.lost, ...(r.referee ? { referee: true } : {}) },
+        measures: { press_while_sinking: !!r.sinking, lost_after_start: !!r.lost, ...(r.referee ? { referee: true } : {}), ...(r.noPath ? { bar_path: 'none' } : {}) },
+        // item 109: the frozen-track rule held her Press! back
+        ...(r.held ? { commandTimes: { start: 1.1, press: 3.2, press_held: true } as never } : {}),
       }).returning();
       return a.id;
     };
     // decided by referees: agree (white, white), white on a red, red on a white, and a close-call shadow (agrees with neither)
-    await mk(real.id, { status: 'judged', call: 'white', shadow: 'white', referee: true, uploaded: true, sinking: true });
-    await mk(real.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, lost: true });
-    await mk(real.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true });
+    const agreed = await mk(real.id, { status: 'judged', call: 'white', shadow: 'white', referee: true, uploaded: true, sinking: true });
+    const whiteOnRed = await mk(real.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, lost: true });
+    await mk(real.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true, held: true });
     await mk(real.id, { status: 'judged', call: 'red', referee: true, uploaded: true });
     // waiting for a referee: filmed, not decided
-    await mk(real.id, { status: 'close_call', shadow: 'red', uploaded: true });
+    // item 110: no usable bar path from the phone (and on the test meet below; never the sample's or a Home press set's)
+    const noPath = await mk(real.id, { status: 'close_call', uploaded: true, noPath: true });
     // no Start! twice, still declared
-    const voided = await mk(real.id, { status: 'declared' });
+    const voided = await mk(real.id, { status: 'declared', name: 'Ana' });
     // a squat with a void doesn't count
     const squat = await mk(real.id, { status: 'declared', lift: 'squat' });
     // item 94: the demo and test meets' benches were filmed on a real phone, so they count in the tracker's three
     // rates, never in the referee lines. A sample never counts.
-    const d = await mk(demo.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true, lost: true });
-    await mk(test.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true });
-    const s = await mk(demo.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true, sinking: true, lost: true, sample: true });
+    const d = await mk(demo.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true, lost: true, held: true });
+    const t1 = await mk(test.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, uploaded: true, sinking: true, noPath: true });
+    const s = await mk(demo.id, { status: 'judged', call: 'white', shadow: 'red', referee: true, uploaded: true, sinking: true, lost: true, sample: true, held: true, noPath: true });
     // F-C, F-D: Home press sets (lift 'bench' on Home, 3.4c) are never bench rows; they make their own line.
     // Judged by the phone; a referee's red on a phone close call; one waiting; one still declared with a void; a demo one.
-    await mk(real.id, { status: 'judged', call: 'white', home: true, uploaded: true, sinking: true });
+    await mk(real.id, { status: 'judged', call: 'white', home: true, uploaded: true, sinking: true, held: true });
     await mk(real.id, { status: 'judged', call: 'red', shadow: 'white', referee: true, home: true, uploaded: true, lost: true });
-    await mk(real.id, { status: 'close_call', home: true, uploaded: true });
+    const homeCc = await mk(real.id, { status: 'close_call', home: true, uploaded: true, noPath: true });
     const pressVoid = await mk(real.id, { status: 'declared', home: true });
     await mk(demo.id, { status: 'close_call', home: true, uploaded: true });
     await mk(test.id, { status: 'close_call', home: true, uploaded: true });
@@ -219,22 +232,74 @@ describe.skipIf(!URL_)('/ops bench, phone and referees', () => {
       { kind: 'lost_bar_void', attemptId: d, detail: { lift: 'bench', why: 'no_start' } },
       { kind: 'turned_void', attemptId: squat, detail: { lift: 'squat' } },
     ]);
+    // item 114: how bar_path was fed, by device: the real meet's, the demo's and the test meet's, never the sample's
+    // or a Home press set's
+    const ip = 'Safari 26 · iOS 26 iPhone', px = 'Chrome 142 · Android 16 Pixel 9';
+    const fed = (attemptId: string, device: string, cadence: string, frames: number, skipped: number) =>
+      ({ kind: 'bar_path_sent', attemptId, detail: { cadence, device, points: frames, frames, skipped, fell_back: cadence === 'refresh' } });
+    await db.insert(events).values([
+      fed(agreed, ip, 'frame', 900, 100), fed(whiteOnRed, ip, 'frame', 450, 0), fed(d, ip, 'refresh', 0, 0),
+      { kind: 'bar_cadence_fallback', attemptId: d, detail: { device: ip } },
+      fed(t1, px, 'frame', 600, 0),
+      fed(s, px, 'refresh', 0, 0), { kind: 'bar_cadence_fallback', attemptId: s, detail: { device: px } },
+      fed(homeCc, px, 'refresh', 0, 0), { kind: 'bar_cadence_fallback', attemptId: homeCc, detail: { device: px } },
+    ]);
+    void noPath;
+    // item 111's by-lifter list: Bea voided once on each of two attempts in the meet (listed, 2); Cy once (never);
+    // a demo lifter twice (listed: the demo's bench is filmed on a real phone); a sample's twice and a Home press
+    // set's twice (never)
+    const bea1 = await mk(real.id, { status: 'declared', name: 'Bea' });
+    const bea = (await db.select().from(attempts).where(eq(attempts.id, bea1)))[0].lifterId;
+    const bea2 = await mk(real.id, { status: 'declared', lifterId: bea });
+    const cy = await mk(real.id, { status: 'declared', name: 'Cy' });
+    const dee = await mk(demo.id, { status: 'declared', name: 'Dee' });
+    const v = (attemptId: string, why = 'no_start_5s') => ({ kind: 'lost_bar_void', attemptId, detail: { lift: 'bench', why, n: 1 } });
+    await db.insert(events).values([v(bea1), v(cy), v(dee, 'stuck'), v(s), v(pressVoid)]);
+    await new Promise(r => setTimeout(r, 5));
+    await db.insert(events).values([v(bea2, 'low_score'), v(dee, 'stuck')]);
     n = await opsNumbers(db, BUDGETS, null);
   });
   afterAll(async () => drop?.());
 
+  it('lists each lifter with No Start! twice or more in a meet, by meet and name, with her count, under the counts', () => {
+    expect(new Set(n.bench.noStartTwice.map(x => JSON.stringify(x)))).toEqual(new Set([
+      { meet: 'Meet 1', name: 'Ana', voids: 2, whys: ['no_start', 'no_start'] }, { meet: 'Meet 1', name: 'Bea', voids: 2, whys: ['no_start_5s', 'low_score'] },
+      { meet: 'Demo', name: 'Dee', voids: 2, whys: ['stuck', 'stuck'] },
+    ].map(x => JSON.stringify(x))));
+    const rows = opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows;
+    const at = rows.findIndex(r => r.label === 'No Start! twice or more in a meet');
+    expect(at).toBe(rows.length - 4);
+    expect(rows[at].value).toBe('3');
+    expect(rows.slice(at + 1).map(r => r.label).sort()).toEqual(['Demo · Dee', 'Meet 1 · Ana', 'Meet 1 · Bea']);
+    expect(Object.fromEntries(rows.slice(at + 1).map(r => [r.label, r.value]))).toEqual({
+      'Meet 1 · Ana': '2 · 2 no_start', 'Meet 1 · Bea': '2 · 1 no_start_5s, 1 low_score', 'Demo · Dee': '2 · 2 stuck',
+    });
+  });
+
   it('compares the bar\'s call with the referees\' on decided real meet bench attempts, and counts the bench going wrong over every real phone\'s filming', () => {
-    // filmings: 5 real + demo + test uploaded, and 2 real + 1 demo no-Start! voids; never the sample's
-    expect(n.bench).toEqual({ decided: 4, agree: 1, whiteOnRed: 1, redOnWhite: 1, filmings: 10, pressWhileSinking: 3, lostAfterStart: 2, noStartVoids: 3, homePressSets: 3, homePressReferee: 2 });
-    expect(opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows).toEqual([
+    // filmings: 5 real + demo + test uploaded, and 2 real + 1 demo no-Start! voids, and the list's 3 real + 2 demo;
+    // never the sample's or the Home press set's
+    const { noStartTwice, feed, ...counts } = n.bench;
+    expect(noStartTwice).toHaveLength(3);
+    expect(counts).toEqual({ decided: 4, agree: 1, whiteOnRed: 1, redOnWhite: 1, filmings: 15, pressWhileSinking: 3, lostAfterStart: 2, noStartVoids: 8, pressHeld: 2, noBarPath: 2, homePressSets: 3, homePressReferee: 2 });
+    expect(feed).toEqual([
+      { device: 'Safari 26 · iOS 26 iPhone', frame: 2, refresh: 1, frames: 1350, skipped: 100, fallbacks: 1 },
+      { device: 'Chrome 142 · Android 16 Pixel 9', frame: 1, refresh: 0, frames: 600, skipped: 0, fallbacks: 0 },
+    ]);
+    expect(opsSections(n, BUDGETS).find(x => x.eyebrow === 'BENCH, PHONE AND REFEREES')!.rows.slice(0, 12)).toEqual([
       { label: 'Decided', value: '4' },
       { label: 'Agree', value: '1' },
       { label: 'White on a red', value: '1' },
       { label: 'Red on a white', value: '1' },
-      { label: 'Press! while sinking', value: '3 of 10 · 30%' },
-      { label: 'Lost the bar after Start!', value: '2 of 10 · 20%' },
-      { label: 'No Start!, filmed again', value: '3 of 10 · 30%' },
+      { label: 'Press! while sinking', value: '3 of 15 · 20%' },
+      { label: 'Lost the bar after Start!', value: '2 of 15 · 13%' },
+      { label: 'No Start!, filmed again', value: '8 of 15 · 53%' },
+      { label: 'No bar path from the phone', value: '2 of 15 · 13%' },
+      // item 109: a real meet's and the demo's, never the sample's or a Home press set's
+      { label: 'Press! held for a frozen track', value: '2 of 15 · 13%' },
       { label: 'Home press sets to a referee', value: '67%' },
+      { label: 'Bar path fed · Safari 26 · iOS 26 iPhone', value: '2 frame, 1 refresh · 6.9% skipped · 1 fallback' },
+      { label: 'Bar path fed · Chrome 142 · Android 16 Pixel 9', value: '1 frame, 0 refresh · 0% skipped · 0 fallbacks' },
     ]);
   });
 
@@ -258,8 +323,9 @@ describe('ops words', () => {
     ]);
   });
   it('benchRows with nothing yet', () => {
-    expect(benchRows({ decided: 0, agree: 0, whiteOnRed: 0, redOnWhite: 0, filmings: 0, pressWhileSinking: 0, lostAfterStart: 0, noStartVoids: 0, homePressSets: 0, homePressReferee: 0 }).map(r => r.value))
-      .toEqual(['0', '0', '0', '0', '0 of 0', '0 of 0', '0 of 0', '—']);
+    expect(benchRows({ decided: 0, agree: 0, whiteOnRed: 0, redOnWhite: 0, filmings: 0, pressWhileSinking: 0, lostAfterStart: 0, noStartVoids: 0, pressHeld: 0, noBarPath: 0, feed: [], homePressSets: 0, homePressReferee: 0, noStartTwice: [] }).map(r => r.value))
+      .toEqual(['0', '0', '0', '0', '0 of 0', '0 of 0', '0 of 0', '0 of 0', '0 of 0', '—', '—', '—']);
+    expect(feedRows([{ device: 'X', frame: 0, refresh: 2, frames: 0, skipped: 0, fallbacks: 2 }])).toEqual([{ label: 'Bar path fed · X', value: '0 frame, 2 refresh · — skipped · 2 fallbacks' }]);
   });
   it('commitsDiffer only when both commits are known and differ', () => {
     expect(commitsDiffer({ web: 'abc1234', judge: 'abc1234' })).toBe(false);

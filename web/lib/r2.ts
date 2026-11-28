@@ -47,6 +47,9 @@ export class R2 {
   /** A link anyone can GET for `seconds` (10 minutes by default). */
   signedGet(key: string, seconds = GET_LINK_SECONDS) { return this.presign('GET', key, seconds); }
 
+  /** A link that PUTs one object for `seconds` (render_clip's MP4). */
+  signedPut(key: string, seconds = PUT_LINK_SECONDS) { return this.presign('PUT', key, seconds); }
+
   /** Size and type, or null when there's no such object. */
   async head(key: string): Promise<{ bytes: number; type: string | null } | null> {
     const res = await this.call('HEAD', key);
@@ -71,6 +74,14 @@ export class R2 {
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`R2 GET ${res.status}`);
     return (await res.json()) as T;
+  }
+
+  /** A GET passed through to the browser (the card clip, with Range for Safari's video), or null for 404. */
+  async get(key: string, headers: Record<string, string> = {}): Promise<Response | null> {
+    const res = await this.call('GET', key, { headers });
+    if (res.status === 404) return null;
+    if (!res.ok && res.status !== 206) throw new Error(`R2 GET ${res.status}`);
+    return res;
   }
 
   /** Server-side copy inside the bucket (the demo's sample lifts, 5.36). Both keys get the prefix. */
@@ -136,7 +147,14 @@ export const keys = {
   firstPass: (attempt: string) => `poses/${attempt}.pass1.json`,
   /** Bench (3.4b): the server's plate path. */
   bar: (attempt: string) => `bar/${attempt}.json`,
+  barServer: (attempt: string) => `bar/${attempt}-server.json`,
   sample: (file: string) => `samples/${file}`,
+  /** render_clip's lift clip (5.30): 9:16 MP4. */
+  clip: (attempt: string) => `clips/${attempt}.mp4`,
+  /** The clip's poster beside it (look 9 "The bomb-out clip"): the first frame of the 2 s hold, 432 × 768 JPEG. */
+  clipPoster: (attempt: string) => `clips/${attempt}.jpg`,
+  /** The referee bot's frames (3.4d step 1). */
+  refereeFrame: (attempt: string, n: number) => `referee/${attempt}/${n}.jpg`,
   health: 'health/ok.txt',
 };
 

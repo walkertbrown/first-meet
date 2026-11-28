@@ -87,7 +87,7 @@ describe('a meet attempt on the phone', () => {
     // no frames do anything until she taps
     expect(m.feedBar(frame(...RACK, 0), 0)).toEqual([]);
     expect(m.tapBar(frame(...RACK, 0), ...RACK)).toBe(true);
-    expect(m.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08 });
+    expect(m.plateTap).toEqual({ x: RACK[0], y: RACK[1], size: 0.08, t: 0 });
     const { evs: bar } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, BENCH);
     // "Bar is loaded." on the first frame after the tap, then the mark, then the commands
     expect(bar[0].type).toBe('loaded');
@@ -106,6 +106,12 @@ describe('a meet attempt on the phone', () => {
     for (const e of bar) if (e.type === 'call' || e.type === 'end') ct[e.key] = Math.round(e.t - soft);
     expect(ok(ct as Record<string, number>, 'bench')).toBeNull();
     expect(extrasOk(ct as Record<string, number>)).toBe(true);
+    // item 109: press_held is only ever true, and only with a Press! it held back
+    expect(extrasOk({ ...ct, press_held: true } as Record<string, number>)).toBe(true);
+    expect(extrasOk({ ...ct, press_held: false } as Record<string, number>)).toBe(false);
+    expect(extrasOk({ ...ct, press_held: 1 } as Record<string, number>)).toBe(false);
+    expect(extrasOk({ start: 1, press_late: 3, press_held: true } as Record<string, number>)).toBe(true);
+    expect(extrasOk({ start: 1, press_held: true } as Record<string, number>)).toBe(false);
   });
 
   it('Barbell bench: lost on the hooks says so and asks for a new tap, with no second "Bar is loaded."', () => {
@@ -128,6 +134,7 @@ describe('a meet attempt on the phone', () => {
     for (let i = 0; i < 12; i++) wander.push({ ms: 500, to: i % 2 ? [0.55, 0.22] : [0.5, 0.27] });
     const { evs } = runBar({ feed: (g, t) => m.feedBar(g, t) }, RACK, wander);
     expect(evs.at(-1)).toMatchObject({ type: 'end', key: 'rack', void: true });
+    expect((evs.at(-1) as { voidWhy?: string }).voidWhy).toMatch(/^(no_start_5s|stuck|low_score)$/);
     expect(evs.some(e => e.type === 'call')).toBe(false);
   });
 

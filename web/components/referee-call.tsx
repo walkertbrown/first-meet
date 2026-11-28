@@ -5,8 +5,8 @@
 // lights" and "Ask another referee".
 // The demo referee (5.36) is the same screen deciding the demo lifter's own close call.
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { BarTrack, MarkFrame, Track } from '@/lib/referee-view';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { BarTrack, MarkFrame, ScrubTick, Track } from '@/lib/referee-view';
 import { reasonEyebrow, reasonSentence, refereeReasons, type ReasonCode } from '@/lib/reason-words';
 import { saveLine, type Light } from '@/lib/lights';
 import { readyToSeek } from '@/lib/stage/recorder';
@@ -28,6 +28,16 @@ export type RefereeCallProps = {
   measured: string[];
   /** The demo referee: after saving, back to the demo platform. */
   demoDoneHref?: string;
+  /**
+   * The real /referee once the referee bot decided (5.33, look 5.14d): the toggles start at the
+   * bot's lights, "Change the lights" turns on once one differs, and after the board is final
+   * it's read only.
+   */
+  bot?: { lights: Light[]; reasons: (string | null)[]; rep: number | null; readOnly: boolean };
+  /** The referee bot's lamp board, above the toggles (5.33), while it decides too. */
+  board?: React.ReactNode;
+  /** The demo's bot page (5.36): only the clip and what the judge measured, nothing that sets lights. */
+  clipOnly?: boolean;
 };
 
 const FRAME_S = 1 / 30;
@@ -107,6 +117,60 @@ function BarMarks({ bar, scale }: { bar: BarTrack; scale: number }) {
 
 const miniClass = (c: RepLight['call']) => `mini-lamp ${c === 'close' ? 'pulse' : c}`;
 
+/** Where a tick sits on the scrub bar, in px from its left: where the thumb's centre would be at that time. */
+const thumbAt = (width: number, at: number) => 5 + (width - 10) * Math.max(0, Math.min(1, at));
+
+/**
+ * Labels centred on their ticks, never past the bar's ends, and at least `gap` px apart: a label that would come
+ * closer moves right, and its tick stays (look 5.14c). `xs` are the ticks' px, `ws` the labels' widths; lefts back.
+ */
+export function placeLabels(width: number, xs: number[], ws: number[], gap = 8): number[] {
+  const out: number[] = [];
+  xs.forEach((x, i) => {
+    let left = Math.max(0, Math.min(width - ws[i], x - ws[i] / 2));
+    if (i > 0) left = Math.max(left, out[i - 1] + ws[i - 1] + gap);
+    out.push(left);
+  });
+  return out;
+}
+
+/**
+ * Look 5.14c, no phone path (item 110): the three commands on the scrub bar, a 2 x 14 tick each, over the played part
+ * and under the thumb, each labelled above the track. Marks, not controls: clicks go through to the bar.
+ */
+function ScrubCmds({ ticks, duration }: { ticks: ScrubTick[]; duration: number }) {
+  const box = useRef<HTMLDivElement>(null);
+  const labels = useRef<(HTMLSpanElement | null)[]>([]);
+  const [width, setWidth] = useState(0);
+  const [lefts, setLefts] = useState<number[] | null>(null);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    setWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+  const xs = ticks.map(t => thumbAt(width, t.ms / 1000 / duration));
+  const key = xs.map(Math.round).join(',');
+  useLayoutEffect(() => {
+    if (!width) return;
+    setLefts(placeLabels(width, xs, ticks.map((_, i) => labels.current[i]?.offsetWidth ?? 0)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, key]);
+  return (
+    <div className="ref-cmds" ref={box} aria-hidden="true">
+      {ticks.map((t, i) => (
+        <span key={t.cmd} className="ref-cmd-tick" style={{ left: `${xs[i]}px` }} />
+      ))}
+      {ticks.map((t, i) => (
+        <span key={`${t.cmd}-label`} ref={el => { labels.current[i] = el; }} className="ref-cmd-label ref-tick-label"
+          style={{ left: `${lefts?.[i] ?? 0}px`, visibility: lefts ? 'visible' : 'hidden' }}>{t.label}</span>
+      ))}
+    </div>
+  );
+}
+
 export function RefereeCall(p: RefereeCallProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -116,11 +180,11 @@ export function RefereeCall(p: RefereeCallProps) {
   const [duration, setDuration] = useState(0);
   const [showMarks, setShowMarks] = useState(true);
   const [scale, setScale] = useState(1);
-  const [lights, setLights] = useState<(Light | null)[]>([null, null, null]);
-  const [reasons, setReasons] = useState<(ReasonCode | null)[]>([null, null, null]);
+  const [lights, setLights] = useState<(Light | null)[]>(p.bot ? p.bot.lights : [null, null, null]);
+  const [reasons, setReasons] = useState<(ReasonCode | null)[]>(p.bot ? p.bot.reasons.map(x => (x as ReasonCode | null) ?? null) : [null, null, null]);
   const reps = useMemo(() => (p.repsDeclared ? (p.repLights ?? []).slice(0, p.repsDeclared) : []), [p.repLights, p.repsDeclared]);
   const home = !!p.repsDeclared;
-  const [rep, setRep] = useState<number | null>(null);
+  const [rep, setRep] = useState<number | null>(p.bot?.rep ?? null);
   const [asking, setAsking] = useState(false);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -128,7 +192,10 @@ export function RefereeCall(p: RefereeCallProps) {
   const [error, setError] = useState<string | null>(null);
 
   const missing = saveLine(lights, reasons, home, rep);
-  const canSave = !missing && !busy;
+  // 5.33: "Change the lights" is off until a lamp differs from the bot's
+  const differs = !p.bot || lights.some((l, i) => l !== p.bot!.lights[i] || (l === 'red' && reasons[i] !== p.bot!.reasons[i])) || (lights.includes('red') && rep !== p.bot.rep);
+  const readOnly = !!p.bot?.readOnly;
+  const canSave = !missing && !busy && differs && !readOnly;
   const anyRed = lights.includes('red');
   const setLamp = (i: number, l: Light) => setLights(ls => ls.map((x, j) => (j === i ? l : x)));
   const setAll = (l: Light) => setLights([l, l, l]);
@@ -246,7 +313,7 @@ export function RefereeCall(p: RefereeCallProps) {
   }
 
   const save = () => canSave && send({
-    action: 'save', lights, reasons: lights.map((l, i) => (l === 'red' ? reasons[i] : null)), rep: anyRed && home ? rep : null,
+    action: p.bot ? 'change' : 'save', lights, reasons: lights.map((l, i) => (l === 'red' ? reasons[i] : null)), rep: anyRed && home ? rep : null,
   }, p.saveUrl, 'saved');
   const ask = () => {
     if (!p.askUrl) return;
@@ -280,8 +347,8 @@ export function RefereeCall(p: RefereeCallProps) {
   }
 
   return (
-    <div className="ref-call">
-      <div className="ref-clip" style={{ ['--ar' as string]: ar }}>
+    <div className={`ref-call${p.clipOnly ? ' clip-only' : ''}`}>
+      <div className={`ref-clip${p.bar?.scrub ? ' no-path' : ''}`} style={{ ['--ar' as string]: ar }}>
         <div className="ref-video" ref={boxRef}>
           {p.videoUrl ? (
             <video
@@ -300,10 +367,13 @@ export function RefereeCall(p: RefereeCallProps) {
             <p className="ref-noclip small">The clip isn&apos;t available.</p>
           )}
           {mark && p.track && <Marks m={mark} track={p.track} scale={scale} />}
-          {showMarks && p.bar && <BarMarks bar={p.bar} scale={scale} />}
+          {showMarks && p.bar && !p.bar.scrub && <BarMarks bar={p.bar} scale={scale} />}
         </div>
 
-        <div className="ref-scrub" style={{ ['--played' as string]: `${duration > 0 ? Math.min(100, (now / duration) * 100) : 0}%` }}>
+        <div className={`ref-scrub${p.bar?.scrub ? ' cmds' : ''}`} style={{ ['--played' as string]: `${duration > 0 ? Math.min(100, (now / duration) * 100) : 0}%` }}>
+          {/* no phone path (look 5.14c): the track is drawn under the commands' ticks, and the thumb over them */}
+          {p.bar?.scrub && <div className="ref-scrub-track" aria-hidden="true" />}
+          {p.bar?.scrub && showMarks && duration > 0 && <ScrubCmds ticks={p.bar.scrub} duration={duration} />}
           <input
             type="range" min={0} max={duration || 1} step={0.001} value={Math.min(now, duration || 1)}
             aria-label="Position in the clip" aria-valuetext={`${now.toFixed(2)} seconds`}
@@ -348,11 +418,25 @@ export function RefereeCall(p: RefereeCallProps) {
         )}
       </div>
 
+      {p.clipOnly ? (
+        p.measured.length > 0 && (
+          <section className="ref-measured bot-measured" aria-label="What the judge measured">
+            {p.measured.map(l => <p key={l} className="small">{l}</p>)}
+          </section>
+        )
+      ) : (
       <aside className="ref-side">
         {p.measured.length > 0 && (
           <section className="ref-measured" aria-label="What the judge measured">
             <h2 className="eyebrow">What the judge measured</h2>
             {p.measured.map(l => <p key={l} className="small">{l}</p>)}
+          </section>
+        )}
+
+        {p.board && (
+          <section className="ref-bot" aria-label="The referee bot">
+            <h2 className="eyebrow">THE REFEREE BOT</h2>
+            {p.board}
           </section>
         )}
 
@@ -365,8 +449,8 @@ export function RefereeCall(p: RefereeCallProps) {
                   <i key={lights[i] ?? 'off'} className={`mini-lamp lg${lights[i] ? ' ' + lights[i] : ''}`} aria-hidden="true" />
                 </div>
                 <div className="ref-lamp-buttons">
-                  <button type="button" className="ref-light white" aria-pressed={lights[i] === 'white'} onClick={() => setLamp(i, 'white')}>White light</button>
-                  <button type="button" className="ref-light red" aria-pressed={lights[i] === 'red'} onClick={() => setLamp(i, 'red')}>Red light</button>
+                  <button type="button" className="ref-light white" aria-pressed={lights[i] === 'white'} disabled={readOnly} onClick={() => setLamp(i, 'white')}>White light</button>
+                  <button type="button" className="ref-light red" aria-pressed={lights[i] === 'red'} disabled={readOnly} onClick={() => setLamp(i, 'red')}>Red light</button>
                 </div>
               </div>
               {lights[i] === 'red' && (
@@ -374,7 +458,7 @@ export function RefereeCall(p: RefereeCallProps) {
                   <legend className="sr">{`The reason for the ${name.toLowerCase()} red light`}</legend>
                   {refereeReasons(p.lift, p.division).map(code => (
                     <label key={code} className="choice">
-                      <input type="radio" name={`reason-${i}`} value={code} checked={reasons[i] === code}
+                      <input type="radio" name={`reason-${i}`} value={code} checked={reasons[i] === code} disabled={readOnly}
                         onChange={() => setReasons(rs => rs.map((x, j) => (j === i ? code : x)))} />
                       <span className="choice-label eyebrow">{reasonEyebrow(code, home ? rep : null)}</span>
                       <span className="small">{reasonSentence(code, p.lift, p.division)}</span>
@@ -385,19 +469,23 @@ export function RefereeCall(p: RefereeCallProps) {
             </div>
           ))}
         </section>
-        <div className="ref-all">
-          <button type="button" className="btn ghost small" onClick={() => setAll('white')}>All white</button>
-          <button type="button" className="btn ghost small" onClick={() => setAll('red')}>All red</button>
-        </div>
+        {!readOnly && (
+          <div className="ref-all">
+            <button type="button" className="btn ghost small" onClick={() => setAll('white')}>All white</button>
+            <button type="button" className="btn ghost small" onClick={() => setAll('red')}>All red</button>
+          </div>
+        )}
 
         {error && <p className="small" role="alert">{error}</p>}
 
         <div className="ref-actions">
-          <div className="ref-save">
-            {missing && <p className="small ref-missing" id="ref-missing">{missing}</p>}
-            <button type="button" className="btn" disabled={!canSave} aria-busy={busy} aria-describedby={missing ? 'ref-missing' : undefined} onClick={save}>Save the lights</button>
-          </div>
-          {p.askUrl && (
+          {!readOnly && (
+            <div className="ref-save">
+              {missing && <p className="small ref-missing" id="ref-missing">{missing}</p>}
+              <button type="button" className="btn" disabled={!canSave} aria-busy={busy} aria-describedby={missing ? 'ref-missing' : undefined} onClick={save}>{p.bot ? 'Change the lights' : 'Save the lights'}</button>
+            </div>
+          )}
+          {p.askUrl && !p.bot && (
             <>
               {asking && (
                 <label className="ref-note">
@@ -410,6 +498,7 @@ export function RefereeCall(p: RefereeCallProps) {
           )}
         </div>
       </aside>
+      )}
     </div>
   );
 }

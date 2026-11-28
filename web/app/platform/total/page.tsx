@@ -20,6 +20,10 @@ import { ResumeSending } from '@/components/resume-sending';
 import { bombedWords, formatTotal, homeSum, totalLifts, totalWords, unitLine, waitingBody } from '@/lib/total-view';
 import '../../try.css';
 import '../../platform.css';
+import { botOn } from '@/lib/referee/words';
+import { bestLiftFor } from '@/lib/card/best-lift-data';
+import { playLength } from '@/lib/card/best-lift';
+import { BestLiftClip } from '@/components/best-lift-clip';
 
 // "You totaled" (plan 5.28): after her ninth attempt has lights or is a close call waiting.
 export const dynamic = 'force-dynamic';
@@ -52,7 +56,7 @@ export default async function TotalPage() {
     return page(<>
       <LiveRefresh />
       <h1 className="page-title">Your total is almost in.</h1>
-      <p className="body">{waitingBody(t.on, division)}</p>
+      <p className="body">{waitingBody(t.on, division, botOn())}</p>
       <p className="so-far"><span className="weight-m num">{formatTotal(t.soFar)}<span className="unit">{units}</span></span> <span className="small">so far</span></p>
       {corner}
     </>);
@@ -75,12 +79,15 @@ export default async function TotalPage() {
 
   if (t.kind === 'bombed') {
     const w = bombedWords(t.lift, division, l.isDemo);
+    // her best good lift's clip (item 101), under the free-meet line; with no good attempt, none of it shows
+    const best = await bestLiftFor(db(), l, now);
     return page(<>
       {lateCanLand && <LiveRefresh />}
       <SeenBombed storeKey={storeKey} />
       <h1 className="page-title">You finished your first meet.</h1>
       <p className="body-l">{w.body}</p>
       <p className="body">{w.free}</p>
+      {best && <BestLiftClip ready={best.ready} failed={best.failed} length={playLength(best.lengthMs)} label={best.view.label} />}
       {corner}
       <div className="try-actions">
         <Link className="btn" href={w.primary.href}>{w.primary.label}</Link>

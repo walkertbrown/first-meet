@@ -3,6 +3,7 @@
 import type { Lift } from '@/db/schema';
 import { LIFTS, attemptScore, type MeetAttempt, type Units } from '@/lib/meet';
 import { liftCaps, liftLower, liftWord } from '@/lib/stage/meet-words';
+import { refereeWords } from '@/lib/referee/words';
 
 type Division = 'barbell' | 'home';
 type Link = { label: string; href: string };
@@ -42,12 +43,12 @@ export const DEMO_LINE = 'That\'s your first total. On a real meet night, every 
 
 /**
  * The total's words (5.28): a demo lifter isn't in a real meet, so she isn't told Soo will read her
- * name, and the Primary is "See my lifts" until the meet card (phase 4) exists.
+ * name. The Primary opens her meet card (5.30).
  */
 export function totalWords(demo: boolean): { body: string; primary: Link; ghost: Link } {
   return {
     body: demo ? DEMO_LINE : SOO_LINE,
-    primary: { label: 'See my lifts', href: '/platform' },
+    primary: { label: 'See my meet card', href: '/me/card' },
     ghost: demo ? { label: 'Watch a meet night', href: '/sample' } : { label: 'Watch meet night', href: '/live' },
   };
 }
@@ -62,6 +63,6 @@ export function bombedWords(lift: Lift, division: Division, demo: boolean) {
   };
 }
 
-/** Waiting on a referee (5.28). */
-export const waitingBody = (on: Pick<MeetAttempt, 'lift' | 'number'>, division: Division) =>
-  `A referee is still looking at ${liftWord(on.lift, division)} ${on.number}. Your total lands as soon as they're done. Usually within 15 minutes.`;
+/** Waiting on a referee (5.28): a referee, or the referee bot once it's on (item 88). */
+export const waitingBody = (on: Pick<MeetAttempt, 'lift' | 'number'>, division: Division, bot = false) =>
+  refereeWords(bot).waitingBody(`${liftWord(on.lift, division)} ${on.number}`);

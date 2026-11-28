@@ -8,7 +8,8 @@ import { FrameCheck, type Spot } from './frame-check';
 import { DeadliftCaller, SquatCaller } from './commands';
 import { pressKey } from './press';
 import { OverheadCaller } from './overhead';
-import { BarStage } from './bar-stage';
+import { BarStage, type BarStageEvent } from './bar-stage';
+import type { RackWhy, VoidWhy } from './bar-caller';
 import type { Gray } from './plate-tracker';
 import type { PlateTap, PressLateWhy } from './bar-measure';
 import { RULES, type Rules } from './rules';
@@ -28,14 +29,14 @@ export type MeetEvent =
   /** the bench lost the plate on the hooks before "Start!": "We lost the bar.", and she taps again */
   | { type: 'lost'; t: number }
   /** a command she lifts on: "SQUAT!", "START!", "PRESS!"; a bench's late "Press!" says why */
-  | { type: 'call'; t: number; key: string; word: MeetWord; why?: PressLateWhy }
+  | { type: 'call'; t: number; key: string; word: MeetWord; why?: PressLateWhy; /** item 109: the frozen-track rule held this Press! back */ held?: true }
   /** a Home rep ended (`rep_<k>`); a Home deadlift's rep says "DOWN!" */
   | { type: 'rep'; t: number; k: number; key: string; down: boolean }
   /**
    * "RACK!" or "DOWN!"; `noRep`: she never lifted, so nothing is sent. `void`: the bench had no
    * "Start!" out of the rack (3.4b), so nothing is sent and she films it again.
    */
-  | { type: 'end'; t: number; key: 'rack' | 'down'; noRep: boolean; void?: boolean };
+  | { type: 'end'; t: number; key: 'rack' | 'down'; noRep: boolean; void?: boolean; voidWhy?: VoidWhy; /** item 116: the bench's `rack_why` */ rackWhy?: RackWhy };
 
 export type MeetPhase = 'spot' | 'good-spot' | 'tap' | 'loaded' | 'lifting' | 'done';
 
@@ -79,10 +80,10 @@ export class MeetLift {
   get plateTap(): PlateTap | null { return this.caller.kind === 'bar' ? this.caller.c.plateTap : null; }
   get bar(): BarStage | null { return this.caller.kind === 'bar' ? this.caller.c : null; }
 
-  /** Her tap at (x, y), fractions of the camera frame (not the mirrored screen). */
-  tapBar(g: Gray, x: number, y: number): boolean {
+  /** Her tap at (x, y), fractions of the camera frame (not the mirrored screen), at `t` ms in the recording. */
+  tapBar(g: Gray, x: number, y: number, t = 0): boolean {
     if (this.caller.kind !== 'bar' || !this.wantsBar) return false;
-    return this.caller.c.tap(g, x, y);
+    return this.caller.c.tap(g, x, y, t);
   }
 
   /** One grey frame for the bench: the mark, lost, and the bar's commands. The first frame after her first tap is "Bar is loaded.". */
@@ -95,12 +96,27 @@ export class MeetLift {
       this.phase = 'loaded';
       out.push({ type: 'loaded', t });
     }
-    for (const e of k.c.feed(g, t)) {
+    return [...out, ...this.barEvents(k.c.feed(g, t))];
+  }
+
+  /**
+   * Item 114 (3.2): the refresh tick with no new camera frame, at `t` on the frames' clock. The bar's time rules run
+   * (the void, the late Press!, Rack! after a loss, the no-rep rule, the 1 s tap loss); nothing is added to the path.
+   */
+  idleBar(t: number): MeetEvent[] {
+    const k = this.caller;
+    if (k.kind !== 'bar' || !this.wantsBar || this.phase === 'tap') return [];
+    return this.barEvents(k.c.idle(t));
+  }
+
+  private barEvents(evs: BarStageEvent[]): MeetEvent[] {
+    const out: MeetEvent[] = [];
+    for (const e of evs) {
       if (e.type === 'mark') out.push({ type: 'mark', t: e.t, x: e.x, y: e.y });
       else if (e.type === 'lost') out.push({ type: 'lost', t: e.t });
       else if (e.cmd === 'start') { this.phase = 'lifting'; out.push({ type: 'call', t: e.t, key: 'start', word: 'start' }); }
-      else if (e.cmd === 'press') out.push({ type: 'call', t: e.t, key: pressKey(1, !!e.late), word: 'press', ...(e.late && e.why ? { why: e.why } : {}) });
-      else { this.phase = 'done'; out.push({ type: 'end', t: e.t, key: 'rack', noRep: !!e.noRep, ...(e.void ? { void: true } : {}) }); }
+      else if (e.cmd === 'press') out.push({ type: 'call', t: e.t, key: pressKey(1, !!e.late), word: 'press', ...(e.late && e.why ? { why: e.why } : {}), ...(e.held ? { held: true as const } : {}) });
+      else { this.phase = 'done'; out.push({ type: 'end', t: e.t, key: 'rack', noRep: !!e.noRep, ...(e.void ? { void: true, voidWhy: e.voidWhy ?? 'no_start_5s' } : {}), ...(e.rackWhy && !e.void ? { rackWhy: e.rackWhy } : {}) }); }
     }
     return out;
   }
