@@ -15,6 +15,7 @@ export const TEST_ANSWER_CHOICES: { value: TestAnswers | 'real'; label: string }
   { value: 'errors_30m', label: 'Errors for 30 minutes' },
   { value: 'red_white_white', label: 'Red, white, white' },
   { value: 'not_sure_twice', label: 'Not sure, twice' },
+  { value: 'spot_weight_1', label: 'Spot check: weight not visible on attempt 1' },
 ];
 
 export const notRunningLine = (b: Pick<BotOpsView, 'notRunning'>) => (b.notRunning ? `Referee bot not running: ${b.notRunning}` : null);

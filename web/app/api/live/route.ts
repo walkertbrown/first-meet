@@ -27,6 +27,11 @@ export async function GET(req: Request) {
           if (e.lifter_id === s.lifterId) send(`id: ${++n}\nevent: cheer\ndata: {}\n\n`);
           return;
         }
+        // 5.29: her name on the host desk; the phone reads it from /api/readouts
+        if (e.kind === 'readout') {
+          if (e.lifter_id === s.lifterId) send(`id: ${++n}\nevent: readout\ndata: {}\n\n`);
+          return;
+        }
         if (!isFor(e, s.lifterId, watch) || e.kind !== 'attempt') return;
         send(`id: ${++n}\nevent: attempt\ndata: ${JSON.stringify({ attempt_id: e.attempt_id, status: e.status })}\n\n`);
       });

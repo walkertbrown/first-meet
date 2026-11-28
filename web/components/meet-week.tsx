@@ -18,6 +18,8 @@ export type MeetWeekProps = {
   openers: OpenerView[];
   flight: null | { counts: number[]; mine: number[]; open: boolean; hour: number | null; starts: string[] };
   cornerToken: string;
+  /** The form post (before the page's script ran) didn't save: the route sent her back with ?openers=again. */
+  saveFailed?: boolean;
 };
 
 const ET = 'America/New_York';
@@ -59,7 +61,7 @@ export function MeetWeek(p: MeetWeekProps) {
   const [picks, setPicks] = useState<Record<string, Pick>>(() => Object.fromEntries(p.openers.map(o => [o.lift, pickOf(o)])));
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
+  const [saveError, setSaveError] = useState(p.saveFailed ? AGAIN : '');
   const allSaved = openers.every(o => o.saved) && !dirty;
 
   const pick = (lift: Lift, x: Partial<Pick>) => { setPicks(cur => ({ ...cur, [lift]: { ...cur[lift], ...x } })); setDirty(true); setSaveError(''); };
@@ -89,6 +91,9 @@ export function MeetWeek(p: MeetWeekProps) {
       <section className="mw-block" aria-labelledby="mw-openers">
         <h1 className="page-title" id="mw-openers">{MEET_WEEK_WORDS.title}</h1>
         <p className="body">{MEET_WEEK_WORDS.body}</p>
+        {/* A plain form, so "Save my openers" tapped before the page's script has run still saves: the
+            browser posts the radios and the route sends her back here. Once the page runs, it saves in place. */}
+        <form method="post" action="/api/meet-week/openers" onSubmit={e => { e.preventDefault(); void save(); }}>
         {openers.map(o => (
           <div key={o.lift} className="mw-lift">
             <h2 className="mw-lift-name">{liftWord(o.lift, p.division)}</h2>
@@ -100,7 +105,8 @@ export function MeetWeek(p: MeetWeekProps) {
         {saveError && <p className="small" role="alert">{saveError}</p>}
         {allSaved
           ? <p className="body mw-saved" role="status">{MEET_WEEK_WORDS.saved}</p>
-          : <div className="try-actions"><button className="btn" type="button" onClick={() => void save()} disabled={saving || openers.every(o => o.locked)} aria-busy={saving}>{MEET_WEEK_WORDS.save}</button></div>}
+          : <div className="try-actions"><button className="btn" type="submit" disabled={saving || openers.every(o => o.locked)} aria-busy={saving}>{MEET_WEEK_WORDS.save}</button></div>}
+        </form>
       </section>
 
       {p.flight && <FlightPicker {...p.flight} />}
@@ -266,7 +272,7 @@ function CopyCorner({ token }: { token: string }) {
   };
   return (
     <>
-      <div className="try-actions"><button className="btn ghost" type="button" onClick={() => void copy()} aria-live="polite">{copied ? MEET_WEEK_WORDS.copied : MEET_WEEK_WORDS.copy}</button></div>
+      <div className="try-actions"><button className="btn ghost" type="button" data-early="copy-corner" onClick={() => void copy()} aria-live="polite">{copied ? MEET_WEEK_WORDS.copied : MEET_WEEK_WORDS.copy}</button></div>
       {shown && <p className="small mw-link">{shown}</p>}
     </>
   );
@@ -278,6 +284,8 @@ export const CHECKLIST = [
   '<openers>',
   'Water, and something to eat an hour before',
   'Charge your phone',
+  // item 105: the weight has to show (a spot check looks, 3.4d step 8)
+  'Keep your plates or dumbbells where the phone can see them',
 ] as const;
 
 /** The ticks are kept on her phone only (5.23). */

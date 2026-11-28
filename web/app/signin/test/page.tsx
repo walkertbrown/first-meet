@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { Footer, Wordmark } from '@/components/chrome';
 import { db, hasDb } from '@/db';
-import { WINDOW_BUTTONS, testMeetExists, testSigninOn } from '@/lib/test-signin';
+import { SPOT_SCENE_LABEL, WINDOW_BUTTONS, testMeetExists, testSigninOn } from '@/lib/test-signin';
 
 // Staging's test accounts (plan 3.1). Anywhere else this page doesn't exist.
 export const dynamic = 'force-dynamic';
@@ -23,10 +23,12 @@ export default async function Page() {
           <button className="btn ghost" name="who" value="lifter" type="submit">Sign in as a test lifter</button>
           <button className="btn ghost" name="who" value="meetweek" type="submit">Sign in as a test lifter in meet week</button>
           <button className="btn ghost" name="who" value="meetweek-home" type="submit">Sign in as a test lifter in meet week, Home</button>
+          <button className="btn ghost" name="who" value="demo-totaled" type="submit">Sign in as a demo lifter who has totaled</button>
           {testMeet && <button className="btn ghost" name="who" value="hour-now" type="submit">Set the test meet&apos;s flight hour now</button>}
           {testMeet && Object.entries(WINDOW_BUTTONS).map(([v, label]) => (
             <button key={v} className="btn ghost" name="who" value={v} type="submit">{label}</button>
           ))}
+          {testMeet && <button className="btn ghost" name="who" value="spot-scene" type="submit">{SPOT_SCENE_LABEL}</button>}
         </form>
       </main>
       <Footer />

@@ -23,7 +23,7 @@ describe('the welcome sheet (5.36)', () => {
     expect(html).toContain('<h2 class="sheet-title" id="welcome-title">Welcome to the demo meet</h2>');
     expect(html).toContain('You have three attempts at each lift. Your openers are already chosen from a made-up training history, so you can lift right away. No camera, or no weights? Use a sample lift on any attempt.');
     expect(html).toContain('Friends can follow along and cheer on your corner page.');
-    expect(html).toMatch(/<button class="btn" type="button">Go to the platform<\/button>/);
+    expect(html).toMatch(/<button class="btn" type="button" data-early="welcome-go">Go to the platform<\/button>/);
   });
 
   it('item 78: the Ghost "Open my corner page", still a new tab, and screen readers hear that it opens one', async () => {

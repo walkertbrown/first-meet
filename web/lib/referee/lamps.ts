@@ -48,7 +48,7 @@ export type CallOutcome =
 export type Prefix = { system: string; content: Anthropic.Beta.BetaContentBlockParam[] };
 
 /** Staging's "Referee bot test answers" (3.4d step 7): each fakes only what Anthropic sends back. */
-export const TEST_ANSWERS = ['no_key', 'spend_limit', 'errors_30m', 'red_white_white', 'not_sure_twice'] as const;
+export const TEST_ANSWERS = ['no_key', 'spend_limit', 'errors_30m', 'red_white_white', 'not_sure_twice', 'spot_weight_1'] as const;
 export type TestAnswers = (typeof TEST_ANSWERS)[number];
 
 export function parseAnswer(text: string, home: boolean, reasons: readonly string[]): LampAnswer | null {

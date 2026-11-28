@@ -6,6 +6,7 @@ import { db, hasDb } from '@/db';
 import { lifters, meets } from '@/db/schema';
 import { DemoStrip } from '@/components/demo-strip';
 import { TotalCheers } from '@/components/cheer-banner';
+import { SooReadouts } from '@/components/soo-readout';
 import { cornerBlock, herCheers } from '@/lib/cheers';
 import { LiveRefresh } from '@/components/live-refresh';
 import { currentViewer } from '@/lib/roles';
@@ -21,6 +22,7 @@ import { bombedWords, formatTotal, homeSum, totalLifts, totalWords, unitLine, wa
 import '../../try.css';
 import '../../platform.css';
 import { botOn } from '@/lib/referee/words';
+import { spotChangedLine } from '@/lib/referee/spot';
 import { bestLiftFor } from '@/lib/card/best-lift-data';
 import { playLength } from '@/lib/card/best-lift';
 import { BestLiftClip } from '@/components/best-lift-clip';
@@ -77,6 +79,9 @@ export default async function TotalPage() {
     </>);
   }
 
+  // 3.4d step 8: a spot-check red that changed her total says so (item 105)
+  const spot = await spotChangedLine(db(), l).catch(() => null);
+
   if (t.kind === 'bombed') {
     const w = bombedWords(t.lift, division, l.isDemo);
     // her best good lift's clip (item 101), under the free-meet line; with no good attempt, none of it shows
@@ -86,6 +91,7 @@ export default async function TotalPage() {
       <SeenBombed storeKey={storeKey} />
       <h1 className="page-title">You finished your first meet.</h1>
       <p className="body-l">{w.body}</p>
+      {spot && <p className="small">{spot}</p>}
       <p className="body">{w.free}</p>
       {best && <BestLiftClip ready={best.ready} failed={best.failed} length={playLength(best.lengthMs)} label={best.view.label} />}
       {corner}
@@ -108,12 +114,16 @@ export default async function TotalPage() {
       nineForNine={t.nineForNine} lifts={lifts} title={`You totaled, ${l.cardName}.`}
       late={late ? { lift: late.lift, line: lateLine(late, division) } : null} />
     {division === 'home' && <p className="small total-sum">{homeSum(t.best)}</p>}
+    {spot && <p className="small">{spot}</p>}
     <p className="body-l">{w.body}</p>
     {corner}
     <div className="try-actions">
       <Link className="btn" href={w.primary.href}>{w.primary.label}</Link>
       <Link className="btn ghost" href={w.ghost.href}>{w.ghost.label}</Link>
     </div>
+    {/* 5.28, from phase 5: her name tops /host/sample's Read list, and this tab shows the read-out sheet */}
+    {l.isDemo && <p className="body host-sample-link"><a className="link" href="/host/sample" target="_blank" rel="noopener">Read your own name on the host desk</a></p>}
+    {l.isDemo && <SooReadouts />}
   </>);
 }
 

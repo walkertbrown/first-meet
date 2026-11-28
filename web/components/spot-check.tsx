@@ -154,6 +154,7 @@ export function SpotCheck({ back }: { back: { href: string; label: string } }) {
             {phase === 'done' && (
               <>
                 <p className="sheet-title">Good spot. You&apos;re ready.</p>
+                <p className="body">Keep your plates or dumbbells where the phone can see them.</p>
                 <div className="try-actions"><Link className="btn" href={back.href}>{back.label}</Link></div>
               </>
             )}

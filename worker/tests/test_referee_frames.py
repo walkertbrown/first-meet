@@ -338,3 +338,15 @@ class BenchFrames(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Spot(unittest.TestCase):
+    def test_start_and_the_clearest_weight_once_each_in_time_order(self):
+        self.assertEqual(rf.spot_times({'start_ms': 1500, 'weight_ms': 900}), [900, 1500])
+        self.assertEqual(rf.spot_times({'start_ms': 1500, 'weight_ms': 1500}), [1500])
+        self.assertEqual(rf.spot_times({'start_ms': None, 'weight_ms': None}), [0])
+
+    def test_each_frame_says_its_attempt_and_its_moment(self):
+        clip = {'label': 'Squat 1 · 100 kg', 'start_ms': 1500, 'weight_ms': 900}
+        self.assertEqual(rf.spot_label(clip, 1500, 1500), ['Squat 1 · 100 kg', 'at Start!'])
+        self.assertEqual(rf.spot_label(clip, 900, 1500), ['Squat 1 · 100 kg', 'weight clearest'])

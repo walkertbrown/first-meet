@@ -119,6 +119,19 @@ describe('5.30\'s screen, and 5.5\'s card', () => {
     expect(html).toContain('/api/card/AbCdEfGhIjKlMnOp.png?f=story');
     expect(html).toContain(HONEST_LINE.replace(/'/g, '&#x27;'));
   });
+  it('look 5.15: her Story and Post frames, and her public card, come from the server pulsing, and the pulse is look 5.15\'s', async () => {
+    const waits = /<div class="card-frame (story|post) drawing"><img /;
+    expect(screen()).toMatch(waits);
+    expect(screen({ start: 'Post' })).toMatch(/<div class="card-frame post drawing"><img /);
+    expect(renderToStaticMarkup(<WatchHerLift token="AbCdEfGhIjKlMnOp" name="Diane R." clip />)).toMatch(/<div class="card-frame story drawing"><img /);
+    expect(screen({ start: 'Clip' })).not.toContain('drawing');
+    const css = (await import('node:fs')).readFileSync('web/app/card.css', 'utf8');
+    expect(css).toContain('.card-frame.drawing::before { content: \'\'; position: absolute; inset: 0; background: var(--surface-2); animation: card-wait 1.6s var(--ease-in-out) infinite; }');
+    expect(css).toContain('@keyframes card-wait { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }');
+    expect(css).toContain('.card-frame.drawing[data-drawn]::before { content: none; }');
+    expect(css).toContain('.card-frame.drawing { position: relative; background: transparent; }'); // the dark frame doesn't show through the pulse
+    expect(css).toMatch(/prefers-reduced-motion: reduce\) \{ \.card-frame\.drawing::before \{ animation: none !important; opacity: \.8; \}/);
+  });
   it('5.5: the story card; "Watch her lift" only when her clip is on her card link', () => {
     expect(renderToStaticMarkup(<WatchHerLift token="AbCdEfGhIjKlMnOp" name="Diane R." clip={false} />)).not.toContain('Watch her lift');
     const html = renderToStaticMarkup(<WatchHerLift token="AbCdEfGhIjKlMnOp" name="Diane R." clip />);

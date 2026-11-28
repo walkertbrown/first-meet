@@ -23,7 +23,7 @@ describe('"I\'m ready" docks (look 5.6)', () => {
   it('the Primary alone in its sticky wrapper, a direct child of the column; the sentinel straight after; then the links, then the strip', async () => {
     const html = await card();
     expect(html).toMatch(/^<div class="try-page meet-page look-56"><main class="try-col meet-col">/);
-    expect(html).toMatch(/<\/article><div class="ready-dock"><button class="btn" type="button">I&#x27;m ready<\/button><\/div><i class="ready-sentinel" aria-hidden="true"><\/i><div class="try-actions ready-links"><button class="link" type="button">Use a sample lift instead<\/button><button class="link" type="button">Test your spot first<\/button><\/div><section class="flight-strip">STRIP<\/section><\/main>/);
+    expect(html).toMatch(/<\/article><div class="ready-dock"><button class="btn" type="button" data-early="ready">I&#x27;m ready<\/button><\/div><i class="ready-sentinel" aria-hidden="true"><\/i><div class="try-actions ready-links"><button class="link" type="button" data-early="ready-sample">Use a sample lift instead<\/button><button class="link" type="button" data-early="ready-spot">Test your spot first<\/button><\/div><section class="flight-strip">STRIP<\/section><\/main>/);
   });
 
   it('a real (or the test) meet has no "Use a sample lift instead": the demo meet\'s only (5.36)', async () => {

@@ -2,7 +2,7 @@
 // state gets. The stage (meet-attempt.tsx) only draws these.
 import type { VoidWhy } from '@/lib/judge/bar-caller';
 import type { LampState } from '@/components/lamps';
-import { REASON_EYEBROW, reasonEyebrow, reasonSentence, type ReasonCode } from '@/lib/reason-words';
+import { REASON_EYEBROW, reasonEyebrow, reasonSentence, spotSentence, type ReasonCode } from '@/lib/reason-words';
 import { refereeWords, UNAVAILABLE_SMALL } from '@/lib/referee/words';
 
 export const MEET_WORDS = {
@@ -82,7 +82,7 @@ const RED_BODY = 'Red lights happen to everyone, even world champions. Most wome
  * 5.25 step 9: what a judged (or close-call) attempt shows. `bot`: REFEREE_BOT is on, so close
  * calls and benches go to the referee bot (item 88).
  */
-export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; lift?: string; shown_lift?: string }, bot = false): MeetResult | null {
+export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; lift?: string; shown_lift?: string; spot_check?: boolean }, bot = false): MeetResult | null {
   const w = refereeWords(bot);
   // a sample lift's words are for the lift the clip shows (5.36)
   const lift = a.shown_lift ?? a.lift ?? 'squat';
@@ -101,7 +101,9 @@ export function meetResult(a: { call: 'white' | 'red' | 'close' | null; lights: 
   }
   const code = (a.reason && a.reason in REASON_EYEBROW ? a.reason : 'depth') as ReasonCode;
   const home = !!a.reps_declared;
-  const reason = { eyebrow: reasonEyebrow(code, home ? a.red_rep : null), text: reasonSentence(code, lift, home ? 'home' : 'barbell') };
+  // item 105: a spot-check red has its own sentence, with no "next attempt"
+  const text = (a.spot_check ? spotSentence(code) : null) ?? reasonSentence(code, lift, home ? 'home' : 'barbell');
+  const reason = { eyebrow: reasonEyebrow(code, home ? a.red_rep : null), text };
   return { title: 'No lift', reason, body: RED_BODY, small: split, lamps };
 }
 

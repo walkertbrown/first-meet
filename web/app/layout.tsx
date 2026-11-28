@@ -3,7 +3,10 @@ import './globals.css';
 import './stage.css';
 import './landing.css';
 import './pages.css';
+import { EarlyTaps } from '@/components/early-taps';
 import { RefereeBotProvider } from '@/components/referee-bot';
+import { SpotBanner } from '@/components/spot-banner';
+import { earlyTapScript } from '@/lib/early-taps';
 import { botOn } from '@/lib/referee/words';
 
 export const metadata: Metadata = {
@@ -32,8 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: earlyTapScript }} />
       </head>
-      <body><RefereeBotProvider on={botOn()}>{children}</RefereeBotProvider></body>
+      <body><RefereeBotProvider on={botOn()}>{children}</RefereeBotProvider><SpotBanner /><EarlyTaps /></body>
     </html>
   );
 }

@@ -14,6 +14,7 @@ import type { CardFormat } from '@/lib/card/card-image';
 import { hasR2, r2 } from '@/lib/r2';
 import { currentViewer } from '@/lib/roles';
 import { juneCardView } from '@/lib/corner-view';
+import { sampleCardView } from '@/lib/sample-meet';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -28,8 +29,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   const download = q.get('download') === '1';
   if (!m || (m[2] === 'png' && f !== 'story' && f !== 'post')) return none();
   // June's card on /corner/demo (5.36): no account, so no clip and no download name of her own
-  if (m[1] === 'demo') {
-    const v = m[2] === 'png' ? juneCardView() : null;
+  // and Dana W.'s on /sample (5.3): a made-up lifter's card, the same way
+  if (m[1] === 'demo' || m[1] === 'sample') {
+    const v = m[2] !== 'png' ? null : m[1] === 'demo' ? juneCardView() : sampleCardView();
     if (!v) return none();
     const img = await cardImage(v, f as CardFormat);
     img.headers.set('Cache-Control', 'public, max-age=3600');

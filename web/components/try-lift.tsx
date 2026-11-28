@@ -453,8 +453,8 @@ export function TryLift({ meetLine, voicePack }: { meetLine: string; voicePack: 
           <h1 className="page-title">Try a lift</h1>
           <p className="body-l">One bodyweight squat. Your phone is the referee.</p>
           <div className="try-actions">
-            <button className="btn" type="button" onClick={() => setStep('setup')}>Use my camera</button>
-            <button className="btn ghost" type="button" onClick={() => watchSample('good')} disabled={!SAMPLES.length}>Watch a sample lift</button>
+            <button className="btn" type="button" data-early="try-camera" onClick={() => setStep('setup')}>Use my camera</button>
+            <button className="btn ghost" type="button" data-early="try-sample" onClick={() => watchSample('good')} disabled={!SAMPLES.length}>Watch a sample lift</button>
             <p className="small try-lock"><Lock weight="bold" className="icon" aria-hidden="true" />{"Your video stays on this phone. It's never uploaded."}</p>
           </div>
         </main>

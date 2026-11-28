@@ -243,3 +243,22 @@ def _upright(frame, np) -> Image.Image:
     if rot:
         arr = np.ascontiguousarray(np.rot90(arr, k=rot // 90))
     return Image.fromarray(arr)
+
+
+def spot_times(clip: dict) -> list[int]:
+    """A spot check's frames for one clip (3.4d step 1): at "Start!" and where the weight is clearest (the
+    judge's `judged_frame_ms`), each once, in time order. A clip with neither gives its first frame."""
+    got = sorted({int(t) for t in (clip.get('start_ms'), clip.get('weight_ms')) if t is not None and t >= 0})
+    return got or [0]
+
+
+def spot_label(clip: dict, t_ms: int, start_ms: int | None) -> list[str]:
+    """Which attempt this frame is from, then the moment: "Squat 1 · 100 kg", "at Start!" or "weight clearest"."""
+    return [str(clip['label']), 'at Start!' if start_ms is not None and t_ms == start_ms else 'weight clearest']
+
+
+def make_spot_frames(video: str, clip: dict) -> list[tuple[int, bytes]]:
+    times = spot_times(clip)
+    start = int(clip['start_ms']) if clip.get('start_ms') is not None else None
+    imgs = grab(video, times)
+    return [(t, jpeg(burn(img, spot_label(clip, t, start)))) for t, img in zip(times, imgs)]

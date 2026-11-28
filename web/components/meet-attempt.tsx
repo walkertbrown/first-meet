@@ -100,7 +100,7 @@ type BarMark = { x: number; y: number; size: number; n: number; on: boolean };
 /** Her bench clip's marks (look 5.14c): the plate's path in pieces (broken where it was lost), and the "Press!" tick. */
 type BenchPath = { pieces: { x: number; y: number }[][]; press: { x: number; y: number } | null };
 type Command = { text: string; kind: 'soft' | 'on' } | null;
-type State = { status: string; shown_lift?: string; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null; sample?: boolean; sample_clip?: { credit: string; reps: number } | null };
+type State = { status: string; shown_lift?: string; spot_check?: boolean; call: 'white' | 'red' | 'close' | null; lights: ('white' | 'red')[] | null; reason: string | null; red_rep: number | null; reps_declared: number | null; wait_minutes: number | null; judging?: 'normal' | 'busy' | 'paused' | null; judged_frame_ms?: number | null; sample?: boolean; sample_clip?: { credit: string; reps: number } | null };
 type SampleClip = { id: string; file: string; credit: string; judged_frame_ms?: number; meet?: { reps: number; command_times: Record<string, number> } };
 
 const PARTS: Part[] = ['head', 'hips', 'knees', 'feet'];
@@ -1273,10 +1273,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <p className="body ac-because">{because}</p>
         </article>
         {/* look 5.6: the Primary on its own, a direct child of the column, so it can dock */}
-        <ReadyDock><button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
+        <ReadyDock><button className="btn" type="button" data-early="ready" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
         <div className="try-actions ready-links">
-          {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
-          <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
+          {demo && <button className="link" type="button" data-early="ready-sample" onClick={() => start('sample')}>Use a sample lift instead</button>}
+          <button className="link" type="button" data-early="ready-spot" onClick={() => start('spot')}>Test your spot first</button>
         </div>
         {strip}
       </main></div>
@@ -1407,6 +1407,7 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
             {phase === 'spot-done' && (
               <>
                 <p className="sheet-title">Good spot. You&apos;re ready.</p>
+                <p className="body">Keep your plates or dumbbells where the phone can see them.</p>
                 <div className="try-actions"><button className="btn" type="button" onClick={toCard}>Back to my attempt</button></div>
               </>
             )}

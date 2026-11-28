@@ -33,13 +33,9 @@ test('the platform closes after her squat 1: her best lift\'s clip is made with 
 
   await testButton(page, 'Sign in as a test lifter in meet week');
   await expect(page).toHaveURL(/\/meet-week$/);
-  // CI on 0bfa627: a tap before the page is hydrated does nothing (no error, no save), so tap until it's saved
-  const savedLine = page.getByRole('status').filter({ hasText: 'Openers saved' });
-  await expect(async () => {
-    const btn = page.getByRole('button', { name: 'Save my openers' });
-    if (await btn.isVisible() && await btn.isEnabled()) await btn.click({ timeout: 2000 });
-    await expect(savedLine).toBeVisible({ timeout: 5000 });
-  }).toPass({ timeout: 60_000 });
+  // one tap, whenever it lands: before the page runs it's a plain form post (before-load-taps.spec.ts)
+  await page.getByRole('button', { name: 'Save my openers' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Openers saved' })).toBeVisible({ timeout: 30_000 });
   await testButton(page, "Open the test meet's platform now");
   await expect(page).toHaveURL(/\/platform$/);
   step('platform open');

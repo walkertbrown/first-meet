@@ -242,6 +242,28 @@ export const refereeJobs = pgTable('referee_jobs', {
   uniqueIndex('referee_jobs_one_open').on(t.attemptId, t.kind).where(sql`${t.status} in ('waiting_frames', 'ready', 'running')`),
 ]);
 
+/** A spot check's problem (3.4d step 8, 5.33): an attempt whose weight didn't show, a Home press with bent arms, or not the same lifter. */
+export type SpotProblem = { kind: 'weight_not_visible' | 'arms_bent'; attemptId: string } | { kind: 'not_same_lifter' };
+/** What a spot check found. `checked`: nothing (a not-sure answer too). `doubt`: the bot couldn't look (counts as checked). */
+export type SpotFinding = { outcome: 'checked' | 'problem' | 'doubt'; problems: SpotProblem[] };
+
+/**
+ * One lifter's spot check (3.4d step 8, 5.33, item 104): made once she's in a top 3 after the clip
+ * deadline, and kept if she moves out. `bot` is the referee bot's finding (its job is `job_id`);
+ * `person` is a referee's on `/referee/spot`, which stands over the bot's.
+ */
+export const spotChecks = pgTable('spot_checks', {
+  id: id(),
+  meetId: uuid('meet_id').notNull().references(() => meets.id, { onDelete: 'cascade' }),
+  lifterId: uuid('lifter_id').notNull().references(() => lifters.id, { onDelete: 'cascade' }),
+  jobId: uuid('job_id').references(() => refereeJobs.id, { onDelete: 'set null' }),
+  bot: jsonb('bot').$type<SpotFinding>(),
+  person: jsonb('person').$type<SpotFinding>(),
+  refereeId: uuid('referee_id').references(() => lifters.id),
+  decidedAt: at('decided_at'),
+  createdAt: createdAt(),
+}, t => [uniqueIndex('spot_checks_lifter').on(t.lifterId), index('spot_checks_meet').on(t.meetId)]);
+
 /** Small settings an admin sets on /ops: staging's "Referee bot test answers" (3.4d step 7). */
 export const opsSettings = pgTable('ops_settings', {
   key: text('key').primaryKey(),
@@ -278,7 +300,28 @@ export const readouts = pgTable('readouts', {
   kind: text('kind').$type<'read' | 'rollcall'>().notNull(),
   at: at('at').notNull().defaultNow(),
   streamOffsetS: real('stream_offset_s'),
-});
+}, t => [index('readouts_meet_kind').on(t.meetId, t.kind), index('readouts_lifter_at').on(t.lifterId, t.at)]);
+
+export type EmailKind = 'signin' | 'read' | 'rollcall' | 'replay';
+/**
+ * Email waiting to go through Resend (plan 2, 5.29; The Playner, Nov 28): sent in kind order
+ * (sign-in links, "Soo just read your name", the roll call's, the replay's) up to the day's limit.
+ * A read-out's waits about 50 s, and goes only if her phone never showed it.
+ */
+export const emails = pgTable('emails', {
+  id: id(),
+  lifterId: uuid('lifter_id').notNull().references(() => lifters.id, { onDelete: 'cascade' }),
+  kind: text('kind').$type<EmailKind>().notNull(),
+  readoutId: uuid('readout_id').references(() => readouts.id, { onDelete: 'cascade' }),
+  subject: text('subject').notNull(),
+  body: text('body').notNull(),
+  sendAfter: at('send_after').notNull().defaultNow(),
+  status: text('status').$type<'waiting' | 'sent' | 'seen' | 'no_key' | 'failed'>().notNull().default('waiting'),
+  sentAt: at('sent_at'),
+  providerId: text('provider_id'),
+  error: text('error'),
+  createdAt: createdAt(),
+}, t => [index('emails_waiting').on(t.status, t.sendAfter), index('emails_sent_at').on(t.sentAt)]);
 
 export const judgeQueue = pgTable('judge_queue', {
   attemptId: uuid('attempt_id').notNull().references(() => attempts.id, { onDelete: 'cascade' }),

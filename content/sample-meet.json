@@ -1,0 +1,2776 @@
+{
+ "note": "Plan 5.3: a made-up meet. Every name is a first name and a last initial; no real person is in it.",
+ "name": "Sample meet",
+ "units": "lb",
+ "lifters": [
+  {
+   "name": "Wanda G.",
+   "sayIt": "",
+   "age": 38,
+   "ageGroup": "Open",
+   "division": "home",
+   "hometown": "Laredo, TX",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 25,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 25,
+     "reps": 9,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 25,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 12,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 12,
+     "reps": 11,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 12,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 25,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 25,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 25,
+     "reps": 10,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Elsie F.",
+   "sayIt": "",
+   "age": 25,
+   "ageGroup": "Open",
+   "division": "home",
+   "hometown": "Casper, WY",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 20,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 20,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 15,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 15,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 15,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 30,
+     "reps": 11,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 30,
+     "reps": 12,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Pat L.",
+   "sayIt": "",
+   "age": 33,
+   "ageGroup": "Open",
+   "division": "barbell",
+   "hometown": "Spokane, WA",
+   "line": "Nobody in my family has ever done a meet.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 195,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 205,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 210,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Opal K.",
+   "sayIt": "",
+   "age": 30,
+   "ageGroup": "Open",
+   "division": "barbell",
+   "hometown": "Asheville, NC",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 165,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 175,
+     "call": "white",
+     "lights": [
+      "white",
+      "red",
+      "white"
+     ],
+     "close": true
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 185,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 160,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 170,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 175,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Bea C.",
+   "sayIt": "",
+   "age": 44,
+   "ageGroup": "40–49",
+   "division": "barbell",
+   "hometown": "Joplin, MO",
+   "line": "I wanted to carry my own groceries up three flights.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 140,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 155,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 165,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 170,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 180,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Carla D.",
+   "sayIt": "",
+   "age": 46,
+   "ageGroup": "40–49",
+   "division": "barbell",
+   "hometown": "Reno, NV",
+   "line": "I wanted to carry my own groceries up three flights.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 90,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 190,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 195,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 205,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Rhea N.",
+   "sayIt": "",
+   "age": 46,
+   "ageGroup": "40–49",
+   "division": "home",
+   "hometown": "Flint, MI",
+   "line": "I wanted something that was just mine.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 35,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 35,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 35,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 15,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 15,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 15,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 30,
+     "reps": 9,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 30,
+     "reps": 11,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Bea P.",
+   "sayIt": "",
+   "age": 48,
+   "ageGroup": "40–49",
+   "division": "barbell",
+   "hometown": "Lafayette, LA",
+   "line": "My knees told me to start. Now they thank me.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 120,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 140,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 145,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 150,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Sal C.",
+   "sayIt": "",
+   "age": 42,
+   "ageGroup": "40–49",
+   "division": "barbell",
+   "hometown": "Ogden, UT",
+   "line": "My knees told me to start. Now they thank me.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 85,
+     "call": "red",
+     "reason": "moved_feet"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 190,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 205,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 210,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Una J.",
+   "sayIt": "",
+   "age": 45,
+   "ageGroup": "40–49",
+   "division": "home",
+   "hometown": "Macon, GA",
+   "line": "My knees told me to start. Now they thank me.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 25,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 25,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 25,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 12,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 12,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 12,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 20,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 20,
+     "reps": 11,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Fran M.",
+   "sayIt": "",
+   "age": 41,
+   "ageGroup": "40–49",
+   "division": "home",
+   "hometown": "Peoria, IL",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 30,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 30,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 10,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 10,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 10,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 30,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 30,
+     "reps": 11,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Wren B.",
+   "sayIt": "",
+   "age": 45,
+   "ageGroup": "40–49",
+   "division": "barbell",
+   "hometown": "Waco, TX",
+   "line": "I wanted to carry my own groceries up three flights.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 155,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 90,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 140,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 150,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Carla E.",
+   "sayIt": "",
+   "age": 49,
+   "ageGroup": "40–49",
+   "division": "barbell",
+   "hometown": "Casper, WY",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 145,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 155,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 50,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 50,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 130,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 145,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 155,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Bea T.",
+   "sayIt": "",
+   "age": 54,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Duluth, MN",
+   "line": "I started after my hip replacement.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 105,
+     "call": "red",
+     "reason": "moved_feet"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 120,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 120,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Flo N.",
+   "sayIt": "",
+   "age": 50,
+   "ageGroup": "50–59",
+   "division": "home",
+   "hometown": "Erie, PA",
+   "line": "I started after my hip replacement.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 25,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 25,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 25,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 15,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 15,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 15,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 20,
+     "reps": 11,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 20,
+     "reps": 12,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Dana W.",
+   "sayIt": "dah-nuh",
+   "age": 54,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Dayton, OH",
+   "line": "I wanted to know what my body could do, not what it looked like.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 125,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 130,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 130,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 135,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Nadia W.",
+   "sayIt": "",
+   "age": 51,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Fargo, ND",
+   "line": "I walk dogs for a living. They pull hard.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 140,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 145,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 65,
+     "call": "red",
+     "reason": "no_pause"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 130,
+     "call": "red",
+     "reason": "downward"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 130,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 150,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Vera W.",
+   "sayIt": "",
+   "age": 52,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Dover, DE",
+   "line": "My knees told me to start. Now they thank me.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 125,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 130,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 135,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 150,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Ines P.",
+   "sayIt": "",
+   "age": 57,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Macon, GA",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 155,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 90,
+     "call": "red",
+     "reason": "no_pause"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 130,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Mae A.",
+   "sayIt": "",
+   "age": 56,
+   "ageGroup": "50–59",
+   "division": "home",
+   "hometown": "Macon, GA",
+   "line": "I started after my hip replacement.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 25,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 25,
+     "reps": 10,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 25,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 10,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 10,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 10,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 20,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 20,
+     "reps": 12,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Dot D.",
+   "sayIt": "",
+   "age": 55,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Erie, PA",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 140,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 120,
+     "call": "red",
+     "reason": "downward"
+    }
+   ]
+  },
+  {
+   "name": "Flo G.",
+   "sayIt": "",
+   "age": 50,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Ames, IA",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 165,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 175,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Alma V.",
+   "sayIt": "",
+   "age": 54,
+   "ageGroup": "50–59",
+   "division": "home",
+   "hometown": "Spokane, WA",
+   "line": "I started after my hip replacement.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 35,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 35,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 35,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 12,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 12,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 12,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 20,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 20,
+     "reps": 10,
+     "call": "white",
+     "lights": [
+      "white",
+      "white",
+      "red"
+     ],
+     "close": true
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 20,
+     "reps": 11,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Nadia T.",
+   "sayIt": "",
+   "age": 54,
+   "ageGroup": "50–59",
+   "division": "barbell",
+   "hometown": "Burlington, VT",
+   "line": "I lift with my daughter on Sundays.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 150,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 160,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 140,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 155,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 160,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Jo D.",
+   "sayIt": "",
+   "age": 57,
+   "ageGroup": "50–59",
+   "division": "home",
+   "hometown": "Salem, OR",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 35,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 35,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 35,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 10,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 10,
+     "reps": 11,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 10,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 20,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 20,
+     "reps": 11,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Iris D.",
+   "sayIt": "",
+   "age": 69,
+   "ageGroup": "60–69",
+   "division": "home",
+   "hometown": "Bangor, ME",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 35,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 35,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 35,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 12,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 12,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 12,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 30,
+     "reps": 8,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 30,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Hattie E.",
+   "sayIt": "",
+   "age": 61,
+   "ageGroup": "60–69",
+   "division": "home",
+   "hometown": "Hilo, HI",
+   "line": "I wanted to carry my own groceries up three flights.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 35,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 35,
+     "reps": 10,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 35,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 15,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 15,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 15,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 30,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 30,
+     "reps": 12,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Queenie W.",
+   "sayIt": "",
+   "age": 63,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Laredo, TX",
+   "line": "I walk dogs for a living. They pull hard.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 115,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 60,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 115,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Rosa M.",
+   "sayIt": "ROH-zuh",
+   "age": 64,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Tucson, AZ",
+   "line": "I started at 63 because my granddaughter asked me to.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 90,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 125,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 130,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Iris R.",
+   "sayIt": "",
+   "age": 60,
+   "ageGroup": "60–69",
+   "division": "home",
+   "hometown": "Macon, GA",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 20,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 20,
+     "reps": 9,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 12,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 12,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 12,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 30,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 30,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 30,
+     "reps": 12,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Jo B.",
+   "sayIt": "",
+   "age": 69,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Flint, MI",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 130,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 90,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 95,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Zora B.",
+   "sayIt": "",
+   "age": 60,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Boise, ID",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 70,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 70,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "red",
+     "reason": "no_pause"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 160,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 160,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 160,
+     "call": "red",
+     "reason": "no_lockout"
+    }
+   ]
+  },
+  {
+   "name": "Wanda A.",
+   "sayIt": "",
+   "age": 61,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Akron, OH",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 75,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 80,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 90,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 125,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 130,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Pat R.",
+   "sayIt": "",
+   "age": 63,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Salem, OR",
+   "line": "Nobody in my family has ever done a meet.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 45,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 50,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 125,
+     "call": "red",
+     "reason": "downward"
+    }
+   ]
+  },
+  {
+   "name": "Ines W.",
+   "sayIt": "",
+   "age": 65,
+   "ageGroup": "60–69",
+   "division": "barbell",
+   "hometown": "Casper, WY",
+   "line": "My knees told me to start. Now they thank me.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 105,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 115,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 125,
+     "call": "red",
+     "reason": "moved_feet"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 45,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 50,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 135,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 135,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 145,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Bea N.",
+   "sayIt": "",
+   "age": 75,
+   "ageGroup": "70+",
+   "division": "barbell",
+   "hometown": "Lowell, MA",
+   "line": "I wanted to carry my own groceries up three flights.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 100,
+     "call": "red",
+     "reason": "depth"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 65,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 75,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 90,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 95,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Lena R.",
+   "sayIt": "",
+   "age": 74,
+   "ageGroup": "70+",
+   "division": "barbell",
+   "hometown": "Casper, WY",
+   "line": "I lift with my daughter on Sundays.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 85,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 30,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 40,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 45,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 125,
+     "call": "red",
+     "reason": "downward"
+    }
+   ]
+  },
+  {
+   "name": "Mae E.",
+   "sayIt": "",
+   "age": 80,
+   "ageGroup": "70+",
+   "division": "barbell",
+   "hometown": "Lowell, MA",
+   "line": "I started after my hip replacement.",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 45,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 55,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 60,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 90,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 95,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 100,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Fran N.",
+   "sayIt": "",
+   "age": 76,
+   "ageGroup": "70+",
+   "division": "barbell",
+   "hometown": "Boise, ID",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 100,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 120,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 45,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 55,
+     "call": "red",
+     "reason": "no_pause"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 60,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 110,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 115,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 120,
+     "call": "white"
+    }
+   ]
+  },
+  {
+   "name": "Della C.",
+   "sayIt": "",
+   "age": 75,
+   "ageGroup": "70+",
+   "division": "home",
+   "hometown": "Lafayette, LA",
+   "line": "",
+   "attempts": [
+    {
+     "lift": "squat",
+     "n": 1,
+     "weight": 20,
+     "reps": 8,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 2,
+     "weight": 20,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "squat",
+     "n": 3,
+     "weight": 20,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 1,
+     "weight": 15,
+     "reps": 10,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 2,
+     "weight": 15,
+     "reps": 11,
+     "call": "white"
+    },
+    {
+     "lift": "bench",
+     "n": 3,
+     "weight": 15,
+     "reps": 12,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 1,
+     "weight": 25,
+     "reps": 9,
+     "call": "white"
+    },
+    {
+     "lift": "deadlift",
+     "n": 2,
+     "weight": 25,
+     "reps": 10,
+     "call": "red",
+     "reason": "no_lockout"
+    },
+    {
+     "lift": "deadlift",
+     "n": 3,
+     "weight": 25,
+     "reps": 11,
+     "call": "white"
+    }
+   ]
+  }
+ ]
+}

@@ -1,14 +1,15 @@
 // Staging's test accounts (plan 3.1): /signin/test exists only when STAGING_TEST_SIGNIN is "on"
 // AND the service isn't production's (RENDER_SERVICE_NAME). Otherwise a 404, so the setting
 // copied to production by mistake still can't open it.
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '@/db';
-import { attempts, flightHourVotes, flights, judgedSets, lifters, meets, sessions, type Division, type Lift } from '@/db/schema';
+import { attempts, flightHourVotes, flights, judgedSets, lifters, meets, sessions, spotChecks, type Division, type Lift } from '@/db/schema';
 import { LIFTS } from '@/lib/meet';
-import { DEMO_CAPS, DEMO_HOME_WEIGHTS } from '@/lib/demo';
+import { DEMO_CAPS, DEMO_HOME_WEIGHTS, demoMeet, demoOpener, newCornerToken } from '@/lib/demo';
 import { easternDay } from '@/lib/next-block';
 import { etWallToUtc } from '@/lib/meet-week-words';
 import { CLIP_GRACE_MS, runClipDeadline } from '@/lib/meet-window';
+import { keys } from '@/lib/r2';
 
 export const PRODUCTION_SERVICE = 'first-meet-web';
 
@@ -38,6 +39,21 @@ export const TEST_MEET_SLUG = 'test';
 export const TEST_FLIGHTMATES = [
   { name: 'Ada', slot: 0 }, { name: 'Bea', slot: 0 }, { name: 'Cleo', slot: 5 }, { name: 'Dot', slot: 5 },
 ] as const;
+
+/**
+ * The demo host desk's test (5.36): a new demo lifter, her nine lifts already judged good, so she is on
+ * /host/sample's Read list at once. Each sign-in makes a new one (the desk reads the newest first).
+ */
+export async function demoTotaledAccount(db: Db): Promise<{ id: string; next: string }> {
+  const meet = await demoMeet(db);
+  const [l] = await db.insert(lifters).values({ cardName: 'Test demo total', division: 'barbell', isDemo: true, meetId: meet.id, cornerToken: newCornerToken() }).returning({ id: lifters.id });
+  const at = new Date();
+  await db.insert(attempts).values(LIFTS.flatMap((lift: Lift) => [1, 2, 3].map(number => {
+    const o = demoOpener('barbell', lift);
+    return { lifterId: l.id, meetId: meet.id, lift, number, weight: o.weight + (number - 1) * 5, repsDeclared: o.reps, status: 'judged' as const, call: 'white' as const, lights: ['white', 'white', 'white'] as ('white' | 'red')[], judgedAt: at };
+  })));
+  return { id: l.id, next: '/platform/total' };
+}
 
 /** Makes the account if it doesn't exist (keeping its role as the plan has it), and returns its id. */
 export async function testAccount(db: Db, who: TestWho): Promise<{ id: string; next: string }> {
@@ -166,4 +182,45 @@ export async function testMeetExists(db: Db) {
   return !!m;
 }
 
+/** Phase 5's spot-check check on staging (item 104): the button's label. */
+export const SPOT_SCENE_LABEL = "Give the test meet five Barbell totals past its clip deadline";
+/** The scene's totals in kg: hers first, at 580, with squat 1 her only good squat; then Ada, Bea, Cleo, Dot. */
+export const SPOT_SCENE_TOTALS = { her: 580, mates: [540, 510, 480, 450] } as const;
 
+/**
+ * Sets the test meet past its clip deadline (closed 8 h ago, the deadline a minute ago, not final),
+ * clears its spot checks and every attempt in it, and gives the Barbell test lifter and her four
+ * flightmates nine judged lifts each, every clip the sample good lift in R2. Her squats 2 and 3 are
+ * red, so a spot red on her attempt 1 leaves her with no total and the 4th moves into the top 3.
+ * Needs "Sign in as a test lifter in meet week" first.
+ */
+export async function testSpotScene(db: Db, now = new Date()) {
+  const [m] = await db.select().from(meets).where(and(eq(meets.slug, TEST_MEET_SLUG), eq(meets.kind, 'test')));
+  if (!m) return false;
+  const emails = [MEET_WEEK_ACCOUNTS.meetweek.email, ...TEST_FLIGHTMATES.map(x => `test-flightmate-${x.name.toLowerCase()}@first-meet.invalid`)];
+  const found = await db.select({ id: lifters.id, email: lifters.email }).from(lifters).where(and(inArray(lifters.email, emails), eq(lifters.meetId, m.id)));
+  const ids = emails.map(e => found.find(f => f.email === e)?.id);
+  if (ids.some(id => !id)) return false;
+  await db.update(meets).set({
+    status: 'closed', opensAt: new Date(now.getTime() - 10 * H), closesAt: new Date(now.getTime() - 8 * H),
+    clipDeadlineAt: new Date(now.getTime() - 60_000), liveAt: new Date(now.getTime() - 6 * H),
+  }).where(eq(meets.id, m.id));
+  await db.delete(spotChecks).where(eq(spotChecks.meetId, m.id));
+  await db.delete(attempts).where(eq(attempts.meetId, m.id));
+  await db.update(lifters).set({ units: 'kg', ageGroup: 'Open', division: 'barbell' }).where(inArray(lifters.id, ids as string[]));
+  const at = new Date(now.getTime() - 9 * H);
+  const rows = (ids as string[]).flatMap((lifterId, i) => LIFTS.flatMap((lift: Lift) => [1, 2, 3].map(number => {
+    // hers: squat 200 then two reds at 210, bench 100–110, deadlift 250–270 (580); a mate's: (total / 3 − 30) + 10 a lift
+    const base = i === 0 ? { squat: 190, bench: 95, deadlift: 240 }[lift] : SPOT_SCENE_TOTALS.mates[i - 1] / 3 - 30;
+    const weight = i === 0 ? (lift === 'squat' ? (number === 1 ? 200 : 210) : base + number * (lift === 'bench' ? 5 : 10)) : base + number * 10;
+    const red = i === 0 && lift === 'squat' && number > 1;
+    return {
+      lifterId, meetId: m.id, lift, number, weight, status: 'judged' as const, call: red ? 'red' as const : 'white' as const,
+      lights: (red ? ['red', 'red', 'red'] : ['white', 'white', 'white']) as ('white' | 'red')[], reason: red ? 'depth' : null,
+      videoKey: keys.sample('good-lift-wabba.mp4'), judgedFrameMs: 3000, recordedAt: at, judgedAt: at,
+      commandTimes: (lift === 'squat' ? { loaded: 200, squat: 1500, rack: 6000 } : { loaded: 200, start: 1000, rack: 5000 }) as Record<string, number>,
+    };
+  })));
+  await db.insert(attempts).values(rows);
+  return true;
+}
