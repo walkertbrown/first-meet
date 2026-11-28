@@ -1273,10 +1273,10 @@ export function MeetAttempt({ attempt, lifter, because, voicePack, onNext, nextL
           <p className="body ac-because">{because}</p>
         </article>
         {/* look 5.6: the Primary on its own, a direct child of the column, so it can dock */}
-        <ReadyDock><button className="btn" type="button" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
+        <ReadyDock><button className="btn" type="button" data-early="ready" onClick={() => start('lift')}>I&apos;m ready</button></ReadyDock>
         <div className="try-actions ready-links">
-          {demo && <button className="link" type="button" onClick={() => start('sample')}>Use a sample lift instead</button>}
-          <button className="link" type="button" onClick={() => start('spot')}>Test your spot first</button>
+          {demo && <button className="link" type="button" data-early="ready-sample" onClick={() => start('sample')}>Use a sample lift instead</button>}
+          <button className="link" type="button" data-early="ready-spot" onClick={() => start('spot')}>Test your spot first</button>
         </div>
         {strip}
       </main></div>

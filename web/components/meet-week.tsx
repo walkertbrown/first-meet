@@ -272,7 +272,7 @@ function CopyCorner({ token }: { token: string }) {
   };
   return (
     <>
-      <div className="try-actions"><button className="btn ghost" type="button" onClick={() => void copy()} aria-live="polite">{copied ? MEET_WEEK_WORDS.copied : MEET_WEEK_WORDS.copy}</button></div>
+      <div className="try-actions"><button className="btn ghost" type="button" data-early="copy-corner" onClick={() => void copy()} aria-live="polite">{copied ? MEET_WEEK_WORDS.copied : MEET_WEEK_WORDS.copy}</button></div>
       {shown && <p className="small mw-link">{shown}</p>}
     </>
   );

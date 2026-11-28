@@ -225,7 +225,7 @@ export function WelcomeSheet({ corner, onClose }: { corner: string; onClose: () 
         <p className="body">{WELCOME_WORDS.body}</p>
         <p className="body">{WELCOME_WORDS.corner}</p>
         <div className="try-actions">
-          <button className="btn" type="button" onClick={onClose}>{WELCOME_WORDS.go}</button>
+          <button className="btn" type="button" data-early="welcome-go" onClick={onClose}>{WELCOME_WORDS.go}</button>
           {/* item 78: the short label, and the new-tab mark 8 px after it (look 5.14a) */}
           <a className="btn ghost new-tab" href={corner} target="_blank" rel="noopener" aria-label={WELCOME_WORDS.openCornerSaid}>{WELCOME_WORDS.openCorner}<ArrowUpRight weight="bold" size={24} aria-hidden="true" /></a>
         </div>

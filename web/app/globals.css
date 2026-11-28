@@ -194,6 +194,9 @@ h1, h2, h3, p, ul, ol { margin: 0; }
   50% { box-shadow: 0 0 0 5px #4A4E5A, 0 0 0 6px rgb(255 255 255 / .16), inset 0 2px 6px rgb(0 0 0 / .6); }
 }
 
+/* A tap held until the page runs (web/lib/early-taps.ts): look 5.1's loading fill. */
+[data-early-held] { opacity: .85; }
+
 /* ---------- Motion off (look 6) ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; animation-iteration-count: 1 !important; }
