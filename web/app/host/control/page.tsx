@@ -22,7 +22,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
   const v = await currentViewer(db());
   if (!v || (!v.isHost && !v.isAdmin)) forbidden();
   const q = await searchParams;
-  const meet = await controlMeet(db());
+  const meet = await controlMeet(db(), q.meet);
   const msg = await statusMessage(db());
   const said = (at: string) => q.at === at ? (q.note ?? (q.saved ? SAVED[q.saved] : null)) : null;
   const Said = ({ at }: { at: string }) => { const s = said(at); return s ? <p className="small control-said" role="status">{s}</p> : null; };
@@ -48,10 +48,11 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           <h2 className="eyebrow" id="c-platform">PLATFORM</h2>
           <p className="body">{final ? 'The board is final.' : open ? 'The platform is open.' : 'The platform is closed.'}</p>
           {!final && (open
-            ? <ConfirmPost action="close" label="Close the platform" title="Close the platform?" body="No one can start a lift after this. Clips already recorded can still arrive." yes="Close the platform" ghost />
-            : <ConfirmPost action="open" label="Open the platform" title="Open the platform?" body="Lifters can start their meet attempts now." yes="Open the platform" />)}
+            ? <ConfirmPost meet={meet.slug} action="close" label="Close the platform" title="Close the platform?" body="No one can start a lift after this. Clips already recorded can still arrive." yes="Close the platform" ghost />
+            : <ConfirmPost meet={meet.slug} action="open" label="Open the platform" title="Open the platform?" body="Lifters can start their meet attempts now." yes="Open the platform" />)}
           <Said at="open" /><Said at="close" />
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="times" />
             <label className="field"><span>Opens (Eastern)</span><input type="datetime-local" name="opens_at" defaultValue={etInput(meet.opensAt)} /></label>
             <label className="field"><span>Closes (Eastern)</span><input type="datetime-local" name="closes_at" defaultValue={etInput(meet.closesAt)} /></label>
@@ -65,22 +66,26 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
         <section className="control-section" aria-labelledby="c-live">
           <h2 className="eyebrow" id="c-live">SOO&apos;S LIVE</h2>
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="stream" />
             <label className="field"><span>YouTube live video ID</span><input name="video_id" defaultValue={meet.streamVideoId ?? ''} autoComplete="off" spellCheck={false} /></label>
             <button className="btn ghost" type="submit">Save</button>
             <Said at="stream" />
           </form>
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="went_live" />
             <button className="btn" type="submit">Soo went live now</button>
           </form>
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="went_live" />
             <label className="field"><span>Went live at (Eastern)</span><input type="datetime-local" name="at" defaultValue={etInput(meet.streamStartedAt)} /></label>
             <button className="btn ghost" type="submit">Save</button>
             <Said at="went_live" />
           </form>
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="live_minutes" />
             <label className="field"><span>Live length (minutes)</span><input type="number" name="minutes" min={10} max={300} defaultValue={meet.liveMinutes} inputMode="numeric" /></label>
             <button className="btn ghost" type="submit">Save</button>
@@ -92,12 +97,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           <h2 className="eyebrow" id="c-board">BOARD</h2>
           {final ? <p className="body">The board is final. Results and awards are public.</p> : (
             <>
-              <ConfirmPost action="final" label="Make the board final" title="Make the board final? Results and awards go public." yes="Make the board final" disabled={!ready?.ok} />
+              <ConfirmPost meet={meet.slug} action="final" label="Make the board final" title="Make the board final? Results and awards go public." yes="Make the board final" disabled={!ready?.ok} />
               {ready && !ready.ok && <p className="small">{ready.line ?? (ready.why === 'close_calls' ? 'Close calls are still waiting.' : 'Spot checks are still running.')}</p>}
             </>
           )}
           <Said at="final" />
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="replay" />
             <label className="field"><span>Replay video ID</span><input name="video_id" defaultValue={meet.replayVideoId ?? ''} autoComplete="off" spellCheck={false} /></label>
             <button className="btn ghost" type="submit">Save</button>
@@ -108,6 +114,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
         <section className="control-section" aria-labelledby="c-status">
           <h2 className="eyebrow" id="c-status">STATUS MESSAGE</h2>
           <form method="post" action="/api/host/control" className="control-form">
+            <input type="hidden" name="meet" value={meet.slug} />
             <input type="hidden" name="do" value="status" />
             <label className="field"><span>Title</span><input name="title" maxLength={80} defaultValue={msg?.title ?? ''} /></label>
             <label className="field"><span>Sentence</span><textarea name="sentence" maxLength={280} rows={2} defaultValue={msg?.sentence ?? ''} /></label>

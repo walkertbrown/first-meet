@@ -9,9 +9,11 @@ test('/live: Lights down, the meet night, and the board with its filters', async
   await expect(page.getByText(/^MEET NIGHT · /)).toBeVisible();
   await expect(page.locator('.lights-down')).toHaveCount(1);
   const board = page.getByRole('region', { name: 'THE BOARD' });
-  for (const s of ['Barbell', 'Home', 'All ages', 'Open', '40–49', '50–59', '60–69', '70+']) await expect(board.getByText(s, { exact: true })).toBeVisible();
+  // the segments are labels: once the board has lifters, their rows say "Open" and "Home" too
+  const segment = (s: string) => board.locator('label').filter({ has: page.getByText(s, { exact: true }) });
+  for (const s of ['Barbell', 'Home', 'All ages', 'Open', '40–49', '50–59', '60–69', '70+']) await expect(segment(s)).toBeVisible();
   await expect(board.getByPlaceholder('Find a lifter')).toBeVisible();
-  await board.getByText('Home', { exact: true }).click();
+  await segment('Home').click();
   await expect(board.getByRole('radio', { name: 'Home' })).toBeChecked();
 });
 
