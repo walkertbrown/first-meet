@@ -237,3 +237,11 @@
 span.bot-frame { aspect-ratio: var(--ar, 9 / 16); }
 .bot-frame.judged { box-shadow: 0 0 0 2.5px var(--stage-ink); }
 .bot-back { margin-top: 32px; width: 100%; min-height: 64px; }
+/* meet control (5.35) */
+.control { display: flex; flex-direction: column; gap: 8px; max-width: 560px; }
+.control-section { display: flex; flex-direction: column; gap: 12px; padding: 24px 0; border-top: 1px solid var(--rule); }
+.control-section > .btn, .control-form .btn { align-self: flex-start; width: auto; }
+.control-form { display: flex; flex-direction: column; gap: 8px; }
+.control .field { display: flex; flex-direction: column; gap: 4px; font-size: 15px; line-height: 22px; color: var(--ink-2); }
+.control .field input, .control .field textarea { min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--rule); border-radius: 4px; background: var(--chalk); color: var(--ink); font: inherit; font-size: 17px; }
+.control-said { color: var(--ink); }
