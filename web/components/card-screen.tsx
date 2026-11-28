@@ -97,8 +97,12 @@ export function CardScreen({ token, name, clip, judgesOnly, start = 'Story' }: P
 
   const shareClip = useCallback(async () => {
     if (seg !== 'Clip' || !ready || shared) return;
-    setShared(true);
-    try { await fetch('/api/me/card/share-clip', { method: 'POST' }); } catch { /* the next tap tries again */ }
+    // The line says her clip is on her card link only once that's saved: a reload or a tab closed right after
+    // the tap still saves it (keepalive), and a save that fails leaves the line as it was for the next tap.
+    try {
+      const r = await fetch('/api/me/card/share-clip', { method: 'POST', keepalive: true });
+      if (r.ok) setShared(true);
+    } catch { /* the next tap tries again */ }
   }, [seg, ready, shared]);
 
   const download = () => {

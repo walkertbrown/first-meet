@@ -93,7 +93,8 @@ jobs:
     name: End-to-end tests (Chromium)
     needs: check
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # the tests step stops at 40 minutes on its own, so the upload below still runs
+    timeout-minutes: 50
     permissions:
       contents: write
     concurrency:
@@ -123,9 +124,19 @@ jobs:
         run: node scripts/wait-for-staging.mjs "$STAGING_URL/healthz" "${{ github.event.pull_request.head.sha }}" 20
       - name: End-to-end tests on staging
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        timeout-minutes: 40
         run: npm run test:e2e
         env:
           E2E_BASE_URL: ${{ env.STAGING_URL }}
       - name: End-to-end tests on the built site
         if: github.event_name != 'pull_request'
+        timeout-minutes: 40
         run: npm run build && npm run test:e2e
+      - name: Keep what failed
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
