@@ -1,10 +1,13 @@
 // GET /api/meet-week/openers: her openers' choices and what she saved (plan 5.23).
 // POST /api/meet-week/openers {picks: [{lift, weight, reps?}]}: "Save my openers", checked against the same choices.
+// The same POST as a plain form ("Save my openers" tapped before the page's script ran): the radios
+// opener-<lift> (Barbell) or weight-<lift> and reps-<lift> (Home); it answers with a 303 back to /meet-week.
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { lifters, type Lift } from '@/db/schema';
 import { LIFTS } from '@/lib/meet';
 import { meetWeekPlace, saveOpeners, type OpenerPick } from '@/lib/meet-week';
+import { formPicks } from '@/lib/opener-form';
 import { sessionFrom } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -24,8 +27,15 @@ export async function GET(req: Request) {
   return Response.json({ openers: p.view.openers });
 }
 
+const back = (ok: boolean) => new Response(null, { status: 303, headers: { location: ok ? '/meet-week' : '/meet-week?openers=again', 'cache-control': 'no-store' } });
+
 export async function POST(req: Request) {
   const l = await lifterOf(req);
+  if (!(req.headers.get('content-type') ?? '').includes('application/json')) {
+    if (!l) return new Response(null, { status: 303, headers: { location: '/' } });
+    const picks = formPicks(await req.formData().catch(() => new FormData()));
+    return back(!!picks && (await saveOpeners(db(), l, picks)).status === 200);
+  }
   if (!l) return Response.json({ error: 'sign in first' }, { status: 401 });
   const body = await req.json().catch(() => null) as { picks?: unknown } | null;
   const raw = Array.isArray(body?.picks) ? body.picks : null;

@@ -15,7 +15,7 @@ import '../meet-week.css';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Meet week', robots: { index: false } };
 
-export default async function MeetWeekPage() {
+export default async function MeetWeekPage({ searchParams }: { searchParams: Promise<{ openers?: string }> }) {
   if (!hasDb()) redirect('/');
   const v = await currentViewer(db());
   if (!v) redirect('/');
@@ -25,10 +25,11 @@ export default async function MeetWeekPage() {
   if (place.kind === 'weekend') redirect('/platform');
   if (place.kind !== 'week') redirect('/');
   const w = place.view;
+  const saveFailed = (await searchParams).openers === 'again';
   return (
     <div className="try-page meet-page"><main className="try-col meet-col mw-col">
       <MeetWeek
-        meetId={w.meetId} units={w.units} division={w.division} bar={w.bar} openers={w.openers} cornerToken={w.cornerToken}
+        meetId={w.meetId} units={w.units} division={w.division} bar={w.bar} openers={w.openers} cornerToken={w.cornerToken} saveFailed={saveFailed}
         flight={w.flight && { counts: w.flight.counts, mine: w.flight.mine, open: w.flight.open, hour: w.flight.hour, starts: w.flight.starts.map(d => d.toISOString()) }}
       />
     </main></div>
