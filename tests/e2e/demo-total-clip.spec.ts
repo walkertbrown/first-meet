@@ -140,7 +140,8 @@ test(`the demo meet to a total on staging: her card's clip is ${expectFailed ? "
         let release!: () => void;
         const held = new Promise<void>(r => { release = r; });
         await pub.route(/\/api\/card\/[^/]+\.png\?f=story$/, async route => { await held; await route.continue(); });
-        await pub.goto(`/card/${token}`);
+        // its Story is held, so the page's load event waits on it: go on once the page is there
+        await pub.goto(`/card/${token}`, { waitUntil: 'domcontentloaded' });
         const waiting = pub.locator('.card-frame.story.drawing:not([data-drawn])');
         await expect(waiting).toHaveCount(1, { timeout: 30_000 });
         const pulse = () => waiting.evaluate(el => {

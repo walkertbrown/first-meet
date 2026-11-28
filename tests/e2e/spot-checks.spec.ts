@@ -92,8 +92,10 @@ test('spot checks: the bot reds her squat 1, the 4th moves in, the board waits, 
   await expect(finalButton(admin)).toBeDisabled();
 
   // the test referee's "Checked" puts her back: 1st at 580 kg, and her line goes
+  // staging's one small web instance answers the save and then the desk's refresh (its spot tick and 36 clip
+  // links): as the desk's first look, a minute
   await held.getByRole('button', { name: 'Checked', exact: true }).click();
-  await expect(row(desk, '1st · 580 kg')).toBeVisible({ timeout: 15_000 });
+  await expect(row(desk, '1st · 580 kg')).toBeVisible({ timeout: 60_000 });
   await expect(row(desk, '1st · 580 kg').getByRole('button', { name: 'Checked', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(desk.locator('article.spot-lifter')).toHaveCount(3);
   await her.goto('/platform/total');
@@ -105,7 +107,7 @@ test('spot checks: the bot reds her squat 1, the 4th moves in, the board waits, 
   for (const place of ['2nd · 540 kg', '3rd · 510 kg']) {
     const r = row(desk, place);
     await r.getByRole('button', { name: 'Checked', exact: true }).click();
-    await expect(r.getByRole('button', { name: 'Checked', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 15_000 });
+    await expect(r.getByRole('button', { name: 'Checked', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 60_000 });
   }
   await expect(desk.getByText('0 to check · 3 checked')).toBeVisible();
 
