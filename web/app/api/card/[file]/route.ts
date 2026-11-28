@@ -1,10 +1,9 @@
 // Her meet card's files (plan 5.30, 5.5, look 9), by the card token, the card link's only key:
-//   GET /api/card/<token>.png?f=story|post  the card PNG, drawn by Satori. Public.
+//   GET /api/card/<token>.png?f=story|post  the card PNG, drawn by Satori off the server's thread. Public.
 //   GET /api/card/<token>.mp4               render_clip's lift clip, with Range for Safari's video.
 //     Public once it's on her card link (shared, or her videos are "Anyone with my card link"; item 99),
 //     and always to her. Anyone else, or no clip yet: 404.
 // `?download=1` makes either a file to save ("Save to my phone"). No total yet, or no such card: 404.
-import { ImageResponse } from 'next/og';
 import { db, hasDb } from '@/db';
 import { cardForToken, clipOnCardLink } from '@/lib/card/card-data';
 import { fileStem } from '@/lib/card/card-view';
@@ -30,7 +29,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   if (m[1] === 'demo') {
     const v = m[2] === 'png' ? juneCardView() : null;
     if (!v) return none();
-    const img: ImageResponse = await cardImage(v, f as CardFormat);
+    const img = await cardImage(v, f as CardFormat);
     img.headers.set('Cache-Control', 'public, max-age=3600');
     return img;
   }
@@ -40,7 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ file: st
   const stem = `first-meet-${fileStem(card.lifter.cardName)}`;
 
   if (m[2] === 'png') {
-    const img: ImageResponse = await cardImage(card.view, f as CardFormat);
+    const img = await cardImage(card.view, f as CardFormat);
     // a referee can still change a light until the board is final, so the card is cached only briefly
     img.headers.set('Cache-Control', 'public, max-age=60');
     if (download) img.headers.set('Content-Disposition', `attachment; filename="${stem}-${f}.png"`);

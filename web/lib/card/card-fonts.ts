@@ -18,8 +18,9 @@ const FILES: { file: string; name: string; weight: SatoriFont['weight']; style?:
   { file: 'atkinson-400-italic.ttf', name: 'Atkinson 400 italic', weight: 400, style: 'italic' },
 ];
 
-/** `next start web` and vitest run from the repo root; a process started inside web/ works too. */
-export const FONT_DIR = () => path.join(process.cwd().endsWith(`${path.sep}web`) ? process.cwd() : path.join(process.cwd(), 'web'), 'card-fonts');
+/** web/ at run time: `next start web` and vitest run from the repo root; a process started inside web/ works too. */
+export const WEB_DIR = () => process.cwd().endsWith(`${path.sep}web`) ? process.cwd() : path.join(process.cwd(), 'web');
+export const FONT_DIR = () => path.join(WEB_DIR(), 'card-fonts');
 
 let cache: Promise<SatoriFont[]> | null = null;
 
