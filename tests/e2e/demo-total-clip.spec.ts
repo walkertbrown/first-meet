@@ -54,7 +54,10 @@ async function liftOne(page: Page): Promise<string> {
     const whites = ref.getByRole('button', { name: 'White light' });
     await expect(whites.first()).toBeVisible({ timeout: 30_000 });
     for (let i = 0; i < 3; i++) await whites.nth(i).click();
+    // wait for the save's answer: closing the tab first cancels the request when staging is slow (CI on bee6c4a)
+    const saved = ref.waitForResponse(r => r.request().method() === 'POST' && /\/api\/referee\//.test(r.url()), { timeout: 60_000 });
     await ref.getByRole('button', { name: 'Save the lights' }).click();
+    expect((await saved).ok(), 'the referee\'s save').toBe(true);
   } finally { await ref.close(); }
   await expect(page.locator('.result.on h2', { hasText: 'Good lift' })).toBeVisible({ timeout: 60_000 });
   return 'Good lift';

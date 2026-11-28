@@ -148,7 +148,10 @@ async function refereeWhites(browser: Page) {
   await expect(ref.getByRole('heading', { name: /^Squat 3 · /, level: 1 })).toBeVisible({ timeout: 30_000 });
   const whites = ref.getByRole('button', { name: 'White light' });
   for (let i = 0; i < 3; i++) await whites.nth(i).click();
+  // wait for the save's answer: closing the tab first cancels the request when staging is slow (CI on bee6c4a)
+  const saved = ref.waitForResponse(r => r.request().method() === 'POST' && /\/api\/referee\//.test(r.url()), { timeout: 60_000 });
   await ref.getByRole('button', { name: 'Save the lights' }).click();
+  expect((await saved).ok(), 'the referee\'s save').toBe(true);
   await ref.close();
 }
 
